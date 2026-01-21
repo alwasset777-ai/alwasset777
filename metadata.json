@@ -1,0 +1,7 @@
+{
+  "name": "AL WASSET 777 ACADEMY",
+  "description": "Plateforme de formation d'élite pour agents immobiliers au Maroc. 28 heures de cours intensifs, coaching IA 777 intégré.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
