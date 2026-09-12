@@ -304,6 +304,16 @@ footer .bottom{border-top:1px solid #26262b;margin-top:28px;padding-top:16px;tex
   form .grow{grid-template-columns:1fr}
   .grid{grid-template-columns:1fr}
 }
+
+/* ---------- صفحات SEO ---------- */
+.seo-h1{font-size:clamp(22px,3.2vw,30px);font-weight:800;margin:6px 0 10px;line-height:1.35}
+.seo-intro{color:var(--muted);max-width:860px;margin-bottom:14px;line-height:1.95;font-size:15.5px}
+.seo-links{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px}
+.seo-links a{font-size:13px;font-weight:700;border:1px solid var(--line);background:#fff;padding:6px 13px;border-radius:999px}
+.seo-links a:hover{border-color:var(--red);color:var(--red)}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--red)}
+
 @media print{header,.topbar,.wa-float,footer{display:none}}
 </style>
 </head>
@@ -313,8 +323,8 @@ footer .bottom{border-top:1px solid #26262b;margin-top:28px;padding-top:16px;tex
   <div class="wrap">
     <div class="info">
       <span>📍 حمرية، مكناس، المغرب</span>
-      <a href="tel:+212777777959">📞 ‎+212 777 777 959</a>
-      <a href="mailto:contact@alwasset777.ma" class="rtl-hide">✉️ contact@alwasset777.ma</a>
+      <a href="tel:+212777777959">📞 ‎+212 777 777 959</a><a href="tel:0777777848">📞 0777777848</a>
+      <a href="mailto:alwasset777@gmail.com" class="rtl-hide">✉️ alwasset777@gmail.com</a>
     </div>
     <div style="display:flex;align-items:center;gap:14px">
       <div class="socials" id="topSocials"></div>
@@ -361,7 +371,7 @@ footer .bottom{border-top:1px solid #26262b;margin-top:28px;padding-top:16px;tex
         <ul style="list-style:none">
           <li style="padding:4px 0">📍 حمرية، مكناس، المغرب</li>
           <li style="padding:4px 0">📞 <a href="tel:+212777777959" style="display:inline">‎+212 777 777 959</a></li>
-          <li style="padding:4px 0">✉️ <a href="mailto:contact@alwasset777.ma" style="display:inline">contact@alwasset777.ma</a></li>
+          <li style="padding:4px 0">✉️ <a href="mailto:alwasset777@gmail.com" style="display:inline">alwasset777@gmail.com</a></li>
           <li style="padding:4px 0">🕘 الاثنين — السبت : 9:00 → 19:00</li>
         </ul>
         <a class="btn sm mt16" href="#/contact">اطلب استشارة مجانية</a>
@@ -394,7 +404,7 @@ var CFG={
   phone:'+212777777959',
   phoneShow:'+212 777 777 959',
   wa:'212777777959',
-  email:'contact@alwasset777.ma',
+  email:'alwasset777@gmail.com',
   address:'حمرية، مكناس، المغرب',
   hours:'الاثنين — السبت : 9:00 → 19:00',
   currency:'درهم'
@@ -697,6 +707,70 @@ var TYPES={
   riad:['رياض','Riad','Riad']
 };
 function typeTxt(k){var a=TYPES[k];if(!a)return k;var v=a[LI[LANG]];return (v===undefined||v==='')?a[0]:v;}
+
+/* ==================== SEO لكل نوع عقار ==================== */
+var SEO_BASE='https://alwasset777-ai.github.io/alwasset777/';
+var TYPE_SEO={
+ apartment:{slug:'shuqaq-meknes',h1:'شقق للبيع والكراء في مكناس',
+  title:'شقق للبيع والكراء في مكناس | مكتب الوسيط 777 للخدمات العقارية',
+  desc:'شقق للبيع والكراء في مكناس (حمرية، فيل نوفيل، المنزه، المدينة الجديدة). مساحات من 60 إلى 150 م² بأسعار محدثة، مع مواكبة كاملة واستشارة مجانية.',
+  keywords:'شقق للبيع في مكناس, شقة للكراء مكناس, شقق حمرية, شقق فيل نوفيل, عقارات مكناس',
+  intro:'نوفّر لك مجموعة مختارة من الشقق في مكناس للبيع والكراء، في أحياء حمرية وفيل نوفيل والمنزه والمدينة الجديدة وبساتين. نتحقق من وثائق كل شقة قبل عرضها، ونواكبك من الزيارة إلى توقيع العقد. سواء كنت تبحث عن شقة للسكن أو للاستثمار، ستجد هنا خيارات بمساحات وأسعار تناسب ميزانيتك.'},
+ villa:{slug:'villas-meknes',h1:'فيلات للبيع في مكناس',
+  title:'فيلات للبيع في مكناس | فيلات بمسبح وحديقة — مكتب الوسيط 777',
+  desc:'فيلات للبيع في مكناس وضواحيها: فيلات مستقلة بمسبح وحديقة في طوال وويسلان ونواحي مكناس، بمساحات كبيرة وخصوصية تامة.',
+  keywords:'فيلا للبيع مكناس, فيلات طوال, فيلا بمسبح مكناس, عقارات مكناس',
+  intro:'اكتشف فيلات مستقلة للبيع في مكناس وضواحيها، بتصاميم عصرية وحدائق واسعة ومسابح خاصة في مناطق طوال وويسلان وحواف مكناس. الفيلات مناسبة للسكن العائلي الدائم أو للاستثمار السياحي، ونوفر لك كل المعلومات حول الرسوم والوثائق والتحقق العقاري قبل الشراء.'},
+ house:{slug:'manazil-meknes',h1:'منازل للبيع في مكناس',
+  title:'منازل للبيع في مكناس | منازل عائلية بأسعار مناسبة',
+  desc:'منازل عائلية للبيع في مكناس: منازل بمساحات مريحة وأسطح واسعة في بساتين وأحياء مكناس الشعبية والعصرية، بأسعار مناسبة.',
+  keywords:'منزل للبيع مكناس, منازل عائلية مكناس, دار للبيع مكناس',
+  intro:'نعرض منازل عائلية للبيع في مكناس بمساحات مريحة وأسطح واسعة وتهوئة جيدة، في أحياء مثل بساتين وحي الرمل والمناطق القريبة من المرافق. المنازل خيار ممتاز للعائلات التي تبحث عن مساحة أكبر بسعر أقل من الفيلات.'},
+ commercial:{slug:'mahalat-meknes',h1:'محلات تجارية للبيع والكراء في مكناس',
+  title:'محلات تجارية للكراء والبيع في مكناس | مواقع تجارية ممتازة',
+  desc:'محلات تجارية وفضاءات للبيع والكراء في مكناس: حمرية، وسط المدينة، المدينة الجديدة. واجهات واسعة وحركة تجارية قوية.',
+  keywords:'محل تجاري للكراء مكناس, محل للبيع مكناس, فضاء تجاري مكناس',
+  intro:'نوفّر محلات تجارية وفضاءات للبيع والكراء في أفضل مواقع مكناس: حمرية، وسط المدينة، والمدينة الجديدة. نختار الواجهات ذات الحركة القوية ونوضح لك الإيجار والرسوم والأنشطة المرخّصة، لتفتح مشروعك التجاري بثقة.'},
+ office:{slug:'makatib-meknes',h1:'مكاتب للكراء في مكناس',
+  title:'مكاتب للكراء في مكناس | مكاتب مجهزة للمهنيين',
+  desc:'مكاتب مجهزة للكراء في مكناس (المدينة الجديدة وحمرية): قاعات اجتماعات، مصاعد، مرآب وإنترنت فائق السرعة.',
+  keywords:'مكتب للكراء مكناس, مكاتب مهنية مكناس, bureau مكناس',
+  intro:'مكاتب مجهزة للكراء في مكناس للمهنيين والشركات، في إقامات مهنية حديثة بالمدينة الجديدة وحمرية. تتوفر على قاعات اجتماعات ومصاعد ومرآب واتصال إنترنت سريع، مع عقود واضحة وقابلة للتجديد.'},
+ land:{slug:'aradi-meknes',h1:'أراضي للبيع في مكناس',
+  title:'أراضي للبيع في مكناس | أراضي للبناء بوثائق قانونية سليمة',
+  desc:'أراضي للبناء للبيع في مكناس وويسلان وبساتين: وثائق قانونية سليمة، مساحات متنوعة، ومناطق عمرانية في توسّع.',
+  keywords:'أرض للبيع مكناس, أرض للبناء مكناس, ويسلان, عقار مكناس',
+  intro:'نعرض أراضي للبناء للبيع في مكناس والمناطق العمرانية الجديدة مثل ويسلان وبساتين. نتحقق من سند الملكية والتصميم وطبيعة الأرض (مبنية أو فلاحية) قبل أي التزام، ونشرح لك إجراءات التوثيق خطوة بخطوة.'},
+ farm:{slug:'aradi-filahiya-meknes',h1:'أراضٍ فلاحية للبيع في ضواحي مكناس',
+  title:'أراضٍ فلاحية للبيع في ضواحي مكناس | أراضٍ مسقية',
+  desc:'أراضٍ فلاحية للبيع في ضواحي مكناس وطريق الحاج قدور: تربة خصبة، سقي وآبار، ومساحات كبيرة للمشاريع الفلاحية.',
+  keywords:'أرض فلاحية مكناس, أرض مسقية مكناس, استثمار فلاحي سايس',
+  intro:'أراضٍ فلاحية خصبة للبيع في ضواحي مكناس ووادي سايس، مزوّدة بالسقي والآبار ومساحات كبيرة مناسبة للمشاريع الفلاحية. نوفر لك معلومات دقيقة عن التربة والمصادر المائية وطرق الوصول.'},
+ riad:{slug:'riyad-meknes',h1:'رياضات للبيع في مكناس',
+  title:'رياضات للبيع في مكناس | رياض للاستثمار السياحي',
+  desc:'رياضات وبيوت تقليدية للبيع في مكناس: فرص استثمار سياحي قريبة من المدينة العتيقة، بتصاميم أصيلة.',
+  keywords:'رياض للبيع مكناس, استثمار سياحي مكناس, بيت تقليدي مكناس',
+  intro:'فرص محدودة لاقتناء رياضات وبيوت تقليدية في مكناس، مناسبة للاستثمار السياحي أو السكن الأصيل قرب المدينة العتيقة. نوضح لك حالة العقار وإمكانيات الترميم ومردودية الكراء قصير المدى.'}
+};
+function typeSeoLabel(k){return TYPE_SEO[k]?TYPE_SEO[k].h1:k;}
+function seoItemList(name,arr){return {'@context':'https://schema.org','@type':'ItemList','name':name,'numberOfItems':arr.length,
+  'itemListElement':arr.slice(0,25).map(function(p,i){return {'@type':'ListItem','position':i+1,'name':p.title,'url':SEO_BASE+'#/property/'+p.id};})};}
+function typeSeoLD(type,arr){var x=TYPE_SEO[type];if(!x)return null;return {'@context':'https://schema.org','@graph':[
+  {'@type':'CollectionPage','name':x.h1,'description':x.desc,'url':SEO_BASE+'type/'+x.slug+'.html','inLanguage':'ar'},
+  {'@type':'BreadcrumbList','itemListElement':[
+    {'@type':'ListItem','position':1,'name':'الرئيسية','item':SEO_BASE},
+    {'@type':'ListItem','position':2,'name':'العقارات','item':SEO_BASE+'#/properties'},
+    {'@type':'ListItem','position':3,'name':x.h1,'item':SEO_BASE+'type/'+x.slug+'.html'}]},
+  {'@context':'https://schema.org','@type':'ItemList','name':x.h1,'numberOfItems':arr.length,
+   'itemListElement':arr.slice(0,25).map(function(p,i){return {'@type':'ListItem','position':i+1,'name':p.title,'url':SEO_BASE+'#/property/'+p.id};})}
+]};}
+function listSeoLD(name,arr){return {'@context':'https://schema.org','@graph':[
+  {'@type':'CollectionPage','name':name,'url':SEO_BASE+'#/properties','inLanguage':'ar'},
+  {'@context':'https://schema.org','@type':'ItemList','name':name,'numberOfItems':arr.length,
+   'itemListElement':arr.slice(0,25).map(function(p,i){return {'@type':'ListItem','position':i+1,'name':p.title,'url':SEO_BASE+'#/property/'+p.id};})}
+]};}
+function seoPagesLinks(){return Object.keys(TYPE_SEO).map(function(k){return '<a href="type/'+TYPE_SEO[k].slug+'.html">'+esc(TYPE_SEO[k].h1)+'</a>';}).join('');}
+
 function statusTxt(s){return t(s==='new'?'st.new':s==='processing'?'st.processing':'st.done');}
 
 /* ==================== مكونات ==================== */
@@ -901,9 +975,19 @@ function viewProperties(q){
     return '<button class="chip'+(type===k?' on':'')+'" data-act="filtertype" data-type="'+k+'">'+(k?esc(typeTxt(k)):t('common.all'))+'</button>';
   }).join('');
   var cities=allCities();
+  var seo=TYPE_SEO[type]||null;
+  setSEO(seo?seo.title:('العقارات في مكناس — بيع وكراء | '+CFG.name),
+         seo?seo.desc:'تصفّح العقارات المتاحة للبيع والكراء في مكناس: شقق، فيلات، منازل، محلات تجارية، مكاتب وأراضي. أسعار محدثة ومواكبة كاملة.',
+         seo?typeSeoLD(type,res):listSeoLD('كل العقارات في مكناس',res));
+  var seoHead=seo
+    ? '<nav class="crumbs"><a href="#/">'+t('nav.home')+'</a> / <a href="#/properties">'+t('nav.properties')+'</a> / '+esc(seo.h1)+'</nav>'
+      +'<h1 class="seo-h1">'+esc(seo.h1)+'</h1>'
+      +'<p class="seo-intro">'+esc(seo.intro)+'</p>'
+      +'<div class="seo-links">'+seoPagesLinks()+'</div>'
+    : '';
   return ''+
   '<section style="padding-bottom:22px"><div class="wrap">'+
-    '<div class="shead" style="margin-bottom:22px"><div class="kick">'+t('nav.properties')+'</div><h2>'+t('nav.properties')+' — '+esc(CFG.city)+'</h2></div>'+
+    (seo?seoHead:('<div class="shead" style="margin-bottom:22px"><div class="kick">'+t('nav.properties')+'</div><h2>'+t('nav.properties')+' — '+esc(CFG.city)+'</h2></div><div class="seo-links">'+seoPagesLinks()+'</div>'))+
     '<div class="toolbar">'+chips+'</div>'+
     '<form class="adv" id="advForm">'+
       '<div class="row">'+
