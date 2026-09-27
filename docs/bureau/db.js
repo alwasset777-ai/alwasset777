@@ -70,9 +70,27 @@
     },
     setMeta: (key, value) => DB.put('meta', { key, value }),
 
-    async nextRef(prefix) {
+    /* ---------- تتبع التغييرات للمزامنة السحابية ----------
+       dirty = { 'properties:id': 1, 'requests:id': 1, 'meta:settings': 1, 'file:id': 1 } */
+    async markDirty(kind, id) {
+      const d = await DB.getMeta('sync_dirty', {});
+      d[kind + ':' + id] = Date.now();
+      await DB.setMeta('sync_dirty', d);
+      if (window.W777_SYNC) window.W777_SYNC.schedule();
+    },
+    async saveRec(store, obj) {
+      obj.updatedAt = new Date().toISOString();
+      await DB.put(store, obj);
+      await DB.markDirty(store, obj.id);
+    },
+    async delRec(store, id) {
+      await DB.del(store, id);
+      await DB.markDirty(store, id);
+    },
+
+    async nextRef(prefix, min) {
       const k = 'counter_' + prefix;
-      const n = (await DB.getMeta(k, 0)) + 1;
+      const n = Math.max(await DB.getMeta(k, 0), min || 0) + 1;
       await DB.setMeta(k, n);
       return prefix + '-' + String(n).padStart(4, '0');
     },

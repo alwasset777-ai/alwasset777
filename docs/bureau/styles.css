@@ -432,3 +432,10 @@ main { flex: 1; min-width: 0; padding: 18px 16px calc(var(--nav-h) + var(--safe-
 .grid-2 > *, .detail-grid > *, .form-grid > *, .layout > * { min-width: 0; }
 html, body { overflow-x: hidden; }
 .chips { max-width: 100%; min-width: 0; } .toolbar { min-width: 0; }
+#btn-sync { position: relative; }
+#btn-sync::after { content: ''; position: absolute; top: 8px; inset-inline-end: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--gray); border: 2px solid #173c66; }
+#btn-sync[data-state="ok"]::after { background: #2ecc8a; }
+#btn-sync[data-state="syncing"]::after, #btn-sync[data-state="idle"]::after { background: #5aa0ff; animation: pulse 1s infinite; }
+#btn-sync[data-state="warn"]::after, #btn-sync[data-state="offline"]::after { background: var(--amber); }
+#btn-sync[data-state="error"]::after { background: var(--red); }
+@keyframes pulse { 50% { opacity: .3; } }

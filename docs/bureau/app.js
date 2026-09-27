@@ -156,18 +156,33 @@
     if (!add.length) return;
     S.custom[city] = [...(S.custom[city] || []), ...add];
     await DB.setMeta('customDistricts', S.custom);
+    await DB.markDirty('meta', 'customDistricts');
   }
 
   /* ---------- ملفات الوسائط ---------- */
   async function fileUrl(id, thumb) {
     const key = id + (thumb ? ':t' : '');
     if (urlCache.has(key)) return urlCache.get(key);
-    const rec = await DB.get('files', id);
-    if (!rec) return '';
-    const blob = (thumb && rec.thumb) || rec.blob;
+    const blob = await getBlob(id, thumb);
+    if (!blob) return '';
     const url = URL.createObjectURL(blob);
     urlCache.set(key, url);
     return url;
+  }
+  // الملف من الجهاز، أو من السحابة إن لم يكن محفوظا هنا (ثم يُحفظ محليا)
+  async function getBlob(id, thumb) {
+    let rec = await DB.get('files', id);
+    if (rec && ((thumb && rec.thumb) || rec.blob)) return (thumb && rec.thumb) || rec.blob;
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) return null;
+    const blob = await Sy.fetchFile(id, thumb);
+    if (!blob) return null;
+    const owner = S.props.find(p => (p.media || []).some(m => m.id === id));
+    const meta = owner && owner.media.find(m => m.id === id);
+    rec = rec || { id, owner: owner ? owner.id : '', kind: meta ? meta.kind : 'photo', name: meta ? meta.name : id, mime: blob.type, size: blob.size, blob: null, thumb: null };
+    if (thumb && blob.size < 400 * 1024) rec.thumb = blob; else rec.blob = blob;
+    if (owner) await DB.put('files', rec);
+    return blob;
   }
   function hydrateThumbs(root = document) {
     $$('[data-thumb]', root).forEach(async el => {
@@ -1039,10 +1054,10 @@
         updatedAt: new Date().toISOString(),
       });
       delete obj._removed;
-      if (isNew) { obj.createdAt = new Date().toISOString(); obj.ref = await DB.nextRef('W777'); }
+      if (isNew) { obj.createdAt = new Date().toISOString(); obj.ref = await DB.nextRef('W777', maxRef(S.props)); }
       if (!obj.title) obj.title = autoTitle(obj);
-      await DB.put('properties', obj);
-      for (const fid of (p._removed || [])) { await DB.del('files', fid); urlCache.delete(fid); urlCache.delete(fid + ':t'); }
+      await DB.saveRec('properties', obj);
+      for (const fid of (p._removed || [])) { await DB.del('files', fid); await DB.markDirty('file', fid); urlCache.delete(fid); urlCache.delete(fid + ':t'); }
       await rememberDistricts(obj.city, [obj.district]);
       saved = true;
       await loadAll();
@@ -1053,6 +1068,10 @@
     };
   }
 
+  // أكبر رقم مرجع موجود (لتفادي تكرار المراجع بين الأجهزة)
+  function maxRef(list) {
+    return list.reduce((m, x) => Math.max(m, Number(String(x.ref || '').split('-').pop()) || 0), 0);
+  }
   function autoTitle(p) {
     const loc = p.district ? p.district + ' - ' + p.city : p.city;
     const a = areaOf(p);
@@ -1207,21 +1226,22 @@
     $$('[data-send]').forEach(el => el.addEventListener('click', () => markProposal(el.dataset.send, p.id, 'sent')));
     const cd = $('#copy-desc');
     if (cd) cd.onclick = () => navigator.clipboard.writeText(p.description).then(() => toast('تم نسخ الوصف ✓'));
-    $('#p-fav').onclick = async () => { p.fav = !p.fav; await DB.put('properties', p); toast(p.fav ? 'أضيف للمفضلة ★' : 'أزيل من المفضلة'); viewProp(id); };
+    $('#p-fav').onclick = async () => { p.fav = !p.fav; await DB.saveRec('properties', p); toast(p.fav ? 'أضيف للمفضلة ★' : 'أزيل من المفضلة'); viewProp(id); };
     $('#p-share').onclick = () => shareProperty(p);
     $('#p-del').onclick = async () => {
       if (!(await confirmBox('حذف العقار ' + p.ref + ' وكل صوره وملفاته نهائيا؟', 'حذف نهائي'))) return;
-      await DB.del('properties', p.id);
+      await DB.delRec('properties', p.id);
       await DB.delFilesOf(p.id);
+      for (const m of (p.media || [])) await DB.markDirty('file', m.id);
       await loadAll();
       toast('تم حذف العقار');
       location.hash = '#/properties';
     };
     $('#p-dup').onclick = async () => {
       const copy = JSON.parse(JSON.stringify(p));
-      copy.id = uid(); copy.ref = await DB.nextRef('W777'); copy.media = []; copy.cover = null; copy.fav = false;
+      copy.id = uid(); copy.ref = await DB.nextRef('W777', maxRef(S.props)); copy.media = []; copy.cover = null; copy.fav = false;
       copy.createdAt = copy.updatedAt = new Date().toISOString(); copy.title = (p.title || '') + ' (نسخة)';
-      await DB.put('properties', copy);
+      await DB.saveRec('properties', copy);
       await loadAll();
       toast('تم إنشاء نسخة ' + copy.ref);
       location.hash = '#/property/' + copy.id + '/edit';
@@ -1244,8 +1264,8 @@
       if (navigator.canShare && photos.length) {
         const files = [];
         for (const m of photos) {
-          const rec = await DB.get('files', m.id);
-          if (rec) files.push(new File([rec.blob], (p.ref || 'photo') + '-' + (files.length + 1) + '.jpg', { type: rec.blob.type || 'image/jpeg' }));
+          const blob = await getBlob(m.id, false);
+          if (blob) files.push(new File([blob], (p.ref || 'photo') + '-' + (files.length + 1) + '.jpg', { type: blob.type || 'image/jpeg' }));
         }
         if (navigator.canShare({ files })) { await navigator.share({ files, text, title: p.title }); return; }
       }
@@ -1414,8 +1434,8 @@
       v.types = v.types || [];
       v.features = v.features || [];
       const obj = Object.assign({}, existing || {}, v, { id: r.id, updatedAt: new Date().toISOString() });
-      if (isNew) { obj.createdAt = new Date().toISOString(); obj.ref = await DB.nextRef('DM'); obj.proposals = {}; }
-      await DB.put('requests', obj);
+      if (isNew) { obj.createdAt = new Date().toISOString(); obj.ref = await DB.nextRef('DM', maxRef(S.reqs)); obj.proposals = {}; }
+      await DB.saveRec('requests', obj);
       await rememberDistricts(obj.city, obj.districts);
       await loadAll();
       const n = matchesForReq(obj).length;
@@ -1434,7 +1454,7 @@
     else r.proposals[propId] = { s: state, d: today() };
     if (state === 'visit' && r.status === 'new') r.status = 'visit';
     if (state === 'sent' && r.status === 'new') r.status = 'active';
-    await DB.put('requests', r);
+    await DB.saveRec('requests', r);
   }
 
   function matchCard(p, m, r) {
@@ -1521,10 +1541,10 @@
       </div>`;
     hydrateThumbs(main());
     bindProposalButtons(main(), () => viewReq(id));
-    $$('[data-rs]').forEach(el => el.onclick = async () => { r.status = el.dataset.rs; await DB.put('requests', r); toast('تم تحديث الحالة'); viewReq(id); });
+    $$('[data-rs]').forEach(el => el.onclick = async () => { r.status = el.dataset.rs; await DB.saveRec('requests', r); toast('تم تحديث الحالة'); viewReq(id); });
     $('#r-del').onclick = async () => {
       if (!(await confirmBox('حذف طلب ' + (c.name || '') + ' نهائيا؟', 'حذف'))) return;
-      await DB.del('requests', r.id);
+      await DB.delRec('requests', r.id);
       await loadAll();
       toast('تم حذف الطلب');
       location.hash = '#/requests';
@@ -1586,6 +1606,8 @@
           </form>
         </div>
 
+        ${await cloudCard()}
+
         <div class="card card-pad">
           <h3 class="section-title">${ic('database')} النسخ الاحتياطي ونقل البيانات بين الأجهزة</h3>
           <p class="muted" style="margin-top:0">البيانات محفوظة داخل هذا الجهاز فقط. لنقلها من الهاتف إلى الماك بوك (أو العكس): صدّر نسخة احتياطية هنا، ثم استوردها في الجهاز الآخر. ${lastBackup ? `<br>آخر نسخة: <b>${esc(lastBackup.slice(0, 16).replace('T', ' '))}</b>` : '<br><b style="color:var(--amber)">⚠️ لم تقم بأي نسخة احتياطية بعد.</b>'}</p>
@@ -1639,10 +1661,12 @@
         <p class="muted" style="text-align:center;font-size:12.5px">مكتب الوسيط 777 — الإصدار 1.0 · يعمل بدون إنترنت</p>
       </div>`;
 
+    bindCloudCard();
     $('#sform').onsubmit = async e => {
       e.preventDefault();
-      Object.assign(S.settings, collect(e.target));
+      Object.assign(S.settings, collect(e.target), { updatedAt: new Date().toISOString() });
       await DB.setMeta('settings', S.settings);
+      await DB.markDirty('meta', 'settings');
       toast('تم الحفظ ✓');
     };
     $$('[name=theme]').forEach(el => el.onchange = () => { localStorage.setItem('w777_theme', el.value); applyTheme(); });
@@ -1658,7 +1682,7 @@
     const ins = $('#install'); if (ins) ins.onclick = async () => { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; viewSettings(); };
     const cds = $('#custom-ds'); if (cds) cds.onclick = manageCustomDistricts;
     $('#wipe').onclick = async () => {
-      if (!(await confirmBox('مسح كل العقارات والطلبات والصور من هذا الجهاز؟ لا يمكن التراجع!', 'نعم، امسح كل شيء'))) return;
+      if (!(await confirmBox(window.W777_SYNC && W777_SYNC.isOn() ? 'مسح البيانات من هذا الجهاز فقط؟ (ستبقى في السحابة وتعود عند المزامنة)' : 'مسح كل العقارات والطلبات والصور من هذا الجهاز؟ لا يمكن التراجع!', 'نعم، امسح كل شيء'))) return;
       if (!(await confirmBox('تأكيد أخير: هل قمت بنسخة احتياطية؟', 'امسح الآن'))) return;
       await Promise.all(['properties', 'requests', 'files', 'meta'].map(s => DB.clear(s)));
       urlCache.clear();
@@ -1666,6 +1690,100 @@
       toast('تم مسح البيانات');
       location.hash = '#/';
     };
+  }
+
+  /* ---------- بطاقة المزامنة السحابية ---------- */
+  const SYNC_LABEL = { off: 'غير مفعلة', idle: 'متصل', syncing: 'جاري المزامنة…', ok: 'متزامن ✓', warn: 'متزامن مع تنبيه', error: 'خطأ', offline: 'بدون إنترنت' };
+  const SYNC_COLOR = { off: 'gray', idle: 'blue', syncing: 'blue', ok: 'green', warn: 'amber', error: 'red', offline: 'amber' };
+  async function cloudCard() {
+    const Sy = window.W777_SYNC;
+    if (Sy.isOn()) {
+      const acc = Sy.account();
+      const st = Sy.status();
+      const last = await Sy.lastSync();
+      const pending = await Sy.pending();
+      return `<div class="card card-pad" id="cloud-card">
+        <h3 class="section-title">${ic('share')} المزامنة السحابية (الهاتف ↔ الماك) <span class="badge ${SYNC_COLOR[st.state]}">${esc(SYNC_LABEL[st.state])}</span></h3>
+        <div class="kv">
+          <div><small>الحساب</small><b>${esc(acc.email)}</b></div>
+          <div><small>آخر مزامنة</small><b>${last ? esc(last.slice(0, 16).replace('T', ' ')) : '—'}</b></div>
+          <div><small>تغييرات في الانتظار</small><b>${pending}</b></div>
+        </div>
+        ${st.msg ? `<p class="muted" style="margin-bottom:0">${esc(st.msg)}</p>` : ''}
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn gold" id="cl-sync">${ic('share', 18)} مزامنة الآن</button>
+          <button class="btn danger" id="cl-out">تسجيل الخروج</button>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin-bottom:0">سجّل الدخول بنفس الحساب على كل أجهزتك (الهاتف، الماك، هاتف الموظف…) لتظهر نفس البيانات في كل مكان. الصور تُنزّل عند فتحها.</p>
+      </div>`;
+    }
+    const d = Sy.defaults();
+    return `<div class="card card-pad" id="cloud-card">
+      <h3 class="section-title">${ic('share')} المزامنة السحابية (الهاتف ↔ الماك) <span class="badge gray">غير مفعلة</span></h3>
+      <p class="muted" style="margin-top:0">اربط التطبيق بحساب Supabase (مجاني) لتظهر نفس العقارات والطلبات والصور على كل أجهزتك تلقائيا. التطبيق يبقى يعمل بدون إنترنت.</p>
+      <form id="cl-form" class="form-grid">
+        ${fInput('url', 'Supabase Project URL', d.url, { ph: 'https://xxxx.supabase.co', attrs: 'dir="ltr" autocapitalize="off"' })}
+        ${fInput('key', 'anon public key', d.key, { ph: 'eyJhbGciOi…', attrs: 'dir="ltr" autocapitalize="off"' })}
+        ${fInput('email', 'البريد الإلكتروني للمكتب', '', { type: 'email', attrs: 'dir="ltr" autocapitalize="off"' })}
+        ${fInput('password', 'كلمة السر', '', { type: 'password', attrs: 'dir="ltr"' })}
+      </form>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn gold" id="cl-in">${ic('lock', 18)} دخول</button>
+        <button class="btn" id="cl-up">إنشاء حساب جديد</button>
+      </div>
+      <p class="muted" style="font-size:12.5px;margin-bottom:0">أول مرة فقط: أنشئ مشروعا على supabase.com ثم نفّذ ملف <b dir="ltr">supabase.sql</b> في SQL Editor (مرفق مع التطبيق).</p>
+    </div>`;
+  }
+  function bindCloudCard() {
+    const Sy = window.W777_SYNC;
+    const b = id => $('#' + id);
+    if (b('cl-sync')) b('cl-sync').onclick = async () => { await Sy.syncNow(); viewSettings(); };
+    if (b('cl-out')) b('cl-out').onclick = async () => {
+      if (!(await confirmBox('تسجيل الخروج من المزامنة؟ البيانات تبقى على هذا الجهاز.', 'خروج', false))) return;
+      Sy.signOut(); viewSettings();
+    };
+    const go = async up => {
+      const v = collect($('#cl-form'));
+      if (!v.url || !v.key || !v.email || !v.password) return toast('املأ كل الخانات');
+      if (v.password.length < 6) return toast('كلمة السر: 6 أحرف على الأقل');
+      try {
+        toast(up ? 'جاري إنشاء الحساب…' : 'جاري الدخول…');
+        if (up) {
+          const r = await Sy.signUp(v.url, v.key, v.email, v.password);
+          if (!r.confirmed) { toast('تم إنشاء الحساب ✓ افتح بريدك وأكّد الحساب ثم اضغط «دخول»', 5000); return; }
+        } else await Sy.signIn(v.url, v.key, v.email, v.password);
+        toast('تم الربط ✓ جاري المزامنة…');
+        viewSettings();
+      } catch (e) {
+        const m = String(e.message || e);
+        toast(/Invalid login/i.test(m) ? 'البريد أو كلمة السر غير صحيحة' : /not confirmed/i.test(m) ? 'أكّد حسابك من البريد الإلكتروني أولا' : 'خطأ: ' + m, 5000);
+      }
+    };
+    if (b('cl-in')) b('cl-in').onclick = () => go(false);
+    if (b('cl-up')) b('cl-up').onclick = () => go(true);
+  }
+  function setupSyncUi() {
+    const Sy = window.W777_SYNC;
+    const btn = $('#btn-sync');
+    const paint = st => {
+      btn.classList.toggle('hidden', !Sy.isOn());
+      btn.dataset.state = st.state;
+      btn.title = SYNC_LABEL[st.state] + (st.msg ? ' — ' + st.msg : '');
+    };
+    Sy.onStatus(st => {
+      paint(st);
+      if (st.state === 'error') toast('المزامنة: ' + st.msg, 4000);
+      if (location.hash.startsWith('#/settings') && st.state !== 'syncing' && !$('#cl-form')) {
+        cloudCard().then(html => { const c = $('#cloud-card'); if (c) { c.outerHTML = html; bindCloudCard(); } });
+      }
+    });
+    Sy.onChange(async () => {
+      await loadAll();
+      const h = location.hash;
+      if (!/\/(new|edit)/.test(h) && !h.startsWith('#/settings')) route();
+    });
+    btn.onclick = () => { Sy.syncNow(); toast('جاري المزامنة…'); };
+    paint(Sy.status());
   }
 
   function manageCustomDistricts() {
@@ -1678,6 +1796,7 @@
         S.custom[x.c] = (S.custom[x.c] || []).filter(d => d !== x.d);
         if (!S.custom[x.c].length) delete S.custom[x.c];
         await DB.setMeta('customDistricts', S.custom);
+        await DB.markDirty('meta', 'customDistricts');
         close(); manageCustomDistricts();
       });
     });
@@ -1693,15 +1812,16 @@
   async function exportBackup(withVideos) {
     const prog = $('#bk-prog'); prog.classList.remove('hidden');
     const bar = prog.firstElementChild;
-    const meta = await DB.all('meta');
+    const meta = (await DB.all('meta')).filter(m => !m.key.startsWith('sync_'));
     const parts = ['{"app":"wasset777-bureau","version":1,"exportedAt":', JSON.stringify(new Date().toISOString()),
       ',"properties":', JSON.stringify(S.props), ',"requests":', JSON.stringify(S.reqs), ',"meta":', JSON.stringify(meta), ',"files":['];
     const ids = [];
     S.props.forEach(p => (p.media || []).forEach(m => { if (withVideos || m.kind !== 'video') ids.push(m.id); }));
     let first = true;
     for (let i = 0; i < ids.length; i++) {
-      const rec = await DB.get('files', ids[i]);
-      if (!rec) continue;
+      let rec = await DB.get('files', ids[i]);
+      if (!rec || !rec.blob) { await getBlob(ids[i], false); rec = await DB.get('files', ids[i]); }
+      if (!rec || !rec.blob) continue;
       const o = { id: rec.id, owner: rec.owner, kind: rec.kind, name: rec.name, mime: rec.mime, size: rec.size, data: await blobToB64(rec.blob), thumb: rec.thumb ? await blobToB64(rec.thumb) : null };
       parts.push((first ? '' : ',') + JSON.stringify(o));
       first = false;
@@ -1740,17 +1860,17 @@
     const bar = prog && prog.firstElementChild;
     if (choice === 'replace') { await Promise.all(['properties', 'requests', 'files', 'meta'].map(s => DB.clear(s))); urlCache.clear(); }
     const newer = (a, b) => !b || (a.updatedAt || '') >= (b.updatedAt || '');
-    for (const p of data.properties) { const cur = await DB.get('properties', p.id); if (choice === 'replace' || newer(p, cur)) await DB.put('properties', p); }
-    for (const r of data.requests) { const cur = await DB.get('requests', r.id); if (choice === 'replace' || newer(r, cur)) await DB.put('requests', r); }
+    for (const p of data.properties) { const cur = await DB.get('properties', p.id); if (choice === 'replace' || newer(p, cur)) { await DB.put('properties', p); await DB.markDirty('properties', p.id); } }
+    for (const r of data.requests) { const cur = await DB.get('requests', r.id); if (choice === 'replace' || newer(r, cur)) { await DB.put('requests', r); await DB.markDirty('requests', r.id); } }
     for (const m of data.meta || []) {
-      if (choice === 'replace') { await DB.put('meta', m); continue; }
+      if (choice === 'replace') { if (!m.key.startsWith('sync_')) await DB.put('meta', m); continue; }
       const cur = await DB.get('meta', m.key);
       if (m.key.startsWith('counter_')) await DB.put('meta', { key: m.key, value: Math.max(m.value || 0, (cur && cur.value) || 0) });
       else if (m.key === 'customDistricts') {
         const merged = Object.assign({}, (cur && cur.value) || {});
         Object.entries(m.value || {}).forEach(([c, ds]) => { merged[c] = Array.from(new Set([...(merged[c] || []), ...ds])); });
         await DB.put('meta', { key: m.key, value: merged });
-      } else if (!cur) await DB.put('meta', m);
+      } else if (!cur && !m.key.startsWith('sync_')) await DB.put('meta', m);
     }
     const files = data.files || [];
     for (let i = 0; i < files.length; i++) {
@@ -1854,7 +1974,7 @@
       mk(5, { transaction: 'sale', type: 'shop', city: 'مكناس', district: 'البساتين', priceMin: 750000, priceMax: 800000, areaTotal: 45, specs: { floor: 'سفلي (RDC)', frontage: 5, streetType: 'شارع رئيسي', mezzanine: 15 }, features: ['واجهة زجاجية', 'مرحاض'], owner: { name: 'سعيد الإدريسي', phone: '0665000005' } }),
       mk(6, { transaction: 'sale', type: 'farm', city: 'الحاجب', district: 'وسط المدينة', priceMin: 1800000, priceMax: 2000000, areaTotal: 50000, specs: { hectares: 5, water: 'ثقب مائي (سونداج)', irrigation: 'تنقيط (قطرة قطرة)', trees: 'زيتون وتفاح', treesCount: 900 }, features: ['ثقب مائي', 'كهرباء', 'منزل', 'زيتون', 'على الطريق'], titleStatus: 'محفظ (رسم عقاري)', owner: { name: 'إدريس الحاجبي', phone: '0666000006' } }),
     ];
-    for (const p of props) { p.ref = await DB.nextRef('W777'); p.title = autoTitle(p); p.description = buildDescription(p); await DB.put('properties', p); }
+    for (const p of props) { p.ref = await DB.nextRef('W777'); p.title = autoTitle(p); p.description = buildDescription(p); await DB.saveRec('properties', p); }
     const reqs = [
       { client: { name: 'يوسف المرابط', phone: '0677000011', source: 'فيسبوك', profession: 'أستاذ' }, transaction: 'sale', types: ['apartment', 'middle_standing'], city: 'مكناس', districts: ['مرجان 2', 'مرجان 1', 'الزيتون'], budgetMin: 500000, budgetMax: 650000, areaMin: 80, areaMax: 110, bedroomsMin: '2', features: ['مصعد'], financing: 'قرض بنكي', status: 'new', priority: 'high', followUp: today() },
       { client: { name: 'نادية الشرقاوي', phone: '0678000012', source: 'واتساب', nationality: 'مغربي مقيم بالخارج (MRE)' }, transaction: 'sale', types: ['villa', 'villa_luxury'], city: 'مكناس', districts: [], budgetMin: 2000000, budgetMax: 3000000, features: ['حديقة', 'مسبح'], financing: 'نقدا (كاش)', status: 'active', priority: 'normal' },
@@ -1863,7 +1983,7 @@
     for (let i = 0; i < reqs.length; i++) {
       const r = Object.assign({ id: uid(), createdAt: new Date(now - i * 3600000).toISOString(), updatedAt: new Date().toISOString(), proposals: {} }, reqs[i]);
       r.ref = await DB.nextRef('DM');
-      await DB.put('requests', r);
+      await DB.saveRec('requests', r);
     }
     await loadAll();
     toast('تمت إضافة بيانات تجريبية ✓');
@@ -1900,9 +2020,11 @@
     cleanOrphans();
     setupSearch();
     setupFab();
+    setupSyncUi();
     window.addEventListener('hashchange', route);
     await route();
     DB.persist();
+    if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch(() => { /* */ });
     }

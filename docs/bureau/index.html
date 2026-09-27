@@ -33,6 +33,9 @@
         </div>
         <div id="search-results" class="search-results hidden"></div>
       </div>
+      <button class="icon-btn hidden" id="btn-sync" aria-label="مزامنة">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/><path d="m9.5 13 2 2 3.5-3.5"/></svg>
+      </button>
       <button class="icon-btn" id="btn-filter" title="فلترة متقدمة" aria-label="فلترة">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
       </button>
@@ -71,7 +74,9 @@
 
   <noscript>المرجو تفعيل JavaScript لاستعمال التطبيق.</noscript>
   <script src="data.js"></script>
+  <script src="../app/config.js" onerror="void 0"></script>
   <script src="db.js"></script>
+  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
