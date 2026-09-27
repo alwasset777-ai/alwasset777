@@ -5,6 +5,8 @@
 (function () {
   'use strict';
   const D = window.W777_DATA;
+  // نسخة مدمجة (صفحة claude.ai): لا طباعة ولا تنزيل ملفات ولا اتصال خارجي
+  const EMBED = !!window.W777_EMBED;
   const DB = window.W777_DB;
 
   /* ============================================================
@@ -1144,7 +1146,7 @@
         <div class="btn-row">
           <button class="btn" id="p-fav">${ic('star', 18)} ${p.fav ? 'في المفضلة' : 'مفضلة'}</button>
           <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
-          <button class="btn" onclick="window.print()">${ic('print', 18)} طباعة / PDF</button>
+          ${EMBED ? '' : `<button class="btn" onclick="window.print()">${ic('print', 18)} طباعة / PDF</button>`}
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
         </div>
       </div>
@@ -1606,7 +1608,10 @@
           </form>
         </div>
 
-        ${await cloudCard()}
+        ${EMBED ? `<div class="card card-pad" style="border-color:var(--amber)">
+          <h3 class="section-title">${ic('lock')} نسخة التجربة</h3>
+          <p class="muted" style="margin:0">هذه النسخة تعمل داخل claude.ai: البيانات محفوظة في هذا المتصفح فقط، بدون مزامنة سحابية. احفظ نسخة احتياطية بانتظام (الزر أسفله) واستوردها في جهازك الآخر. للمزامنة التلقائية والتثبيت على الهاتف استعمل الرابط الدائم على GitHub Pages.</p>
+        </div>` : await cloudCard()}
 
         <div class="card card-pad">
           <h3 class="section-title">${ic('database')} النسخ الاحتياطي ونقل البيانات بين الأجهزة</h3>
@@ -1648,7 +1653,7 @@
           </div>
         </div>
 
-        <div class="card card-pad">
+        <div class="card card-pad ${EMBED ? 'hidden' : ''}">
           <h3 class="section-title">${ic('download')} تثبيت التطبيق ${isStandalone ? '<span class="badge green">✓ مثبت</span>' : ''}</h3>
           <div class="kv">
             <div><small>آيفون / آيباد (Safari)</small><b>زر المشاركة ⬆️ ← «إضافة إلى الشاشة الرئيسية»</b></div>
@@ -1661,7 +1666,7 @@
         <p class="muted" style="text-align:center;font-size:12.5px">مكتب الوسيط 777 — الإصدار 1.0 · يعمل بدون إنترنت</p>
       </div>`;
 
-    bindCloudCard();
+    if (!EMBED) bindCloudCard();
     $('#sform').onsubmit = async e => {
       e.preventDefault();
       Object.assign(S.settings, collect(e.target), { updatedAt: new Date().toISOString() });
@@ -1670,7 +1675,7 @@
       toast('تم الحفظ ✓');
     };
     $$('[name=theme]').forEach(el => el.onchange = () => { localStorage.setItem('w777_theme', el.value); applyTheme(); });
-    $('#bk-full').onclick = () => exportBackup(true);
+    if (!EMBED) $('#bk-full').onclick = () => exportBackup(true);
     $('#bk-light').onclick = () => exportBackup(false);
     $('#bk-import').onchange = e => { if (e.target.files[0]) importBackup(e.target.files[0]); };
     $('#csv-props').onclick = exportPropsCsv;
@@ -1803,7 +1808,13 @@
   }
 
   const blobToB64 = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b); });
-  function download(blob, name) {
+  async function download(blob, name) {
+    if (EMBED) {
+      const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+      if (!dl) { toast('حفظ الملفات غير متاح في هذه النسخة'); return false; }
+      try { await dl.save({ filename: name, data: blob }); toast('تم حفظ الملف ✓'); return true; }
+      catch (e) { if (e && e.code !== 'declined') toast('تعذر الحفظ: ' + (e.message || e.code)); return false; }
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click();
@@ -1834,12 +1845,13 @@
     await DB.setMeta('lastBackup', new Date().toISOString());
     prog.classList.add('hidden');
     try {
-      if (navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
+      if (!EMBED && navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
         await navigator.share({ files: [file], title: 'نسخة احتياطية — الوسيط 777' });
         toast('تم ✓ احفظ الملف في «الملفات» أو أرسله لجهازك الآخر');
         return;
       }
     } catch (e) { if (e && e.name === 'AbortError') return; }
+    if (EMBED) { await download(blob, name); return; }
     download(blob, name);
     toast('تم تنزيل النسخة الاحتياطية (' + (blob.size / 1048576).toFixed(1) + ' MB) ✓');
   }
