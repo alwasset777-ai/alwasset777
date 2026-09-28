@@ -5,6 +5,6 @@
    ⚠️ لا تضع مفتاح service_role هنا أبدًا (سرّي).
    ============================================================ */
 window.__ALWASSET_SUPABASE__ = {
-  url: "",      // مثال: "https://abcdefgh.supabase.co"
-  anonKey: "",  // مثال: "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+  url: "https://dctbfhnglogauksdtjdi.supabase.co",      // مثال: "https://abcdefgh.supabase.co"
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjdGJmaG5nbG9nYXVrc2R0amRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MjcyNzgsImV4cCI6MjEwNjIwMzI3OH0.eMyW6esDPnwFWEvsqJ-ySFOLblT7PdLVuEk8w9v4-OQ",  // مثال: "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
 };
