@@ -1,0 +1,24 @@
+{
+  "name": "@alwasset/shared",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./ui/styles.css": "./src/ui/styles.css",
+    "./ui/*": "./src/ui/*.tsx",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@fontsource/cairo": "^5.3.0",
+    "@fontsource/inter": "^5.3.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/sql.js": "^1.4.11",
+    "react": "^19.2.0",
+    "sql.js": "^1.14.2"
+  }
+}
