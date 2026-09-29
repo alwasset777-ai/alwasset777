@@ -9,9 +9,9 @@
   const TRANSACTIONS = [
     { id: 'sale', ar: 'بيع', fr: 'Vente' },
     { id: 'rent', ar: 'كراء', fr: 'Location' },
+    { id: 'rahn', ar: 'رهن', fr: 'Rahn' },
     { id: 'rent_furnished', ar: 'كراء مفروش', fr: 'Location meublée' },
     { id: 'seasonal', ar: 'كراء موسمي / يومي', fr: 'Location saisonnière' },
-    { id: 'rahn', ar: 'رهن', fr: 'Rahn' },
     { id: 'pas_de_porte', ar: 'تفويت الأصل التجاري (الساروت)', fr: 'Pas de porte / Fonds de commerce' },
     { id: 'offplan', ar: 'بيع على التصميم (VEFA)', fr: 'Vente sur plan' },
     { id: 'exchange', ar: 'مبادلة', fr: 'Échange' },
@@ -313,7 +313,7 @@
   const PRICE_UNITS = {
     sale: ['درهم'], offplan: ['درهم'], exchange: ['درهم'], partnership: ['درهم'], pas_de_porte: ['درهم'],
     rent: ['درهم / الشهر', 'درهم / السنة'], rent_furnished: ['درهم / الشهر', 'درهم / السنة'],
-    seasonal: ['درهم / الليلة', 'درهم / الأسبوع', 'درهم / الشهر'], rahn: ['درهم'],
+    seasonal: ['درهم / الليلة', 'درهم / الأسبوع', 'درهم / الشهر'], rahn: ['درهم (مبلغ الرهن)'],
   };
 
   /* ---------- الجهات والمدن والأحياء ----------

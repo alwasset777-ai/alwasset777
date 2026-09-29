@@ -7,6 +7,7 @@
   const D = window.W777_DATA;
   // نسخة مدمجة (صفحة claude.ai): لا طباعة ولا تنزيل ملفات ولا اتصال خارجي
   const EMBED = !!window.W777_EMBED;
+  const LOGO = window.W777_LOGO || 'icons/logo.png';
   const DB = window.W777_DB;
 
   /* ============================================================
@@ -179,7 +180,7 @@
     if (!Sy || !Sy.isOn()) return null;
     const blob = await Sy.fetchFile(id, thumb);
     if (!blob) return null;
-    const owner = S.props.find(p => (p.media || []).some(m => m.id === id));
+    const owner = [...S.props, ...S.reqs].find(p => (p.media || []).some(m => m.id === id));
     const meta = owner && owner.media.find(m => m.id === id);
     rec = rec || { id, owner: owner ? owner.id : '', kind: meta ? meta.kind : 'photo', name: meta ? meta.name : id, mime: blob.type, size: blob.size, blob: null, thumb: null };
     if (thumb && blob.size < 400 * 1024) rec.thumb = blob; else rec.blob = blob;
@@ -1390,7 +1391,15 @@
         </div>
 
         <div class="card card-pad">
-          <h3 class="section-title"><span class="num">5</span> المتابعة</h3>
+          <h3 class="section-title"><span class="num">5</span> ملفات ومستندات الزبون</h3>
+          <label class="dropzone" id="req-drop">${ic('upload', 28)}<b>تحميل ملفات</b><small>بطاقة التعريف، شهادة الأجرة، موافقة البنك، عقد، صور، PDF...</small>
+            <input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple hidden></label>
+          <div class="progress hidden" id="req-prog"><div style="width:0"></div></div>
+          <div class="media-grid" id="req-files"></div>
+        </div>
+
+        <div class="card card-pad">
+          <h3 class="section-title"><span class="num">6</span> المتابعة</h3>
           <div class="form-grid">
             ${fSelect('status', 'حالة الطلب', D.REQUEST_STATUSES.map(s => ({ v: s.id, l: s.ar })), r.status, { noEmpty: true })}
             ${fSelect('priority', 'الأولوية', D.PRIORITIES.map(s => ({ v: s.id, l: s.ar })), r.priority, { noEmpty: true })}
@@ -1409,6 +1418,55 @@
 
     const form = $('#rform');
     bindMoney(form);
+
+    // ملفات الزبون
+    const rmedia = r.media || [];
+    const rSession = [];
+    let rRemoved = [];
+    let rSaved = false;
+    const renderRFiles = () => {
+      const grid = $('#req-files');
+      grid.innerHTML = rmedia.map(m => `
+        <div class="media-item">
+          ${m.isImage ? `<img class="hidden" data-thumb="${m.id}" alt="">` : `<div class="doc">${ic('file', 30)}<span>${esc(m.name)}</span></div>`}
+          <button type="button" class="x" data-rm="${m.id}" title="حذف">${ic('trash', 15)}</button>
+        </div>`).join('');
+      hydrateThumbs(grid);
+    };
+    renderRFiles();
+    $('#req-files').addEventListener('click', async e => {
+      const rm = e.target.closest('[data-rm]');
+      if (!rm || !(await confirmBox('حذف هذا الملف؟', 'حذف'))) return;
+      const i = rmedia.findIndex(m => m.id === rm.dataset.rm);
+      if (i >= 0) { rRemoved.push(rmedia[i].id); rmedia.splice(i, 1); }
+      renderRFiles();
+    });
+    const addRFiles = async files => {
+      const prog = $('#req-prog'); prog.classList.remove('hidden');
+      let done = 0;
+      for (const f of files) {
+        const fid = uid();
+        const isImage = f.type.startsWith('image/');
+        const rec = { id: fid, owner: r.id, kind: 'doc', name: f.name, mime: f.type, size: f.size };
+        if (isImage) {
+          const big = await compressImage(f, 1920, 0.85), small = await compressImage(f, 480, 0.75);
+          rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
+        } else rec.blob = f;
+        await DB.put('files', rec);
+        rSession.push(fid);
+        rmedia.push({ id: fid, kind: 'doc', name: f.name, mime: rec.mime, size: rec.size, isImage });
+        done++; prog.firstElementChild.style.width = (done / files.length * 100) + '%';
+      }
+      setTimeout(() => prog.classList.add('hidden'), 500);
+      renderRFiles();
+    };
+    const rdz = $('#req-drop'), rinp = $('input[type=file]', rdz);
+    rinp.onchange = () => { if (rinp.files.length) addRFiles(Array.from(rinp.files)); rinp.value = ''; };
+    rdz.addEventListener('dragover', e => { e.preventDefault(); rdz.classList.add('over'); });
+    rdz.addEventListener('dragleave', () => rdz.classList.remove('over'));
+    rdz.addEventListener('drop', e => { e.preventDefault(); rdz.classList.remove('over'); addRFiles(Array.from(e.dataTransfer.files)); });
+    leaveGuard = async () => { if (rSaved) return; for (const fid of rSession) await DB.del('files', fid); };
+
     let selected = new Set(r.districts || []);
     const renderDs = () => {
       const city = $('[name=city]', form).value;
@@ -1435,9 +1493,11 @@
       v.districts = v.districts || [];
       v.types = v.types || [];
       v.features = v.features || [];
-      const obj = Object.assign({}, existing || {}, v, { id: r.id, updatedAt: new Date().toISOString() });
+      const obj = Object.assign({}, existing || {}, v, { id: r.id, media: rmedia, updatedAt: new Date().toISOString() });
       if (isNew) { obj.createdAt = new Date().toISOString(); obj.ref = await DB.nextRef('DM', maxRef(S.reqs)); obj.proposals = {}; }
       await DB.saveRec('requests', obj);
+      for (const fid of rRemoved) { await DB.del('files', fid); await DB.markDirty('file', fid); urlCache.delete(fid); urlCache.delete(fid + ':t'); }
+      rSaved = true;
       await rememberDistricts(obj.city, obj.districts);
       await loadAll();
       const n = matchesForReq(obj).length;
@@ -1531,6 +1591,7 @@
             ${(r.features || []).length ? `<div class="reasons" style="margin-top:12px">${r.features.map(f => `<span class="mid">${esc(f)}</span>`).join('')}</div>` : ''}
             ${r.description ? `<p class="desc" style="margin-bottom:0">${esc(r.description)}</p>` : ''}
             ${r.notes ? `<p class="desc muted" style="margin-bottom:0">📝 ${esc(r.notes)}</p>` : ''}
+            ${(r.media || []).length ? `<b style="display:block;margin:14px 0 8px">الملفات (${r.media.length})</b><div class="doc-list">${r.media.map(d => `<a href="#" data-rdoc="${d.id}">${ic(d.isImage ? 'image' : 'file')} <span class="grow">${esc(d.name)}</span><small class="muted">${Math.max(1, Math.round((d.size || 0) / 1024))} KB</small></a>`).join('')}</div>` : ''}
           </div>
           <div class="card card-pad">
             <b style="display:block;margin-bottom:8px">تغيير الحالة بسرعة</b>
@@ -1543,10 +1604,20 @@
       </div>`;
     hydrateThumbs(main());
     bindProposalButtons(main(), () => viewReq(id));
+    $$('[data-rdoc]').forEach(el => el.onclick = async e => {
+      e.preventDefault();
+      const d = (r.media || []).find(x => x.id === el.dataset.rdoc);
+      const url = await fileUrl(d.id);
+      if (!url) return toast('الملف غير متوفر على هذا الجهاز');
+      if (d.mime && (d.mime.startsWith('image/') || d.mime === 'application/pdf')) window.open(url, '_blank');
+      else { const a2 = document.createElement('a'); a2.href = url; a2.download = d.name; a2.click(); }
+    });
     $$('[data-rs]').forEach(el => el.onclick = async () => { r.status = el.dataset.rs; await DB.saveRec('requests', r); toast('تم تحديث الحالة'); viewReq(id); });
     $('#r-del').onclick = async () => {
       if (!(await confirmBox('حذف طلب ' + (c.name || '') + ' نهائيا؟', 'حذف'))) return;
       await DB.delRec('requests', r.id);
+      await DB.delFilesOf(r.id);
+      for (const m of (r.media || [])) await DB.markDirty('file', m.id);
       await loadAll();
       toast('تم حذف الطلب');
       location.hash = '#/requests';
@@ -1827,7 +1898,7 @@
     const parts = ['{"app":"wasset777-bureau","version":1,"exportedAt":', JSON.stringify(new Date().toISOString()),
       ',"properties":', JSON.stringify(S.props), ',"requests":', JSON.stringify(S.reqs), ',"meta":', JSON.stringify(meta), ',"files":['];
     const ids = [];
-    S.props.forEach(p => (p.media || []).forEach(m => { if (withVideos || m.kind !== 'video') ids.push(m.id); }));
+    [...S.props, ...S.reqs].forEach(p => (p.media || []).forEach(m => { if (withVideos || m.kind !== 'video') ids.push(m.id); }));
     let first = true;
     for (let i = 0; i < ids.length; i++) {
       let rec = await DB.get('files', ids[i]);
@@ -1922,7 +1993,7 @@
     const el = document.createElement('div');
     el.className = 'lock';
     let code = '';
-    el.innerHTML = `<div class="logo-mark" style="width:64px;height:64px;font-size:22px">777</div><h2 style="margin:0">${esc(title)}</h2>
+    el.innerHTML = `<div class="logo-pill" style="height:64px;padding:10px 16px"><img src="${LOGO}" alt="الوسيط 777"></div><h2 style="margin:0">${esc(title)}</h2>
       <div class="dots">${'<span></span>'.repeat(4)}</div>
       <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map(k => k === '' ? '<span></span>' : `<button data-k="${k}">${k}</button>`).join('')}</div>`;
     const dots = () => $$('.dots span', el).forEach((d, i) => d.classList.toggle('on', i < code.length));
@@ -2017,8 +2088,9 @@
 
   async function cleanOrphans() {
     try {
-      const ids = new Set(S.props.map(p => p.id));
-      const keep = new Set(S.props.flatMap(p => (p.media || []).map(m => m.id)));
+      const all = [...S.props, ...S.reqs];
+      const ids = new Set(all.map(p => p.id));
+      const keep = new Set(all.flatMap(p => (p.media || []).map(m => m.id)));
       const idx = await DB.fileIndex();
       for (const f of idx) if (!ids.has(f.owner) || !keep.has(f.id)) await DB.del('files', f.id);
     } catch (e) { /* */ }
