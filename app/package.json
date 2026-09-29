@@ -1,7 +1,7 @@
 {
   "name": "alwasset-app",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Al Wasset 777 — système de gestion immobilière local-first (desktop macOS + mobile PWA)",
   "workspaces": [
     "shared",

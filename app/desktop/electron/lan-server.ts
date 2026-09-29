@@ -2,7 +2,8 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { timingSafeEqual } from 'node:crypto';
-import { canWriteTable } from '@alwasset/shared/auth/permissions';
+import { can, canWriteTable } from '@alwasset/shared/auth/permissions';
+import { isMediaEntity, isSha256, MEDIA_ENTITIES } from '@alwasset/shared/services/media';
 import { applyChanges, pullChanges } from '@alwasset/shared/sync/engine';
 import type { Change, PairRequest, PushRequest } from '@alwasset/shared/sync/protocol';
 import { sha256, type Hub } from './hub';
@@ -17,6 +18,8 @@ import { sha256, type Hub } from './hub';
  */
 export const DEFAULT_LAN_PORT = 47777;
 const MAX_BODY = 20 * 1024 * 1024;
+/** Taille maximale d'un fichier envoyé depuis un appareil (vidéos comprises). */
+const MAX_UPLOAD = 4 * 1024 * 1024 * 1024;
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -98,6 +101,35 @@ async function handle(hub: Hub, mobileDir: string | null, req: IncomingMessage, 
     });
     return sendJson(res, 200, result);
   }
+  const mediaMatch = /^\/api\/media\/([a-f0-9]{64})$/.exec(url.pathname);
+  if (mediaMatch && req.method === 'GET') {
+    authenticate(hub, req);
+    const sha = mediaMatch[1]!;
+    if (!hub.media?.has(sha)) throw new HttpError(404, 'Fichier introuvable');
+    const file = hub.media.pathOf(sha);
+    res.writeHead(200, {
+      'Content-Type': hub.mimeOf(sha),
+      'Content-Length': statSync(file).size,
+      'Cache-Control': 'private, max-age=31536000, immutable',
+    });
+    createReadStream(file).pipe(res);
+    return;
+  }
+  if (url.pathname === '/api/media' && req.method === 'POST') {
+    const device = authenticate(hub, req);
+    const entity = url.searchParams.get('entity') ?? '';
+    const entityId = url.searchParams.get('entityId') ?? '';
+    const name = url.searchParams.get('name') ?? 'fichier';
+    if (!isMediaEntity(entity)) throw new HttpError(400, 'Type de fiche inconnu');
+    if (!can(device.role, MEDIA_ENTITIES[entity])) throw new HttpError(403, 'Accès refusé');
+    if (!hub.media) throw new HttpError(503, 'Stockage des médias indisponible');
+    const items = await hub
+      .importMedia(entity, entityId, [() => hub.media!.importStream(req, name, MAX_UPLOAD)], device.userId!)
+      .catch((err: unknown) => {
+        throw new HttpError(400, err instanceof Error ? err.message : String(err));
+      });
+    return sendJson(res, 200, items);
+  }
   if (url.pathname.startsWith('/m/') || url.pathname === '/m') {
     if (!mobileDir) throw new HttpError(404, 'Application mobile non incluse dans cette version');
     return serveStatic(mobileDir, url.pathname.replace(/^\/m\/?/, ''), res);
@@ -105,18 +137,18 @@ async function handle(hub: Hub, mobileDir: string | null, req: IncomingMessage, 
   throw new HttpError(404, 'Introuvable');
 }
 
-function authenticate(hub: Hub, req: IncomingMessage): { id: string; role: string | null } {
+function authenticate(hub: Hub, req: IncomingMessage): { id: string; role: string | null; userId: string | null } {
   const m = /^Bearer (dev_[a-f0-9]+)\.([A-Za-z0-9_-]+)$/.exec(req.headers.authorization ?? '');
   if (!m) throw new HttpError(401, 'Appareil non authentifié');
-  const row = hub.db.get<{ id: string; secret_hash: string; revoked_at: string | null; role: string | null; active: number | null }>(
-    `SELECT d.id, d.secret_hash, d.revoked_at, u.role, u.active FROM devices d LEFT JOIN users u ON u.id = d.user_id WHERE d.id = ?`,
+  const row = hub.db.get<{ id: string; secret_hash: string; revoked_at: string | null; role: string | null; active: number | null; user_id: string | null }>(
+    `SELECT d.id, d.secret_hash, d.revoked_at, d.user_id, u.role, u.active FROM devices d LEFT JOIN users u ON u.id = d.user_id WHERE d.id = ?`,
     [m[1]!],
   );
   const given = Buffer.from(sha256(m[2]!), 'hex');
   const ok = row && timingSafeEqual(given, Buffer.from(row.secret_hash, 'hex'));
   if (!row || !ok || row.revoked_at || row.active !== 1) throw new HttpError(401, 'Appareil révoqué ou inconnu');
   hub.db.run('UPDATE devices SET last_seen_at = ?, last_ip = ? WHERE id = ?', [new Date().toISOString(), clientIp(req), row.id]);
-  return { id: row.id, role: row.role };
+  return { id: row.id, role: row.role, userId: row.user_id };
 }
 
 function clientIp(req: IncomingMessage): string | null {

@@ -12,6 +12,7 @@ import { decodePairingPayload, type PairResponse, type PullResponse } from '@alw
 import { Hub } from '../electron/hub';
 import { startLanServer, type LanServer } from '../electron/lan-server';
 import { hashPassword, verifyPassword } from '../electron/passwords';
+import { MediaStore } from '../electron/media-store';
 
 const SQL = await initSqlJs();
 const newDb = () => {
@@ -25,7 +26,10 @@ let lan: LanServer;
 let base: string;
 
 beforeAll(async () => {
-  hub = new Hub(newDb(), { version: 'test', lanAddresses: () => ['127.0.0.1'], lanPort: () => lan.port });
+  const media = new MediaStore(mkdtempSync(join(tmpdir(), 'alw-media-')), async (_f, mime) =>
+    mime === 'image/jpeg' ? { jpeg: Buffer.from('miniature'), width: 4000, height: 3000 } : null,
+  );
+  hub = new Hub(newDb(), { version: 'test', lanAddresses: () => ['127.0.0.1'], lanPort: () => lan.port, media });
   await hub.setup({
     agencyName: 'الوسيط 777', city: 'الدار البيضاء', adminFullName: 'منير', adminUsername: 'admin',
     adminPassword: 'motdepasse1', language: 'ar', withDemoData: true,
@@ -140,5 +144,67 @@ describe('synchronisation via le réseau local', () => {
     expect(await page.text()).toContain('pwa');
     const trav = await fetch(`${base}/m/..%2f..%2fetc%2fpasswd`);
     expect(trav.status).toBe(403);
+  });
+});
+
+describe('médias', () => {
+  it('importe des fichiers du Mac : empreinte, déduplication, miniature', async () => {
+    await hub.login('admin', 'motdepasse1');
+    const dir = mkdtempSync(join(tmpdir(), 'alw-src-'));
+    writeFileSync(join(dir, 'façade.jpg'), 'image-bytes');
+    writeFileSync(join(dir, 'copie.jpg'), 'image-bytes');
+    writeFileSync(join(dir, 'titre foncier.pdf'), '%PDF-1.4');
+    const villa = (await hub.listProperties({ type: 'villa' }))[0]!.id;
+    const items = await hub.importMediaPaths('properties', villa, [join(dir, 'façade.jpg'), join(dir, 'copie.jpg'), join(dir, 'titre foncier.pdf')]);
+    expect(items.map((m) => [m.kind, m.originalName, m.hasThumb])).toEqual([
+      ['photo', 'façade.jpg', true],
+      ['document', 'titre foncier.pdf', false],
+    ]);
+    expect(hub.media!.has(items[0]!.sha256)).toBe(true);
+    expect(hub.mimeOf(items[1]!.sha256)).toBe('application/pdf');
+    expect((await hub.listProperties({ type: 'villa' }))[0]!.coverSha).toBe(items[0]!.sha256);
+    expect(hub.mediaFile(items[1]!.id).name).toBe('titre foncier.pdf');
+  });
+
+  it('un rôle sans droit d’écriture ne peut pas ajouter de médias', async () => {
+    await hub.login('maintenance', 'motdepasse1');
+    const villa = (await hub.listProperties({ type: 'villa' }))[0]!.id;
+    await expect(hub.importMediaPaths('properties', villa, ['/etc/hosts'])).rejects.toThrow('Accès refusé');
+    await hub.login('admin', 'motdepasse1');
+  });
+
+  it('upload depuis un téléphone puis téléchargement authentifié', async () => {
+    const { body: creds } = await pair();
+    const auth = { Authorization: `Bearer ${creds.deviceId}.${creds.secret}` };
+    const office = (await hub.listProperties({ type: 'office' }))[0]!.id;
+    const up = await fetch(`${base}/api/media?entity=properties&entityId=${office}&name=${encodeURIComponent('صورة.jpg')}`, {
+      method: 'POST', headers: auth, body: Buffer.from('photo-du-telephone'),
+    });
+    expect(up.status).toBe(200);
+    const items = (await up.json()) as { sha256: string; originalName: string; kind: string }[];
+    expect(items[0]).toMatchObject({ originalName: 'صورة.jpg', kind: 'photo' });
+    // La fiche est enregistrée au nom de l'utilisateur du téléphone.
+    const by = hub.db.get<{ updated_by: string }>('SELECT updated_by FROM media WHERE sha256 = ?', [items[0]!.sha256])!.updated_by;
+    expect(by).toBe(hub.db.get<{ id: string }>("SELECT id FROM users WHERE username = 'commercial'")!.id);
+
+    const down = await fetch(`${base}/api/media/${items[0]!.sha256}`, { headers: auth });
+    expect(down.headers.get('content-type')).toBe('image/jpeg');
+    expect(await down.text()).toBe('photo-du-telephone');
+    expect((await fetch(`${base}/api/media/${items[0]!.sha256}`)).status).toBe(401);
+    expect((await fetch(`${base}/api/media/${'0'.repeat(64)}`, { headers: auth })).status).toBe(404);
+  });
+
+  it('upload refusé pour un rôle sans droit ou une fiche inconnue', async () => {
+    const users = await hub.listUsers();
+    const { body: creds } = await pair(users.find((u) => u.role === 'accountant')!.id);
+    const auth = { Authorization: `Bearer ${creds.deviceId}.${creds.secret}` };
+    const r1 = await fetch(`${base}/api/media?entity=properties&entityId=x&name=a.jpg`, { method: 'POST', headers: auth, body: 'x' });
+    expect(r1.status).toBe(403);
+    const { body: sales } = await pair();
+    const auth2 = { Authorization: `Bearer ${sales.deviceId}.${sales.secret}` };
+    const r2 = await fetch(`${base}/api/media?entity=properties&entityId=inexistant&name=a.jpg`, { method: 'POST', headers: auth2, body: 'x' });
+    expect(r2.status).toBe(400);
+    const r3 = await fetch(`${base}/api/media?entity=users&entityId=x&name=a.jpg`, { method: 'POST', headers: auth2, body: 'x' });
+    expect(r3.status).toBe(400);
   });
 });

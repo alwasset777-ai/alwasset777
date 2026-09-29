@@ -115,7 +115,11 @@ async function start() {
       render();
     }
   });
-  const api = mobileApi(driver, creds, sync);
+  const api = mobileApi(driver, clock, creds, sync, () => {
+    schedulePersist();
+    version++;
+    render();
+  });
   const unpair = async () => {
     if (!confirm(translate(lang, 'mobile.unpair') + ' ?')) return;
     saveCredentials(null);

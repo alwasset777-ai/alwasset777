@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(' ');
@@ -20,23 +20,32 @@ export function Button({ variant = 'primary', className, ...p }: ButtonHTMLAttri
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, error, hint, children, className }: { label: string; error?: string; hint?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <label className="block">
+    <label className={cx('block', className)}>
       <span className="mb-1 block text-sm font-semibold text-ink">{label}</span>
       {children}
+      {hint && !error && <span className="mt-1 block text-xs text-muted">{hint}</span>}
+      {error && <span className="mt-1 block text-xs font-semibold text-brand-600">{error}</span>}
     </label>
   );
 }
 
-const inputCls = 'w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100';
+export function Textarea(p: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...p} className={cx(withWidth(p.className), 'min-h-28')} />;
+}
+
+const inputCls = 'rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100';
+
+/** Pleine largeur par défaut, sauf si l'appelant fixe lui-même une largeur (w-…). */
+const withWidth = (className?: string) => cx(inputCls, !/(^|\s)w-/.test(className ?? '') && 'w-full', className);
 
 export function Input(p: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...p} className={cx(inputCls, p.className)} />;
+  return <input {...p} className={withWidth(p.className)} />;
 }
 
 export function Select(p: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...p} className={cx(inputCls, p.className)} />;
+  return <select {...p} className={withWidth(p.className)} />;
 }
 
 export function Card({ title, actions, children, className }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {

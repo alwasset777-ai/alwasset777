@@ -10,7 +10,7 @@ import { ChangePassword } from './pages/ChangePassword';
 import { DashboardPage } from './pages/DashboardPage';
 import { DevicesPage } from './pages/DevicesPage';
 import { LoginPage } from './pages/LoginPage';
-import { PropertiesPage } from './pages/PropertiesPage';
+import { PropertiesPage } from './pages/properties/PropertiesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SetupPage } from './pages/SetupPage';
 
@@ -129,6 +129,8 @@ function Shell({ user, statusBar, onLogout, onPasswordChanged }: { user: Session
   const api = useApi();
   const { t, lang, setLang } = useI18n();
   const [route, setRoute] = useState<Route>('dashboard');
+  // Un clic dans le menu ramène toujours à l'écran d'accueil du module.
+  const [navNonce, setNavNonce] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const items = NAV.filter((n) => can(user.role, n.perm) && !(n.desktopOnly && api.platform !== 'desktop'));
   const current = items.find((n) => n.route === route) ?? items[0]!;
@@ -141,7 +143,7 @@ function Shell({ user, statusBar, onLogout, onPasswordChanged }: { user: Session
   } else {
     page = {
       dashboard: <DashboardPage />,
-      properties: <PropertiesPage />,
+      properties: <PropertiesPage canWrite={can(user.role, 'properties.write')} />,
       devices: <DevicesPage />,
       settings: <SettingsPage user={user} canManageUsers={can(user.role, 'users.manage')} />,
     }[current.route as 'dashboard' | 'properties' | 'devices' | 'settings'];
@@ -167,7 +169,7 @@ function Shell({ user, statusBar, onLogout, onPasswordChanged }: { user: Session
           {items.map((n) => (
             <button
               key={n.route}
-              onClick={() => { setRoute(n.route); setMenuOpen(false); }}
+              onClick={() => { setRoute(n.route); setNavNonce((x) => x + 1); setMenuOpen(false); }}
               className={cx(
                 'flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-sm',
                 n.route === current.route ? 'bg-brand-50 font-bold text-brand-600' : 'text-ink hover:bg-canvas',
@@ -196,7 +198,7 @@ function Shell({ user, statusBar, onLogout, onPasswordChanged }: { user: Session
             {api.platform === 'desktop' && <Button variant="ghost" onClick={onLogout}>{t('common.logout')}</Button>}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto bg-canvas p-4 lg:p-6">{page}</main>
+        <main key={`${current.route}-${navNonce}`} className="flex-1 overflow-y-auto bg-canvas p-4 lg:p-6">{page}</main>
       </div>
     </div>
   );

@@ -44,3 +44,13 @@ export function errorMessage(e: unknown): string {
   // Electron préfixe les erreurs IPC : « Error invoking remote method 'x': Error: … »
   return msg.replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 }
+
+/**
+ * Champs fautifs d'une ValidationError. Le message survit au passage IPC
+ * (« Validation : title=required, price=invalid »), on le relit donc ici.
+ */
+export function validationFields(e: unknown): Record<string, string> | null {
+  const m = /Validation : (.*)$/.exec(errorMessage(e));
+  if (!m) return null;
+  return Object.fromEntries(m[1]!.split(', ').map((pair) => pair.split('=') as [string, string]));
+}

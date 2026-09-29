@@ -2,6 +2,7 @@ import { addDays, addMonths, type IsoDate } from '../finance/dates';
 import { allocatePayment, type InstallmentState } from '../finance/installments';
 import { rentSchedule, saleSchedule } from '../finance/schedule';
 import { insert, update, type StoreContext } from '../db/store';
+import { normalizeSearch } from '../text/normalize';
 
 /**
  * Jeu de données de démonstration : 5 utilisateurs, 10 biens, 10 personnes,
@@ -38,7 +39,11 @@ export function seedDemo(
     }
 
     // ── Biens
-    const P = (data: Record<string, string | number | null>) => insert(ctx, 'properties', data);
+    const P = (data: Record<string, string | number | null>) =>
+      insert(ctx, 'properties', {
+        ...data,
+        search_text: normalizeSearch([data.reference, data.title, data.city, data.district, data.address].filter(Boolean).join(' ')),
+      });
     const tower = P({ reference: 'WS-T01', title: 'برج الوسيط — المعاريف', type: 'tower', status: 'available', purpose: 'both', city: 'الدار البيضاء', district: 'المعاريف', area_m2: 5200, latitude: 33.5831, longitude: -7.6326, address: 'شارع الزرقطوني' });
     const apt1 = P({ reference: 'WS-A101', title: 'شقة 101 — برج الوسيط', type: 'apartment', parent_id: tower, status: 'rented', purpose: 'rent', city: 'الدار البيضاء', district: 'المعاريف', area_m2: 95, rooms: 3, bathrooms: 2, floor: 1, price_rent_cents: 750000 });
     const apt2 = P({ reference: 'WS-A102', title: 'شقة 102 — برج الوسيط', type: 'apartment', parent_id: tower, status: 'available', purpose: 'rent', city: 'الدار البيضاء', district: 'المعاريف', area_m2: 110, rooms: 3, bathrooms: 2, floor: 1, price_rent_cents: 850000 });

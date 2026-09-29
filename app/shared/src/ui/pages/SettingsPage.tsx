@@ -4,6 +4,8 @@ import { useApi, useAsync } from '../api';
 import { Card, PageTitle, Select } from '../components/ui';
 import { useI18n } from '../i18n';
 import { ChangePassword } from './ChangePassword';
+import { CustomFieldsCard } from './CustomFieldsCard';
+import { can } from '../../auth/permissions';
 
 export function SettingsPage({ user, canManageUsers }: { user: SessionUser; canManageUsers: boolean }) {
   const api = useApi();
@@ -42,6 +44,7 @@ export function SettingsPage({ user, canManageUsers }: { user: SessionUser; canM
             </ul>
           </Card>
         )}
+        {can(user.role, 'settings.manage') && <CustomFieldsCard />}
         <Card title={t('settings.about')}>
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-muted">{t('setup.agencyName')}</dt><dd>{info.data?.agencyName}</dd>

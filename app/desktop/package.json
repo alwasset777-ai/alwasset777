@@ -2,7 +2,7 @@
   "name": "desktop",
   "productName": "Al Wasset 777",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Al Wasset 777 — gestion immobilière",
   "author": "Al Wasset 777 <alwasset777@gmail.com>",
   "main": "dist-electron/main.cjs",

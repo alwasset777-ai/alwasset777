@@ -1,4 +1,5 @@
 import { migration0001 } from './0001_init';
+import { migration0002 } from './0002_m1_properties';
 
 export interface Migration {
   version: number;
@@ -7,7 +8,10 @@ export interface Migration {
 }
 
 /** Liste ordonnée des migrations. Ne jamais modifier une migration publiée : en ajouter une nouvelle. */
-export const migrations: Migration[] = [{ version: 1, name: 'init', sql: migration0001 }];
+export const migrations: Migration[] = [
+  { version: 1, name: 'init', sql: migration0001 },
+  { version: 2, name: 'm1_properties', sql: migration0002 },
+];
 
 /** Tables techniques jamais synchronisées entre appareils. */
 export const LOCAL_ONLY_TABLES = new Set([

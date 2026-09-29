@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import QRCode from 'qrcode';
-import type { AppApi, DeviceInfo, PairingOffer, SessionUser, SetupInput, SyncStatus } from '@alwasset/shared/api/contract';
+import type {
+  CustomFieldDef, DeviceInfo, MediaItem, PairingOffer, PropertyFilters, PropertyInput, PropertyStatus, SessionUser, SetupInput, SyncStatus,
+} from '@alwasset/shared/api/contract';
 import { can, isRole, type Permission } from '@alwasset/shared/auth/permissions';
 import type { SqlDriver } from '@alwasset/shared/db/driver';
 import { getSetting, setSetting } from '@alwasset/shared/db/migrate';
@@ -8,11 +10,16 @@ import { update, type StoreContext } from '@alwasset/shared/db/store';
 import { todayIso } from '@alwasset/shared/finance/dates';
 import { isLang, type Lang } from '@alwasset/shared/i18n/index';
 import { computeKpis } from '@alwasset/shared/services/dashboard';
-import { listProperties } from '@alwasset/shared/services/properties';
+import {
+  backfillSearchText, createProperty, deleteProperty, getProperty, listCities, listCustomFields, listProperties,
+  removeCustomField, saveCustomField, searchPersons, setOwners, setPropertyStatus, updateProperty,
+} from '@alwasset/shared/services/properties';
+import { attachMedia, isMediaEntity, listMedia, MEDIA_ENTITIES, mediaEntityOf, removeMedia, reorderMedia, type MediaEntity } from '@alwasset/shared/services/media';
 import { needsSetup, setupAgency } from '@alwasset/shared/services/setup';
 import { listUsers } from '@alwasset/shared/services/users';
 import { HybridClock } from '@alwasset/shared/sync/hlc';
 import { encodePairingPayload } from '@alwasset/shared/sync/protocol';
+import type { MediaStore } from './media-store';
 import { hashPassword, verifyPassword } from './passwords';
 
 export const PAIRING_TTL_MS = 10 * 60 * 1000;
@@ -54,17 +61,22 @@ export class Hub {
 
   constructor(
     readonly db: SqlDriver,
-    private readonly opts: { version: string; lanAddresses: () => string[]; lanPort: () => number | null },
+    private readonly opts: { version: string; lanAddresses: () => string[]; lanPort: () => number | null; media?: MediaStore },
   ) {
     this.deviceId = hubDeviceId(db);
     this.clock = new HybridClock(this.deviceId);
+    backfillSearchText(this.ctx());
   }
 
-  ctx(): StoreContext {
+  get media(): MediaStore | undefined {
+    return this.opts.media;
+  }
+
+  ctx(userId?: string): StoreContext {
     return {
       db: this.db,
       clock: this.clock,
-      userId: this.session?.id ?? null,
+      userId: userId ?? this.session?.id ?? null,
       companyId: getSetting(this.db, 'company_id') ?? null,
       branchId: getSetting(this.db, 'branch_id') ?? null,
     };
@@ -145,9 +157,124 @@ export class Hub {
     return computeKpis(this.db, todayIso());
   }
 
-  async listProperties(filters: Parameters<AppApi['properties']['list']>[0]) {
+  // ── M1 : biens
+  async listProperties(filters: PropertyFilters) {
     this.require('properties.read');
     return listProperties(this.db, filters ?? {});
+  }
+
+  async getProperty(id: string) {
+    this.require('properties.read');
+    return getProperty(this.db, id);
+  }
+
+  async createProperty(input: PropertyInput) {
+    this.require('properties.write');
+    return createProperty(this.ctx(), input);
+  }
+
+  async updateProperty(id: string, input: PropertyInput) {
+    this.require('properties.write');
+    updateProperty(this.ctx(), id, input);
+  }
+
+  async setPropertyStatus(id: string, status: PropertyStatus) {
+    this.require('properties.write');
+    setPropertyStatus(this.ctx(), id, status);
+  }
+
+  async removeProperty(id: string) {
+    this.require('properties.write');
+    deleteProperty(this.ctx(), id);
+  }
+
+  async cities() {
+    this.require('properties.read');
+    return listCities(this.db);
+  }
+
+  async setOwners(id: string, owners: { personId: string; shareBp: number }[]) {
+    this.require('properties.write');
+    setOwners(this.ctx(), id, owners);
+  }
+
+  async searchPersons(q: string) {
+    this.require('persons.read');
+    return searchPersons(this.db, String(q ?? ''));
+  }
+
+  async listCustomFields(entity: 'properties') {
+    this.require('properties.read');
+    return listCustomFields(this.db, entity);
+  }
+
+  async saveCustomField(def: CustomFieldDef) {
+    this.require('settings.manage');
+    return saveCustomField(this.ctx(), def);
+  }
+
+  async removeCustomField(id: string) {
+    this.require('settings.manage');
+    removeCustomField(this.ctx(), id);
+  }
+
+  // ── Médias
+  private requireEntityWrite(entity: string, role = this.session?.role): MediaEntity {
+    if (!isMediaEntity(entity)) throw new Error('Type de fiche inconnu');
+    if (!can(role, MEDIA_ENTITIES[entity])) throw new Error('Accès refusé');
+    return entity;
+  }
+
+  async listMedia(entity: string, entityId: string) {
+    this.require('dashboard.read');
+    return listMedia(this.db, entity, entityId);
+  }
+
+  /** Importe des fichiers locaux du Mac (sélecteur ou glisser-déposer). */
+  async importMediaPaths(entity: string, entityId: string, paths: string[]): Promise<MediaItem[]> {
+    this.require('dashboard.read');
+    const e = this.requireEntityWrite(entity);
+    return this.importMedia(e, entityId, paths.map((p) => () => this.media!.importFile(p)), this.session!.id);
+  }
+
+  /** Importe des fichiers (chemins locaux ou flux reçus d'un appareil) et les rattache à la fiche. */
+  async importMedia(entity: MediaEntity, entityId: string, sources: (() => ReturnType<MediaStore['importFile']>)[], userId: string): Promise<MediaItem[]> {
+    if (!this.media) throw new Error('Stockage des médias indisponible');
+    if (!this.db.get(`SELECT 1 FROM ${entity} WHERE id = ? AND deleted_at IS NULL`, [entityId])) throw new Error('Fiche introuvable');
+    for (const load of sources) attachMedia(this.ctx(userId), entity, entityId, await load());
+    return listMedia(this.db, entity, entityId);
+  }
+
+  async removeMedia(id: string) {
+    const m = mediaEntityOf(this.db, id);
+    if (!m) return;
+    this.require('dashboard.read');
+    this.requireEntityWrite(m.entity);
+    removeMedia(this.ctx(), id);
+  }
+
+  async reorderMedia(entity: string, entityId: string, ids: string[]) {
+    this.require('dashboard.read');
+    this.requireEntityWrite(entity);
+    reorderMedia(this.ctx(), entity, entityId, ids);
+  }
+
+  /** Chemin du fichier d'un média (pour l'ouvrir dans l'application du système). */
+  mediaFile(id: string): { path: string; name: string } {
+    this.require('dashboard.read');
+    const m = this.db.get<{ sha256: string; original_name: string | null }>('SELECT sha256, original_name FROM media WHERE id = ? AND deleted_at IS NULL', [id]);
+    if (!m || !this.media?.has(m.sha256)) throw new Error('Fichier introuvable sur ce Mac');
+    return { path: this.media.pathOf(m.sha256), name: m.original_name ?? m.sha256 };
+  }
+
+  /** Type MIME connu pour une empreinte (fichier original ou miniature). */
+  mimeOf(sha: string): string {
+    const m = this.db.get<{ mime: string | null; thumb: number }>(
+      'SELECT mime, sha256 <> ? AS thumb FROM media WHERE sha256 = ? OR thumb_sha256 = ? LIMIT 1',
+      [sha, sha, sha],
+    );
+    if (!m) return 'application/octet-stream';
+    return m.thumb ? 'image/jpeg' : m.mime ?? 'application/octet-stream';
   }
 
   async listUsers() {

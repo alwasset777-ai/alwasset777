@@ -1,6 +1,9 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { pathToFileURL } from 'node:url';
+import { app, BrowserWindow, dialog, nativeImage, net, protocol, shell } from 'electron';
+import { isSha256 } from '@alwasset/shared/services/media';
+import { MediaStore, type Thumbnailer } from './media-store';
 import { Hub } from './hub';
 import { registerIpc } from './ipc';
 import { DEFAULT_LAN_PORT, startLanServer, type LanServer } from './lan-server';
@@ -9,6 +12,20 @@ import { openDatabase } from './database';
 
 const DEV_URL = process.env.VITE_DEV_SERVER_URL;
 let lan: LanServer | null = null;
+
+// Protocole interne pour afficher photos et vidéos dans l'interface : alw-media://m/<sha256>
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'alw-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+]);
+
+/** Miniatures via le moteur d'images natif (HEIC compris sur macOS). */
+const thumbnailer: Thumbnailer = async (file) => {
+  const img = nativeImage.createFromPath(file);
+  if (img.isEmpty()) return null;
+  const { width, height } = img.getSize();
+  const small = width > 640 ? img.resize({ width: 640, quality: 'good' }) : img;
+  return { jpeg: small.toJPEG(82), width, height };
+};
 let closeDb: (() => void) | null = null;
 
 function mobileDir(): string | null {
@@ -51,12 +68,22 @@ function createWindow() {
 async function bootstrap() {
   const { driver, close } = openDatabase(join(app.getPath('userData'), 'data'));
   closeDb = close;
+  const media = new MediaStore(join(app.getPath('userData'), 'media'), thumbnailer);
   const hub = new Hub(driver, {
     version: app.getVersion(),
     lanAddresses,
     lanPort: () => lan?.port ?? null,
+    media,
   });
   registerIpc(hub);
+  protocol.handle('alw-media', async (req) => {
+    const sha = new URL(req.url).pathname.replace(/^\//, '');
+    if (!isSha256(sha) || !media.has(sha)) return new Response('Introuvable', { status: 404 });
+    const res = await net.fetch(pathToFileURL(media.pathOf(sha)).toString(), { headers: req.headers });
+    const headers = new Headers(res.headers);
+    headers.set('Content-Type', hub.mimeOf(sha));
+    return new Response(res.body, { status: res.status, headers });
+  });
   try {
     lan = await startLanServer(hub, { port: DEFAULT_LAN_PORT, mobileDir: mobileDir() });
   } catch (err) {
