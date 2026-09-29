@@ -668,7 +668,7 @@
     return `<a class="card prop-card" href="#/property/${p.id}">
       <div class="prop-cover">
         ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
-        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}</div>
+        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}</div>
         <span class="ref">${esc(p.ref)}</span>
         ${nPh || nV ? `<span class="cnt">${nPh ? ic('camera', 14) + nPh : ''} ${nV ? ic('video', 14) + nV : ''}</span>` : ''}
       </div>
@@ -691,6 +691,7 @@
     let list = searchProps(q || '');
     if (f.trx) list = list.filter(p => p.transaction === f.trx);
     if (f.status === 'active') list = list.filter(p => ['available', 'reserved', 'negotiation'].includes(p.status));
+    else if (f.status === 'todo') list = list.filter(needsInfo);
     else if (f.status) list = list.filter(p => p.status === f.status);
     if (f.cat) list = list.filter(p => catOf(p.type) === f.cat);
     if (f.type) list = list.filter(p => p.type === f.type);
@@ -725,7 +726,8 @@
     const list = filterProps(q);
     const nf = activeFilterCount();
     const trxChips = [{ v: '', l: 'الكل' }, ...D.TRANSACTIONS.filter(t => S.props.some(p => p.transaction === t.id)).map(t => ({ v: t.id, l: t.ar }))];
-    const stChips = [{ v: 'active', l: 'المعروضة' }, { v: '', l: 'كل الحالات' }, ...D.STATUSES.map(s => ({ v: s.id, l: s.ar }))];
+    const nTodo = S.props.filter(needsInfo).length;
+    const stChips = [{ v: 'active', l: 'المعروضة' }, ...(nTodo ? [{ v: 'todo', l: '📥 للإكمال (' + nTodo + ')' }] : []), { v: '', l: 'كل الحالات' }, ...D.STATUSES.map(s => ({ v: s.id, l: s.ar }))];
     main().innerHTML = `
       <div class="page-head">
         <div><h1>العقارات</h1><div class="sub">${list.length} نتيجة${q ? ` لـ «${esc(q)}»` : ''}</div></div>
@@ -1075,6 +1077,7 @@
   function maxRef(list) {
     return list.reduce((m, x) => Math.max(m, Number(String(x.ref || '').split('-').pop()) || 0), 0);
   }
+  const needsInfo = p => !!p.imported && !(p.owner && p.owner.name && p.owner.phone);
   function autoTitle(p) {
     const loc = p.district ? p.district + ' - ' + p.city : p.city;
     const a = areaOf(p);
@@ -1700,6 +1703,12 @@
         </div>
 
         <div class="card card-pad">
+          <h3 class="section-title">${ic('upload')} استيراد العقارات من دوسي الصور</h3>
+          <p class="muted" style="margin-top:0">اختر الدوسي الكبير (مثلا «777»). كل دوسي داخله يُقرأ كنوع عقار (شقق، فيلات، أراضي...)، وكل دوسي فرعي أو صورة يصبح عقارا بصوره. تكمل باقي المعلومات لاحقا. الأفضل من الماك أو الكمبيوتر.</p>
+          <label class="btn gold">${ic('upload', 18)} اختيار الدوسي<input type="file" id="imp-folder" webkitdirectory directory multiple hidden></label>
+        </div>
+
+        <div class="card card-pad">
           <h3 class="section-title">${ic('lock')} الأمان والمظهر</h3>
           <div class="form-grid">
             <div class="field"><label>المظهر</label>${fSeg('theme', [{ v: 'auto', l: 'تلقائي' }, { v: 'light', l: 'فاتح' }, { v: 'dark', l: 'داكن' }], theme)}</div>
@@ -1746,6 +1755,7 @@
       toast('تم الحفظ ✓');
     };
     $$('[name=theme]').forEach(el => el.onchange = () => { localStorage.setItem('w777_theme', el.value); applyTheme(); });
+    $('#imp-folder').onchange = e => { if (e.target.files.length) importFolder(e.target.files); e.target.value = ''; };
     if (!EMBED) $('#bk-full').onclick = () => exportBackup(true);
     $('#bk-light').onclick = () => exportBackup(false);
     $('#bk-import').onchange = e => { if (e.target.files[0]) importBackup(e.target.files[0]); };
@@ -1860,6 +1870,118 @@
     });
     btn.onclick = () => { Sy.syncNow(); toast('جاري المزامنة…'); };
     paint(Sy.status());
+  }
+
+  /* ---------- استيراد العقارات من دوسي الصور ---------- */
+  const TYPE_RULES = [
+    [/دوبلكس|duplex/, 'duplex'], [/استوديو|studio/, 'studio'], [/شقه|شقق|appart|appartement/, 'apartment'],
+    [/فيلا|فيلات|villa/, 'villa'], [/رياض|riad/, 'riad'], [/بقعه|بقع|\blots?\b/, 'plot_house'],
+    [/ضيعه|فلاحي|ferme|agricol/, 'farm'], [/ارض|اراضي|terrain/, 'land_urban'],
+    [/محل|محلات|حانوت|magasin|local|commerce/, 'shop'], [/مكتب|مكاتب|bureau|office/, 'office'],
+    [/عماره|عمارات|immeuble/, 'building'], [/مستودع|مخزن|depot|entrepot|hangar/, 'warehouse'],
+    [/فندق|hotel/, 'hotel'], [/مقهي|cafe/, 'cafe'], [/مطعم|restaurant/, 'restaurant'], [/غرفه|chambre/, 'room'],
+    [/دار|ديور|منزل|منازل|maison|house/, 'house'],
+  ];
+  function guessType(name) {
+    const n = norm(name);
+    const exact = D.PROPERTY_TYPES.find(t => norm(t.ar) === n || norm(t.fr) === n);
+    if (exact) return exact.id;
+    const r = TYPE_RULES.find(([re]) => re.test(n));
+    return r ? r[1] : 'other';
+  }
+  function guessTrx(name) {
+    const n = norm(name);
+    if (/رهن|rahn/.test(n)) return 'rahn';
+    if (/كراء|location|louer/.test(n)) return 'rent';
+    return 'sale';
+  }
+  const isMediaFile = f => !f.name.startsWith('.') && (/^(image|video)\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif|gif|mp4|mov|m4v)$/i.test(f.name));
+
+  function importFolder(fileList) {
+    const all = Array.from(fileList).filter(isMediaFile);
+    const files = all.filter(f => f.size > 0);
+    if (all.length > files.length) toast(`تنبيه: ${all.length - files.length} ملف فارغ تم تجاهله`, 3500);
+    if (!files.length) return toast('ما لقيت حتى صورة فهاد الدوسي', 3500);
+    const groups = new Map();
+    files.forEach(f => {
+      const parts = (f.webkitRelativePath || f.name).split('/');
+      const tf = parts.length >= 3 ? parts[1] : parts[0];
+      if (!groups.has(tf)) groups.set(tf, { name: tf, type: guessType(tf), trx: guessTrx(tf), loose: [], subs: new Map() });
+      const g = groups.get(tf);
+      if (parts.length >= 4) { if (!g.subs.has(parts[2])) g.subs.set(parts[2], []); g.subs.get(parts[2]).push(f); }
+      else g.loose.push(f);
+    });
+    const root = (files[0].webkitRelativePath || '').split('/')[0] || 'دوسي';
+    const known = new Set(S.props.map(p => p.importKey).filter(Boolean));
+    const list = Array.from(groups.values());
+    const hasLoose = list.some(g => g.loose.length);
+    modal(`<h3>${ic('upload')} استيراد «${esc(root)}»</h3>
+      <p class="muted" style="margin-top:0">${files.length} صورة/فيديو في ${list.length} دوسي. تأكد من نوع كل دوسي:</p>
+      <div style="display:flex;flex-direction:column;gap:10px">${list.map((g, i) => `
+        <div class="card" style="padding:10px 12px">
+          <b>📁 ${esc(g.name)}</b> <span class="muted" style="font-size:12.5px">— ${g.subs.size ? g.subs.size + ' دوسي فرعي' : ''}${g.subs.size && g.loose.length ? ' + ' : ''}${g.loose.length ? g.loose.length + ' صورة' : ''}</span>
+          <div class="form-grid" style="margin-top:8px">
+            ${fSelect('t' + i, 'النوع', [], g.type, { groups: typeGroups(), noEmpty: true })}
+            ${fSelect('x' + i, 'العملية', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), g.trx, { noEmpty: true })}
+          </div>
+        </div>`).join('')}</div>
+      ${hasLoose ? `<div class="field" style="margin-top:12px"><label>الصور الموجودة مباشرة داخل دوسي النوع</label>
+        ${fSeg('loose', [{ v: 'each', l: 'كل صورة = عقار' }, { v: 'one', l: 'كل صور الدوسي = عقار واحد' }], 'each')}</div>` : ''}
+      <div class="progress hidden" id="imp-prog" style="margin-top:14px"><div style="width:0"></div></div>
+      <div class="muted" id="imp-status" style="font-size:13px;margin-top:6px"></div>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:14px">
+        <button class="btn" data-close id="imp-cancel">إلغاء</button>
+        <button class="btn gold" id="imp-go">${ic('check', 18)} استيراد</button>
+      </div>`, (m, close) => {
+      $('#imp-go', m).onclick = async () => {
+        $('#imp-go', m).disabled = true; $('#imp-cancel', m).disabled = true;
+        const looseMode = ($('[name=loose]:checked', m) || {}).value || 'each';
+        const jobs = [];
+        list.forEach((g, i) => {
+          const type = $('[name=t' + i + ']', m).value, trx = $('[name=x' + i + ']', m).value;
+          g.subs.forEach((fs, sub) => jobs.push({ type, trx, label: sub, files: fs, key: root + '/' + g.name + '/' + sub }));
+          if (looseMode === 'one' && g.loose.length) jobs.push({ type, trx, label: g.name, files: g.loose, key: root + '/' + g.name + '/*' });
+          else g.loose.forEach(f => jobs.push({ type, trx, label: f.name.replace(/\.[^.]+$/, ''), files: [f], key: root + '/' + g.name + '/' + f.name }));
+        });
+        const todo = jobs.filter(j => !known.has(j.key));
+        const skipped = jobs.length - todo.length;
+        const total = todo.reduce((s, j) => s + j.files.length, 0);
+        const prog = $('#imp-prog', m), st = $('#imp-status', m);
+        prog.classList.remove('hidden');
+        let done = 0, made = 0;
+        for (const j of todo) {
+          const id = uid(), media = [];
+          for (const f of j.files) {
+            const fid = uid(), video = f.type.startsWith('video/') || /\.(mp4|mov|m4v)$/i.test(f.name);
+            const rec = { id: fid, owner: id, kind: video ? 'video' : 'photo', name: f.name, mime: f.type, size: f.size };
+            if (video) rec.blob = f;
+            else {
+              const big = await compressImage(f, 1920, 0.85), small = await compressImage(f, 480, 0.75);
+              rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
+            }
+            await DB.put('files', rec);
+            media.push({ id: fid, kind: rec.kind, name: f.name, mime: rec.mime, size: rec.size });
+            done++; prog.firstElementChild.style.width = (done / total * 100) + '%';
+            st.textContent = `${done} / ${total} — ${j.label}`;
+          }
+          const obj = {
+            id, createdAt: new Date().toISOString(), transaction: j.trx, type: j.type, status: 'available',
+            city: S.settings.officeCity || 'مكناس', specs: {}, features: [], owner: {}, broker: {}, media,
+            priceUnit: (D.PRICE_UNITS[j.trx] || ['درهم'])[0], negotiable: true,
+            imported: true, importKey: j.key, title: typeAr(j.type) + ' — ' + j.label, notes: 'مستورد من الدوسي: ' + j.key,
+          };
+          obj.ref = await DB.nextRef('W777', maxRef(S.props));
+          await DB.saveRec('properties', obj);
+          S.props.push(obj);
+          made++;
+        }
+        await loadAll();
+        close();
+        toast(`تم استيراد ${made} عقار ✓${skipped ? ` (${skipped} كانوا مستوردين من قبل)` : ''} — كمّل المعلومات من «للإكمال»`, 5000);
+        S.propFilters.status = 'todo';
+        location.hash = '#/properties';
+      };
+    });
   }
 
   function manageCustomDistricts() {
