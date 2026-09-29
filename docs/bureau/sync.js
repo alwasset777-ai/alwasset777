@@ -197,9 +197,9 @@
 
   async function uploadFiles() {
     const up = await DB.getMeta('sync_uploaded', {});
-    const props = await DB.all('properties');
+    const owners = [...(await DB.all('properties')), ...(await DB.all('requests'))];
     const todo = [];
-    props.forEach(p => (p.media || []).forEach(m => { if (!up[m.id]) todo.push(m.id); }));
+    owners.forEach(p => (p.media || []).forEach(m => { if (!up[m.id]) todo.push(m.id); }));
     let failed = 0;
     for (let i = 0; i < todo.length; i++) {
       const rec = await DB.get('files', todo[i]);
