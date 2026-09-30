@@ -1704,8 +1704,12 @@
 
         <div class="card card-pad">
           <h3 class="section-title">${ic('upload')} استيراد العقارات من دوسي الصور</h3>
-          <p class="muted" style="margin-top:0">اختر الدوسي الكبير (مثلا «777»). كل دوسي داخله يُقرأ كنوع عقار (شقق، فيلات، أراضي...)، وكل دوسي فرعي أو صورة يصبح عقارا بصوره. تكمل باقي المعلومات لاحقا. الأفضل من الماك أو الكمبيوتر.</p>
-          <label class="btn gold">${ic('upload', 18)} اختيار الدوسي<input type="file" id="imp-folder" webkitdirectory directory multiple hidden></label>
+          <p class="muted" style="margin-top:0"><b>من الماك / الكمبيوتر:</b> اختر الدوسي الكبير (مثلا «777»): كل دوسي داخله = نوع عقار، وكل دوسي فرعي أو صورة = عقار بصوره.<br>
+          <b>من الآيفون / الهاتف:</b> الهاتف لا يسمح باختيار دوسي كامل، لذلك اختر الصور (من المعرض أو «الملفات») ثم حدد نوع العقار.</p>
+          <div class="btn-row">
+            <label class="btn gold">${ic('upload', 18)} اختيار دوسي (ماك)<input type="file" id="imp-folder" webkitdirectory directory multiple hidden></label>
+            <label class="btn">${ic('camera', 18)} اختيار صور (هاتف)<input type="file" id="imp-photos" accept="image/*,video/*" multiple hidden></label>
+          </div>
         </div>
 
         <div class="card card-pad">
@@ -1756,6 +1760,7 @@
     };
     $$('[name=theme]').forEach(el => el.onchange = () => { localStorage.setItem('w777_theme', el.value); applyTheme(); });
     $('#imp-folder').onchange = e => { if (e.target.files.length) importFolder(e.target.files); e.target.value = ''; };
+    $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
     if (!EMBED) $('#bk-full').onclick = () => exportBackup(true);
     $('#bk-light').onclick = () => exportBackup(false);
     $('#bk-import').onchange = e => { if (e.target.files[0]) importBackup(e.target.files[0]); };
@@ -1897,25 +1902,25 @@
   }
   const isMediaFile = f => !f.name.startsWith('.') && (/^(image|video)\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif|gif|mp4|mov|m4v)$/i.test(f.name));
 
-  function importFolder(fileList) {
+  function importFolder(fileList, picked) {
     const all = Array.from(fileList).filter(isMediaFile);
     const files = all.filter(f => f.size > 0);
     if (all.length > files.length) toast(`تنبيه: ${all.length - files.length} ملف فارغ تم تجاهله`, 3500);
     if (!files.length) return toast('ما لقيت حتى صورة فهاد الدوسي', 3500);
     const groups = new Map();
     files.forEach(f => {
-      const parts = (f.webkitRelativePath || f.name).split('/');
+      const parts = picked || !f.webkitRelativePath ? ['صور', 'الصور المختارة', f.name] : f.webkitRelativePath.split('/');
       const tf = parts.length >= 3 ? parts[1] : parts[0];
       if (!groups.has(tf)) groups.set(tf, { name: tf, type: guessType(tf), trx: guessTrx(tf), loose: [], subs: new Map() });
       const g = groups.get(tf);
       if (parts.length >= 4) { if (!g.subs.has(parts[2])) g.subs.set(parts[2], []); g.subs.get(parts[2]).push(f); }
       else g.loose.push(f);
     });
-    const root = (files[0].webkitRelativePath || '').split('/')[0] || 'دوسي';
+    const root = picked ? 'صور-' + Date.now() : ((files[0].webkitRelativePath || '').split('/')[0] || 'دوسي');
     const known = new Set(S.props.map(p => p.importKey).filter(Boolean));
     const list = Array.from(groups.values());
     const hasLoose = list.some(g => g.loose.length);
-    modal(`<h3>${ic('upload')} استيراد «${esc(root)}»</h3>
+    modal(`<h3>${ic('upload')} ${picked ? 'استيراد الصور المختارة' : 'استيراد «' + esc(root) + '»'}</h3>
       <p class="muted" style="margin-top:0">${files.length} صورة/فيديو في ${list.length} دوسي. تأكد من نوع كل دوسي:</p>
       <div style="display:flex;flex-direction:column;gap:10px">${list.map((g, i) => `
         <div class="card" style="padding:10px 12px">
@@ -1926,7 +1931,8 @@
           </div>
         </div>`).join('')}</div>
       ${hasLoose ? `<div class="field" style="margin-top:12px"><label>الصور الموجودة مباشرة داخل دوسي النوع</label>
-        ${fSeg('loose', [{ v: 'each', l: 'كل صورة = عقار' }, { v: 'one', l: 'كل صور الدوسي = عقار واحد' }], 'each')}</div>` : ''}
+        ${fSeg('loose', [{ v: 'each', l: 'كل صورة = عقار' }, { v: 'one', l: picked ? 'كل الصور = عقار واحد' : 'كل صور الدوسي = عقار واحد' }], picked ? 'one' : 'each')}</div>
+        ${picked ? fInput('pname', 'اسم العقار (اختياري)', '', { ph: 'مثال: شقة مرجان 2' }) : ''}` : ''}
       <div class="progress hidden" id="imp-prog" style="margin-top:14px"><div style="width:0"></div></div>
       <div class="muted" id="imp-status" style="font-size:13px;margin-top:6px"></div>
       <div class="btn-row" style="justify-content:flex-end;margin-top:14px">
@@ -1938,9 +1944,12 @@
         const looseMode = ($('[name=loose]:checked', m) || {}).value || 'each';
         const jobs = [];
         list.forEach((g, i) => {
-          const type = $('[name=t' + i + ']', m).value, trx = $('[name=x' + i + ']', m).value;
+          let type = $('[name=t' + i + ']', m).value;
+          const trx = $('[name=x' + i + ']', m).value;
           g.subs.forEach((fs, sub) => jobs.push({ type, trx, label: sub, files: fs, key: root + '/' + g.name + '/' + sub }));
-          if (looseMode === 'one' && g.loose.length) jobs.push({ type, trx, label: g.name, files: g.loose, key: root + '/' + g.name + '/*' });
+          const pname = picked && $('[name=pname]', m) ? $('[name=pname]', m).value.trim() : '';
+          if (picked && pname && type === 'other') type = guessType(pname);
+          if (looseMode === 'one' && g.loose.length) jobs.push({ type, trx, label: pname || g.name, files: g.loose, key: root + '/' + g.name + '/*' });
           else g.loose.forEach(f => jobs.push({ type, trx, label: f.name.replace(/\.[^.]+$/, ''), files: [f], key: root + '/' + g.name + '/' + f.name }));
         });
         const todo = jobs.filter(j => !known.has(j.key));
@@ -2232,7 +2241,13 @@
     DB.persist();
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-      navigator.serviceWorker.register('sw.js').catch(() => { /* */ });
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { /* */ });
+      // عند تثبيت نسخة جديدة: إعادة تحميل الصفحة مرة واحدة
+      let reloaded = !navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded || /\/(new|edit)/.test(location.hash)) return;
+        reloaded = true; location.reload();
+      });
     }
   }
   document.addEventListener('DOMContentLoaded', start);
