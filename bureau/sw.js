@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v3';
+const CACHE = 'w777-bureau-v4';
 const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'manifest.webmanifest',
   'icons/logo.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
@@ -22,7 +22,8 @@ self.addEventListener('fetch', e => {
   }
   if (url.origin !== location.origin) return;
   // ملفات التطبيق: الشبكة أولا (للتحديثات) ثم الذاكرة عند انقطاع الإنترنت
-  e.respondWith(fetch(req).then(res => {
+  // no-cache: يتحقق دائما من وجود نسخة جديدة بدل النسخة المحفوظة في المتصفح
+  e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
     return res;
   }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('index.html'))));
