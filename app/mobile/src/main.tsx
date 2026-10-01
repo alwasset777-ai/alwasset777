@@ -147,4 +147,5 @@ async function start() {
   window.addEventListener('online', () => void sync.sync());
 }
 
-void start();
+if (import.meta.env.VITE_DEMO === '1') void import('./demo').then((m) => m.startDemo(root));
+else void start();
