@@ -1877,62 +1877,110 @@
     paint(Sy.status());
   }
 
-  /* ---------- استيراد العقارات من دوسي الصور ---------- */
+  /* ---------- استيراد العقارات من دوسي الصور ----------
+     كل دوسي فيه صور = عقار. النوع والمدينة والعملية تُستنتج من أسماء الدوسيات الأعلى
+     (مثال: 777/MEKNES/APPARTEMENTS/شقة مرجان/صور) */
   const TYPE_RULES = [
-    [/دوبلكس|duplex/, 'duplex'], [/استوديو|studio/, 'studio'], [/شقه|شقق|appart|appartement/, 'apartment'],
-    [/فيلا|فيلات|villa/, 'villa'], [/رياض|riad/, 'riad'], [/بقعه|بقع|\blots?\b/, 'plot_house'],
-    [/ضيعه|فلاحي|ferme|agricol/, 'farm'], [/ارض|اراضي|terrain/, 'land_urban'],
-    [/محل|محلات|حانوت|magasin|local|commerce/, 'shop'], [/مكتب|مكاتب|bureau|office/, 'office'],
+    [/دوبلكس|duplex/, 'duplex'], [/استوديو|studio/, 'studio'], [/شقه|شقق|appart/, 'apartment'],
+    [/فيلا|فيلات|villa/, 'villa'], [/رياض|riad|riyad/, 'riad'], [/بقعه|بقع|\blots?\b/, 'plot_house'],
+    [/ضيعه|فلاحي|ferme|agricol/, 'farm'], [/ارض|اراضي|terrain|terrin/, 'land_urban'],
+    [/فندق|hotel/, 'hotel'], [/auberge|hoberge|ضيافه|maison d.?hote/, 'maison_hote'],
+    [/مدرسه|مدارس|ecole|school|creche/, 'school'], [/مقهي|cafe/, 'cafe'], [/مطعم|restaurant|snack/, 'restaurant'],
+    [/حمام|spa|salon|hammam/, 'hammam'], [/salle de sport|sport|gym/, 'shop'],
+    [/محل|محلات|حانوت|magasin|local|commerce|ساروت/, 'shop'], [/مكتب|مكاتب|bureau|office/, 'office'],
     [/عماره|عمارات|immeuble/, 'building'], [/مستودع|مخزن|depot|entrepot|hangar/, 'warehouse'],
-    [/فندق|hotel/, 'hotel'], [/مقهي|cafe/, 'cafe'], [/مطعم|restaurant/, 'restaurant'], [/غرفه|chambre/, 'room'],
-    [/دار|ديور|منزل|منازل|maison|house/, 'house'],
+    [/غرفه|chambre/, 'room'], [/دار|ديور|منزل|منازل|maison|house/, 'house'],
   ];
+  const plain = s => norm(s).replace(/[^a-zء-ي0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
   function guessType(name) {
-    const n = norm(name);
-    const exact = D.PROPERTY_TYPES.find(t => norm(t.ar) === n || norm(t.fr) === n);
+    const n = plain(name);
+    if (!n) return 'other';
+    const exact = D.PROPERTY_TYPES.find(t => plain(t.ar) === n || plain(t.fr) === n);
     if (exact) return exact.id;
+    if (/terrin|terrain|ارض/.test(n) && /agricol|فلاحي/.test(n)) return 'land_agri';
     const r = TYPE_RULES.find(([re]) => re.test(n));
     return r ? r[1] : 'other';
   }
   function guessTrx(name) {
-    const n = norm(name);
+    const n = plain(name);
     if (/رهن|rahn/.test(n)) return 'rahn';
-    if (/كراء|location|louer/.test(n)) return 'rent';
-    return 'sale';
+    if (/ساروت|pas de porte/.test(n)) return 'pas_de_porte';
+    if (/كراء|location|louer|a louer/.test(n)) return 'rent';
+    return '';
   }
+  // أسماء المدن كما يكتبها الناس (فرنسية بأخطاء شائعة) → الاسم في القائمة
+  const CITY_ALIASES = { madiaq: 'المضيق', mdiq: 'المضيق', 'cabo negro': 'المضيق', berkene: 'بركان', berkane: 'بركان', mohamadia: 'المحمدية', mohammedia: 'المحمدية', tetouane: 'تطوان', tetouan: 'تطوان', hossima: 'الحسيمة', hoceima: 'الحسيمة', 'al hoceima': 'الحسيمة', fes: 'فاس', fez: 'فاس', sale: 'سلا', laayoune: 'العيون', agourai: 'أكوراي', 'oued laou': 'واد لاو', meknes: 'مكناس', tanger: 'طنجة', tangier: 'طنجة', casablanca: 'الدار البيضاء', casa: 'الدار البيضاء', marrakech: 'مراكش', errachidia: 'الرشيدية', 'sidi bennour': 'سيدي بنور' };
+  const CITY_INDEX = (() => {
+    const m = new Map();
+    Object.values(CITY).forEach(c => { m.set(plain(c.n), c.n); m.set(plain(c.f), c.n); });
+    Object.entries(CITY_ALIASES).forEach(([k, v]) => m.set(plain(k), v));
+    return m;
+  })();
+  const guessCity = name => CITY_INDEX.get(plain(name)) || '';
+  // اسم دوسي «عام» (APPARTEMENTS، TERRINS AGRICOLE، SALON & SPA...) وليس اسم عقار معين
+  const CAT_STOP = new Set(['de', 'des', 'du', 'la', 'le', 'les', 'et', 'a', 'salle', 'autre', 'autres', 'divers', 'للبيع', 'للكراء', 'vente', 'location']);
+  const isCategoryName = name => {
+    const words = plain(name).split(' ').filter(Boolean);
+    return words.length > 0 && words.every(w => CAT_STOP.has(w) || guessType(w) !== 'other' || guessTrx(w));
+  };
   const isMediaFile = f => !f.name.startsWith('.') && (/^(image|video)\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif|gif|mp4|mov|m4v)$/i.test(f.name));
+  const isVideoFile = f => f.type.startsWith('video/') || /\.(mp4|mov|m4v)$/i.test(f.name);
 
   function importFolder(fileList, picked) {
     const all = Array.from(fileList).filter(isMediaFile);
     const files = all.filter(f => f.size > 0);
     if (all.length > files.length) toast(`تنبيه: ${all.length - files.length} ملف فارغ تم تجاهله`, 3500);
     if (!files.length) return toast('ما لقيت حتى صورة فهاد الدوسي', 3500);
-    const groups = new Map();
-    files.forEach(f => {
-      const parts = picked || !f.webkitRelativePath ? ['صور', 'الصور المختارة', f.name] : f.webkitRelativePath.split('/');
-      const tf = parts.length >= 3 ? parts[1] : parts[0];
-      if (!groups.has(tf)) groups.set(tf, { name: tf, type: guessType(tf), trx: guessTrx(tf), loose: [], subs: new Map() });
-      const g = groups.get(tf);
-      if (parts.length >= 4) { if (!g.subs.has(parts[2])) g.subs.set(parts[2], []); g.subs.get(parts[2]).push(f); }
-      else g.loose.push(f);
-    });
     const root = picked ? 'صور-' + Date.now() : ((files[0].webkitRelativePath || '').split('/')[0] || 'دوسي');
+
+    // 1) كل دوسي فيه ملفات مباشرة = عقار
+    const leaves = new Map();
+    files.forEach(f => {
+      const dirs = picked || !f.webkitRelativePath ? [root, 'الصور المختارة'] : f.webkitRelativePath.split('/').slice(0, -1);
+      const key = dirs.join('/');
+      if (!leaves.has(key)) leaves.set(key, { dirs, files: [] });
+      leaves.get(key).files.push(f);
+    });
+    // 2) استنتاج النوع / المدينة / العملية من الدوسيات الأعلى
+    const props = Array.from(leaves.values()).map(l => {
+      const anc = l.dirs.slice(1); // بدون الدوسي الرئيسي
+      let typeFrom = '', type = 'other', city = '', trx = '';
+      for (let i = anc.length - 1; i >= 0; i--) {
+        if (type === 'other') { const t = guessType(anc[i]); if (t !== 'other') { type = t; typeFrom = anc[i]; } }
+        if (!city) city = guessCity(anc[i]);
+        if (!trx) trx = guessTrx(anc[i]);
+      }
+      const leaf = anc[anc.length - 1] || root;
+      // الصور موضوعة مباشرة في دوسي نوع أو مدينة (وليس في دوسي خاص بعقار)
+      const ancestorHasType = anc.slice(0, -1).some(a => guessType(a) !== 'other');
+      const leafIsCategory = !anc.length || !!guessCity(leaf) || (isCategoryName(leaf) && !ancestorHasType);
+      return { key: l.dirs.join('/'), label: leaf, typeFrom: typeFrom || '—', type, city, trx: trx || 'sale', files: l.files, leafIsCategory };
+    });
+    // 3) ملخص حسب «دوسي النوع» (يمكن تصحيح النوع لكل مجموعة)
     const known = new Set(S.props.map(p => p.importKey).filter(Boolean));
-    const list = Array.from(groups.values());
-    const hasLoose = list.some(g => g.loose.length);
+    const cats = new Map();
+    props.forEach(p => {
+      if (!cats.has(p.typeFrom)) cats.set(p.typeFrom, { name: p.typeFrom, type: p.type, n: 0, photos: 0, videos: 0, loose: 0 });
+      const c = cats.get(p.typeFrom);
+      c.n++; p.files.forEach(f => (isVideoFile(f) ? c.videos++ : c.photos++));
+      if (p.leafIsCategory) c.loose++;
+    });
+    const list = Array.from(cats.values()).sort((a, b) => b.n - a.n);
+    const nVideos = files.filter(isVideoFile).length;
+    const hasLoose = props.some(p => p.leafIsCategory && p.files.length > 1);
+    const cityCount = new Set(props.map(p => p.city).filter(Boolean)).size;
     modal(`<h3>${ic('upload')} ${picked ? 'استيراد الصور المختارة' : 'استيراد «' + esc(root) + '»'}</h3>
-      <p class="muted" style="margin-top:0">${files.length} صورة/فيديو في ${list.length} دوسي. تأكد من نوع كل دوسي:</p>
-      <div style="display:flex;flex-direction:column;gap:10px">${list.map((g, i) => `
-        <div class="card" style="padding:10px 12px">
-          <b>📁 ${esc(g.name)}</b> <span class="muted" style="font-size:12.5px">— ${g.subs.size ? g.subs.size + ' دوسي فرعي' : ''}${g.subs.size && g.loose.length ? ' + ' : ''}${g.loose.length ? g.loose.length + ' صورة' : ''}</span>
-          <div class="form-grid" style="margin-top:8px">
-            ${fSelect('t' + i, 'النوع', [], g.type, { groups: typeGroups(), noEmpty: true })}
-            ${fSelect('x' + i, 'العملية', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), g.trx, { noEmpty: true })}
-          </div>
+      <p class="muted" style="margin-top:0">${props.length} عقار · ${files.length - nVideos} صورة · ${nVideos} فيديو${cityCount ? ' · ' + cityCount + ' مدينة' : ''}. تأكد من النوع:</p>
+      <div style="display:flex;flex-direction:column;gap:8px;max-height:45vh;overflow:auto">${list.map((c, i) => `
+        <div class="card" style="padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px"><b>📁 ${esc(c.name)}</b><div class="muted" style="font-size:12px">${c.n} عقار · ${c.photos} صورة${c.videos ? ' · ' + c.videos + ' فيديو' : ''}</div></div>
+          <div style="flex:1;min-width:160px">${fSelect('t' + i, 'النوع', [], c.type, { groups: typeGroups(), noEmpty: true })}</div>
         </div>`).join('')}</div>
-      ${hasLoose ? `<div class="field" style="margin-top:12px"><label>الصور الموجودة مباشرة داخل دوسي النوع</label>
-        ${fSeg('loose', [{ v: 'each', l: 'كل صورة = عقار' }, { v: 'one', l: picked ? 'كل الصور = عقار واحد' : 'كل صور الدوسي = عقار واحد' }], picked ? 'one' : 'each')}</div>
-        ${picked ? fInput('pname', 'اسم العقار (اختياري)', '', { ph: 'مثال: شقة مرجان 2' }) : ''}` : ''}
+      ${picked ? fInput('pname', 'اسم العقار (اختياري)', '', { ph: 'مثال: شقة مرجان 2' }) : ''}
+      ${hasLoose ? `<div class="field" style="margin-top:12px"><label>صور موضوعة مباشرة داخل دوسي نوع أو مدينة (بدون دوسي لكل عقار)</label>
+        ${fSeg('loose', [{ v: 'one', l: 'كل الصور = عقار واحد' }, { v: 'each', l: 'كل صورة = عقار' }], picked ? 'one' : 'one')}</div>` : ''}
+      <label class="toggle-line" style="margin-top:12px"><input type="checkbox" id="imp-videos" ${nVideos > 50 ? '' : 'checked'}> استيراد الفيديوهات أيضا (${nVideos})</label>
+      ${nVideos > 50 ? '<div class="muted" style="font-size:12px">الفيديوهات كثيرة وكبيرة: من الأفضل تركها في الدوسي، أو استيرادها لاحقا لكل عقار.</div>' : ''}
       <div class="progress hidden" id="imp-prog" style="margin-top:14px"><div style="width:0"></div></div>
       <div class="muted" id="imp-status" style="font-size:13px;margin-top:6px"></div>
       <div class="btn-row" style="justify-content:flex-end;margin-top:14px">
@@ -1941,31 +1989,33 @@
       </div>`, (m, close) => {
       $('#imp-go', m).onclick = async () => {
         $('#imp-go', m).disabled = true; $('#imp-cancel', m).disabled = true;
-        const looseMode = ($('[name=loose]:checked', m) || {}).value || 'each';
+        const looseMode = ($('[name=loose]:checked', m) || {}).value || 'one';
+        const withVideos = $('#imp-videos', m).checked;
+        const pname = picked && $('[name=pname]', m) ? $('[name=pname]', m).value.trim() : '';
+        const typeOf = new Map(list.map((c, i) => [c.name, $('[name=t' + i + ']', m).value]));
         const jobs = [];
-        list.forEach((g, i) => {
-          let type = $('[name=t' + i + ']', m).value;
-          const trx = $('[name=x' + i + ']', m).value;
-          g.subs.forEach((fs, sub) => jobs.push({ type, trx, label: sub, files: fs, key: root + '/' + g.name + '/' + sub }));
-          const pname = picked && $('[name=pname]', m) ? $('[name=pname]', m).value.trim() : '';
+        props.forEach(p => {
+          let type = typeOf.get(p.typeFrom) || p.type;
           if (picked && pname && type === 'other') type = guessType(pname);
-          if (looseMode === 'one' && g.loose.length) jobs.push({ type, trx, label: pname || g.name, files: g.loose, key: root + '/' + g.name + '/*' });
-          else g.loose.forEach(f => jobs.push({ type, trx, label: f.name.replace(/\.[^.]+$/, ''), files: [f], key: root + '/' + g.name + '/' + f.name }));
+          const fs = withVideos ? p.files : p.files.filter(f => !isVideoFile(f));
+          if (!fs.length) return;
+          if (p.leafIsCategory && looseMode === 'each') fs.forEach(f => jobs.push({ ...p, type, label: f.name.replace(/\.[^.]+$/, ''), files: [f], key: p.key + '/' + f.name }));
+          else jobs.push({ ...p, type, label: pname || p.label, files: fs });
         });
         const todo = jobs.filter(j => !known.has(j.key));
         const skipped = jobs.length - todo.length;
-        const total = todo.reduce((s, j) => s + j.files.length, 0);
+        const total = todo.reduce((s, j) => s + j.files.length, 0) || 1;
         const prog = $('#imp-prog', m), st = $('#imp-status', m);
         prog.classList.remove('hidden');
         let done = 0, made = 0;
         for (const j of todo) {
           const id = uid(), media = [];
           for (const f of j.files) {
-            const fid = uid(), video = f.type.startsWith('video/') || /\.(mp4|mov|m4v)$/i.test(f.name);
+            const fid = uid(), video = isVideoFile(f);
             const rec = { id: fid, owner: id, kind: video ? 'video' : 'photo', name: f.name, mime: f.type, size: f.size };
             if (video) rec.blob = f;
             else {
-              const big = await compressImage(f, 1920, 0.85), small = await compressImage(f, 480, 0.75);
+              const big = await compressImage(f, 1280, 0.78), small = await compressImage(f, 400, 0.7);
               rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
             }
             await DB.put('files', rec);
@@ -1975,7 +2025,7 @@
           }
           const obj = {
             id, createdAt: new Date().toISOString(), transaction: j.trx, type: j.type, status: 'available',
-            city: S.settings.officeCity || 'مكناس', specs: {}, features: [], owner: {}, broker: {}, media,
+            city: j.city || S.settings.officeCity || 'مكناس', specs: {}, features: [], owner: {}, broker: {}, media,
             priceUnit: (D.PRICE_UNITS[j.trx] || ['درهم'])[0], negotiable: true,
             imported: true, importKey: j.key, title: typeAr(j.type) + ' — ' + j.label, notes: 'مستورد من الدوسي: ' + j.key,
           };
