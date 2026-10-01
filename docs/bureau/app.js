@@ -1291,7 +1291,7 @@
     return `<a class="list-row" href="#/request/${r.id}">
       <div class="avatar">${esc((c.name || '؟').trim()[0])}</div>
       <div class="grow">
-        <b>${esc(c.name || 'زبون')} ${r.priority === 'high' ? '🔥' : ''}</b>
+        <b>${esc(c.name || 'زبون')} ${r.priority === 'high' ? '🔥' : ''}${r.imported && !r.transaction ? ' <span class="badge amber">📥 للإكمال</span>' : ''}</b>
         <small class="muted">${esc(r.ref)} · ${esc(trxAr(r.transaction))} · ${esc((r.types || []).map(typeAr).slice(0, 2).join('، ') || 'أي نوع')} · ${esc([((r.districts || [])[0]), r.city].filter(Boolean).join('، '))}</small>
         <div class="btn-row" style="margin-top:6px"><span class="badge ${st.color}">${esc(st.ar)}</span>
           ${r.budgetMax || r.budgetMin ? `<span class="badge gold">${esc([r.budgetMin && fmt(r.budgetMin), r.budgetMax && fmt(r.budgetMax)].filter(Boolean).join(' — '))} د</span>` : ''}
@@ -1713,6 +1713,15 @@
         </div>
 
         <div class="card card-pad">
+          <h3 class="section-title">${ic('users')} استيراد الطلبات من جهات الاتصال (dde)</h3>
+          <p class="muted" style="margin-top:0">كل جهة اتصال فاسمها <b>dde</b> (demande) كتولي طلب جديد بالاسم والهاتف.<br>
+          <b>فالآيفون:</b> تطبيق «Contacts» ← «Listes» (فوق على اليسار) ← ضغطة طويلة على «Tous les contacts» ← «Exporter» ← «Enregistrer dans Fichiers». من بعد ورك هنا واختار الملف <b>.vcf</b>.</p>
+          <div class="btn-row">
+            <label class="btn gold">${ic('upload', 18)} اختيار ملف جهات الاتصال (.vcf)<input type="file" id="imp-vcf" accept=".vcf,text/vcard,text/x-vcard,text/directory" hidden></label>
+          </div>
+        </div>
+
+        <div class="card card-pad">
           <h3 class="section-title">${ic('lock')} الأمان والمظهر</h3>
           <div class="form-grid">
             <div class="field"><label>المظهر</label>${fSeg('theme', [{ v: 'auto', l: 'تلقائي' }, { v: 'light', l: 'فاتح' }, { v: 'dark', l: 'داكن' }], theme)}</div>
@@ -1760,6 +1769,7 @@
     };
     $$('[name=theme]').forEach(el => el.onchange = () => { localStorage.setItem('w777_theme', el.value); applyTheme(); });
     $('#imp-folder').onchange = e => { if (e.target.files.length) importFolder(e.target.files); e.target.value = ''; };
+    $('#imp-vcf').onchange = e => { if (e.target.files[0]) importContacts(e.target.files[0]); e.target.value = ''; };
     $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
     if (!EMBED) $('#bk-full').onclick = () => exportBackup(true);
     $('#bk-light').onclick = () => exportBackup(false);
@@ -1925,6 +1935,86 @@
   };
   const isMediaFile = f => !f.name.startsWith('.') && (/^(image|video)\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif|gif|mp4|mov|m4v)$/i.test(f.name));
   const isVideoFile = f => f.type.startsWith('video/') || /\.(mp4|mov|m4v)$/i.test(f.name);
+
+  /* ---------- استيراد الطلبات من جهات الاتصال (vCard) ----------
+     كل جهة اتصال فيها «dde» (demande) = طلب جديد */
+  const DDE_RE = /(^|[^a-z])(dde|demande)([^a-z]|$)/i;
+  function parseVcf(text) {
+    const lines = text.replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').replace(/=\n/g, '').split('\n');
+    const cards = []; let c = null;
+    const unesc = v => v.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim();
+    const qp = v => { try { return decodeURIComponent(v.replace(/=([0-9A-F]{2})/gi, '%$1')); } catch (e) { return v; } };
+    lines.forEach(line => {
+      if (/^BEGIN:VCARD/i.test(line)) { c = { tels: [], emails: [] }; return; }
+      if (/^END:VCARD/i.test(line)) { if (c) cards.push(c); c = null; return; }
+      if (!c) return;
+      const i = line.indexOf(':'); if (i < 0) return;
+      const head = line.slice(0, i), key = head.split(';')[0].replace(/^item\d+\./i, '').toUpperCase();
+      let val = line.slice(i + 1);
+      if (/QUOTED-PRINTABLE/i.test(head)) val = qp(val);
+      val = unesc(val);
+      if (key === 'FN') c.fn = val;
+      else if (key === 'N') c.n = val.split(';').slice(0, 3).reverse().filter(Boolean).join(' ').trim();
+      else if (key === 'TEL') c.tels.push(val.replace(/[^0-9+]/g, ''));
+      else if (key === 'EMAIL') c.emails.push(val);
+      else if (key === 'NOTE') c.note = val;
+      else if (key === 'ORG') c.org = val.replace(/;+$/, '');
+    });
+    return cards.map(k => ({ name: (k.fn || k.n || k.org || '').trim(), tels: k.tels.filter(Boolean), email: k.emails[0] || '', note: k.note || '' }));
+  }
+  const phoneKey = t => { const d = (t || '').replace(/\D/g, ''); return d.startsWith('212') ? '0' + d.slice(3) : d.startsWith('00212') ? '0' + d.slice(5) : d; };
+  // كلمات عربية كاملة فقط (باش ما نخلطوش مع الأسماء بحال «دارين»)
+  const AR_TYPE_WORDS = new Set(['شقه', 'شقق', 'فيلا', 'دار', 'رياض', 'محل', 'حانوت', 'بقعه', 'ارض', 'مكتب', 'ضيعه', 'فندق', 'مقهي', 'استوديو', 'عماره', 'دوبلكس', 'مستودع', 'مخزن'].map(plain));
+  function reqFromContact(k) {
+    const rest = k.name.replace(new RegExp(DDE_RE.source, 'gi'), ' ').replace(/\s+/g, ' ').trim();
+    const words = plain(rest).split(' ').filter(Boolean);
+    let type = '', city = '';
+    for (let i = 0; i < words.length; i++) {
+      if (!city) city = guessCity(words[i] + ' ' + (words[i + 1] || '')) || guessCity(words[i]);
+      if (!type && (/[a-z]/.test(words[i]) || AR_TYPE_WORDS.has(words[i]))) { const t = guessType(words[i]); if (t !== 'other') type = t; }
+    }
+    const trx = guessTrx(rest);
+    const tels = [...new Set(k.tels.map(phoneKey))];
+    return {
+      id: uid(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), proposals: {},
+      client: { name: k.name, phone: tels[0] || '', phone2: tels[1] || '', email: k.email, notes: k.note, source: '' },
+      transaction: trx || '', types: type ? [type] : [], city, districts: [], features: [], media: [],
+      status: 'new', priority: 'normal', imported: true, importKey: 'vcf:' + (tels[0] || plain(k.name)),
+      notes: 'مستورد من جهات الاتصال: ' + k.name,
+    };
+  }
+  async function importContacts(file) {
+    let cards;
+    try { cards = parseVcf(await file.text()); } catch (e) { return toast('ما قدرتش نقرا هاد الملف', 3500); }
+    if (!cards.length) return toast('هاد الملف ما فيه حتى جهة اتصال (خاصو يكون .vcf)', 4000);
+    const dde = cards.filter(k => k.name && DDE_RE.test(k.name));
+    if (!dde.length) return toast(`لقيت ${cards.length} جهة اتصال ولكن حتى وحدة ما فيها dde`, 4500);
+    const known = new Set(S.reqs.map(r => r.importKey).filter(Boolean));
+    const knownPhones = new Set(S.reqs.map(r => r.client && phoneKey(r.client.phone)).filter(Boolean));
+    const list = dde.map(reqFromContact);
+    const fresh = list.filter(r => !known.has(r.importKey) && !(r.client.phone && knownPhones.has(r.client.phone)));
+    const seen = new Set(); const todo = fresh.filter(r => !seen.has(r.importKey) && seen.add(r.importKey));
+    const dup = list.length - todo.length;
+    modal(`<h3>${ic('users')} استيراد الطلبات من جهات الاتصال</h3>
+      <p>لقيت <b>${cards.length}</b> جهة اتصال، منهم <b>${dde.length}</b> فيهم <b>dde</b>.
+      ${dup ? `<br><span class="muted">${dup} كانو مسجلين من قبل وغادي يتخطاو.</span>` : ''}</p>
+      <div class="card" style="max-height:45vh;overflow:auto;margin:10px 0">${todo.map(r => `<div class="list-row"><div class="grow"><b>${esc(r.client.name)}</b>
+        <small class="muted" dir="ltr">${esc(r.client.phone || '— بلا هاتف')}</small>
+        <small class="muted">${esc([r.transaction && trxAr(r.transaction), r.types.map(typeAr).join(''), r.city].filter(Boolean).join(' · '))}</small></div></div>`).join('') || '<p class="muted" style="padding:12px">ما كاين حتى طلب جديد</p>'}</div>
+      <div class="btn-row" style="justify-content:flex-end"><button class="btn" data-close>إلغاء</button>
+        ${todo.length ? `<button class="btn gold" id="vcf-go">${ic('plus', 16)} زيد ${todo.length} طلب</button>` : ''}</div>`,
+    (m, close) => {
+      const go = $('#vcf-go', m); if (!go) return;
+      go.onclick = async () => {
+        go.disabled = true;
+        for (const r of todo) { r.ref = await DB.nextRef('DM', maxRef(S.reqs)); await DB.saveRec('requests', r); }
+        close();
+        await loadAll();
+        toast(`تمت إضافة ${todo.length} طلب ✓ — كمّل المعلومات ديالهم من «الطلبات»`, 5000);
+        location.hash = '#/requests';
+      };
+    });
+  }
 
   function importFolder(fileList, picked) {
     const all = Array.from(fileList).filter(isMediaFile);
