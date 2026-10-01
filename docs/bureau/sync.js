@@ -201,7 +201,10 @@
     const todo = [];
     owners.forEach(p => (p.media || []).forEach(m => { if (!up[m.id]) todo.push(m.id); }));
     let failed = 0;
+    // دفعات قصيرة: لا يتجاوز الرفع ~40 ثانية في كل دورة، حتى تُسحب وتُرفع البيانات بينها
+    const t0 = Date.now();
     for (let i = 0; i < todo.length; i++) {
+      if (Date.now() - t0 > 40000) return { failed, more: todo.length - i };
       const rec = await DB.get('files', todo[i]);
       if (!rec || !rec.blob) continue;
       setStatus('syncing', `رفع الملفات ${i + 1}/${todo.length}`);
@@ -215,7 +218,7 @@
         await DB.setMeta('sync_uploaded', up);
       } catch (e) { failed++; }
     }
-    return failed;
+    return { failed, more: 0 };
   }
 
   /* تنزيل ملف غير موجود على هذا الجهاز */
@@ -243,9 +246,10 @@
       try {
         const changed = await pull();
         await push();
-        const failed = await uploadFiles();
+        const { failed, more } = await uploadFiles();
         await DB.setMeta('sync_last', new Date().toISOString());
-        setStatus(failed ? 'warn' : 'ok', failed ? `تعذر رفع ${failed} ملف (ربما حجمه كبير جدا)` : 'تمت المزامنة');
+        if (more) { again = true; setStatus('syncing', `بقي ${more} ملف للرفع…`); }
+        else setStatus(failed ? 'warn' : 'ok', failed ? `تعذر رفع ${failed} ملف (ربما حجمه كبير جدا)` : 'تمت المزامنة');
         if (changed) changeCbs.forEach(f => f(changed));
       } catch (e) {
         const m = String(e && e.message || e);
