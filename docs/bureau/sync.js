@@ -195,6 +195,22 @@
     await DB.setMeta('sync_dirty', now);
   }
 
+  /* نسخة مصغرة للسحابة (المساحة المجانية 1 جيغا) — الأصل يبقى كما هو على الجهاز */
+  const CLOUD_MAX = 1024, CLOUD_Q = 0.55, CLOUD_MIN_BYTES = 160 * 1024;
+  async function cloudImage(blob) {
+    if (!blob || !/^image\/(jpeg|png|webp|heic|heif)/i.test(blob.type || '') || blob.size <= CLOUD_MIN_BYTES) return blob;
+    try {
+      const bmp = await createImageBitmap(blob);
+      const k = Math.min(1, CLOUD_MAX / Math.max(bmp.width, bmp.height));
+      const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      if (bmp.close) bmp.close();
+      const out = await new Promise(r => c.toBlob(r, 'image/jpeg', CLOUD_Q));
+      return out && out.size < blob.size ? out : blob;
+    } catch (e) { return blob; }
+  }
+
   async function uploadFiles() {
     const up = await DB.getMeta('sync_uploaded', {});
     const owners = [...(await DB.all('properties')), ...(await DB.all('requests'))];
@@ -212,7 +228,7 @@
         const put = (path, blob) => api(`/storage/v1/object/${BUCKET}/${path}`, {
           method: 'POST', headers: { 'Content-Type': blob.type || rec.mime || 'application/octet-stream', 'x-upsert': 'true', 'cache-control': '31536000' }, body: blob,
         }).then(ok);
-        await put(st.uid + '/' + rec.id, rec.blob);
+        await put(st.uid + '/' + rec.id, await cloudImage(rec.blob));
         if (rec.thumb) await put(st.uid + '/' + rec.id + '.t', rec.thumb);
         up[rec.id] = 1;
         await DB.setMeta('sync_uploaded', up);
