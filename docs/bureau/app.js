@@ -1965,20 +1965,43 @@
   const phoneKey = t => { const d = (t || '').replace(/\D/g, ''); return d.startsWith('212') ? '0' + d.slice(3) : d.startsWith('00212') ? '0' + d.slice(5) : d; };
   // كلمات عربية كاملة فقط (باش ما نخلطوش مع الأسماء بحال «دارين»)
   const AR_TYPE_WORDS = new Set(['شقه', 'شقق', 'فيلا', 'دار', 'رياض', 'محل', 'حانوت', 'بقعه', 'ارض', 'مكتب', 'ضيعه', 'فندق', 'مقهي', 'استوديو', 'عماره', 'دوبلكس', 'مستودع', 'مخزن'].map(plain));
+  // اختصارات كيكتبها المكتب فأسماء جهات الاتصال
+  const DDE_TYPES = [[/^ap+r?t?s?$|^ap+ar?t(ement)?s?$|^appt$/, 'apartment'], [/^villas?$/, 'villa'], [/^terr?ai?ns?$|^terrin$/, 'land_urban'],
+    [/^maisons?$|^dar$/, 'house'], [/^riads?$/, 'riad'], [/^studios?$/, 'studio'], [/^duplex$/, 'duplex'], [/^locals?$|^magasins?$|^mahal$/, 'shop'],
+    [/^bureaux?$/, 'office'], [/^lots?$|^lotissement$/, 'plot_house'], [/^fermes?$/, 'farm'], [/^immeubles?$/, 'building'], [/^depot$|^hangar$/, 'warehouse']];
+  const DDE_TRX = [[/^(loc|location|louer|kra|kira|kraa)$/, 'rent'], [/^(meuble|meublee)$/, 'rent_furnished'], [/^vide$/, 'rent'],
+    [/^(achat|acheter|vente|bay3|chra)$/, 'sale'], [/^rahn$/, 'rahn'], [/^saroute?$|^sarout$/, 'pas_de_porte']];
+  const DISTRICT_ALIASES = { wisslan: 'ويسلان', ouislane: 'ويسلان', ouislan: 'ويسلان', plaisance: 'بلاصانص (Plaisance)', nahda: 'حي النهضة', hamria: 'حمرية (المدينة الجديدة)',
+    marjane: 'مرجان 2', bassatine: 'البساتين', zitoune: 'الزيتون', zitoun: 'الزيتون', toulal: 'تولال', agdal: 'أكدال', souissi: 'السويسي', borj: 'برج مولاي عمر',
+    mansour: 'حي المنصور', menzeh: 'المنزه', sidi_bouzekri: 'سيدي بوزكري', bouzekri: 'سيدي بوزكري', kasba: 'القصبة الإسماعيلية', prestigia: 'بريستيجيا', 'ain slougui': 'عين السلوكي', rouamzine: 'روامزين' };
+  const ABROAD = /^(france|belgique|espagne|italie|allemagne|hollande|canada|usa|angleterre|suisse|mre)$/;
   function reqFromContact(k) {
+    const before = k.name.slice(0, k.name.search(DDE_RE)).replace(/[\s,.-]+$/, '').trim();
     const rest = k.name.replace(new RegExp(DDE_RE.source, 'gi'), ' ').replace(/\s+/g, ' ').trim();
-    const words = plain(rest).split(' ').filter(Boolean);
-    let type = '', city = '';
+    const words = plain(k.name.slice(before.length)).split(' ').filter(w => w && w !== 'dde' && w !== 'demande');
+    const allWords = plain(k.name).split(' ').filter(Boolean);
+    let type = '', city = '', trx = '', district = '', residence = '';
     for (let i = 0; i < words.length; i++) {
-      if (!city) city = guessCity(words[i] + ' ' + (words[i + 1] || '')) || guessCity(words[i]);
-      if (!type && (/[a-z]/.test(words[i]) || AR_TYPE_WORDS.has(words[i]))) { const t = guessType(words[i]); if (t !== 'other') type = t; }
+      const w = words[i], w2 = w + ' ' + (words[i + 1] || '');
+      if (!type) { const t = DDE_TYPES.find(([re]) => re.test(w)); if (t) type = t[1]; else if (/[a-z]/.test(w) || AR_TYPE_WORDS.has(w)) { const g = guessType(w); if (g !== 'other') type = g; } }
+      if (!trx || (trx === 'rent' && /^meuble/.test(w))) { const t = DDE_TRX.find(([re]) => re.test(w)); if (t) trx = t[1]; }
+      if (!district) district = DISTRICT_ALIASES[w2] || DISTRICT_ALIASES[w] || '';
+      if (ABROAD.test(w)) residence = w;
     }
-    const trx = guessTrx(rest);
+    // المدينة: من أي كلمة فالاسم (حتى قبل dde بحال «Said Salé»)
+    for (let i = 0; i < allWords.length && !city; i++) city = guessCity(allWords[i] + ' ' + (allWords[i + 1] || '')) || guessCity(allWords[i]);
+    for (let i = 0; i < allWords.length && !district; i++) district = DISTRICT_ALIASES[allWords[i]] || '';
+    if (!trx) trx = guessTrx(rest);
+    const defCity = (S.settings && S.settings.officeCity) || 'مكناس';
+    if (district && !city) city = (CITY[defCity] && districtsOf(defCity).includes(district)) ? defCity : (Object.values(CITY).find(c => (c.d || []).includes(district)) || {}).n || '';
+    if (district && city && !districtsOf(city).includes(district)) district = '';
     const tels = [...new Set(k.tels.map(phoneKey))];
+    const isBroker = /intermediaire|samsar|سمسار|وسيط/.test(plain(before));
+    const c = { name: before || k.name, phone: tels[0] || '', phone2: tels[1] || '', email: k.email, notes: k.note, source: isBroker ? 'وسيط آخر' : '' };
+    if (residence) { c.nationality = 'مغربي مقيم بالخارج (MRE)'; c.residence = residence[0].toUpperCase() + residence.slice(1); }
     return {
       id: uid(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), proposals: {},
-      client: { name: k.name, phone: tels[0] || '', phone2: tels[1] || '', email: k.email, notes: k.note, source: '' },
-      transaction: trx || '', types: type ? [type] : [], city, districts: [], features: [], media: [],
+      client: c, transaction: trx || '', types: type ? [type] : [], city, districts: district ? [district] : [], features: [], media: [],
       status: 'new', priority: 'normal', imported: true, importKey: 'vcf:' + (tels[0] || plain(k.name)),
       notes: 'مستورد من جهات الاتصال: ' + k.name,
     };
