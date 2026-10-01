@@ -3,6 +3,7 @@ import type { CustomFieldDef, CustomFieldType } from '../../api/contract';
 import type { DictKey } from '../../i18n/index';
 import { errorMessage, useApi, useAsync, validationFields } from '../api';
 import { Alert, Button, Card, Field, Input } from '../components/ui';
+import { askConfirm } from '../confirm';
 import { useI18n } from '../i18n';
 
 const TYPES: CustomFieldType[] = ['text', 'number', 'boolean', 'date', 'select'];
@@ -52,7 +53,7 @@ export function CustomFieldsCard() {
               <span>{label(d)} <span className="text-xs text-muted">({t(`cftype.${d.fieldType}` as DictKey)})</span></span>
               <span className="flex gap-1">
                 <Button variant="ghost" onClick={() => edit(d)}>{t('common.edit')}</Button>
-                <Button variant="ghost" onClick={() => confirm(`${t('common.delete')} « ${label(d)} » ?`) && void api.customFields.remove(d.id!).then(reload)}>{t('common.delete')}</Button>
+                <Button variant="ghost" onClick={() => void askConfirm(`${t('common.delete')} « ${label(d)} » ?`, { ok: t('common.delete'), cancel: t('common.cancel') }).then((ok) => { if (ok) void api.customFields.remove(d.id!).then(reload); })}>{t('common.delete')}</Button>
               </span>
             </li>
           ))}

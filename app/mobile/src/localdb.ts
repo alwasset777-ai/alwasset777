@@ -1,4 +1,4 @@
-import initSqlJs from 'sql.js';
+import initSqlJs, { type SqlJsStatic } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { sqlJsDriver } from '@alwasset/shared/db/drivers/sqljs';
 import { migrate } from '@alwasset/shared/db/migrate';
@@ -10,8 +10,8 @@ const KEY = 'main.sqlite';
  * Base locale du mobile : SQLite (WebAssembly) avec EXACTEMENT le même schéma
  * et les mêmes migrations que le Mac, sauvegardée dans IndexedDB.
  */
-export async function openLocalDb() {
-  const SQL = await initSqlJs({ locateFile: () => wasmUrl });
+export async function openLocalDb(loadSql: () => Promise<SqlJsStatic> = () => initSqlJs({ locateFile: () => wasmUrl })) {
+  const SQL = await loadSql();
   const bytes = await loadBytes(KEY);
   const raw = new SQL.Database(bytes ?? undefined);
   const driver = sqlJsDriver(raw);

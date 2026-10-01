@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 // La PWA est servie par le Mac sous /m/ (et plus tard par un domaine HTTPS).
 export default defineConfig(({ mode }) => ({
   // Démo web autonome (npm run build:demo) servie à la racine d'un domaine.
-  base: mode === 'demo' ? '/' : '/m/',
+  base: mode === 'demo' ? './' : '/m/',
   define: mode === 'demo' ? { 'import.meta.env.VITE_DEMO': JSON.stringify('1') } : {},
   plugins: [react(), tailwindcss()],
   server: {

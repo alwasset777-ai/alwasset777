@@ -3,6 +3,7 @@ import type { MediaItem } from '../../../api/contract';
 import { errorMessage, useApi, useAsync } from '../../api';
 import { formatBytes, MediaImage } from '../../components/Media';
 import { Alert, Button, Card, cx } from '../../components/ui';
+import { askConfirm } from '../../confirm';
 import { useI18n } from '../../i18n';
 
 /** Photos, vidéos et documents d'une fiche, avec glisser-déposer. */
@@ -41,7 +42,9 @@ export function MediaGallery({ entity, entityId, canWrite }: { entity: string; e
   }
 
   const setCover = (m: MediaItem) => run(() => api.media.reorder(entity, entityId, [m.id, ...(data ?? []).filter((x) => x.id !== m.id).map((x) => x.id)]));
-  const remove = (m: MediaItem) => confirm(`${t('common.delete')} « ${m.originalName ?? m.title ?? ''} » ?`) && run(() => api.media.remove(m.id));
+  const remove = async (m: MediaItem) => {
+    if (await askConfirm(`${t('common.delete')} « ${m.originalName ?? m.title ?? ''} » ?`, { ok: t('common.delete'), cancel: t('common.cancel') })) await run(() => api.media.remove(m.id));
+  };
 
   return (
     <Card

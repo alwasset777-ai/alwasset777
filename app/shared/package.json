@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./ui/styles.css": "./src/ui/styles.css",
+    "./ui/confirm": "./src/ui/confirm.ts",
     "./ui/*": "./src/ui/*.tsx",
     "./*": "./src/*.ts"
   },

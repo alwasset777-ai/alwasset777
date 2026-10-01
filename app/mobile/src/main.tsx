@@ -7,6 +7,7 @@ import { HybridClock } from '@alwasset/shared/sync/hlc';
 import { translate, dirOf, isLang, type Lang } from '@alwasset/shared/i18n/index';
 import { AlWassetApp } from '@alwasset/shared/ui/App';
 import { Logo } from '@alwasset/shared/ui/components/Logo';
+import { askConfirm } from '@alwasset/shared/ui/confirm';
 import '@alwasset/shared/ui/styles.css';
 import { mobileApi } from './api';
 import { openLocalDb } from './localdb';
@@ -121,7 +122,7 @@ async function start() {
     render();
   });
   const unpair = async () => {
-    if (!confirm(translate(lang, 'mobile.unpair') + ' ?')) return;
+    if (!(await askConfirm(translate(lang, 'mobile.unpair') + ' ?'))) return;
     saveCredentials(null);
     await persist();
     await deleteAll();

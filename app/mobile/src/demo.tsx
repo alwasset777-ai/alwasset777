@@ -9,6 +9,10 @@ import { attachMedia, isMediaEntity, listMedia, mimeFromName, type StoredFile } 
 import { needsSetup, setupAgency } from '@alwasset/shared/services/setup';
 import { HybridClock } from '@alwasset/shared/sync/hlc';
 import { AlWassetApp } from '@alwasset/shared/ui/App';
+import { askConfirm } from '@alwasset/shared/ui/confirm';
+// Version asm.js de SQLite (sans WebAssembly) : la démo fonctionne aussi
+// dans les pages intégrées qui n'autorisent pas WebAssembly.
+import initSqlAsm from 'sql.js/dist/sql-asm.js';
 import { mobileApi } from './api';
 import { openLocalDb } from './localdb';
 import { deleteAll, loadBytes, saveBytes, type Credentials } from './storage';
@@ -170,7 +174,7 @@ function DemoBar({ onReset }: { onReset(): void }) {
 }
 
 export async function startDemo(root: Root) {
-  const { driver, schedulePersist, persist } = await openLocalDb();
+  const { driver, schedulePersist, persist } = await openLocalDb(() => initSqlAsm());
   const clock = new HybridClock(DEMO_DEVICE);
   const ctx: StoreContext = { db: driver, clock };
   if (needsSetup(ctx)) {
@@ -185,7 +189,7 @@ export async function startDemo(root: Root) {
   }
   let version = 0;
   const reset = async () => {
-    if (!confirm('إعادة البيانات التجريبية إلى حالتها الأصلية؟')) return;
+    if (!(await askConfirm('إعادة البيانات التجريبية إلى حالتها الأصلية؟'))) return;
     await deleteAll();
     location.reload();
   };

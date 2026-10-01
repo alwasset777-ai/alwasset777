@@ -5,6 +5,7 @@ import type { DictKey } from '../../../i18n/index';
 import { mapsUrl } from '../../../text/geo';
 import { errorMessage, useApi, useAsync, validationFields } from '../../api';
 import { Alert, Badge, Button, Card, Input, PageTitle, Select, Spinner } from '../../components/ui';
+import { askConfirm } from '../../confirm';
 import { useI18n } from '../../i18n';
 import { MediaGallery } from './MediaGallery';
 import { PriceTag } from './PropertyList';
@@ -35,7 +36,7 @@ export function PropertyDetail({ id, canWrite, onBack, onEdit, onOpen, onAddUnit
   }
 
   async function remove() {
-    if (!confirm(t('prop.confirmDelete'))) return;
+    if (!(await askConfirm(t('prop.confirmDelete'), { ok: t('common.delete'), cancel: t('common.cancel') }))) return;
     setActionError(undefined);
     try {
       await api.properties.remove(id);
