@@ -18,12 +18,16 @@ asarUnpack:
 # Le module SQLCipher est livré précompilé en N-API (darwin arm64/x64 inclus) :
 # compatible avec toutes les versions d'Electron, aucune recompilation nécessaire.
 npmRebuild: false
+afterPack: scripts/after-pack.cjs
 mac:
   category: public.app-category.business
   target:
     - target: dmg
       arch: [arm64, x64]
-  hardenedRuntime: true
+  # Sans certificat Apple, l'application est signée « ad hoc » (voir
+  # scripts/after-pack.cjs) : indispensable pour qu'elle démarre sur les Mac
+  # Apple Silicon. Le runtime renforcé n'est activé qu'avec un vrai certificat.
+  hardenedRuntime: false
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
