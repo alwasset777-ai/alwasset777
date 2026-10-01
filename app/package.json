@@ -1,0 +1,25 @@
+{
+  "name": "alwasset-app",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Al Wasset 777 — système de gestion immobilière local-first (desktop macOS + mobile PWA)",
+  "workspaces": [
+    "shared",
+    "desktop",
+    "mobile"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w desktop",
+    "dev:mobile": "npm run dev -w mobile",
+    "build": "npm run build -w mobile && npm run build -w desktop",
+    "build:mac": "npm run build -w mobile && npm run build:mac -w desktop",
+    "typecheck": "tsc -p shared && tsc -p desktop && tsc -p mobile",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.2"
+  }
+}
