@@ -482,7 +482,7 @@
     const t = TYPE[p.type] || {};
     const c = CITY[p.city] || {};
     const parts = [p.ref, p.title, t.ar, t.fr, trxAr(p.transaction), trxShort(p.transaction), p.city, c.f, p.district, p.address, p.landmark,
-      p.owner && p.owner.name, p.owner && p.owner.phone, p.owner && p.owner.phone2, p.owner && p.owner.cin,
+      p.owner && p.owner.name, p.owner && p.owner.phone, p.partner && p.partner.name, p.owner && p.owner.phone2, p.owner && p.owner.cin,
       p.broker && p.broker.name, p.broker && p.broker.phone, p.broker && p.broker.agency,
       p.priceMin, p.priceMax, p.areaTotal, p.description, p.notes, (p.features || []).join(' '),
       p.specs && p.specs.residenceName, p.specs && p.specs.subdivision, p.titleNumber, PSTATUS[p.status] && PSTATUS[p.status].ar];
@@ -679,7 +679,7 @@
     return `<a class="card prop-card" href="#/property/${p.id}">
       <div class="prop-cover">
         ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
-        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}</div>
+        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}</div>
         <span class="ref">${esc(p.ref)}</span>
         ${nPh || nV ? `<span class="cnt">${nPh ? ic('camera', 14) + nPh : ''} ${nV ? ic('video', 14) + nV : ''}</span>` : ''}
       </div>
@@ -703,6 +703,7 @@
     if (f.trx) list = list.filter(p => p.transaction === f.trx);
     if (f.status === 'active') list = list.filter(p => ['available', 'reserved', 'negotiation'].includes(p.status));
     else if (f.status === 'todo') list = list.filter(needsInfo);
+    else if (f.status === 'partner') list = list.filter(p => p.partner);
     else if (f.status) list = list.filter(p => p.status === f.status);
     if (f.cat) list = list.filter(p => catOf(p.type) === f.cat);
     if (f.type) list = list.filter(p => p.type === f.type);
@@ -738,7 +739,8 @@
     const nf = activeFilterCount();
     const trxChips = [{ v: '', l: 'الكل' }, ...D.TRANSACTIONS.filter(t => S.props.some(p => p.transaction === t.id)).map(t => ({ v: t.id, l: t.ar }))];
     const nTodo = S.props.filter(needsInfo).length;
-    const stChips = [{ v: 'active', l: 'المعروضة' }, ...(nTodo ? [{ v: 'todo', l: '📥 للإكمال (' + nTodo + ')' }] : []), { v: '', l: 'كل الحالات' }, ...D.STATUSES.map(s => ({ v: s.id, l: s.ar }))];
+    const nPart = S.props.filter(p => p.partner).length;
+    const stChips = [{ v: 'active', l: 'المعروضة' }, ...(nTodo ? [{ v: 'todo', l: '📥 للإكمال (' + nTodo + ')' }] : []), ...(nPart ? [{ v: 'partner', l: '🤝 الشركاء (' + nPart + ')' }] : []), { v: '', l: 'كل الحالات' }, ...D.STATUSES.map(s => ({ v: s.id, l: s.ar }))];
     main().innerHTML = `
       <div class="page-head">
         <div><h1>العقارات</h1><div class="sub">${list.length} نتيجة${q ? ` لـ «${esc(q)}»` : ''}</div></div>
@@ -1195,6 +1197,12 @@
           ${docs.length ? `<div class="card card-pad no-print"><b style="display:block;margin-bottom:10px">المستندات (${docs.length})</b><div class="doc-list">${docs.map(d => `<a href="#" data-doc="${d.id}">${ic('file')} <span class="grow">${esc(d.name)}</span><small class="muted">${Math.max(1, Math.round((d.size || 0) / 1024))} KB</small></a>`).join('')}</div></div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:16px">
+          ${p.partner ? `<div class="card card-pad no-print" style="border:2px solid var(--gold, #c9a227)">
+            <b style="display:block;margin-bottom:8px">🤝 عقار من وكالة شريكة</b>
+            <div style="font-size:17px;font-weight:800">${esc(p.partner.name)}</div>
+            ${p.partner.agent ? `<div class="muted" style="font-size:13px">المكلف: ${esc(p.partner.agent)}</div>` : ''}
+            <div class="btn-row" style="margin-top:10px">${[p.partner.agentPhone, p.partner.phone].filter((x, i, a) => x && a.indexOf(x) === i).map(ph => `<a class="btn sm" href="${telLink(ph)}">${ic('phone', 16)} ${esc(ph)}</a><a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(ph)}">${ic('wa', 16)}</a>`).join('')}</div>
+          </div>` : ''}
           <div class="card card-pad no-print">
             <b style="display:block;margin-bottom:12px">صاحب العقار</b>
             <div class="contact-card"><div class="avatar">${esc((p.owner && p.owner.name || '؟').trim()[0])}</div>
@@ -1723,6 +1731,12 @@
           </div>
         </div>
 
+        ${EMBED ? '' : `<div class="card card-pad" id="partners-card">
+          <h3 class="section-title">🤝 الوكالات الشريكة</h3>
+          <p class="muted" style="margin-top:0">زيد وكالة وعطيها رابط خاص بيها. منو تقدر تزيد العقارات ديالها، وكيوصلو عندك فـ «العقارات» بسمية الوكالة.</p>
+          <div id="partners-body" class="muted">…</div>
+        </div>`}
+
         <div class="card card-pad">
           <h3 class="section-title">${ic('users')} استيراد الطلبات من جهات الاتصال (dde)</h3>
           <p class="muted" style="margin-top:0">كل جهة اتصال فاسمها <b>dde</b> (demande) كتولي طلب جديد بالاسم والهاتف.<br>
@@ -1770,7 +1784,7 @@
         <p class="muted" style="text-align:center;font-size:12.5px">مكتب الوسيط 777 — الإصدار 1.0 · يعمل بدون إنترنت</p>
       </div>`;
 
-    if (!EMBED) bindCloudCard();
+    if (!EMBED) { bindCloudCard(); renderPartners(); }
     $('#sform').onsubmit = async e => {
       e.preventDefault();
       Object.assign(S.settings, collect(e.target), { updatedAt: new Date().toISOString() });
@@ -1846,6 +1860,93 @@
       <p class="muted" style="font-size:12.5px;margin-bottom:0">أول مرة فقط: أنشئ مشروعا على supabase.com ثم نفّذ ملف <b dir="ltr">supabase.sql</b> في SQL Editor (مرفق مع التطبيق).</p>
     </div>`;
   }
+  /* ---------- الوكالات الشريكة ---------- */
+  const partnerLink = t => new URL('partner.html?t=' + t, location.href.split('#')[0]).href;
+  async function renderPartners() {
+    const body = $('#partners-body'); if (!body) return;
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) { body.innerHTML = 'فعّل «المزامنة السحابية» أولا باش تستعمل هاد الخاصية.'; return; }
+    let list = [];
+    try { list = await (await Sy.request('/rest/v1/w777_partners?select=token,name,phone,active,created_at&order=created_at.desc')).json(); }
+    catch (e) { body.innerHTML = 'تعذر التحميل: ' + esc(e.message); return; }
+    const count = name => S.props.filter(p => p.partner && p.partner.name === name).length;
+    body.innerHTML = `
+      <form class="form-grid" id="pt-add" style="margin-bottom:12px">
+        <div class="field"><label>اسم الوكالة</label><input name="name" required placeholder="مثال: وكالة النخيل"></div>
+        <div class="field"><label>الهاتف</label><input name="phone" type="tel"></div>
+        <div class="field full"><button class="btn gold">${ic('plus', 16)} زيد الوكالة وصاوب الرابط</button></div>
+      </form>
+      ${list.length ? list.map(x => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
+        <div class="grow"><b>${esc(x.name)}</b> ${x.active ? '' : '<span class="badge red">موقوف</span>'}
+          <small class="muted">${esc(x.phone || '')} · ${count(x.name)} عقار</small></div>
+        <div class="btn-row">
+          <button class="btn sm" data-pt-copy="${x.token}">${ic('copy', 15)} نسخ الرابط</button>
+          <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${x.phone ? waPhone(x.phone) : ''}?text=${encodeURIComponent('السلام عليكم، هذا الرابط باش تزيدو العقارات ديالكم عند مكتب الوسيط 777:\n' + partnerLink(x.token))}">${ic('wa', 15)} صيفط</a>
+          <button class="btn sm" data-pt-toggle="${x.token}" data-on="${x.active ? 1 : 0}">${x.active ? 'إيقاف' : 'تفعيل'}</button>
+        </div></div>`).join('') : '<p class="muted">مازال ما زدتي حتى وكالة.</p>'}`;
+    $('#pt-add').onsubmit = async e => {
+      e.preventDefault();
+      const v = collect(e.target);
+      if (!v.name) return;
+      try {
+        const r = await (await Sy.request('/rest/v1/w777_partners', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ name: v.name, phone: v.phone || null }) })).json();
+        const link = partnerLink(r[0].token);
+        try { await navigator.clipboard.writeText(link); toast('تزادت الوكالة ✓ — الرابط تنسخ', 3500); } catch (er) { toast('تزادت الوكالة ✓', 3000); }
+        renderPartners();
+      } catch (er) { toast('تعذر: ' + er.message, 4000); }
+    };
+    $$('[data-pt-copy]', body).forEach(b => b.onclick = () => navigator.clipboard.writeText(partnerLink(b.dataset.ptCopy)).then(() => toast('تنسخ الرابط ✓')));
+    $$('[data-pt-toggle]', body).forEach(b => b.onclick = async () => {
+      await Sy.request('/rest/v1/w777_partners?token=eq.' + b.dataset.ptToggle, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: b.dataset.on !== '1' }) });
+      renderPartners();
+    });
+  }
+  // كل مزامنة: العقارات الجديدة ديال الشركاء كتولي عقارات عادية بسمية الوكالة
+  async function importPartnerItems() {
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) return 0;
+    const items = await (await Sy.request('/rest/v1/w777_partner_items?imported=eq.false&select=id,token,data,photos,created_at,w777_partners(name,phone)&order=created_at.asc&limit=20')).json();
+    let n = 0;
+    for (const it of items) {
+      const id = 'pt-' + it.id;
+      const d = it.data || {}, pa = it.w777_partners || {};
+      if (!(await DB.get('properties', id))) {
+        const media = [];
+        for (const path of it.photos || []) {
+          try {
+            const res = await Sy.request('/storage/v1/object/authenticated/w777-partner/' + path);
+            const blob = await res.blob();
+            const small = await compressImage(blob, 400, 0.7);
+            const fid = uid();
+            await DB.put('files', { id: fid, owner: id, kind: 'photo', name: path.split('/').pop(), mime: 'image/jpeg', size: blob.size, blob, thumb: small.blob });
+            media.push({ id: fid, kind: 'photo', name: path.split('/').pop(), mime: 'image/jpeg', size: blob.size });
+          } catch (e) { /* صورة ناقصة */ }
+        }
+        const price = num(String(d.price || '').replace(/[^\d.]/g, ''));
+        const p = {
+          id, createdAt: it.created_at || new Date().toISOString(), updatedAt: new Date().toISOString(),
+          transaction: d.transaction || 'sale', type: d.type || 'other', city: d.city || '', district: d.district || '',
+          priceMin: price || null, priceMax: price || null, priceUnit: 'درهم', negotiable: true,
+          areaTotal: num(d.area) || null, specs: { bedrooms: num(d.bedrooms) || '', floor: d.floor || '' },
+          features: [], status: 'available', media, cover: media[0] ? media[0].id : null,
+          description: d.description || '',
+          owner: { name: d.agent || pa.name || '', phone: d.phone || pa.phone || '', relation: 'وكالة شريكة' },
+          partner: { name: pa.name || '', phone: pa.phone || '', agent: d.agent || '', agentPhone: d.phone || '', token: it.token },
+          notes: 'عقار من الوكالة الشريكة: ' + (pa.name || ''),
+        };
+        p.ref = await DB.nextRef('W777', maxRef(S.props));
+        p.title = autoTitle(p);
+        await DB.saveRec('properties', p);
+        n++;
+      }
+      await Sy.request('/rest/v1/w777_partner_items?id=eq.' + it.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imported: true }) });
+      // الصور ولات عندنا (كتطلع مع المزامنة العادية) — نمسحو النسخة ديال الشريك باش ما تاخدش المساحة
+      if ((it.photos || []).length) { try { await Sy.request('/storage/v1/object/w777-partner', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: it.photos }) }); } catch (e) { /* */ } }
+    }
+    if (n) { await loadAll(); toast(`🤝 وصلو ${n} عقار جديد من الوكالات الشريكة`, 4000); }
+    return n;
+  }
+
   function bindCloudCard() {
     const Sy = window.W777_SYNC;
     const b = id => $('#' + id);
@@ -1889,6 +1990,7 @@
         cloudCard().then(html => { const c = $('#cloud-card'); if (c) { c.outerHTML = html; bindCloudCard(); } });
       }
     });
+    if (Sy.onPulled) Sy.onPulled(importPartnerItems);
     Sy.onChange(async () => {
       await loadAll();
       const h = location.hash;

@@ -20,6 +20,7 @@
   let status = { state: 'off', msg: '', at: null };
   const statusCbs = [];
   const changeCbs = [];
+  const pullHooks = [];
   const setStatus = (state, msg) => { status = { state, msg: msg || '', at: new Date().toISOString() }; statusCbs.forEach(f => f(status)); };
 
   function defaults() {
@@ -267,7 +268,8 @@
     running = (async () => {
       setStatus('syncing', 'جاري المزامنة…');
       try {
-        const changed = await pull();
+        let changed = await pull();
+        for (const h of pullHooks) { try { const n = await h(); if (n) changed += n; } catch (e) { console.warn('pull hook', e); } }
         await push();
         const { failed, more } = await uploadFiles();
         await DB.setMeta('sync_last', new Date().toISOString());
@@ -307,5 +309,9 @@
     pending: async () => Object.keys(await DB.getMeta('sync_dirty', {})).length,
     onStatus: f => statusCbs.push(f),
     onChange: f => changeCbs.push(f),
+    // يُنفَّذ بعد كل سحب (مثلا: جلب عقارات الوكالات الشريكة)
+    onPulled: f => pullHooks.push(f),
+    request: (path, opts) => api(path, opts).then(ok),
+    uid: () => st && st.uid,
   };
 })();
