@@ -1728,7 +1728,7 @@
           <p class="muted" style="margin-top:0">كل جهة اتصال فاسمها <b>dde</b> (demande) كتولي طلب جديد بالاسم والهاتف.<br>
           <b>فالآيفون:</b> تطبيق «Contacts» ← «Listes» (فوق على اليسار) ← ضغطة طويلة على «Tous les contacts» ← «Exporter» ← «Enregistrer dans Fichiers». من بعد ورك هنا واختار الملف <b>.vcf</b>.</p>
           <div class="btn-row">
-            <label class="btn gold">${ic('upload', 18)} اختيار ملف جهات الاتصال (.vcf)<input type="file" id="imp-vcf" accept=".vcf,text/vcard,text/x-vcard,text/directory" hidden></label>
+            <label class="btn gold">${ic('upload', 18)} اختيار ملف جهات الاتصال (.vcf)<input type="file" id="imp-vcf" hidden></label>
           </div>
         </div>
 
