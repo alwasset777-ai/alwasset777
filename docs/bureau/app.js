@@ -2483,6 +2483,32 @@
   /* ============================================================
      التشغيل
      ============================================================ */
+  /* احتياط: إلا عجلة الفأرة ما حركاتش الصفحة (مشكل فبعض نسخ Chrome/Safari على الماك)، كنحركوها بيدينا */
+  function wheelFallback() {
+    const canScroll = (el, dy) => {
+      for (; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+        const cs = getComputedStyle(el);
+        if (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1) {
+          if (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) return true;
+        }
+      }
+      return false;
+    };
+    window.addEventListener('wheel', e => {
+      if (e.ctrlKey || e.defaultPrevented || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+      if (canScroll(e.target, e.deltaY)) return;
+      const t = performance.now();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
+      const atEdge = dy > 0 ? window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1 : window.scrollY <= 0;
+      if (atEdge) return;
+      // المتصفح كيحرك الصفحة قبل أو مباشرة من بعد هاد الحدث؛ إلا ما وقع حتى «scroll» كنحركوها حنا
+      setTimeout(() => { if (lastScroll < t - 150) window.scrollBy(0, dy); }, 120);
+    }, { passive: true });
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
+  }
+  wheelFallback();
+
   let deferredInstall = null;
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; });
 
