@@ -431,8 +431,8 @@ main { flex: 1; min-width: 0; padding: 18px 16px calc(var(--nav-h) + var(--safe-
 .grid-2 > *, .detail-grid > *, .form-grid > *, .layout > * { min-width: 0; }
 /* السكرول ديال الصفحة كيبقى فـ html بوحدو: body ما خاصوش يولي «حاوية سكرول»
    (overflow-x: hidden على body + overscroll-behavior كانو كيوقفو عجلة الفأرة فوسط الصفحة) */
-html { overflow-x: hidden; overscroll-behavior-y: none; }
-body { overflow-x: clip; }
+html, body { overflow-x: clip; }
+@supports not (overflow-x: clip) { html { overflow-x: hidden; } }
 .chips { max-width: 100%; min-width: 0; } .toolbar { min-width: 0; }
 #btn-sync { position: relative; }
 #btn-sync::after { content: ''; position: absolute; top: 8px; inset-inline-end: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--gray); border: 2px solid #173c66; }
