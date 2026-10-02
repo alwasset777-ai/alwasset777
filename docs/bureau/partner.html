@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>إضافة عقارات — شريك الوسيط 777</title>
+  <meta name="theme-color" content="#0f2a4a">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .pt-wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+    .pt-head { display: flex; align-items: center; gap: 12px; margin: 6px 0 16px; }
+    .pt-head h1 { font-size: 22px; margin: 0; }
+    .pt-head .sub { color: var(--muted); font-size: 14px; }
+    .pt-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 10px; }
+    .pt-thumbs div { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+    .pt-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+    .pt-thumbs button { position: absolute; top: 4px; left: 4px; border: 0; border-radius: 50%; width: 24px; height: 24px; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; }
+    .pt-list .row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .pt-list .row:last-child { border-bottom: 0; }
+    .pt-ok { text-align: center; padding: 28px 16px; }
+    .pt-ok .big { font-size: 46px; }
+    label.req::after { content: ' *'; color: var(--red, #c0392b); }
+  </style>
+</head>
+<body>
+  <div class="pt-wrap" id="pt">
+    <div class="card card-pad" style="text-align:center">جاري التحميل…</div>
+  </div>
+  <script src="data.js"></script>
+  <script src="../app/config.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const D = window.W777_DATA;
+    const C = window.__ALWASSET_SUPABASE__ || {};
+    const URL_ = String(C.url || '').replace(/\/+$/, ''), KEY = C.anonKey || '';
+    const T = new URLSearchParams(location.search).get('t') || '';
+    const box = document.getElementById('pt');
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+    const rpc = (fn, body) => fetch(URL_ + '/rest/v1/rpc/' + fn, { method: 'POST', headers: H, body: JSON.stringify(body) })
+      .then(async r => { const j = await r.json().catch(() => null); if (!r.ok) throw new Error((j && (j.message || j.hint)) || ('HTTP ' + r.status)); return j; });
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    const LS = 'w777_partner_contact_' + T;
+
+    async function compress(file, max, q) {
+      let bmp;
+      try { bmp = await createImageBitmap(file); } catch (e) {
+        const u = URL.createObjectURL(file);
+        try { bmp = new Image(); bmp.src = u; await bmp.decode(); } finally { setTimeout(() => URL.revokeObjectURL(u), 1000); }
+      }
+      const bw = bmp.naturalWidth || bmp.width, bh = bmp.naturalHeight || bmp.height;
+      const k = Math.min(1, max / Math.max(bw, bh));
+      const c = document.createElement('canvas'); c.width = Math.round(bw * k); c.height = Math.round(bh * k);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      if (bmp.close) bmp.close();
+      return new Promise(r => c.toBlob(r, 'image/jpeg', q));
+    }
+
+    const cityOpts = () => D.REGIONS.map(r => `<optgroup label="${esc(r.r)}">${r.cities.map(c => `<option value="${esc(c.n)}">${esc(c.n)} — ${esc(c.f)}</option>`).join('')}</optgroup>`).join('');
+    const typeOpts = () => Object.entries(D.CATEGORIES).map(([k, c]) => `<optgroup label="${esc(c.ar)}">${D.PROPERTY_TYPES.filter(t => t.cat === k).map(t => `<option value="${t.id}">${esc(t.ar)} — ${esc(t.fr)}</option>`).join('')}</optgroup>`).join('');
+
+    let photos = [];
+    async function start() {
+      if (!T || !URL_) { box.innerHTML = `<div class="card card-pad">الرابط غير صالح. اطلب رابطا جديدا من مكتب الوسيط 777.</div>`; return; }
+      let info;
+      try { info = await rpc('w777_partner_info', { t: T }); } catch (e) { info = null; }
+      if (!info || !info.name) { box.innerHTML = `<div class="card card-pad">هذا الرابط غير مفعل أو انتهت صلاحيته. تواصل مع مكتب الوسيط 777.</div>`; return; }
+      const saved = JSON.parse(localStorage.getItem(LS) || '{}');
+      box.innerHTML = `
+        <div class="pt-head"><img src="icons/logo.png" alt="" style="height:44px">
+          <div><h1>مرحبا ${esc(info.name)} 👋</h1><div class="sub">أضف عقاراتك لمكتب الوسيط 777 — Ajoutez vos biens à l'agence Al Wasset 777</div></div></div>
+        <form class="card card-pad" id="f">
+          <div class="form-grid">
+            <div class="field"><label class="req">نوع العملية</label><select name="transaction" required>${D.TRANSACTIONS.map(t => `<option value="${t.id}">${esc(t.ar)}</option>`).join('')}</select></div>
+            <div class="field"><label class="req">نوع العقار</label><select name="type" required>${typeOpts()}</select></div>
+            <div class="field"><label class="req">المدينة</label><select name="city" required><option value="">—</option>${cityOpts()}</select></div>
+            <div class="field"><label>الحي</label><input name="district" placeholder="مثال: مرجان 2"></div>
+            <div class="field"><label>الثمن (درهم)</label><input name="price" inputmode="numeric" placeholder="مثال: 650000"></div>
+            <div class="field"><label>المساحة (م²)</label><input name="area" inputmode="numeric"></div>
+            <div class="field"><label>غرف النوم</label><input name="bedrooms" inputmode="numeric"></div>
+            <div class="field"><label>الطابق</label><input name="floor"></div>
+            <div class="field full"><label>الوصف</label><textarea name="description" rows="4" placeholder="معلومات إضافية: الحالة، المميزات، الوثائق…"></textarea></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>الصور (حتى 15)</label>
+            <label class="btn">📷 اختيار صور<input type="file" id="ph" accept="image/*" multiple hidden></label>
+            <div class="pt-thumbs" id="thumbs"></div></div>
+          <hr style="border:0;border-top:1px dashed var(--line);margin:16px 0">
+          <div class="form-grid">
+            <div class="field"><label class="req">اسم الوكيل / المكلف</label><input name="agent" required value="${esc(saved.agent || '')}"></div>
+            <div class="field"><label class="req">هاتف الوكيل</label><input name="phone" type="tel" required value="${esc(saved.phone || '')}"></div>
+          </div>
+          <div class="btn-row" style="margin-top:16px"><button class="btn gold" id="go" type="submit">✓ إرسال العقار</button><span class="muted" id="st"></span></div>
+        </form>
+        <div class="card card-pad pt-list" id="mine" style="margin-top:16px"></div>`;
+      const f = document.getElementById('f');
+      document.getElementById('ph').onchange = async e => {
+        const files = Array.from(e.target.files).slice(0, 15 - photos.length);
+        e.target.value = '';
+        for (const file of files) {
+          try { const big = await compress(file, 1280, 0.75); if (big) photos.push({ blob: big, url: URL.createObjectURL(big) }); } catch (err) { /* صورة غير مقروءة */ }
+        }
+        drawThumbs();
+      };
+      f.onsubmit = submit;
+      loadMine();
+    }
+    function drawThumbs() {
+      const t = document.getElementById('thumbs');
+      t.innerHTML = photos.map((p, i) => `<div><img src="${p.url}"><button type="button" data-i="${i}">✕</button></div>`).join('');
+      t.querySelectorAll('button').forEach(b => b.onclick = () => { photos.splice(+b.dataset.i, 1); drawThumbs(); });
+    }
+    async function submit(e) {
+      e.preventDefault();
+      const f = e.target, go = document.getElementById('go'), st = document.getElementById('st');
+      const v = Object.fromEntries(new FormData(f).entries());
+      Object.keys(v).forEach(k => v[k] = String(v[k]).trim());
+      if (!v.city) { st.textContent = 'اختر المدينة'; return; }
+      go.disabled = true;
+      try {
+        const paths = [];
+        for (let i = 0; i < photos.length; i++) {
+          st.textContent = `رفع الصور ${i + 1}/${photos.length}…`;
+          const path = T + '/' + uid() + '.jpg';
+          const r = await fetch(URL_ + '/storage/v1/object/w777-partner/' + path, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'image/jpeg' }, body: photos[i].blob });
+          if (r.ok) paths.push(path);
+        }
+        st.textContent = 'جاري الإرسال…';
+        await rpc('w777_partner_submit', { t: T, d: v, ph: paths });
+        localStorage.setItem(LS, JSON.stringify({ agent: v.agent, phone: v.phone }));
+        photos = [];
+        box.querySelector('#f').outerHTML = `<div class="card pt-ok"><div class="big">✅</div><h2>تم إرسال العقار — Bien envoyé</h2>
+          <p class="muted">شكرا! مكتب الوسيط 777 توصل بالعقار ديالكم.</p><button class="btn gold" onclick="location.reload()">+ إضافة عقار آخر</button></div>`;
+        loadMine();
+      } catch (err) {
+        st.textContent = 'تعذر الإرسال: ' + err.message; go.disabled = false;
+      }
+    }
+    async function loadMine() {
+      const m = document.getElementById('mine');
+      try {
+        const list = await rpc('w777_partner_list', { t: T });
+        const tr = id => (D.TRANSACTIONS.find(t => t.id === id) || {}).ar || '';
+        const ty = id => (D.PROPERTY_TYPES.find(t => t.id === id) || {}).ar || '';
+        m.innerHTML = `<b>العقارات اللي صيفطتو (${list.length})</b>` + (list.length ? list.map(x => `<div class="row"><div>${esc(ty(x.data.type))} · ${esc(tr(x.data.transaction))}<div class="muted" style="font-size:13px">${esc([x.data.district, x.data.city].filter(Boolean).join('، '))}${x.data.price ? ' · ' + esc(x.data.price) + ' د' : ''} · 📷 ${x.photos}</div></div>
+          <small class="muted">${esc((x.created_at || '').slice(0, 10))}</small></div>`).join('') : '<p class="muted">مازال ما صيفطتو حتى عقار.</p>');
+      } catch (e) { m.innerHTML = ''; }
+    }
+    start();
+  })();
+  </script>
+</body>
+</html>
