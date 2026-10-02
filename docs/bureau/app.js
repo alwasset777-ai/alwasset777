@@ -207,11 +207,22 @@
     return photos.find(m => m.id === p.cover) || photos[0];
   };
 
+  // فك الصورة: createImageBitmap، وإلا عبر <img> (Safari كيقرا HEIC)
+  async function decodeImage(file) {
+    try { return await createImageBitmap(file); } catch (e) { /* نجربو img */ }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image(); img.src = url;
+      await img.decode();
+      return img;
+    } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  }
   async function compressImage(file, max = 1920, q = 0.85) {
     try {
-      const bmp = await createImageBitmap(file);
-      const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
-      const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+      const bmp = await decodeImage(file);
+      const bw = bmp.naturalWidth || bmp.width, bh = bmp.naturalHeight || bmp.height;
+      const scale = Math.min(1, max / Math.max(bw, bh));
+      const w = Math.round(bw * scale), h = Math.round(bh * scale);
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       c.getContext('2d').drawImage(bmp, 0, 0, w, h);

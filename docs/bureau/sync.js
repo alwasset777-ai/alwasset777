@@ -200,9 +200,15 @@
   async function cloudImage(blob) {
     if (!blob || !/^image\/(jpeg|png|webp|heic|heif)/i.test(blob.type || '') || blob.size <= CLOUD_MIN_BYTES) return blob;
     try {
-      const bmp = await createImageBitmap(blob);
-      const k = Math.min(1, CLOUD_MAX / Math.max(bmp.width, bmp.height));
-      const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+      let bmp;
+      try { bmp = await createImageBitmap(blob); } catch (e) {
+        // Safari كيقرا HEIC عبر <img>
+        const url = URL.createObjectURL(blob);
+        try { bmp = new Image(); bmp.src = url; await bmp.decode(); } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+      }
+      const bw = bmp.naturalWidth || bmp.width, bh = bmp.naturalHeight || bmp.height;
+      const k = Math.min(1, CLOUD_MAX / Math.max(bw, bh));
+      const w = Math.round(bw * k), h = Math.round(bh * k);
       const c = document.createElement('canvas'); c.width = w; c.height = h;
       c.getContext('2d').drawImage(bmp, 0, 0, w, h);
       if (bmp.close) bmp.close();
@@ -229,7 +235,8 @@
           method: 'POST', headers: { 'Content-Type': blob.type || rec.mime || 'application/octet-stream', 'x-upsert': 'true', 'cache-control': '31536000' }, body: blob,
         }).then(ok);
         await put(st.uid + '/' + rec.id, await cloudImage(rec.blob));
-        if (rec.thumb) await put(st.uid + '/' + rec.id + '.t', rec.thumb);
+        // مصغرة ما تصغراتش (HEIC ما تقراش) = نسخة من الأصل: ما نرفعوهاش، كنقراو الأصل بلاصتها
+        if (rec.thumb && rec.thumb !== rec.blob && rec.thumb.size < 300 * 1024) await put(st.uid + '/' + rec.id + '.t', rec.thumb);
         up[rec.id] = 1;
         await DB.setMeta('sync_uploaded', up);
       } catch (e) { failed++; }
