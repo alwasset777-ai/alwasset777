@@ -11,7 +11,7 @@
   const LS = 'w777_cloud';
   const BUCKET = 'w777-media';
   const TABLE = 'w777_records';
-  const STORES = ['properties', 'requests'];
+  const STORES = ['properties', 'requests', 'appointments'];
 
   let st = null;
   try { st = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { st = null; }
@@ -44,8 +44,15 @@
     };
     save();
   }
+  // حسابات الوكالات: «agence001» أو «agence 1» أو «1» بلا @ ← agence001@alwasset777.ma
+  function normEmail(e) {
+    e = String(e || '').trim().toLowerCase();
+    if (e.includes('@')) return e;
+    const m = e.match(/^(?:agence|agency|ag)?\s*0*(\d{1,3})$/);
+    return m ? 'agence' + m[1].padStart(3, '0') + '@alwasset777.ma' : e;
+  }
   async function signIn(url, key, email, password) {
-    url = cleanUrl(url); key = String(key || '').trim();
+    url = cleanUrl(url); key = String(key || '').trim(); email = normEmail(email);
     const d = await authCall(url, key, '/auth/v1/token?grant_type=password', { email, password });
     takeSession(url, key, d);
     await firstSyncPrep();
@@ -99,7 +106,7 @@
     let since = cursor ? new Date(Date.parse(cursor) - 120000).toISOString() : '1970-01-01T00:00:00Z';
     let changed = 0;
     for (;;) {
-      const res = await ok(await api(`/rest/v1/${TABLE}?select=kind,id,data,deleted,synced_at&synced_at=gt.${encodeURIComponent(since)}&order=synced_at.asc&limit=1000`));
+      const res = await ok(await api(`/rest/v1/${TABLE}?select=kind,id,data,deleted,synced_at&owner=eq.${st.uid}&synced_at=gt.${encodeURIComponent(since)}&order=synced_at.asc&limit=1000`));
       const rows = await res.json();
       for (const r of rows) changed += await apply(r);
       if (rows.length) {
@@ -258,6 +265,19 @@
     } catch (e) { return null; }
   }
 
+  /* صورة عقار مشترك من حساب آخر (شبكة الوكالات) */
+  async function fetchPath(owner, id, thumb) {
+    if (!st || !navigator.onLine) return null;
+    const get = async path => {
+      const res = await api(`/storage/v1/object/authenticated/${BUCKET}/${path}`);
+      return res.ok ? res.blob() : null;
+    };
+    try {
+      if (thumb) { const t = await get(owner + '/' + id + '.t'); if (t) return t; }
+      return await get(owner + '/' + id);
+    } catch (e) { return null; }
+  }
+
   /* ---------- التشغيل ---------- */
   let running = null;
   let again = false;
@@ -303,7 +323,7 @@
     isOn: () => !!st,
     account: () => st && { email: st.email, url: st.url },
     defaults,
-    signIn, signUp, signOut, syncNow, schedule, fetchFile,
+    signIn, signUp, signOut, syncNow, schedule, fetchFile, fetchPath, normEmail,
     status: () => status,
     lastSync: () => DB.getMeta('sync_last', null),
     pending: async () => Object.keys(await DB.getMeta('sync_dirty', {})).length,
