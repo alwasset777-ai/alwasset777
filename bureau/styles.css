@@ -466,3 +466,11 @@ html, body { overflow-x: clip; }
 .bottomnav a { min-width: 0; }
 img[data-net]:not([src]) { opacity: 0; }
 a.chip { text-decoration: none; }
+/* ---------- مقارنة الثمن مع السوق ---------- */
+.mkt { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; color: #fff; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+.mkt.down { background: #16a34a; } .mkt.up { background: #dc2626; } .mkt.eq { background: #6b7280; direction: rtl; }
+.mkt-big { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; color: #fff; }
+.mkt-big > b { font-size: 26px; direction: ltr; unicode-bidi: isolate; white-space: nowrap; } .mkt-big span { font-size: 14.5px; }
+.mkt-big.down { background: linear-gradient(135deg, #15803d, #22c55e); }
+.mkt-big.up { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+.mkt-big.eq { background: linear-gradient(135deg, #4b5563, #6b7280); }

@@ -587,6 +587,7 @@
     else if (a === 'request' && c === 'edit') { nav = 'requests'; await viewReqForm(b); }
     else if (a === 'request') { nav = 'requests'; await viewReq(b); }
     else if (a === 'matching') { nav = 'matching'; viewMatching(query); }
+    else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
     else if (a === 'agencies') { nav = 'agencies'; await viewAgencies(parts, query); }
@@ -625,6 +626,7 @@
           <a class="btn" href="#/matching">${ic('target', 18)} المطابقة</a>
           <a class="btn" href="#/appointments">${ic('calendar', 18)} المواعيد${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</a>
           <a class="btn" href="#/agencies">${ic('building', 18)} الوكالات العقارية</a>
+          <a class="btn" href="#/estimate">📊 مقارنة الثمن</a>
         </div>
       </div>
       <div class="stats">
@@ -695,7 +697,7 @@
     return `<a class="card prop-card" href="#/property/${p.id}">
       <div class="prop-cover">
         ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
-        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}</div>
+        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${mktBadge(p)}</div>
         <span class="ref">${esc(p.ref)}</span>
         ${nPh || nV ? `<span class="cnt">${nPh ? ic('camera', 14) + nPh : ''} ${nV ? ic('video', 14) + nV : ''}</span>` : ''}
       </div>
@@ -1208,6 +1210,7 @@
             </div>
             ${(p.features || []).length ? `<div style="margin-top:14px" class="reasons">${p.features.map(f => `<span class="ok">✓ ${esc(f)}</span>`).join('')}</div>` : ''}
           </div>
+          ${mktCard(p)}
           ${p.description ? `<div class="card card-pad"><div class="pair-head" style="padding:0 0 10px;border:0"><b>الوصف</b><button class="btn sm" id="copy-desc">${ic('copy', 15)} نسخ</button></div><div class="desc">${esc(p.description)}</div></div>` : ''}
           ${p.legalNotes || p.notes ? `<div class="card card-pad no-print"><b>ملاحظات داخلية</b>${p.legalNotes ? `<p class="desc">⚖️ ${esc(p.legalNotes)}</p>` : ''}${p.notes ? `<p class="desc">${esc(p.notes)}</p>` : ''}</div>` : ''}
           ${docs.length ? `<div class="card card-pad no-print"><b style="display:block;margin-bottom:10px">المستندات (${docs.length})</b><div class="doc-list">${docs.map(d => `<a href="#" data-doc="${d.id}">${ic('file')} <span class="grow">${esc(d.name)}</span><small class="muted">${Math.max(1, Math.round((d.size || 0) / 1024))} KB</small></a>`).join('')}</div></div>` : ''}
@@ -1265,6 +1268,7 @@
       else { const a2 = document.createElement('a'); a2.href = url; a2.download = d.name; a2.click(); }
     });
     $$('[data-send]').forEach(el => el.addEventListener('click', () => markProposal(el.dataset.send, p.id, 'sent')));
+    const me = $('#mkt-edit'); if (me) me.onclick = () => editMarketRef(p.city, p.district, p.type, () => viewProp(p.id));
     const cd = $('#copy-desc');
     if (cd) cd.onclick = () => navigator.clipboard.writeText(p.description).then(() => toast('تم نسخ الوصف ✓'));
     $('#p-fav').onclick = async () => { p.fav = !p.fav; await DB.saveRec('properties', p); toast(p.fav ? 'أضيف للمفضلة ★' : 'أزيل من المفضلة'); viewProp(id); };
@@ -2021,6 +2025,139 @@
   }
 
   /* ============================================================
+     مقارنة الثمن مع السوق 📊 (درهم/م² — للبيع فقط)
+     ============================================================ */
+  const MKT_CLS = { apartment: 0, house: 1 };
+  const mktCats = { apartment: 'شقة', house: 'فيلا / منزل', land: 'أرض / بقعة', commercial: 'تجاري', building: 'عمارة', tourism: 'سياحي', industrial: 'صناعي', agri: 'فلاحي', room: 'أخرى' };
+  function marketRef(city, district, type) {
+    if (!city) return null;
+    const cat = catOf(type);
+    const cu = S.settings.marketCustom || {};
+    const dn = norm(district || '');
+    if (district && cu[`${city}|${district}|${cat}`]) return { v: cu[`${city}|${district}|${cat}`], where: district, src: 'custom' };
+    const cls = MKT_CLS[cat];
+    if (cls !== undefined && dn) {
+      for (const [keys, apt, villa] of (D.MARKET.districts[city] || [])) {
+        if (!keys.some(k => dn.includes(norm(k)))) continue;
+        const v = cls === 0 ? apt : villa;
+        if (v) return { v, where: district, src: 'district' };
+        break; // الحي معروف ولكن بلا معطيات لهاد النوع ← المدينة
+      }
+    }
+    if (cu[`${city}||${cat}`]) return { v: cu[`${city}||${cat}`], where: city, src: 'custom' };
+    const c = D.MARKET.cities[city];
+    if (cls !== undefined && c && c[cls]) return { v: c[cls], where: city, src: 'city' };
+    return null;
+  }
+  function mktArea(p) {
+    return catOf(p.type) === 'house' ? (num(p.areaBuilt) || num(p.areaUseful) || num(p.areaTotal)) : areaOf(p);
+  }
+  function marketCmp(p) {
+    if (!p || !['sale', 'offplan'].includes(p.transaction)) return null;
+    const price = num(p.priceMax) || num(p.priceMin), area = mktArea(p);
+    const ref = marketRef(p.city, p.district, p.type);
+    if (!price || !area || !ref) return { ref, area, price };
+    const ppm = price / area;
+    return { ppm, ref, area, price, diff: Math.round((ppm - ref.v) / ref.v * 100), est: ref.v * area };
+  }
+  const ltr = t => '\u2066' + t + '\u2069';
+  const mktTone = d => d <= -5 ? 'down' : d >= 5 ? 'up' : 'eq';
+  function mktBadge(p) {
+    const m = marketCmp(p);
+    if (!m || m.diff === undefined) return '';
+    const t = mktTone(m.diff);
+    return `<span class="mkt ${t}" title="مقارنة مع ثمن السوق فـ ${esc(m.ref.where)}">${t === 'down' ? ltr('▼ ' + Math.abs(m.diff) + '%') : t === 'up' ? ltr('▲ +' + m.diff + '%') : '≈ السوق'}</span>`;
+  }
+  function mktCard(p) {
+    if (!['sale', 'offplan'].includes(p.transaction)) return '';
+    const m = marketCmp(p);
+    const srcLbl = { custom: 'ثمن مرجعي ديالك', district: 'معدل الحي', city: 'معدل المدينة' };
+    let body;
+    if (!m || !m.ref) body = `<p class="muted" style="margin:0">ما عندناش ثمن مرجعي لـ «${esc(mktCats[catOf(p.type)] || '')}» فـ ${esc(p.district || p.city || '—')}. تقدر تزيدو أنت ⬇️</p>`;
+    else if (m.diff === undefined) body = `<p class="muted" style="margin:0">ثمن السوق فـ ${esc(m.ref.where)}: <b>${fmt(m.ref.v)} درهم/م²</b>. زيد ${!m.price ? 'الثمن' : 'المساحة'} باش نقارنو.</p>`;
+    else {
+      const t = mktTone(m.diff);
+      const msg = t === 'down' ? `الثمن <b>ناقص بـ ${Math.abs(m.diff)}%</b> على السوق — فرصة 👍` : t === 'up' ? `الثمن <b>زايد بـ ${m.diff}%</b> على السوق` : 'الثمن <b>فمستوى السوق</b> ✓';
+      body = `<div class="mkt-big ${t}"><b>${ltr(t === 'down' ? '▼ ' + Math.abs(m.diff) + '%' : t === 'up' ? '▲ +' + m.diff + '%' : '≈ ' + m.diff + '%')}</b><span>${msg}</span></div>
+        <div class="kv" style="margin-top:12px">
+          <div><small>ثمن المتر ديال هاد العقار</small><b>${fmt(Math.round(m.ppm))} د/م²</b></div>
+          <div><small>${srcLbl[m.ref.src]} (${esc(m.ref.where)})</small><b>${fmt(m.ref.v)} د/م²</b></div>
+          <div><small>القيمة حسب السوق (${fmt(m.area)} م²)</small><b>${esc(millions(m.est) || fmt(Math.round(m.est)))}</b></div>
+        </div>`;
+    }
+    return `<div class="card card-pad no-print" id="mkt-card">
+      <div class="pair-head" style="padding:0 0 10px;border:0"><b>📊 مقارنة مع ثمن السوق</b><button class="btn sm" id="mkt-edit">${ic('edit', 14)} الثمن المرجعي</button></div>
+      ${body}
+      <p class="muted" style="font-size:12px;margin:10px 0 0">المصادر: ${D.MARKET.sources.map(s => `<a href="${s.u}" target="_blank" rel="noopener">${esc(s.n.split(' — ')[0])}</a>`).join(' · ')} (${D.MARKET.updated}). أثمنة تقريبية: الحالة، الطابق والتشطيب كيأثرو.</p>
+    </div>`;
+  }
+  // تصحيح / زيادة ثمن مرجعي (كيتزامن مع الإعدادات)
+  function editMarketRef(city, district, type, done) {
+    const cat = catOf(type), r = marketRef(city, district, type);
+    modal(`<h3>📊 الثمن المرجعي — ${esc(mktCats[cat] || '')}</h3>
+      <p class="muted" style="margin-top:0">${esc(district ? district + '، ' : '')}${esc(city)} — درهم للمتر المربع</p>
+      <form id="mr" class="form-grid">${fInput('v', 'ثمن المتر (درهم/م²)', r ? r.v : '', { type: 'number', req: true })}
+        ${district ? fSelect('lvl', 'يطبّق على', [{ v: 'd', l: 'هاد الحي فقط' }, { v: 'c', l: 'المدينة كاملة' }], 'd', { noEmpty: true }) : ''}</form>
+      <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="mr-ok">${ic('check', 16)} حفظ</button>${r && r.src === 'custom' ? '<button class="btn danger" id="mr-del">رجوع للمصدر</button>' : ''}</div>`, (box, close) => {
+      const key = () => { const v = collect($('#mr', box)); return v.lvl === 'c' || !district ? `${city}||${cat}` : `${city}|${district}|${cat}`; };
+      const save = async val => {
+        const cu = Object.assign({}, S.settings.marketCustom || {});
+        if (val) cu[key()] = val; else { delete cu[`${city}|${district}|${cat}`]; delete cu[`${city}||${cat}`]; }
+        S.settings.marketCustom = cu; S.settings.updatedAt = new Date().toISOString();
+        await DB.setMeta('settings', S.settings); await DB.markDirty('meta', 'settings');
+        close(); toast('تم الحفظ ✓'); done && done();
+      };
+      $('#mr-ok', box).onclick = () => { const v = num(collect($('#mr', box)).v); if (v > 0) save(Math.round(v)); };
+      const d = $('#mr-del', box); if (d) d.onclick = () => save(null);
+    });
+  }
+  // صفحة «مقارنة الثمن»: أي عقار (حتى ماشي ديالنا)
+  function viewEstimate(query) {
+    const city = query.city || S.settings.officeCity || 'مكناس';
+    main().innerHTML = `
+      <div class="page-head"><h1>📊 مقارنة الثمن مع السوق</h1></div>
+      <div class="card card-pad form">
+        <form id="ef" class="form-grid">
+          ${fSelect('city', 'المدينة', [], city, { groups: cityGroups(), noEmpty: true })}
+          ${fInput('district', 'الحي', query.district || '', { list: 'ef-ds', ph: 'مثال: المنزه، مرجان…' })}
+          ${fSelect('type', 'نوع العقار', D.PROPERTY_TYPES.map(t => ({ v: t.id, l: t.ar })), query.type || 'apartment', { noEmpty: true })}
+          ${fInput('area', 'المساحة (م²)', query.area || '', { type: 'number' })}
+          ${fInput('price', 'الثمن المطلوب (درهم)', query.price || '', { money: true })}
+        </form>
+        <datalist id="ef-ds"></datalist>
+        <div id="eres" style="margin-top:14px"></div>
+      </div>
+      <div class="card" style="margin-top:16px" id="etab"></div>`;
+    bindMoney(main());
+    const form = $('#ef');
+    const draw = () => {
+      const v = collect(form);
+      $('#ef-ds').innerHTML = districtsOf(v.city).map(d => `<option value="${esc(d)}">`).join('');
+      const p = { transaction: 'sale', city: v.city, district: v.district, type: v.type, priceMin: v.price, areaTotal: v.area, areaBuilt: v.area };
+      const m = marketCmp(p);
+      let h;
+      if (!m || !m.ref) h = `<p class="muted">ما كاينش ثمن مرجعي لهاد النوع فهاد البلاصة. <button class="btn sm" id="e-edit">${ic('plus', 14)} زيد ثمن مرجعي</button></p>`;
+      else if (m.diff === undefined) h = `<div class="kv"><div><small>ثمن السوق (${esc(m.ref.where)})</small><b>${fmt(m.ref.v)} د/م²</b></div>${m.area ? `<div><small>القيمة حسب السوق</small><b>${esc(millions(m.ref.v * m.area) || fmt(m.ref.v * m.area))}</b></div>` : ''}</div><p class="muted">دخل المساحة والثمن باش تعرف واش ناقص ولا زايد.</p>`;
+      else {
+        const t = mktTone(m.diff);
+        h = `<div class="mkt-big ${t}"><b>${ltr(t === 'down' ? '▼ ' + Math.abs(m.diff) + '%' : t === 'up' ? '▲ +' + m.diff + '%' : '≈ ' + m.diff + '%')}</b><span>${t === 'down' ? 'ناقص على السوق — فرصة 👍' : t === 'up' ? 'زايد على السوق' : 'فمستوى السوق ✓'}</span></div>
+          <div class="kv" style="margin-top:12px"><div><small>ثمن المتر المطلوب</small><b>${fmt(Math.round(m.ppm))} د/م²</b></div>
+          <div><small>ثمن السوق (${esc(m.ref.where)})</small><b>${fmt(m.ref.v)} د/م²</b></div>
+          <div><small>القيمة حسب السوق</small><b>${esc(millions(m.est) || fmt(Math.round(m.est)))}</b></div></div>`;
+      }
+      $('#eres').innerHTML = h + `<button class="btn sm" id="e-edit2" style="margin-top:10px">${ic('edit', 14)} تصحيح الثمن المرجعي</button>`;
+      [$('#e-edit'), $('#e-edit2')].forEach(b => b && (b.onclick = () => editMarketRef(v.city, v.district, v.type, draw)));
+      const rows = D.MARKET.districts[v.city] || [];
+      const c = D.MARKET.cities[v.city];
+      $('#etab').innerHTML = `<div class="pair-head"><b>أثمنة المتر فـ ${esc(v.city)} (للبيع)</b>${c ? `<span class="muted" style="font-size:13px">المعدل: شقة ${fmt(c[0])} · فيلا ${fmt(c[1])}</span>` : ''}</div>
+        ${rows.filter(r => r[1] || r[2]).map(r => `<div class="list-row"><div class="grow"><b>${esc(r[0][0])}</b></div><small>شقة: <b>${r[1] ? fmt(r[1]) : '—'}</b></small><small>فيلا: <b>${r[2] ? fmt(r[2]) : '—'}</b></small></div>`).join('') || (c ? '' : '<div class="empty" style="padding:20px">ما كاينش معطيات لهاد المدينة</div>')}`;
+    };
+    $$('input, select', form).forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', draw));
+    form.onsubmit = e => e.preventDefault();
+    draw();
+  }
+
+  /* ============================================================
      المواعيد + التنبيهات ⏰
      ============================================================ */
   const APPT_TYPES = { visit: '🏠 زيارة عقار', meeting: '🤝 لقاء فالمكتب', call: '📞 مكالمة', signing: '✍️ توقيع / موثق', other: '📌 أخرى' };
@@ -2311,7 +2448,7 @@
     return `<a class="card prop-card" href="#/agencies/p/${x.owner}/${encodeURIComponent(x.id)}">
       <div class="prop-cover">
         ${ph ? `<img data-net="${x.owner}/${esc(ph)}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
-        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span><span class="badge blue">🏢 ${esc(x.agency || '')}</span></div>
+        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span><span class="badge blue">🏢 ${esc(x.agency || '')}</span>${mktBadge(p)}</div>
         ${p.ref ? `<span class="ref">${esc(p.ref)}</span>` : ''}
         ${(x.photo_ids || []).length ? `<span class="cnt">${ic('camera', 14)}${x.photo_ids.length}</span>` : ''}
       </div>
@@ -2394,6 +2531,7 @@
       <div class="detail-grid">
         <div style="display:flex;flex-direction:column;gap:16px">
           <div class="net-gallery">${(x.photo_ids || []).map((ph, i) => `<img data-net="${x.owner}/${esc(ph)}" data-i="${i}" alt="">`).join('') || `<div class="card empty">${ic('image', 40)}<p>بلا صور</p></div>`}</div>
+          ${mktCard(p)}
           ${p.description ? `<div class="card card-pad"><b>الوصف</b><p style="white-space:pre-wrap;margin-bottom:0">${esc(p.description)}</p></div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:16px">
@@ -2421,6 +2559,7 @@
         </div>
       </div>`;
     hydrateNet(main());
+    const me = $('#mkt-edit'); if (me) me.onclick = () => editMarketRef(p.city, p.district, p.type, () => viewNetProp(owner, id));
     $$('.net-gallery img').forEach(img => img.onclick = async () => {
       const urls = await Promise.all((x.photo_ids || []).map(ph => netImg(x.owner, ph, false)));
       modal(`<img src="${urls[+img.dataset.i] || img.src}" style="width:100%;border-radius:12px">`);
