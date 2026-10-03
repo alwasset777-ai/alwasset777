@@ -109,3 +109,66 @@ create policy w777_partner_read on storage.objects for select to authenticated
 drop policy if exists w777_partner_del on storage.objects;
 create policy w777_partner_del on storage.objects for delete to authenticated
   using (bucket_id = 'w777-partner' and exists (select 1 from public.w777_partners p where p.token = (storage.foldername(objects.name))[1] and p.owner = auth.uid()));
+
+
+-- ============================================================
+-- شبكة «الوكالات العقارية» (777 حساب): كل وكالة كتزيد عقاراتها،
+-- والكل كيشوف عقارات الشبكة بلا معلومات المالك. المدير كيشوف كلشي.
+-- ============================================================
+create table if not exists public.w777_admins (uid uuid primary key references auth.users(id) on delete cascade);
+-- insert into public.w777_admins(uid) values ('<uid ديال حساب المكتب>');
+alter table public.w777_admins enable row level security;
+create or replace function public.w777_is_admin() returns boolean language sql stable security definer set search_path=public as
+$$ select exists(select 1 from w777_admins where uid = auth.uid()) $$;
+
+create table if not exists public.w777_agencies (
+  uid uuid primary key references auth.users(id) on delete cascade,
+  code text unique not null, name text not null, phone text, email text,
+  active boolean not null default true, created_at timestamptz not null default now());
+alter table public.w777_agencies enable row level security;
+create or replace function public.w777_can_use() returns boolean language sql stable security definer set search_path=public as
+$$ select w777_is_admin() or exists(select 1 from w777_agencies where uid = auth.uid() and active) $$;
+drop policy if exists w777_ag_sel on public.w777_agencies;
+create policy w777_ag_sel on public.w777_agencies for select to authenticated using (w777_can_use());
+drop policy if exists w777_ag_upd on public.w777_agencies;
+create policy w777_ag_upd on public.w777_agencies for update to authenticated using (w777_is_admin() or uid = auth.uid()) with check (w777_is_admin() or uid = auth.uid());
+drop policy if exists w777_ag_admin on public.w777_agencies;
+create policy w777_ag_admin on public.w777_agencies for all to authenticated using (w777_is_admin()) with check (w777_is_admin());
+create or replace function public.w777_ag_guard() returns trigger language plpgsql security definer set search_path=public as
+$$ begin if not w777_is_admin() then new.active := old.active; new.code := old.code; new.email := old.email; new.uid := old.uid; end if; return new; end $$;
+drop trigger if exists w777_ag_guard on public.w777_agencies;
+create trigger w777_ag_guard before update on public.w777_agencies for each row execute function public.w777_ag_guard();
+
+create table if not exists public.w777_agency_secrets (uid uuid primary key references public.w777_agencies(uid) on delete cascade, password text not null);
+alter table public.w777_agency_secrets enable row level security;
+drop policy if exists w777_sec_admin on public.w777_agency_secrets;
+create policy w777_sec_admin on public.w777_agency_secrets for all to authenticated using (w777_is_admin()) with check (w777_is_admin());
+
+create table if not exists public.w777_shared_props (
+  owner uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  id text not null, agency text, phone text, city text, type text, trx text, price numeric,
+  photo_ids text[] not null default '{}', data jsonb not null, deleted boolean not null default false,
+  updated_at timestamptz not null default now(), primary key (owner, id));
+create index if not exists w777_shared_upd on public.w777_shared_props(updated_at desc);
+alter table public.w777_shared_props enable row level security;
+drop policy if exists w777_sh_sel on public.w777_shared_props;
+create policy w777_sh_sel on public.w777_shared_props for select to authenticated using (w777_can_use());
+drop policy if exists w777_sh_ins on public.w777_shared_props;
+create policy w777_sh_ins on public.w777_shared_props for insert to authenticated with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_sh_upd on public.w777_shared_props;
+create policy w777_sh_upd on public.w777_shared_props for update to authenticated using (owner = auth.uid()) with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_sh_del on public.w777_shared_props;
+create policy w777_sh_del on public.w777_shared_props for delete to authenticated using (owner = auth.uid() or w777_is_admin());
+
+-- صور العقارات المشاركة: أي مستعمل مفعل يقدر يقرا غير الصور اللي فالعقارات المشاركة
+drop policy if exists w777_media_shared on storage.objects;
+create policy w777_media_shared on storage.objects for select to authenticated using (
+  bucket_id = 'w777-media' and public.w777_can_use() and exists (
+    select 1 from public.w777_shared_props s
+    where s.owner::text = (storage.foldername(objects.name))[1] and not s.deleted
+      and split_part(storage.filename(objects.name), '.', 1) = any(s.photo_ids)));
+
+-- المدير يقرا معلومات المالك ديال أي عقار مشارك
+create or replace function public.w777_admin_record(o uuid, i text) returns jsonb language sql stable security definer set search_path=public as
+$$ select data from w777_records where w777_is_admin() and owner = o and kind = 'properties' and id = i $$;
+grant execute on function public.w777_is_admin(), public.w777_can_use(), public.w777_admin_record(uuid, text) to authenticated;
