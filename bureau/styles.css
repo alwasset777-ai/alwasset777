@@ -218,8 +218,14 @@ main { flex: 1; min-width: 0; padding: 18px 16px calc(var(--nav-h) + var(--safe-
 }
 .hero::after {
   content: '777'; position: absolute; inset-inline-end: -10px; bottom: -40px; font-size: 150px; font-weight: 900;
-  color: rgba(230,199,126,.10); line-height: 1;
+  color: rgba(230,199,126,.10); line-height: 1; pointer-events: none;
 }
+/* «AGENCES» فوق 777 الكبيرة على اليسار */
+.hero::before {
+  content: 'AGENCES'; position: absolute; left: 16px; top: 14px; font-size: 42px; font-weight: 900; letter-spacing: 8px;
+  color: rgba(230,199,126,.10); line-height: 1; direction: ltr; white-space: nowrap; pointer-events: none;
+}
+@media (max-width: 640px) { .hero::before { left: 10px; top: 8px; font-size: 32px; letter-spacing: 4px; } }
 .hero h2 { margin: 0 0 4px; font-size: 21px; }
 .hero p { margin: 0; color: rgba(255,255,255,.75); }
 .hero .btn-row { margin-top: 16px; position: relative; z-index: 1; }
