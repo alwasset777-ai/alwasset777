@@ -130,6 +130,8 @@
   const S = {
     props: [],
     reqs: [],
+    appts: [],
+    role: null, agency: null, net: null, netFilters: null,
     custom: {},       // أحياء مضافة يدويا { مدينة: [أحياء] }
     settings: {},
     propFilters: { trx: '', status: 'active', type: '', cat: '', city: '', district: '', pmin: null, pmax: null, amin: null, amax: null, beds: null, sort: 'new', fav: false },
@@ -138,9 +140,10 @@
   const urlCache = new Map();
 
   async function loadAll() {
-    const [props, reqs, custom, settings] = await Promise.all([
-      DB.all('properties'), DB.all('requests'), DB.getMeta('customDistricts', {}), DB.getMeta('settings', {}),
+    const [props, reqs, custom, settings, appts] = await Promise.all([
+      DB.all('properties'), DB.all('requests'), DB.getMeta('customDistricts', {}), DB.getMeta('settings', {}), DB.all('appointments'),
     ]);
+    S.appts = appts;
     S.props = props.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     S.reqs = reqs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     S.custom = custom || {};
@@ -584,6 +587,9 @@
     else if (a === 'request' && c === 'edit') { nav = 'requests'; await viewReqForm(b); }
     else if (a === 'request') { nav = 'requests'; await viewReq(b); }
     else if (a === 'matching') { nav = 'matching'; viewMatching(query); }
+    else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
+    else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
+    else if (a === 'agencies') { nav = 'agencies'; await viewAgencies(parts, query); }
     else if (a === 'settings') { nav = 'settings'; await viewSettings(); }
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
@@ -605,17 +611,20 @@
     avail.forEach(p => { const k = D.CATEGORIES[catOf(p.type)].ar; byType[k] = (byType[k] || 0) + 1; });
     const maxT = Math.max(1, ...Object.values(byType));
     const saleValue = avail.filter(p => p.transaction === 'sale').reduce((s, p) => s + (num(p.priceMax) || num(p.priceMin) || 0), 0);
+    const todayAppts = S.appts.filter(a => a.status === 'planned' && a.date === today()).sort((x, y) => (x.time || '').localeCompare(y.time || ''));
     const h = new Date().getHours();
     const greet = h < 12 ? 'صباح الخير' : h < 18 ? 'مساء النور' : 'مساء الخير';
 
     main().innerHTML = `
       <div class="hero">
         <h2>${greet} 👋</h2>
-        <p>${esc(S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</p>
+        <p>${esc(S.role === 'agency' ? myAgencyName() : S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</p>
         <div class="btn-row">
           <a class="btn gold" href="#/property/new">${ic('plus', 18)} إضافة عقار</a>
           <a class="btn" href="#/request/new">${ic('users', 18)} إضافة طلب</a>
           <a class="btn" href="#/matching">${ic('target', 18)} المطابقة</a>
+          <a class="btn" href="#/appointments">${ic('calendar', 18)} المواعيد${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</a>
+          <a class="btn" href="#/agencies">${ic('building', 18)} الوكالات العقارية</a>
         </div>
       </div>
       <div class="stats">
@@ -644,6 +653,13 @@
             </a>`).join('') : `<div class="empty" style="padding:26px">لا توجد مطابقات قوية حاليا</div>`}
         </div>
         <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="pair-head"><b>${ic('calendar', 18)} مواعيد اليوم</b><a class="btn sm" href="#/appointment/new">${ic('plus', 15)}</a></div>
+            ${todayAppts.length ? todayAppts.slice(0, 6).map(a => `
+              <a class="list-row" href="#/appointment/${a.id}"><div class="avatar" style="width:46px;height:38px;font-size:13px;border-radius:10px">${esc(a.time || '')}</div>
+              <div class="grow"><b>${esc((a.client || {}).name || '')}</b><small class="muted">${esc(APPT_TYPES[a.type] || '')}${a.place ? ' · ' + esc(a.place) : ''}</small></div></a>`).join('')
+              : `<div class="empty" style="padding:22px">ما كاين حتى موعد اليوم</div>`}
+          </div>
           <div class="card">
             <div class="pair-head"><b>${ic('calendar', 18)} متابعات اليوم</b><span class="badge ${follow.length ? 'amber' : ''}">${follow.length}</span></div>
             ${follow.length ? follow.slice(0, 6).map(r => `
@@ -1197,7 +1213,7 @@
           ${docs.length ? `<div class="card card-pad no-print"><b style="display:block;margin-bottom:10px">المستندات (${docs.length})</b><div class="doc-list">${docs.map(d => `<a href="#" data-doc="${d.id}">${ic('file')} <span class="grow">${esc(d.name)}</span><small class="muted">${Math.max(1, Math.round((d.size || 0) / 1024))} KB</small></a>`).join('')}</div></div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:16px">
-          ${p.partner ? `<div class="card card-pad no-print" style="border:2px solid var(--gold, #c9a227)">
+          ${p.partner ? `<div class="card card-pad no-print" style="border:2px solid var(--gold, #c8102e)">
             <b style="display:block;margin-bottom:8px">🤝 عقار من وكالة شريكة</b>
             <div style="font-size:17px;font-weight:800">${esc(p.partner.name)}</div>
             ${p.partner.agent ? `<div class="muted" style="font-size:13px">المكلف: ${esc(p.partner.agent)}</div>` : ''}
@@ -1731,7 +1747,7 @@
           </div>
         </div>
 
-        ${EMBED ? '' : `<div class="card card-pad" id="partners-card">
+        ${EMBED || S.role === 'agency' ? '' : `<div class="card card-pad" id="partners-card">
           <h3 class="section-title">🤝 الوكالات الشريكة</h3>
           <p class="muted" style="margin-top:0">زيد وكالة وعطيها رابط خاص بيها. منو تقدر تزيد العقارات ديالها، وكيوصلو عندك فـ «العقارات» بسمية الوكالة.</p>
           <div id="partners-body" class="muted">…</div>
@@ -1784,7 +1800,7 @@
         <p class="muted" style="text-align:center;font-size:12.5px">مكتب الوسيط 777 — الإصدار 1.0 · يعمل بدون إنترنت</p>
       </div>`;
 
-    if (!EMBED) { bindCloudCard(); renderPartners(); }
+    if (!EMBED) { bindCloudCard(); if (S.role !== 'agency') renderPartners(); }
     $('#sform').onsubmit = async e => {
       e.preventDefault();
       Object.assign(S.settings, collect(e.target), { updatedAt: new Date().toISOString() });
@@ -1810,7 +1826,7 @@
     $('#wipe').onclick = async () => {
       if (!(await confirmBox(window.W777_SYNC && W777_SYNC.isOn() ? 'مسح البيانات من هذا الجهاز فقط؟ (ستبقى في السحابة وتعود عند المزامنة)' : 'مسح كل العقارات والطلبات والصور من هذا الجهاز؟ لا يمكن التراجع!', 'نعم، امسح كل شيء'))) return;
       if (!(await confirmBox('تأكيد أخير: هل قمت بنسخة احتياطية؟', 'امسح الآن'))) return;
-      await Promise.all(['properties', 'requests', 'files', 'meta'].map(s => DB.clear(s)));
+      await Promise.all(['properties', 'requests', 'appointments', 'files', 'meta'].map(s => DB.clear(s)));
       urlCache.clear();
       await loadAll();
       toast('تم مسح البيانات');
@@ -1850,7 +1866,7 @@
       <form id="cl-form" class="form-grid">
         ${fInput('url', 'Supabase Project URL', d.url, { ph: 'https://xxxx.supabase.co', attrs: 'dir="ltr" autocapitalize="off"' })}
         ${fInput('key', 'anon public key', d.key, { ph: 'eyJhbGciOi…', attrs: 'dir="ltr" autocapitalize="off"' })}
-        ${fInput('email', 'البريد الإلكتروني للمكتب', '', { type: 'email', attrs: 'dir="ltr" autocapitalize="off"' })}
+        ${fInput('email', 'البريد الإلكتروني أو رمز الوكالة (agence001)', '', { attrs: 'dir="ltr" autocapitalize="off" autocomplete="username"' })}
         ${fInput('password', 'كلمة السر', '', { type: 'password', attrs: 'dir="ltr"' })}
       </form>
       <div class="btn-row" style="margin-top:12px">
@@ -1953,18 +1969,22 @@
     if (b('cl-sync')) b('cl-sync').onclick = async () => { await Sy.syncNow(); viewSettings(); };
     if (b('cl-out')) b('cl-out').onclick = async () => {
       if (!(await confirmBox('تسجيل الخروج من المزامنة؟ البيانات تبقى على هذا الجهاز.', 'خروج', false))) return;
-      Sy.signOut(); viewSettings();
+      Sy.signOut(); S.role = null; S.agency = null; S.roleFor = null; S.net = null; localStorage.removeItem('w777_role'); viewSettings();
     };
     const go = async up => {
       const v = collect($('#cl-form'));
       if (!v.url || !v.key || !v.email || !v.password) return toast('املأ كل الخانات');
       if (v.password.length < 6) return toast('كلمة السر: 6 أحرف على الأقل');
+      // جهاز فيه بيانات حساب آخر: كل شي غادي يتزاد للحساب الجديد
+      const last = localStorage.getItem('w777_last_email'), em = Sy.normEmail ? Sy.normEmail(v.email) : v.email;
+      if (!up && last && last !== em && (S.props.length || S.reqs.length) &&
+        !(await confirmBox(`هاد الجهاز فيه ${S.props.length} عقار و ${S.reqs.length} طلب ديال الحساب ${last}. إلا دخلتي بـ ${em} غادي يتزادو لهاد الحساب. واش متأكد؟ (الأحسن: «مسح كل البيانات» من هاد الجهاز أولا)`, 'دخول على أي حال'))) return;
       try {
         toast(up ? 'جاري إنشاء الحساب…' : 'جاري الدخول…');
         if (up) {
           const r = await Sy.signUp(v.url, v.key, v.email, v.password);
           if (!r.confirmed) { toast('تم إنشاء الحساب ✓ افتح بريدك وأكّد الحساب ثم اضغط «دخول»', 5000); return; }
-        } else await Sy.signIn(v.url, v.key, v.email, v.password);
+        } else { await Sy.signIn(v.url, v.key, v.email, v.password); localStorage.setItem('w777_last_email', em); }
         toast('تم الربط ✓ جاري المزامنة…');
         viewSettings();
       } catch (e) {
@@ -1990,7 +2010,7 @@
         cloudCard().then(html => { const c = $('#cloud-card'); if (c) { c.outerHTML = html; bindCloudCard(); } });
       }
     });
-    if (Sy.onPulled) Sy.onPulled(importPartnerItems);
+    if (Sy.onPulled) { Sy.onPulled(importPartnerItems); Sy.onPulled(publishShared); }
     Sy.onChange(async () => {
       await loadAll();
       const h = location.hash;
@@ -1998,6 +2018,506 @@
     });
     btn.onclick = () => { Sy.syncNow(); toast('جاري المزامنة…'); };
     paint(Sy.status());
+  }
+
+  /* ============================================================
+     المواعيد + التنبيهات ⏰
+     ============================================================ */
+  const APPT_TYPES = { visit: '🏠 زيارة عقار', meeting: '🤝 لقاء فالمكتب', call: '📞 مكالمة', signing: '✍️ توقيع / موثق', other: '📌 أخرى' };
+  const APPT_STATUS = { planned: { ar: 'مبرمج', c: 'blue' }, done: { ar: 'تم', c: 'green' }, cancelled: { ar: 'ملغى', c: 'red' } };
+  const REMIND = [{ v: '0', l: 'فالوقت' }, { v: '15', l: '15 دقيقة قبل' }, { v: '30', l: '30 دقيقة قبل' }, { v: '60', l: 'ساعة قبل' }, { v: '120', l: 'ساعتين قبل' }, { v: '1440', l: 'نهار قبل' }];
+  const apptStart = a => new Date(`${a.date}T${a.time || '09:00'}:00`);
+  const apptWhen = a => {
+    const d = apptStart(a);
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const tm = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const lbl = a.date === today() ? 'اليوم' : a.date === tm ? 'غدا' : days[d.getDay()] + ' ' + a.date;
+    return `${lbl} · ${a.time || ''}`;
+  };
+  function apptCard(a) {
+    const st = APPT_STATUS[a.status] || APPT_STATUS.planned;
+    const late = a.status === 'planned' && apptStart(a) < new Date();
+    const c = a.client || {};
+    const p = a.propId && S.props.find(x => x.id === a.propId);
+    return `<div class="card card-pad appt ${late ? 'late' : ''}" data-appt="${a.id}">
+      <div class="appt-when"><b>${esc(a.time || '—')}</b><small>${esc(apptWhen(a).split(' · ')[0])}</small></div>
+      <div class="grow">
+        <b>${esc(c.name || 'زبون')}</b> <span class="badge ${st.c}">${esc(st.ar)}</span>${late ? ' <span class="badge amber">فات الوقت</span>' : ''}
+        <div class="muted" style="font-size:13px">${esc(APPT_TYPES[a.type] || '')}${a.place ? ' · 📍 ' + esc(a.place) : ''}${p ? ' · ' + esc(p.ref) : ''}${a.remind !== undefined && a.remind !== '' ? ' · ⏰ ' + esc((REMIND.find(r => r.v === String(a.remind)) || {}).l || '') : ''}</div>
+        ${a.notes ? `<div class="muted" style="font-size:13px">📝 ${esc(a.notes)}</div>` : ''}
+        <div class="btn-row" style="margin-top:8px">
+          ${c.phone ? `<a class="btn sm" href="${telLink(c.phone)}">${ic('phone', 15)}</a><a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(c.phone)}?text=${encodeURIComponent(apptMsg(a))}">${ic('wa', 15)} تذكير الزبون</a>` : ''}
+          <button class="btn sm" data-ics="${a.id}">${ic('calendar', 15)} للتقويم</button>
+          ${a.status === 'planned' ? `<button class="btn sm" data-done="${a.id}">${ic('check', 15)} تم</button>` : ''}
+          <a class="btn sm" href="#/appointment/${a.id}">${ic('edit', 15)}</a>
+          ${a.reqId ? `<a class="btn sm" href="#/request/${a.reqId}">الطلب</a>` : ''}${p ? `<a class="btn sm" href="#/property/${p.id}">العقار</a>` : ''}
+        </div>
+      </div></div>`;
+  }
+  function apptMsg(a) {
+    const p = a.propId && S.props.find(x => x.id === a.propId);
+    return `السلام عليكم ${(a.client && a.client.name) || ''}،\nكنذكّروك بالموعد ديالنا ${apptWhen(a)}${a.place ? ' فـ ' + a.place : ''}${p ? ' (' + (p.title || typeAr(p.type)) + ')' : ''}.\n${S.settings.officeName} — ${S.settings.officePhone}`;
+  }
+  function apptIcs(a) {
+    const d = apptStart(a), e = new Date(d.getTime() + 3600000);
+    const z = x => x.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    const t = s => String(s || '').replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+    const c = a.client || {};
+    const rem = num(a.remind);
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AlWasset777//Bureau//AR', 'BEGIN:VEVENT', 'UID:' + a.id + '@alwasset777', 'DTSTAMP:' + z(new Date()),
+      'DTSTART:' + z(d), 'DTEND:' + z(e), 'SUMMARY:' + t(`موعد: ${c.name || ''} — ${(APPT_TYPES[a.type] || '').replace(/^\S+\s/, '', { noEmpty: true })}`),
+      'LOCATION:' + t(a.place), 'DESCRIPTION:' + t([c.phone && 'الهاتف: ' + c.phone, a.notes].filter(Boolean).join('\n')),
+      ...(rem !== null ? ['BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + t('موعد ' + (c.name || '')), 'TRIGGER:-PT' + rem + 'M', 'END:VALARM'] : []),
+      'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  }
+  function bindApptButtons(root, rerender) {
+    $$('[data-ics]', root).forEach(b => b.onclick = () => {
+      const a = S.appts.find(x => x.id === b.dataset.ics);
+      download(new Blob([apptIcs(a)], { type: 'text/calendar' }), `rdv-${a.date}-${(a.time || '').replace(':', 'h')}.ics`);
+      toast('حل الملف باش يتزاد فـ Calendar ديال الهاتف ⏰', 3500);
+    });
+    $$('[data-done]', root).forEach(b => b.onclick = async () => {
+      const a = S.appts.find(x => x.id === b.dataset.done);
+      a.status = 'done'; await DB.saveRec('appointments', a); toast('✓ تم الموعد'); rerender();
+    });
+  }
+  function viewAppts(query) {
+    const f = query.f || 'upcoming';
+    let list = S.appts.slice();
+    if (f === 'upcoming') list = list.filter(a => a.status === 'planned').sort((a, b) => apptStart(a) - apptStart(b));
+    else if (f === 'today') list = list.filter(a => a.date === today()).sort((a, b) => apptStart(a) - apptStart(b));
+    else list = list.sort((a, b) => apptStart(b) - apptStart(a));
+    const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+    const tab = (k, l) => `<a class="chip ${f === k ? 'on' : ''}" href="#/appointments?f=${k}">${l}</a>`;
+    main().innerHTML = `
+      <div class="page-head"><h1>${ic('calendar', 24)} المواعيد</h1><a class="btn gold" href="#/appointment/new">${ic('plus', 18)} موعد جديد</a></div>
+      ${perm === 'default' ? `<div class="card card-pad" style="margin-bottom:14px;border-color:var(--gold)"><b>⏰ فعّل التنبيهات</b>
+        <p class="muted" style="margin:6px 0 10px">باش يبان ليك تنبيه فالوقت ديال كل موعد (والتطبيق محلول).</p><button class="btn gold sm" id="notif-on">تفعيل التنبيهات</button></div>` : ''}
+      <div class="chips" style="margin-bottom:14px">${tab('upcoming', 'الجاية')}${tab('today', 'اليوم')}${tab('all', 'الكل')}</div>
+      ${list.length ? `<div class="appt-list">${list.map(apptCard).join('')}</div>` : `<div class="card empty"><div class="big">📅</div><h3>ما كاين حتى موعد</h3><p>زيد موعد جديد وغادي نفكّرك فالوقت ⏰</p></div>`}
+      <p class="muted" style="font-size:12.5px;margin-top:14px">💡 التنبيه داخل التطبيق كيخدم ملي يكون محلول. باش يرن الهاتف حتى والتطبيق مسدود، ضغط «للتقويم» وزيد الموعد لـ Calendar.</p>`;
+    const n = $('#notif-on'); if (n) n.onclick = async () => { await Notification.requestPermission(); viewAppts(query); };
+    bindApptButtons(main(), () => viewAppts(query));
+  }
+  async function viewApptForm(id, query = {}) {
+    const ex = id && id !== 'new' ? S.appts.find(x => x.id === id) : null;
+    if (id && id !== 'new' && !ex) { main().innerHTML = notFound(); return; }
+    const r = query.req ? S.reqs.find(x => x.id === query.req) : null;
+    const p0 = query.prop ? S.props.find(x => x.id === query.prop) : null;
+    const a = ex || { date: today(), time: '10:00', type: p0 ? 'visit' : 'meeting', remind: '30', status: 'planned',
+      client: r ? { name: (r.client || {}).name, phone: (r.client || {}).phone } : {}, reqId: r ? r.id : '', propId: p0 ? p0.id : '',
+      place: p0 ? [p0.district, p0.city].filter(Boolean).join('، ') : '' };
+    const c = a.client || {};
+    const reqOpts = [{ v: '', l: '—' }, ...S.reqs.filter(openReq).map(x => ({ v: x.id, l: `${(x.client || {}).name || ''} · ${x.ref || ''}` }))];
+    const propOpts = [{ v: '', l: '—' }, ...S.props.filter(x => x.status === 'available').map(x => ({ v: x.id, l: `${x.ref || ''} · ${x.title || typeAr(x.type)}` }))];
+    main().innerHTML = `
+      <div class="page-head"><a class="btn" href="#/appointments">${ic('back', 18)} المواعيد</a><h1 style="margin:0">${ex ? 'تعديل الموعد' : 'موعد جديد'}</h1></div>
+      <form class="card card-pad form" id="af">
+        <div class="form-grid">
+          ${fInput('name', 'اسم الزبون', c.name, { req: true })}
+          ${fInput('phone', 'هاتف الزبون', c.phone, { type: 'tel' })}
+          ${fInput('date', 'التاريخ', a.date, { type: 'date', req: true })}
+          ${fInput('time', 'الساعة', a.time, { type: 'time', req: true })}
+          ${fSelect('type', 'نوع الموعد', Object.entries(APPT_TYPES).map(([v, l]) => ({ v, l })), a.type, { noEmpty: true })}
+          ${fSelect('remind', 'التنبيه ⏰', REMIND, String(a.remind ?? '30'), { noEmpty: true })}
+          ${fInput('place', 'المكان', a.place, { ph: 'مثال: المكتب، مرجان 2…' })}
+          ${fSelect('status', 'الحالة', Object.entries(APPT_STATUS).map(([v, s]) => ({ v, l: s.ar })), a.status, { noEmpty: true })}
+          ${fSelect('reqId', 'مرتبط بطلب (اختياري)', reqOpts, a.reqId, { noEmpty: true })}
+          ${fSelect('propId', 'مرتبط بعقار (اختياري)', propOpts, a.propId, { noEmpty: true })}
+          ${fText('notes', 'ملاحظات', a.notes)}
+        </div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn gold" type="submit">${ic('check', 18)} حفظ</button>
+          ${ex ? `<button class="btn danger" type="button" id="adel">${ic('trash', 18)} حذف</button>` : ''}
+        </div>
+      </form>`;
+    const form = $('#af');
+    $('[name=reqId]', form).onchange = e => {
+      const rr = S.reqs.find(x => x.id === e.target.value); if (!rr) return;
+      const nm = $('[name=name]', form), ph = $('[name=phone]', form);
+      if (!nm.value) nm.value = (rr.client || {}).name || ''; if (!ph.value) ph.value = (rr.client || {}).phone || '';
+    };
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const v = collect(form);
+      if (!v.name || !v.date || !v.time) return toast('عمّر الاسم والتاريخ والساعة');
+      const o = Object.assign(ex || { id: uid(), createdAt: new Date().toISOString() }, {
+        client: { name: v.name, phone: v.phone || '' }, date: v.date, time: v.time, type: v.type, remind: v.remind,
+        place: v.place || '', status: v.status || 'planned', reqId: v.reqId || '', propId: v.propId || '', notes: v.notes || '',
+      });
+      await DB.saveRec('appointments', o);
+      await loadAll();
+      toast('تم حفظ الموعد ✓');
+      if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+      location.hash = '#/appointments';
+    };
+    const del = $('#adel');
+    if (del) del.onclick = async () => {
+      if (!(await confirmBox('حذف هاد الموعد؟', 'حذف'))) return;
+      await DB.delRec('appointments', ex.id); await loadAll(); location.hash = '#/appointments';
+    };
+  }
+  // كل 30 ثانية: واش كاين موعد وصل وقت التنبيه ديالو؟
+  async function checkAlarms() {
+    const done = await DB.getMeta('appt_notified', {});
+    const now = Date.now();
+    let changed = false;
+    for (const a of S.appts) {
+      if (a.status !== 'planned' || a.remind === undefined || a.remind === '') continue;
+      const t = apptStart(a).getTime();
+      const key = a.id + '@' + a.date + 'T' + a.time + '-' + a.remind;
+      if (done[key] || now < t - num(a.remind) * 60000 || now > t + 3 * 3600000) continue;
+      done[key] = now; changed = true;
+      const body = `${(a.client || {}).name || ''} — ${apptWhen(a)}${a.place ? ' · ' + a.place : ''}`;
+      toast('⏰ موعد: ' + body, 8000);
+      try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* */ }
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const opt = { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: key, data: { url: '#/appointments' }, requireInteraction: true };
+        try {
+          const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+          if (reg) await reg.showNotification('⏰ موعد ' + (APPT_TYPES[a.type] || ''), opt); else new Notification('⏰ موعد', opt);
+        } catch (e) { /* */ }
+      }
+    }
+    if (changed) {
+      // ننقّيو المفاتيح القديمة
+      Object.keys(done).forEach(k => { if (now - done[k] > 30 * 86400000) delete done[k]; });
+      await DB.setMeta('appt_notified', done);
+    }
+  }
+
+  /* ============================================================
+     شبكة الوكالات العقارية (777 حساب)
+     كل وكالة كتدخل بحسابها، كتزيد وتعدّل غير العقارات ديالها،
+     وكتشوف عقارات الشبكة كاملة بلا اسم ولا هاتف المالك.
+     ============================================================ */
+  const AG_DOMAIN = '@alwasset777.ma';
+  function loadRoleCache() {
+    try {
+      const c = JSON.parse(localStorage.getItem('w777_role') || 'null');
+      const Sy = window.W777_SYNC;
+      if (c && Sy && Sy.isOn() && c.u === Sy.uid()) { S.role = c.role; S.agency = c.agency; S.roleFor = c.u; }
+    } catch (e) { /* */ }
+  }
+  async function refreshRole(force) {
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) { S.role = null; S.agency = null; S.roleFor = null; return 0; }
+    const u = Sy.uid();
+    if (!force && S.roleFor === u && S.roleAt && Date.now() - S.roleAt < 3600000) return 0;
+    const before = S.role;
+    try {
+      const admin = await (await Sy.request('/rest/v1/rpc/w777_is_admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
+      let ag = null;
+      if (!admin) ag = (await (await Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active`)).json())[0] || null;
+      S.role = admin === true ? 'admin' : ag ? 'agency' : 'solo';
+      S.agency = ag; S.roleFor = u; S.roleAt = Date.now();
+      localStorage.setItem('w777_role', JSON.stringify({ u, role: S.role, agency: ag }));
+    } catch (e) { /* بدون إنترنت: نبقاو على اللي محفوظ */ }
+    return before !== S.role ? 1 : 0;
+  }
+  const inNetwork = () => S.role === 'admin' || S.role === 'agency';
+  const myAgencyName = () => S.role === 'agency' ? (S.agency && S.agency.name) || 'وكالة' : S.settings.officeName;
+  const myAgencyPhone = () => S.role === 'agency' ? (S.agency && S.agency.phone) || '' : S.settings.officePhone;
+  const hideDigits = s => String(s || '').replace(/(\+?\d[\d\s.\-/]{6,}\d)/g, '•••');
+  function h32(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+
+  // كل مزامنة: نسخة «نقية» من العقارات المتاحة ديالي كتمشي للشبكة (بلا المالك، بلا ملاحظات، بلا GPS)
+  async function publishShared() {
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) return 0;
+    await refreshRole();
+    if (!inNetwork()) return 0;
+    const me = Sy.uid();
+    const props = await DB.all('properties');
+    const up = await DB.getMeta('sync_uploaded', {});
+    const prev = await DB.getMeta('shared_hash', {});
+    const prevOwner = await DB.getMeta('shared_owner', null);
+    const known = prevOwner === me ? prev : {};
+    const agency = myAgencyName(), phone = myAgencyPhone();
+    const rows = [], next = {};
+    for (const p of props) {
+      if (p.status !== 'available' || p.partner || String(p.id).startsWith('pt-')) continue;
+      const photos = (p.media || []).filter(m => m.kind === 'photo' && up[m.id]);
+      const cv = p.cover && photos.find(m => m.id === p.cover);
+      const ordered = cv ? [cv, ...photos.filter(m => m !== cv)] : photos;
+      const data = {
+        ref: p.ref, title: p.title, transaction: p.transaction, type: p.type, city: p.city, district: p.district,
+        priceMin: p.priceMin, priceMax: p.priceMax, priceUnit: p.priceUnit, negotiable: p.negotiable,
+        areaTotal: p.areaTotal, areaBuilt: p.areaBuilt, areaUseful: p.areaUseful, specs: p.specs || {}, features: p.features || [],
+        description: hideDigits(p.description), createdAt: p.createdAt,
+      };
+      const row = { owner: me, id: p.id, agency, phone, city: p.city || null, type: p.type || null, trx: p.transaction || null,
+        price: num(p.priceMax) || num(p.priceMin) || null, photo_ids: ordered.slice(0, 15).map(m => m.id), data, deleted: false };
+      const h = h32(JSON.stringify(row));
+      next[p.id] = h;
+      if (known[p.id] !== h) rows.push(Object.assign(row, { updated_at: new Date().toISOString() }));
+    }
+    const gone = Object.keys(known).filter(id => !next[id]);
+    for (let i = 0; i < rows.length; i += 100) {
+      await Sy.request('/rest/v1/w777_shared_props?on_conflict=owner,id', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows.slice(i, i + 100)),
+      });
+    }
+    for (let i = 0; i < gone.length; i += 100) {
+      const ids = gone.slice(i, i + 100).map(x => '"' + String(x).replace(/"/g, '') + '"').join(',');
+      await Sy.request(`/rest/v1/w777_shared_props?owner=eq.${me}&id=in.(${encodeURIComponent(ids)})`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ deleted: true, updated_at: new Date().toISOString() }),
+      });
+    }
+    if (rows.length || gone.length || prevOwner !== me) { await DB.setMeta('shared_hash', next); await DB.setMeta('shared_owner', me); }
+    if (rows.length || gone.length) S.net = null;
+    return 0;
+  }
+
+  /* ---------- عرض الشبكة ---------- */
+  const netUrl = new Map();
+  async function loadNetwork(force) {
+    const Sy = window.W777_SYNC;
+    if (!force && S.net && Date.now() - S.netAt < 120000) return S.net;
+    const me = Sy.uid();
+    const out = [];
+    for (let off = 0; ; off += 1000) {
+      const res = await Sy.request(`/rest/v1/w777_shared_props?select=owner,id,agency,phone,city,type,trx,price,photo_ids,data,updated_at&deleted=eq.false&owner=neq.${me}&order=updated_at.desc`, { headers: { Range: `${off}-${off + 999}` } });
+      const rows = await res.json();
+      out.push(...rows);
+      if (rows.length < 1000) break;
+    }
+    S.net = out; S.netAt = Date.now();
+    return out;
+  }
+  async function netImg(owner, id, thumb) {
+    const k = owner + '/' + id + (thumb ? '.t' : '');
+    if (netUrl.has(k)) return netUrl.get(k);
+    const pr = window.W777_SYNC.fetchPath(owner, id, thumb).then(b => b ? URL.createObjectURL(b) : null);
+    netUrl.set(k, pr);
+    return pr;
+  }
+  function hydrateNet(root) {
+    const imgs = $$('img[data-net]', root);
+    const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return; io.unobserve(e.target); load(e.target);
+    }), { rootMargin: '300px' }) : null;
+    function load(img) {
+      const [o, i] = img.dataset.net.split('/');
+      netImg(o, i, true).then(u => { if (u) img.src = u; });
+    }
+    imgs.forEach(img => io ? io.observe(img) : load(img));
+  }
+  const netAsProp = x => Object.assign({}, x.data || {}, { transaction: x.trx || (x.data || {}).transaction, type: x.type || (x.data || {}).type, city: x.city || (x.data || {}).city });
+  function netCard(x) {
+    const p = netAsProp(x);
+    const a = areaOf(p), sp = p.specs || {};
+    const ph = (x.photo_ids || [])[0];
+    return `<a class="card prop-card" href="#/agencies/p/${x.owner}/${encodeURIComponent(x.id)}">
+      <div class="prop-cover">
+        ${ph ? `<img data-net="${x.owner}/${esc(ph)}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
+        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span><span class="badge blue">🏢 ${esc(x.agency || '')}</span></div>
+        ${p.ref ? `<span class="ref">${esc(p.ref)}</span>` : ''}
+        ${(x.photo_ids || []).length ? `<span class="cnt">${ic('camera', 14)}${x.photo_ids.length}</span>` : ''}
+      </div>
+      <div class="prop-body">
+        <div class="prop-price">${esc(priceText(p))}</div>
+        <div class="prop-title">${esc(p.title || typeAr(p.type))}</div>
+        <div class="prop-loc">${ic('pin', 15)} ${esc([p.district, p.city].filter(Boolean).join('، ') || '—')}</div>
+        <div class="prop-specs"><span>${esc(typeAr(p.type))}</span>${a ? `<span>${ic('area', 15)} ${fmt(a)} م²</span>` : ''}${sp.bedrooms ? `<span>${ic('bed', 15)} ${sp.bedrooms}</span>` : ''}</div>
+      </div></a>`;
+  }
+  async function viewAgencies(parts, query) {
+    const Sy = window.W777_SYNC;
+    if (EMBED || !Sy || !Sy.isOn()) {
+      main().innerHTML = `<div class="page-head"><h1>${ic('building', 24)} الوكالات العقارية</h1></div>
+        <div class="card empty"><div class="big">🏢</div><h3>دخل بالحساب ديالك أولا</h3>
+        <p>الوكالات كيدخلو من «الإعدادات» ← «المزامنة السحابية» بالرمز (مثلا <b dir="ltr">agence001</b>) وكلمة السر.</p>
+        <a class="btn gold" href="#/settings">${ic('lock', 18)} الدخول</a></div>`;
+      return;
+    }
+    main().innerHTML = `<div class="card empty">جاري التحميل…</div>`;
+    await refreshRole(true);
+    if (!inNetwork()) { main().innerHTML = `<div class="card empty"><div class="big">🔒</div><h3>هاد الحساب ماشي مفعل فشبكة الوكالات</h3><p>تواصل مع مكتب الوسيط 777.</p></div>`; return; }
+    if (parts[1] === 'p') return viewNetProp(parts[2], decodeURIComponent(parts[3] || ''));
+    const tab = parts[1] === 'manage' && S.role === 'admin' ? 'manage' : parts[1] === 'me' ? 'me' : 'net';
+    const tabs = `<div class="chips" style="margin-bottom:14px">
+      <a class="chip ${tab === 'net' ? 'on' : ''}" href="#/agencies">🏘️ عقارات الشبكة</a>
+      ${S.role === 'admin' ? `<a class="chip ${tab === 'manage' ? 'on' : ''}" href="#/agencies/manage">🔑 إدارة الوكالات (777)</a>` : `<a class="chip ${tab === 'me' ? 'on' : ''}" href="#/agencies/me">🏢 وكالتي</a>`}
+    </div>`;
+    const head = `<div class="page-head"><h1>${ic('building', 24)} الوكالات العقارية</h1>
+      <span class="badge ${S.role === 'admin' ? 'gold' : 'blue'}">${S.role === 'admin' ? '👑 المدير' : '🏢 ' + esc(myAgencyName())}</span></div>${tabs}`;
+    if (tab === 'manage') return viewAgManage(head, query);
+    if (tab === 'me') return viewAgMe(head);
+    let list;
+    try { list = await loadNetwork(query.r === '1'); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const f = Object.assign({ q: '', trx: '', cat: '', city: '', ag: '' }, S.netFilters || {});
+    const agencies = [...new Set(list.map(x => x.agency).filter(Boolean))].sort();
+    const cities = [...new Set(list.map(x => x.city).filter(Boolean))].sort();
+    main().innerHTML = head + `
+      <div class="card card-pad" style="margin-bottom:14px">
+        <form id="nf" class="form-grid">
+          ${fInput('q', 'بحث', f.q, { ph: 'حي، نوع، ثمن، وكالة…' })}
+          ${fSelect('trx', 'العملية', [{ v: '', l: 'الكل' }, ...D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar }))], f.trx, { noEmpty: true })}
+          ${fSelect('cat', 'الصنف', [{ v: '', l: 'الكل' }, ...Object.entries(D.CATEGORIES).map(([v, c]) => ({ v, l: c.ar }))], f.cat, { noEmpty: true })}
+          ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], f.city, { noEmpty: true })}
+          ${fSelect('ag', 'الوكالة', [{ v: '', l: 'الكل' }, ...agencies.map(c => ({ v: c, l: c }))], f.ag, { noEmpty: true })}
+        </form>
+        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncount"></span><a class="btn sm" href="#/agencies?r=1">${ic('share', 15)} تحديث</a></div>
+      </div>
+      <div class="prop-grid" id="ngrid"></div>`;
+    const draw = () => {
+      const v = collect($('#nf'));
+      S.netFilters = v;
+      const t = tokens(v.q || '');
+      const res = list.filter(x => {
+        const p = netAsProp(x);
+        if (v.trx && p.transaction !== v.trx) return false;
+        if (v.cat && catOf(p.type) !== v.cat) return false;
+        if (v.city && x.city !== v.city) return false;
+        if (v.ag && x.agency !== v.ag) return false;
+        return !t.length || hit(norm([x.agency, p.ref, p.title, typeAr(p.type), trxAr(p.transaction), p.city, p.district, p.description, x.price].join(' ')), t);
+      });
+      $('#ncount').textContent = `${res.length} عقار من ${agencies.length} وكالة`;
+      $('#ngrid').innerHTML = res.slice(0, 120).map(netCard).join('') || '<div class="card empty" style="grid-column:1/-1">ما كاين حتى عقار</div>';
+      hydrateNet($('#ngrid'));
+    };
+    $$('#nf input, #nf select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
+    $('#nf').onsubmit = e => e.preventDefault();
+    draw();
+  }
+  async function viewNetProp(owner, id) {
+    const list = await loadNetwork();
+    const x = list.find(r => r.owner === owner && r.id === id);
+    if (!x) { main().innerHTML = notFound(); return; }
+    const p = netAsProp(x);
+    const s = p.specs || {}, cat = catOf(p.type), a = areaOf(p);
+    const specRows = (D.FIELDS[cat] || []).filter(f => s[f.k] !== undefined && s[f.k] !== null && s[f.k] !== '').map(f => `<div><small>${esc(f.l)}</small><b>${esc(f.t === 'number' ? fmt(s[f.k]) : s[f.k])}</b></div>`);
+    const msg = `السلام عليكم ${x.agency || ''}، بغيت نسول على العقار ${p.ref || ''} (${p.title || typeAr(p.type)} — ${priceText(p)}) اللي فشبكة الوسيط 777.`;
+    main().innerHTML = `
+      <div class="page-head"><a class="btn" href="#/agencies">${ic('back', 18)} عقارات الشبكة</a></div>
+      <div class="detail-grid">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="net-gallery">${(x.photo_ids || []).map((ph, i) => `<img data-net="${x.owner}/${esc(ph)}" data-i="${i}" alt="">`).join('') || `<div class="card empty">${ic('image', 40)}<p>بلا صور</p></div>`}</div>
+          ${p.description ? `<div class="card card-pad"><b>الوصف</b><p style="white-space:pre-wrap;margin-bottom:0">${esc(p.description)}</p></div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card card-pad">
+            <div class="btn-row" style="margin-bottom:8px"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.ref ? `<span class="badge">${esc(p.ref)}</span>` : ''}</div>
+            <div class="prop-price" style="font-size:24px">${esc(priceText(p))}</div>
+            <h2 style="margin:6px 0">${esc(p.title || typeAr(p.type))}</h2>
+            <div class="muted">${ic('pin', 15)} ${esc([p.district, p.city].filter(Boolean).join('، ') || '—')}</div>
+            <div class="kv" style="margin-top:12px">
+              <div><small>النوع</small><b>${esc(typeAr(p.type))}</b></div>
+              ${a ? `<div><small>المساحة</small><b>${fmt(a)} م²</b></div>` : ''}
+              ${specRows.join('')}
+            </div>
+            ${(p.features || []).length ? `<div class="chips" style="margin-top:10px">${p.features.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>` : ''}
+          </div>
+          <div class="card card-pad" style="border-color:var(--gold)">
+            <b>🏢 ${esc(x.agency || '')}</b>
+            <div class="btn-row" style="margin-top:10px">
+              ${x.phone ? `<a class="btn sm" href="${telLink(x.phone)}">${ic('phone', 16)} ${esc(x.phone)}</a>
+              <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(x.phone)}?text=${encodeURIComponent(msg)}">${ic('wa', 16)} واتساب</a>` : '<span class="muted">بلا هاتف</span>'}
+            </div>
+            ${S.role === 'admin' ? `<button class="btn sm" id="own" style="margin-top:10px">${ic('key', 15)} معلومات المالك (المدير فقط)</button><div id="own-box" class="muted" style="margin-top:8px"></div>` : ''}
+            <p class="muted" style="font-size:12.5px;margin-bottom:0">معلومات المالك كتبقى خاصة بالوكالة. تواصل معاها باش تتعاونو 🤝</p>
+          </div>
+        </div>
+      </div>`;
+    hydrateNet(main());
+    $$('.net-gallery img').forEach(img => img.onclick = async () => {
+      const urls = await Promise.all((x.photo_ids || []).map(ph => netImg(x.owner, ph, false)));
+      modal(`<img src="${urls[+img.dataset.i] || img.src}" style="width:100%;border-radius:12px">`);
+    });
+    const ob = $('#own');
+    if (ob) ob.onclick = async () => {
+      try {
+        const d = await (await window.W777_SYNC.request('/rest/v1/rpc/w777_admin_record', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ o: x.owner, i: x.id }) })).json();
+        const o = (d && d.owner) || {};
+        $('#own-box').innerHTML = d ? `👤 <b>${esc(o.name || '—')}</b> ${o.phone ? `· <a href="${telLink(o.phone)}">${esc(o.phone)}</a>` : ''}${d.notes ? '<br>📝 ' + esc(d.notes) : ''}${d.address ? '<br>📍 ' + esc(d.address) : ''}` : 'ما لقيناش المعلومات';
+      } catch (e) { $('#own-box').textContent = 'تعذر: ' + e.message; }
+    };
+  }
+  async function viewAgMe(head) {
+    const ag = S.agency || {};
+    main().innerHTML = head + `
+      <div class="card card-pad form">
+        <h3 class="section-title">🏢 معلومات الوكالة (كتبان مع العقارات ديالك فالشبكة)</h3>
+        <form id="agme" class="form-grid">
+          ${fInput('name', 'اسم الوكالة', ag.name, { req: true })}
+          ${fInput('phone', 'هاتف الوكالة', ag.phone, { type: 'tel' })}
+          <div class="field"><label>الرمز</label><input value="${esc(ag.code || '')}" disabled dir="ltr"></div>
+          <div class="field" style="justify-content:flex-end"><button class="btn gold">${ic('check', 18)} حفظ</button></div>
+        </form>
+        <p class="muted" style="font-size:13px">✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا للوكالات الأخرى، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.</p>
+      </div>`;
+    $('#agme').onsubmit = async e => {
+      e.preventDefault();
+      const v = collect(e.target);
+      try {
+        await window.W777_SYNC.request(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: v.name, phone: v.phone || null }) });
+        await refreshRole(true);
+        await DB.setMeta('shared_hash', {});
+        window.W777_SYNC.syncNow();
+        toast('تم الحفظ ✓');
+      } catch (er) { toast('تعذر: ' + er.message, 4000); }
+    };
+  }
+  async function viewAgManage(head, query) {
+    const Sy = window.W777_SYNC;
+    let ags, secrets, counts = {};
+    try {
+      [ags, secrets] = await Promise.all([
+        Sy.request('/rest/v1/w777_agencies?select=uid,code,name,phone,email,active&order=code.asc', { headers: { Range: '0-999' } }).then(r => r.json()),
+        Sy.request('/rest/v1/w777_agency_secrets?select=uid,password', { headers: { Range: '0-999' } }).then(r => r.json()),
+      ]);
+      (await loadNetwork()).forEach(x => { counts[x.owner] = (counts[x.owner] || 0) + 1; });
+    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const pw = Object.fromEntries(secrets.map(s => [s.uid, s.password]));
+    const appUrl = location.href.split('#')[0];
+    const credMsg = a => `السلام عليكم ${a.name}،\nمرحبا بكم فشبكة الوكالات ديال الوسيط 777 🏢\nالتطبيق: ${appUrl}\nالإعدادات ← المزامنة السحابية:\nالرمز: ${a.code}\nكلمة السر: ${pw[a.uid] || ''}\nمن بعد زيدو العقارات ديالكم وغادي يبانو لجميع الوكالات (بلا معلومات المالك).`;
+    main().innerHTML = head + `
+      <div class="card card-pad" style="margin-bottom:14px">
+        <div class="kv"><div><small>الوكالات</small><b>${ags.length}</b></div><div><small>مفعلة</small><b>${ags.filter(a => a.active).length}</b></div>
+          <div><small>اللي زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div></div>
+        <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف…' })}
+          ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' }], '', { noEmpty: true })}</div>
+      </div>
+      <div class="card" id="aglist"></div>`;
+    let shown = 60;
+    const draw = () => {
+      const q = norm($('[name=agq]').value || ''), f = $('[name=agf]').value;
+      const res = ags.filter(a => (!q || norm([a.code, a.name, a.phone].join(' ')).includes(q)) &&
+        (f !== 'named' || !/^Agence \d+$/.test(a.name)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active));
+      $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
+        <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
+          <small class="muted">${esc(a.phone || 'بلا هاتف')} · <span dir="ltr">${esc(a.code)}</span> / <span dir="ltr" class="pw" data-pw="${a.uid}">••••••</span></small></div>
+        <div class="btn-row">
+          <button class="btn sm" data-show="${a.uid}">${ic('eye', 15)}</button>
+          <button class="btn sm" data-edit="${a.uid}">${ic('edit', 15)}</button>
+          <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${a.phone ? waPhone(a.phone) : ''}?text=${encodeURIComponent(credMsg(a))}">${ic('wa', 15)} صيفط الدخول</a>
+          <button class="btn sm" data-tog="${a.uid}">${a.active ? 'إيقاف' : 'تفعيل'}</button>
+        </div></div>`).join('') + (res.length > shown ? `<div style="padding:12px;text-align:center"><button class="btn" id="agmore">عرض المزيد (${res.length - shown})</button></div>` : '') || '<div class="empty">ما كاين والو</div>';
+      const more = $('#agmore'); if (more) more.onclick = () => { shown += 100; draw(); };
+      $$('[data-show]').forEach(b => b.onclick = () => { const s = $(`[data-pw="${b.dataset.show}"]`); s.textContent = s.textContent.startsWith('•') ? pw[b.dataset.show] || '?' : '••••••'; });
+      $$('[data-tog]').forEach(b => b.onclick = async () => {
+        const a = ags.find(x => x.uid === b.dataset.tog);
+        await Sy.request(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !a.active }) });
+        a.active = !a.active; toast(a.active ? 'تفعلات ✓' : 'توقفات'); draw();
+      });
+      $$('[data-edit]').forEach(b => b.onclick = () => {
+        const a = ags.find(x => x.uid === b.dataset.edit);
+        modal(`<h3>${esc(a.code)}</h3><form id="age" class="form-grid">${fInput('name', 'اسم الوكالة', a.name, { req: true })}${fInput('phone', 'الهاتف', a.phone, { type: 'tel' })}</form>
+          <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="age-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+          $('#age-ok', box).onclick = async () => {
+            const v = collect($('#age', box));
+            try {
+              await Sy.request(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: v.name || a.name, phone: v.phone || null }) });
+              a.name = v.name || a.name; a.phone = v.phone || null; close(); draw(); toast('تم ✓');
+            } catch (e) { toast('تعذر: ' + e.message); }
+          };
+        });
+      });
+    };
+    $('[name=agq]').addEventListener('input', () => { shown = 60; draw(); });
+    $('[name=agf]').addEventListener('change', () => { shown = 60; draw(); });
+    draw();
   }
 
   /* ---------- استيراد العقارات من دوسي الصور ----------
@@ -2445,7 +2965,7 @@
     const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     const meta = $('meta[name=theme-color]');
-    if (meta) meta.content = '#0f2a4a';
+    if (meta) meta.content = '#000000';
   }
 
   function notFound() {
@@ -2534,6 +3054,8 @@
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
     await lockScreen();
     await loadAll();
+    loadRoleCache();
+    if (window.W777_SYNC.isOn()) localStorage.setItem('w777_last_email', window.W777_SYNC.account().email || '');
     cleanOrphans();
     setupSearch();
     setupFab();
@@ -2542,6 +3064,7 @@
     await route();
     DB.persist();
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
+    checkAlarms(); setInterval(checkAlarms, 30000);
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { /* */ });
       // عند تثبيت نسخة جديدة: إعادة تحميل الصفحة مرة واحدة

@@ -1,11 +1,11 @@
 /* ============================================================
    قاعدة البيانات المحلية (IndexedDB) — تعمل بدون إنترنت
-   المخازن: properties | requests | files (صور/فيديو/مستندات) | meta
+   المخازن: properties | requests | appointments | files (صور/فيديو/مستندات) | meta
    ============================================================ */
 (function () {
   'use strict';
   const DB_NAME = 'wasset777_bureau';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   let dbp = null;
 
   function open() {
@@ -20,6 +20,7 @@
           const s = db.createObjectStore('files', { keyPath: 'id' });
           s.createIndex('owner', 'owner', { unique: false });
         }
+        if (!db.objectStoreNames.contains('appointments')) db.createObjectStore('appointments', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
       };
       req.onsuccess = () => resolve(req.result);
