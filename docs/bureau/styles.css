@@ -474,3 +474,18 @@ a.chip { text-decoration: none; }
 .mkt-big.down { background: linear-gradient(135deg, #15803d, #22c55e); }
 .mkt-big.up { background: linear-gradient(135deg, #b91c1c, #ef4444); }
 .mkt-big.eq { background: linear-gradient(135deg, #4b5563, #6b7280); }
+/* ---------- العقود والتكوين ---------- */
+.doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.doc-card { display: flex; gap: 14px; align-items: flex-start; }
+.doc-card .grow { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.doc-card .btn-row { margin-top: 8px; }
+.doc-ic { width: 48px; height: 48px; flex: none; border-radius: 12px; display: grid; place-items: center; font-size: 24px; background: var(--surface-2); }
+.doc-ic.mod { background: var(--brand); color: #fff; font-weight: 900; font-size: 16px; }
+.doc-card.done { border-color: var(--green); }
+.doc-card.done .doc-ic.mod { background: var(--green); }
+.mod-parts { margin: 6px 0 0; padding-inline-start: 18px; font-size: 13px; color: var(--ink-2); }
+.learn-done { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; cursor: pointer; }
+.learn-track { height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-bottom: 4px; }
+.learn-track .fill { height: 100%; background: var(--gold); border-radius: 99px; }
+.bottomnav a { font-size: 11px; }
+@media (max-width: 400px) { .doc-grid { grid-template-columns: 1fr; } }
