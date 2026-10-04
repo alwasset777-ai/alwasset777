@@ -587,6 +587,8 @@
     else if (a === 'request' && c === 'edit') { nav = 'requests'; await viewReqForm(b); }
     else if (a === 'request') { nav = 'requests'; await viewReq(b); }
     else if (a === 'matching') { nav = 'matching'; viewMatching(query); }
+    else if (a === 'contracts') { nav = 'contracts'; viewContracts(); }
+    else if (a === 'learn') { nav = 'learn'; viewLearn(); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
@@ -2025,6 +2027,87 @@
   }
 
   /* ============================================================
+     طباعة العقود 📄 + تعلم مهنة الوكيل العقاري 🎓 (ملفات PDF)
+     ============================================================ */
+  const CONTRACTS = [
+    { f: '01-bail-habitation', ar: 'عقد كراء عقار سكني', fr: "Contrat de bail à usage d'habitation", law: 'القانون 67.12', ic: '🏠' },
+    { f: '02-bail-commercial', ar: 'عقد كراء عقار مهني أو تجاري', fr: 'Bail commercial ou professionnel', law: 'القانون 49.16', ic: '🏪' },
+    { f: '03-promesse-vente', ar: 'عقد الوعد بالبيع (اتفاقية مبدئية)', fr: 'Promesse / compromis de vente', law: 'ظ.ل.ع', ic: '🤝' },
+    { f: '04-vente-definitive', ar: 'عقد بيع عقار (نهائي)', fr: 'Contrat de vente définitif', law: 'القانون 39.08', ic: '🔑' },
+    { f: '05-hypotheque', ar: 'عقد الرهن الرسمي (الرهن العقاري)', fr: "Contrat d'hypothèque", law: 'القانون 39.08', ic: '🏦' },
+    { f: '06-mandat-agence', ar: 'عقد وكالة (تفويض) لبيع أو كراء عقار', fr: 'Mandat de vente / location', law: 'ظ.ل.ع', ic: '📝' },
+    { f: '07-gestion-locative', ar: 'عقد تسيير وتدبير الأملاك العقارية', fr: 'Contrat de gestion locative', law: 'ظ.ل.ع', ic: '🗂️' },
+    { f: '08-recu-acompte', ar: 'وصل استلام مبلغ (تسبيق / عربون)', fr: "Reçu d'acompte / arrhes", law: '', ic: '🧾' },
+  ];
+  const MODULES = [
+    { m: 'M1', ar: 'القانون العقاري وعقود البيع', d: '3 أيام · 21 ساعة', parts: ['الإطار القانوني للعقارات فالمغرب', 'عقد البيع: المراحل والالتزامات', 'حقوق الرهن والضمانات', 'الملكية المشتركة', 'قانون الكراء السكني والتجاري', 'المسؤولية والأخطاء المهنية'] },
+    { m: 'M2', ar: 'التعمير والتشخيص التقني للعقارات', d: 'يومان · 14 ساعة', parts: ['أنظمة التعمير والتخطيط العمراني', 'رخص البناء والتجزئة وتغيير الاستعمال', 'الشهادات والمستندات الإدارية للعقار', 'التشخيص التقني الإلزامي', 'قراءة مخططات البناء والتدقيق التقني'] },
+    { m: 'M3', ar: 'تقييم وخبرة العقارات', d: '3 أيام · 21 ساعة', parts: ['مبادئ التقييم العقاري وأهميته', 'طريقة المقارنة البيعية', 'طريقة رسملة الإيرادات', 'طريقة التكلفة للعقارات الجديدة', 'العوامل المؤثرة فالقيمة العقارية', 'إعداد تقرير الرأي فالقيمة'] },
+    { m: 'M4', ar: 'التجارة والتنقيب العقاري', d: '3 أيام · 21 ساعة', parts: ['تقنيات التنقيب عن العملاء', 'بناء شبكة العلاقات المهنية', 'تقنيات التفاوض العقاري', 'إدارة ملف البيع من A إلى Z', 'خدمة العملاء والاحتفاظ بهم', 'مؤشرات الأداء والتحليل التجاري'] },
+    { m: 'M5', ar: 'التسويق العقاري والرقمنة', d: '3 أيام · 21 ساعة', parts: ['أسس التسويق العقاري', 'التسويق الرقمي ووسائل التواصل الاجتماعي', 'إنشاء المحتوى العقاري الاحترافي', 'الإعلانات المدفوعة والاستهداف', 'الموقع الإلكتروني والمنصات العقارية', 'التحليل الرقمي وقياس النتائج'] },
+    { m: 'M6', ar: 'التمويل العقاري وتيسير الحصول على القرض', d: '3 أيام · 21 ساعة', parts: ['أنواع التمويل العقاري فالمغرب', 'القروض البنكية ومعايير الأهلية', 'حساب القدرة الاقتراضية', 'الرهن العقاري والضمانات', 'مرافقة العميل فالحصول على التمويل', 'التخطيط المالي للمستثمر العقاري'] },
+  ];
+  // طباعة PDF مباشرة (iframe)، وإلا كيتحل فصفحة جديدة
+  function printPdf(url) {
+    if (/iPhone|iPad|Android/i.test(navigator.userAgent)) { window.open(url, '_blank'); toast('من الملف: زر المشاركة ⬆️ ← «طباعة»', 4000); return; }
+    const fr = document.createElement('iframe');
+    fr.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0';
+    fr.src = url;
+    fr.onload = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { window.open(url, '_blank'); } setTimeout(() => fr.remove(), 60000); };
+    document.body.appendChild(fr);
+  }
+  const docBtns = (url, name) => `<div class="btn-row">
+      <a class="btn sm" href="${url}" target="_blank" rel="noopener">${ic('eye', 15)} عرض</a>
+      <a class="btn sm gold" href="${url}" download="${esc(name)}">${ic('download', 15)} تحميل</a>
+      <button class="btn sm" data-print="${url}">${ic('print', 15)} طباعة</button></div>`;
+  function bindPrint(root) { $$('[data-print]', root).forEach(b => b.onclick = () => printPdf(b.dataset.print)); }
+  function viewContracts() {
+    main().innerHTML = `
+      <div class="page-head"><h1>📄 طباعة العقود</h1></div>
+      <p class="muted" style="margin-top:-6px">نماذج عقود جاهزة بالعربية (والعنوان بالفرنسية) ديال وكالة الوسيط 777. حمّل، عمّر الفراغات، وطبع.</p>
+      <div class="card card-pad doc-card" style="margin-bottom:14px;border-color:var(--gold)">
+        <div class="doc-ic">📚</div>
+        <div class="grow"><b>دليل العقود العقارية — كامل (17 صفحة)</b><small class="muted">Recueil de modèles de contrats immobiliers</small>${docBtns('files/contrats/00-recueil-complet.pdf', 'AlWasset777-Recueil-contrats.pdf')}</div>
+      </div>
+      <div class="doc-grid">${CONTRACTS.map((c, i) => `
+        <div class="card card-pad doc-card">
+          <div class="doc-ic">${c.ic}</div>
+          <div class="grow"><small class="muted">${String(i + 1).padStart(2, '0')}${c.law ? ' · ' + esc(c.law) : ''}</small><b>${esc(c.ar)}</b><small class="muted" dir="ltr" style="text-align:right">${esc(c.fr)}</small>
+          ${docBtns(`files/contrats/${c.f}.pdf`, `AlWasset777-${c.f}.pdf`)}</div>
+        </div>`).join('')}</div>
+      <p class="muted" style="font-size:12.5px;margin-top:14px">⚠️ نماذج إرشادية: العقود المهمة (البيع النهائي، الرهن) خاصهم يتحرّرو عند موثق أو محامي مقبول لدى محكمة النقض.</p>`;
+    bindPrint(main());
+  }
+  function viewLearn() {
+    let done = {};
+    try { done = JSON.parse(localStorage.getItem('w777_learn') || '{}'); } catch (e) { /* */ }
+    const n = MODULES.filter(x => done[x.m]).length;
+    main().innerHTML = `
+      <div class="page-head"><h1>🎓 تعلم مهنة الوكيل العقاري</h1></div>
+      <div class="card card-pad" style="margin-bottom:14px">
+        <b>برنامج تكوين الوكيل العقاري المحترف — وكالة الوسيط 777، مكناس</b>
+        <p class="muted" style="margin:6px 0 10px">6 وحدات · 17 يوم · 119 ساعة. حل كل وحدة، قراها، ومن بعد علّم عليها ✓.</p>
+        <div class="track learn-track"><div class="fill" style="width:${n / MODULES.length * 100}%"></div></div>
+        <small class="muted">${n} / ${MODULES.length} وحدات مكملة</small>
+      </div>
+      <div class="doc-grid">${MODULES.map(x => `
+        <div class="card card-pad doc-card ${done[x.m] ? 'done' : ''}">
+          <div class="doc-ic mod">${x.m}</div>
+          <div class="grow"><b>${esc(x.ar)}</b><small class="muted">⏱️ ${esc(x.d)}</small>
+            <ol class="mod-parts">${x.parts.map(p => `<li>${esc(p)}</li>`).join('')}</ol>
+            ${docBtns(`files/formation/${x.m}.pdf`, `AlWasset777-Formation-${x.m}.pdf`)}
+            <label class="learn-done"><input type="checkbox" data-done-m="${x.m}" ${done[x.m] ? 'checked' : ''}> قريت هاد الوحدة ✓</label>
+          </div>
+        </div>`).join('')}</div>`;
+    bindPrint(main());
+    $$('[data-done-m]').forEach(cb => cb.onchange = () => {
+      done[cb.dataset.doneM] = cb.checked ? Date.now() : undefined;
+      try { localStorage.setItem('w777_learn', JSON.stringify(done)); } catch (e) { /* */ }
+      viewLearn();
+    });
+  }
+
+  /* ============================================================
      مقارنة الثمن مع السوق 📊 (درهم/م² — للبيع فقط)
      ============================================================ */
   const MKT_CLS = { apartment: 0, house: 1 };
@@ -2061,6 +2144,22 @@
     return { ppm, ref, area, price, diff: Math.round((ppm - ref.v) / ref.v * 100), est: ref.v * area };
   }
   const ltr = t => '\u2066' + t + '\u2069';
+  // التطور الرسمي (ANCFCC × بنك المغرب) حسب المدينة والنوع
+  const TREND_LBL = ['الشقق', 'الديور', 'الفيلات', 'الأراضي', 'المحلات التجارية', 'المكاتب', 'كل العقارات'];
+  function trendOf(city, type) {
+    const t = D.MARKET.trend, cat = catOf(type);
+    const i = cat === 'apartment' ? 0 : cat === 'house' ? (/villa|bungalow|palace|chalet/.test(type) ? 2 : 1) : cat === 'land' ? 3 : cat === 'commercial' ? (/office|plateau|cabinet/.test(type) ? 5 : 4) : 6;
+    const row = t.cities[city];
+    let v = row ? row[i] : null, where = city, k = i;
+    if (row && v == null) { v = row[6]; k = 6; }
+    if (v == null) { v = t.national[i === 6 ? 0 : i]; where = 'المغرب'; }
+    return { v, where, lbl: TREND_LBL[k], period: t.period, url: t.url };
+  }
+  function trendLine(city, type) {
+    const t = trendOf(city, type);
+    const arrow = t.v > 0 ? '📈' : t.v < 0 ? '📉' : '➖';
+    return `<p class="muted" style="font-size:13px;margin:10px 0 0">${arrow} <b>التطور الرسمي:</b> أثمنة ${esc(t.lbl)} فـ ${esc(t.where)} ${t.v > 0 ? 'طلعات' : t.v < 0 ? 'نزلات' : 'بقات مستقرة'} <b>${ltr((t.v > 0 ? '+' : '') + t.v + '%')}</b> فـ ${esc(t.period)} — <a href="${t.url}" target="_blank" rel="noopener">ANCFCC × بنك المغرب</a></p>`;
+  }
   const mktTone = d => d <= -5 ? 'down' : d >= 5 ? 'up' : 'eq';
   function mktBadge(p) {
     const m = marketCmp(p);
@@ -2088,6 +2187,7 @@
     return `<div class="card card-pad no-print" id="mkt-card">
       <div class="pair-head" style="padding:0 0 10px;border:0"><b>📊 مقارنة مع ثمن السوق</b><button class="btn sm" id="mkt-edit">${ic('edit', 14)} الثمن المرجعي</button></div>
       ${body}
+      ${p.city ? trendLine(p.city, p.type) : ''}
       <p class="muted" style="font-size:12px;margin:10px 0 0">المصادر: ${D.MARKET.sources.map(s => `<a href="${s.u}" target="_blank" rel="noopener">${esc(s.n.split(' — ')[0])}</a>`).join(' · ')} (${D.MARKET.updated}). أثمنة تقريبية: الحالة، الطابق والتشطيب كيأثرو.</p>
     </div>`;
   }
@@ -2127,7 +2227,8 @@
         <datalist id="ef-ds"></datalist>
         <div id="eres" style="margin-top:14px"></div>
       </div>
-      <div class="card" style="margin-top:16px" id="etab"></div>`;
+      <div id="etr" style="margin-top:16px"></div>
+      <div class="card" id="etab"></div>`;
     bindMoney(main());
     const form = $('#ef');
     const draw = () => {
@@ -2145,10 +2246,15 @@
           <div><small>ثمن السوق (${esc(m.ref.where)})</small><b>${fmt(m.ref.v)} د/م²</b></div>
           <div><small>القيمة حسب السوق</small><b>${esc(millions(m.est) || fmt(Math.round(m.est)))}</b></div></div>`;
       }
-      $('#eres').innerHTML = h + `<button class="btn sm" id="e-edit2" style="margin-top:10px">${ic('edit', 14)} تصحيح الثمن المرجعي</button>`;
+      $('#eres').innerHTML = h + trendLine(v.city, v.type) + `<button class="btn sm" id="e-edit2" style="margin-top:10px">${ic('edit', 14)} تصحيح الثمن المرجعي</button>`;
       [$('#e-edit'), $('#e-edit2')].forEach(b => b && (b.onclick = () => editMarketRef(v.city, v.district, v.type, draw)));
       const rows = D.MARKET.districts[v.city] || [];
       const c = D.MARKET.cities[v.city];
+      const tr = D.MARKET.trend.cities[v.city];
+      const trHtml = tr ? `<div class="card card-pad" style="margin-bottom:16px"><b>📊 التطور الرسمي فـ ${esc(v.city)} — ${esc(D.MARKET.trend.period)}</b>
+        <div class="kv" style="margin-top:10px">${tr.map((x, i) => x == null ? '' : `<div><small>${TREND_LBL[i]}</small><b style="color:${x > 0 ? 'var(--green)' : x < 0 ? 'var(--red)' : 'inherit'}">${ltr((x > 0 ? '+' : '') + x + '%')}</b></div>`).join('')}</div>
+        <p class="muted" style="font-size:12px;margin:8px 0 0">المصدر الرسمي: <a href="${D.MARKET.trend.url}" target="_blank" rel="noopener">مؤشر أثمنة الأصول العقارية — بنك المغرب × ANCFCC</a></p></div>` : '';
+      $('#etr').innerHTML = trHtml;
       $('#etab').innerHTML = `<div class="pair-head"><b>أثمنة المتر فـ ${esc(v.city)} (للبيع)</b>${c ? `<span class="muted" style="font-size:13px">المعدل: شقة ${fmt(c[0])} · فيلا ${fmt(c[1])}</span>` : ''}</div>
         ${rows.filter(r => r[1] || r[2]).map(r => `<div class="list-row"><div class="grow"><b>${esc(r[0][0])}</b></div><small>شقة: <b>${r[1] ? fmt(r[1]) : '—'}</b></small><small>فيلا: <b>${r[2] ? fmt(r[2]) : '—'}</b></small></div>`).join('') || (c ? '' : '<div class="empty" style="padding:20px">ما كاينش معطيات لهاد المدينة</div>')}`;
     };
