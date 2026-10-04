@@ -2155,8 +2155,12 @@
     { f: '19-mandat-recherche', ar: 'اتفاقية بحث عن عقار وأتعاب الوساطة', fr: 'Mandat de recherche', law: 'ق.ل.ع', ic: '🔎', g: 'agency' },
     { f: '21-contrat-travaux', ar: 'عقد مقاولة أشغال بناء أو إصلاح', fr: "Contrat d'entreprise (travaux)", law: 'ق.ل.ع', ic: '🧱', g: 'other' },
     { f: '22-avenant', ar: 'ملحق تعديل عقد', fr: 'Avenant au contrat', law: 'ق.ل.ع', ic: '📎', g: 'other' },
+    { f: '24-acte-vente-definitif', ar: 'عقد بيع عقار محفظ — نموذج المحرر الرسمي', fr: 'Acte de vente immobilière', law: 'ق.ل.ع + 39.08', ic: '🔑', g: 'deed', docx: 1 },
+    { f: '25-acte-donation', ar: 'عقد هبة عقار — نموذج المحرر الرسمي', fr: 'Acte de donation', law: '39.08', ic: '🎁', g: 'deed', docx: 1 },
+    { f: '26-acte-echange', ar: 'عقد مبادلة عقارين — نموذج المحرر الرسمي', fr: "Acte d'échange", law: 'ق.ل.ع + 39.08', ic: '🔁', g: 'deed', docx: 1 },
+    { f: '27-acte-hypotheque', ar: 'عقد رهن رسمي على عقار محفظ', fr: "Acte d'hypothèque", law: '39.08', ic: '🏦', g: 'deed', docx: 1 },
   ];
-  const CT_GROUPS = [['base', '📘 الدليل الأساسي (01–08)'], ['rent', '🏠 الكراء'], ['sale', '🔑 البيع والشراء'], ['agency', '🤝 الوكالة والوساطة'], ['other', '🧱 أخرى']];
+  const CT_GROUPS = [['deed', '⚖️ نماذج المحررات الرسمية — قابلة للتعديل (Word)'], ['base', '📘 الدليل الأساسي (01–08)'], ['rent', '🏠 الكراء'], ['sale', '🔑 البيع والشراء'], ['agency', '🤝 الوكالة والوساطة'], ['other', '🧱 أخرى']];
   const MODULES = [
     { m: 'M1', ar: 'القانون العقاري وعقود البيع', d: '3 أيام · 21 ساعة', parts: ['الإطار القانوني للعقارات فالمغرب', 'عقد البيع: المراحل والالتزامات', 'حقوق الرهن والضمانات', 'الملكية المشتركة', 'قانون الكراء السكني والتجاري', 'المسؤولية والأخطاء المهنية'] },
     { m: 'M2', ar: 'التعمير والتشخيص التقني للعقارات', d: 'يومان · 14 ساعة', parts: ['أنظمة التعمير والتخطيط العمراني', 'رخص البناء والتجزئة وتغيير الاستعمال', 'الشهادات والمستندات الإدارية للعقار', 'التشخيص التقني الإلزامي', 'قراءة مخططات البناء والتدقيق التقني'] },
@@ -2184,7 +2188,8 @@
         <div class="card card-pad doc-card">
           <div class="doc-ic">${c.ic}</div>
           <div class="grow"><small class="muted">${c.f.slice(0, 2)}${c.law ? ' · ' + esc(c.law) : ''}</small><b>${esc(c.ar)}</b><small class="muted" dir="ltr" style="text-align:right">${esc(c.fr)}</small>
-          ${docBtns(`files/contrats/${c.f}.pdf`, `AlWasset777-${c.f}.pdf`)}</div>
+          ${docBtns(`files/contrats/${c.f}.pdf`, `AlWasset777-${c.f}.pdf`)}
+          ${c.docx ? `<a class="btn sm" style="margin-top:6px;align-self:flex-start;border-color:#2b579a;color:#2b579a" href="files/contrats/${c.f}.docx" download="AlWasset777-${c.f}.docx">📝 تحميل Word للتعديل</a>` : ''}</div>
         </div>`;
     main().innerHTML = `
       <div class="page-head"><h1>📄 طباعة العقود</h1><span class="badge gold">${CONTRACTS.length} نموذج</span></div>
@@ -2195,7 +2200,7 @@
         <div class="card card-pad doc-card" style="border-color:var(--gold)"><div class="doc-ic">📗</div>
           <div class="grow"><b>دليل العقود — الجزء 2 (20 صفحة)</b><small class="muted">العقود 09 حتى 23</small>${docBtns('files/contrats/00b-recueil-complementaire.pdf', 'AlWasset777-Recueil-2.pdf')}</div></div>
       </div>
-      ${CT_GROUPS.map(([g, t]) => `<h2 class="sec-h">${t}</h2><div class="doc-grid">${CONTRACTS.filter(c => (c.g || 'base') === g).map(card).join('')}</div>`).join('')}
+      ${CT_GROUPS.map(([g, t]) => `<h2 class="sec-h">${t}</h2>${g === 'deed' ? '<p class="muted" style="margin:-4px 0 10px;font-size:13px">نماذج كاملة كيخدمو بيها الموثقين والعدول والمحامين: حمّل نسخة Word، بدّل حسب الحالة، وعطيها للمحرر.</p>' : ''}<div class="doc-grid">${CONTRACTS.filter(c => (c.g || 'base') === g).map(card).join('')}</div>`).join('')}
       <p class="muted" style="font-size:12.5px;margin-top:14px">⚠️ نماذج إرشادية: العقود المهمة (البيع النهائي، الهبة، المبادلة، الرهن) خاصهم يتحرّرو عند موثق أو عدول أو محامي مقبول لدى محكمة النقض.</p>`;
     bindPrint(main());
   }
