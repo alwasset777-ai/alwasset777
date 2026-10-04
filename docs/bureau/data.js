@@ -525,8 +525,27 @@
     sources: [
       { n: 'Yakeey — Carte des prix', u: 'https://yakeey.com/fr-ma/referentiel-de-prix-immobilier' },
       { n: 'Agenz — Prix au m²', u: 'https://agenz.ma/fr/prix-immobilier-maroc' },
-      { n: 'ANCFCC × BAM — Indice des prix des actifs immobiliers', u: 'https://www.ancfcc.gov.ma' },
+      { n: 'ANCFCC × BAM — Indice des prix des actifs immobiliers (T2-2026)', u: 'https://www.ancfcc.gov.ma/media/ipai/ipai-t2-2026-fr.pdf' },
     ],
+    // التطور الرسمي ديال الأثمنة (%) — مؤشر أثمنة الأصول العقارية، بنك المغرب × ANCFCC، الفصل 2 من 2026 مقارنة بالفصل 1
+    // [شقة, منزل, فيلا, أرض حضرية, محل تجاري, مكتب, المجموع]
+    trend: {
+      period: 'الفصل الثاني 2026',
+      url: 'https://www.ancfcc.gov.ma/media/ipai/ipai-t2-2026-fr.pdf',
+      national: [1.0, 0.3, 3.3, 0.6, 0.0, 5.3, 0.7],
+      cities: {
+      'أكادير': [0.9, 11.1, -4.4, -1.4, -5.5, 4.1, -0.1],
+      'الدار البيضاء': [0.7, -1.9, 3.3, 1.8, -1.7, 3.3, 0.5],
+      'الجديدة': [0.7, -4.8, 2.2, -5.8, 2.0, 0.0, 0.0],
+      'فاس': [1.7, null, 0.3, 1.1, 1.6, 0.3, 1.7],
+      'القنيطرة': [0.5, 0.3, 2.1, 0.3, 1.8, 4.3, 0.7],
+      'مراكش': [0.7, 2.2, -1.3, -0.1, -0.5, 4.0, 0.5],
+      'مكناس': [-0.1, -1.8, -0.5, -0.5, -2.9, -12.6, -0.9],
+      'وجدة': [0.1, 0.5, 19.3, -1.0, 4.8, null, -0.9],
+      'الرباط': [1.9, 6.9, 0.6, -3.4, 5.6, null, 1.9],
+      'طنجة': [0.8, 1.6, null, 7.3, 4.8, -4.5, 2.3],
+      },
+    },
     cities: {
       'أكادير': [7606, 11113],
       'آيت ملول': [6327, 9765],
