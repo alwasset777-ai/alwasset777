@@ -2140,7 +2140,23 @@
     { f: '06-mandat-agence', ar: 'عقد وكالة (تفويض) لبيع أو كراء عقار', fr: 'Mandat de vente / location', law: 'ظ.ل.ع', ic: '📝' },
     { f: '07-gestion-locative', ar: 'عقد تسيير وتدبير الأملاك العقارية', fr: 'Contrat de gestion locative', law: 'ظ.ل.ع', ic: '🗂️' },
     { f: '08-recu-acompte', ar: 'وصل استلام مبلغ (تسبيق / عربون)', fr: "Reçu d'acompte / arrhes", law: '', ic: '🧾' },
+    { f: '09-bail-meuble', ar: 'عقد كراء شقة مفروشة (قصيرة / موسمية)', fr: 'Location meublée / saisonnière', law: 'ق.ل.ع + 67.12', ic: '🛋️', g: 'rent' },
+    { f: '10-etat-des-lieux', ar: 'محضر معاينة حالة العقار (دخول / خروج)', fr: 'État des lieux', law: '67.12', ic: '📋', g: 'rent' },
+    { f: '11-quittance-loyer', ar: 'وصل أداء واجب الكراء', fr: 'Quittance de loyer', law: '67.12', ic: '🧾', g: 'rent' },
+    { f: '12-mise-en-demeure-loyer', ar: 'إنذار بأداء واجبات الكراء', fr: 'Mise en demeure de payer', law: '67.12', ic: '⚠️', g: 'rent' },
+    { f: '13-resiliation-bail', ar: 'اتفاق فسخ عقد الكراء بالتراضي', fr: 'Résiliation amiable du bail', law: 'ق.ل.ع', ic: '🔚', g: 'rent' },
+    { f: '20-cession-droit-bail', ar: 'تفويت حق الكراء التجاري (الساروت)', fr: 'Cession de droit au bail', law: '49.16', ic: '🏪', g: 'rent' },
+    { f: '14-reservation-vefa', ar: 'عقد حجز عقار في طور الإنجاز', fr: 'Contrat de réservation (VEFA)', law: '44.00 / 107.12', ic: '🏗️', g: 'sale' },
+    { f: '23-offre-achat', ar: 'عرض شراء عقار', fr: "Offre d'achat", law: 'ق.ل.ع', ic: '💬', g: 'sale' },
+    { f: '15-echange-immeuble', ar: 'عقد مبادلة عقار', fr: "Contrat d'échange", law: 'ق.ل.ع + 39.08', ic: '🔁', g: 'sale' },
+    { f: '16-donation-immeuble', ar: 'نموذج عقد هبة عقار', fr: 'Donation immobilière', law: '39.08', ic: '🎁', g: 'sale' },
+    { f: '17-procuration-speciale', ar: 'وكالة خاصة لبيع أو شراء عقار', fr: 'Procuration spéciale', law: 'ق.ل.ع', ic: '✒️', g: 'agency' },
+    { f: '18-bon-de-visite', ar: 'سند زيارة عقار (حماية حق الوكالة)', fr: 'Bon de visite', law: 'ق.ل.ع', ic: '👣', g: 'agency' },
+    { f: '19-mandat-recherche', ar: 'اتفاقية بحث عن عقار وأتعاب الوساطة', fr: 'Mandat de recherche', law: 'ق.ل.ع', ic: '🔎', g: 'agency' },
+    { f: '21-contrat-travaux', ar: 'عقد مقاولة أشغال بناء أو إصلاح', fr: "Contrat d'entreprise (travaux)", law: 'ق.ل.ع', ic: '🧱', g: 'other' },
+    { f: '22-avenant', ar: 'ملحق تعديل عقد', fr: 'Avenant au contrat', law: 'ق.ل.ع', ic: '📎', g: 'other' },
   ];
+  const CT_GROUPS = [['base', '📘 الدليل الأساسي (01–08)'], ['rent', '🏠 الكراء'], ['sale', '🔑 البيع والشراء'], ['agency', '🤝 الوكالة والوساطة'], ['other', '🧱 أخرى']];
   const MODULES = [
     { m: 'M1', ar: 'القانون العقاري وعقود البيع', d: '3 أيام · 21 ساعة', parts: ['الإطار القانوني للعقارات فالمغرب', 'عقد البيع: المراحل والالتزامات', 'حقوق الرهن والضمانات', 'الملكية المشتركة', 'قانون الكراء السكني والتجاري', 'المسؤولية والأخطاء المهنية'] },
     { m: 'M2', ar: 'التعمير والتشخيص التقني للعقارات', d: 'يومان · 14 ساعة', parts: ['أنظمة التعمير والتخطيط العمراني', 'رخص البناء والتجزئة وتغيير الاستعمال', 'الشهادات والمستندات الإدارية للعقار', 'التشخيص التقني الإلزامي', 'قراءة مخططات البناء والتدقيق التقني'] },
@@ -2164,20 +2180,23 @@
       <button class="btn sm" data-print="${url}">${ic('print', 15)} طباعة</button></div>`;
   function bindPrint(root) { $$('[data-print]', root).forEach(b => b.onclick = () => printPdf(b.dataset.print)); }
   function viewContracts() {
-    main().innerHTML = `
-      <div class="page-head"><h1>📄 طباعة العقود</h1></div>
-      <p class="muted" style="margin-top:-6px">نماذج عقود جاهزة بالعربية (والعنوان بالفرنسية) ديال وكالة الوسيط 777. حمّل، عمّر الفراغات، وطبع.</p>
-      <div class="card card-pad doc-card" style="margin-bottom:14px;border-color:var(--gold)">
-        <div class="doc-ic">📚</div>
-        <div class="grow"><b>دليل العقود العقارية — كامل (17 صفحة)</b><small class="muted">Recueil de modèles de contrats immobiliers</small>${docBtns('files/contrats/00-recueil-complet.pdf', 'AlWasset777-Recueil-contrats.pdf')}</div>
-      </div>
-      <div class="doc-grid">${CONTRACTS.map((c, i) => `
+    const card = (c) => `
         <div class="card card-pad doc-card">
           <div class="doc-ic">${c.ic}</div>
-          <div class="grow"><small class="muted">${String(i + 1).padStart(2, '0')}${c.law ? ' · ' + esc(c.law) : ''}</small><b>${esc(c.ar)}</b><small class="muted" dir="ltr" style="text-align:right">${esc(c.fr)}</small>
+          <div class="grow"><small class="muted">${c.f.slice(0, 2)}${c.law ? ' · ' + esc(c.law) : ''}</small><b>${esc(c.ar)}</b><small class="muted" dir="ltr" style="text-align:right">${esc(c.fr)}</small>
           ${docBtns(`files/contrats/${c.f}.pdf`, `AlWasset777-${c.f}.pdf`)}</div>
-        </div>`).join('')}</div>
-      <p class="muted" style="font-size:12.5px;margin-top:14px">⚠️ نماذج إرشادية: العقود المهمة (البيع النهائي، الرهن) خاصهم يتحرّرو عند موثق أو محامي مقبول لدى محكمة النقض.</p>`;
+        </div>`;
+    main().innerHTML = `
+      <div class="page-head"><h1>📄 طباعة العقود</h1><span class="badge gold">${CONTRACTS.length} نموذج</span></div>
+      <p class="muted" style="margin-top:-6px">نماذج عقود جاهزة بالعربية (والعنوان بالفرنسية) ديال وكالة الوسيط 777. حمّل، عمّر الفراغات، وطبع.</p>
+      <div class="doc-grid" style="margin-bottom:14px">
+        <div class="card card-pad doc-card" style="border-color:var(--gold)"><div class="doc-ic">📚</div>
+          <div class="grow"><b>دليل العقود — الجزء 1 (17 صفحة)</b><small class="muted">العقود 01 حتى 08</small>${docBtns('files/contrats/00-recueil-complet.pdf', 'AlWasset777-Recueil-1.pdf')}</div></div>
+        <div class="card card-pad doc-card" style="border-color:var(--gold)"><div class="doc-ic">📗</div>
+          <div class="grow"><b>دليل العقود — الجزء 2 (20 صفحة)</b><small class="muted">العقود 09 حتى 23</small>${docBtns('files/contrats/00b-recueil-complementaire.pdf', 'AlWasset777-Recueil-2.pdf')}</div></div>
+      </div>
+      ${CT_GROUPS.map(([g, t]) => `<h2 class="sec-h">${t}</h2><div class="doc-grid">${CONTRACTS.filter(c => (c.g || 'base') === g).map(card).join('')}</div>`).join('')}
+      <p class="muted" style="font-size:12.5px;margin-top:14px">⚠️ نماذج إرشادية: العقود المهمة (البيع النهائي، الهبة، المبادلة، الرهن) خاصهم يتحرّرو عند موثق أو عدول أو محامي مقبول لدى محكمة النقض.</p>`;
     bindPrint(main());
   }
   function viewLearn() {
