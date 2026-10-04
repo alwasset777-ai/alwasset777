@@ -489,3 +489,24 @@ a.chip { text-decoration: none; }
 .learn-track .fill { height: 100%; background: var(--gold); border-radius: 99px; }
 .bottomnav a { font-size: 11px; }
 @media (max-width: 400px) { .doc-grid { grid-template-columns: 1fr; } }
+/* ---------- مراحل تملك العقار ---------- */
+.sec-h { font-size: 19px; margin: 22px 0 10px; scroll-margin-top: 80px; }
+.own-steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.own-steps > li { display: flex; gap: 14px; align-items: flex-start; }
+.own-steps ul { margin: 6px 0 0; padding-inline-start: 18px; font-size: 14px; color: var(--ink-2); line-height: 1.7; }
+.own-n { width: 34px; height: 34px; flex: none; border-radius: 50%; background: var(--gold); color: #fff; display: grid; place-items: center; font-weight: 900; }
+.own-list { margin: 0; padding-inline-start: 20px; line-height: 1.8; font-size: 14px; }
+.tbl-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+.tbl th { background: var(--brand); color: #fff; text-align: start; padding: 10px 12px; font-weight: 700; }
+.tbl td { padding: 10px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+.tbl td:nth-child(2) { font-weight: 700; color: var(--gold-ink); }
+/* الشريط اللي لتحت: 8 خانات ← كيتمرر إلا ما كفاتش البلاصة */
+.bottomnav { overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
+.bottomnav::-webkit-scrollbar { display: none; }
+.bottomnav a { flex: 1 0 auto; min-width: 58px; padding-inline: 4px; white-space: nowrap; }
+@media (max-width: 440px) {
+  .bottomnav { padding-inline: 0; }
+  .bottomnav a { flex: 1 1 0; min-width: 46px; padding-inline: 0; font-size: 10px; letter-spacing: -.2px; }
+  .bottomnav a svg { width: 20px; height: 20px; }
+}
