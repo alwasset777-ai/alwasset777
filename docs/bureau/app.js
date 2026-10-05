@@ -2264,20 +2264,102 @@
   }
   /* ---------- المساعد المحلي (فابور، بلا AI): أزرار + كلمات مفتاحية فـ 6 لغات ---------- */
   const LX = {
-    darija: { hi: 'مرحبا! أنا المساعد ديال الوسيط 777. ضغط على شي زر ولا كتب كلمة (حي، نوع، رقم W777-…، سمية زبون…)', today: 'مواعيد اليوم', avail: 'العقارات المتاحة', reqs: 'الطلبات المفتوحة', stats: 'الإحصائيات', follow: 'متابعات اليوم', strong: 'أحسن المطابقات', newReq: 'زيد طلب', newAppt: 'زيد موعد', newProp: 'زيد عقار', price: 'مقارنة الثمن', none: 'ما لقيت والو. جرب كلمة أخرى (حي، نوع، سمية، رقم…).', found: 'لقيت', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'حل', more: 'شوف الكل', matches: 'المطابقات', avl: 'متاح', openR: 'طلب مفتوح', strongW: 'مطابقة قوية', apptT: 'مواعيد اليوم', fu: 'متابعات', noAppt: 'ما كاين حتى موعد اليوم ✓', noFu: 'ما كاين حتى متابعة ✓', limited: 'وضع مجاني: كنفهم غير الأزرار والكلمات المفتاحية.' },
-    ar: { hi: 'مرحبا! أنا مساعد الوسيط 777. اضغط على زر أو اكتب كلمة (حي، نوع، مرجع W777-…، اسم زبون…)', today: 'مواعيد اليوم', avail: 'العقارات المتاحة', reqs: 'الطلبات المفتوحة', stats: 'الإحصائيات', follow: 'متابعات اليوم', strong: 'أفضل المطابقات', newReq: 'طلب جديد', newAppt: 'موعد جديد', newProp: 'عقار جديد', price: 'مقارنة الثمن', none: 'لا توجد نتائج. جرّب كلمة أخرى.', found: 'وجدت', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'فتح', more: 'عرض الكل', matches: 'المطابقات', avl: 'متاح', openR: 'طلب مفتوح', strongW: 'مطابقة قوية', apptT: 'مواعيد اليوم', fu: 'متابعات', noAppt: 'لا توجد مواعيد اليوم ✓', noFu: 'لا توجد متابعات ✓', limited: 'الوضع المجاني: أفهم الأزرار والكلمات المفتاحية فقط.' },
-    fr: { hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Touchez un bouton ou tapez un mot (quartier, type, réf. W777-…, nom de client…)', today: 'RDV du jour', avail: 'Biens disponibles', reqs: 'Demandes ouvertes', stats: 'Statistiques', follow: 'Relances du jour', strong: 'Meilleurs matchs', newReq: 'Nouvelle demande', newAppt: 'Nouveau RDV', newProp: 'Nouveau bien', price: 'Comparer un prix', none: 'Aucun résultat. Essayez un autre mot.', found: 'Trouvé', props: 'bien(s)', reqsW: 'demande(s)', apptsW: 'RDV', open: 'Ouvrir', more: 'Tout voir', matches: 'Correspondances', avl: 'disponibles', openR: 'demandes ouvertes', strongW: 'matchs forts', apptT: 'RDV du jour', fu: 'relances', noAppt: 'Aucun RDV aujourd’hui ✓', noFu: 'Aucune relance ✓', limited: 'Mode gratuit : je comprends les boutons et les mots-clés.' },
-    en: { hi: 'Hello! I’m the Al Wasset 777 assistant. Tap a button or type a word (district, type, ref W777-…, client name…)', today: 'Today’s appointments', avail: 'Available properties', reqs: 'Open requests', stats: 'Statistics', follow: 'Today’s follow-ups', strong: 'Best matches', newReq: 'New request', newAppt: 'New appointment', newProp: 'New property', price: 'Compare a price', none: 'No results. Try another word.', found: 'Found', props: 'property(ies)', reqsW: 'request(s)', apptsW: 'appointment(s)', open: 'Open', more: 'See all', matches: 'Matches', avl: 'available', openR: 'open requests', strongW: 'strong matches', apptT: 'Today’s appointments', fu: 'follow-ups', noAppt: 'No appointments today ✓', noFu: 'No follow-ups ✓', limited: 'Free mode: I understand buttons and keywords.' },
-    es: { hi: '¡Hola! Soy el asistente de Al Wasset 777. Pulsa un botón o escribe una palabra (barrio, tipo, ref. W777-…, cliente…)', today: 'Citas de hoy', avail: 'Inmuebles disponibles', reqs: 'Solicitudes abiertas', stats: 'Estadísticas', follow: 'Seguimientos de hoy', strong: 'Mejores coincidencias', newReq: 'Nueva solicitud', newAppt: 'Nueva cita', newProp: 'Nuevo inmueble', price: 'Comparar precio', none: 'Sin resultados. Prueba otra palabra.', found: 'Encontrado', props: 'inmueble(s)', reqsW: 'solicitud(es)', apptsW: 'cita(s)', open: 'Abrir', more: 'Ver todo', matches: 'Coincidencias', avl: 'disponibles', openR: 'solicitudes abiertas', strongW: 'coincidencias fuertes', apptT: 'Citas de hoy', fu: 'seguimientos', noAppt: 'No hay citas hoy ✓', noFu: 'Sin seguimientos ✓', limited: 'Modo gratuito: entiendo botones y palabras clave.' },
-    it: { hi: 'Ciao! Sono l’assistente di Al Wasset 777. Tocca un pulsante o scrivi una parola (quartiere, tipo, rif. W777-…, cliente…)', today: 'Appuntamenti di oggi', avail: 'Immobili disponibili', reqs: 'Richieste aperte', stats: 'Statistiche', follow: 'Richiami di oggi', strong: 'Migliori abbinamenti', newReq: 'Nuova richiesta', newAppt: 'Nuovo appuntamento', newProp: 'Nuovo immobile', price: 'Confronta prezzo', none: 'Nessun risultato. Prova un’altra parola.', found: 'Trovato', props: 'immobile/i', reqsW: 'richiesta/e', apptsW: 'appuntamento/i', open: 'Apri', more: 'Vedi tutto', matches: 'Abbinamenti', avl: 'disponibili', openR: 'richieste aperte', strongW: 'abbinamenti forti', apptT: 'Appuntamenti di oggi', fu: 'richiami', noAppt: 'Nessun appuntamento oggi ✓', noFu: 'Nessun richiamo ✓', limited: 'Modalità gratuita: capisco pulsanti e parole chiave.' },
+    darija: { hi: 'السلام! أنا المساعد ديال الوسيط 777. هضر معايا بالدارجة ولا ورك على شي زر: مثلا «بغيت شي شقة للكرا فحمرية تحت 3000 درهم» ولا «شنو عندي اليوم؟»', today: 'المواعيد ديال اليوم', avail: 'العقارات اللي كاينين', reqs: 'الطلبات اللي مازال محلولين', stats: 'الحصيلة', follow: 'شكون نعيطو ليه اليوم', strong: 'أحسن المطابقات', newReq: 'زيد طلب جديد', newAppt: 'زيد موعد جديد', newProp: 'زيد عقار جديد', price: 'قارن الثمن مع السوق', none: 'سمح ليا، ما لقيت والو. جرب تبدل شي كلمة: الحي، النوع، الثمن ولا سمية الزبون.', found: 'لقيت ليك', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'حل', more: 'شوف كولشي', matches: 'اللي كيناسبوه', avl: 'عقار كاين', openR: 'طلب محلول', strongW: 'مطابقة قوية', apptT: 'المواعيد ديال اليوم', fu: 'خاصهم تعييطة', noAppt: 'ما عندك حتى موعد اليوم ✓ نهار مزيان!', noFu: 'ما كاين حتى واحد خاصك تعيط ليه اليوم ✓', limited: 'الوضع المجاني: كنفهم الدارجة والكلمات المهمة', hello: 'وعليكم السلام، مرحبا بيك! لاباس عليك؟ قول ليا شنو بغيتي: نقلب ليك على عقار، نوريك المواعيد ديال اليوم، ولا الزبناء اللي خاصك تعيط ليهم.', thanks: 'العفو، هادا واجب! إلا احتاجيتي شي حاجة أخرى أنا هنا.', help: 'نقدر نعاونك فـ: التقليب على العقارات (مثلا «فيلا للبيع فويسلان بين 150 و 250 مليون»)، المواعيد ديال اليوم، الزبناء والطلبات، المطابقات، والحصيلة. هضر معايا بحال إلا كتهضر مع صاحبك، بالعربية ولا بالحروف اللاتينية.' },
+    ar: { hello: 'وعليكم السلام، أهلاً بك! كيف يمكنني مساعدتك؟', thanks: 'العفو! أنا في الخدمة.', help: 'أستطيع البحث عن العقارات، عرض مواعيد اليوم، الطلبات، المطابقات والإحصائيات.', hi: 'مرحبا! أنا مساعد الوسيط 777. اضغط على زر أو اكتب كلمة (حي، نوع، مرجع W777-…، اسم زبون…)', today: 'مواعيد اليوم', avail: 'العقارات المتاحة', reqs: 'الطلبات المفتوحة', stats: 'الإحصائيات', follow: 'متابعات اليوم', strong: 'أفضل المطابقات', newReq: 'طلب جديد', newAppt: 'موعد جديد', newProp: 'عقار جديد', price: 'مقارنة الثمن', none: 'لا توجد نتائج. جرّب كلمة أخرى.', found: 'وجدت', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'فتح', more: 'عرض الكل', matches: 'المطابقات', avl: 'متاح', openR: 'طلب مفتوح', strongW: 'مطابقة قوية', apptT: 'مواعيد اليوم', fu: 'متابعات', noAppt: 'لا توجد مواعيد اليوم ✓', noFu: 'لا توجد متابعات ✓', limited: 'الوضع المجاني: أفهم الأزرار والكلمات المفتاحية فقط.' },
+    fr: { hello: 'Bonjour ! Comment puis-je vous aider ?', thanks: 'Avec plaisir !', help: 'Je peux chercher des biens, afficher les RDV du jour, les demandes, les correspondances et les statistiques.', hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Touchez un bouton ou tapez un mot (quartier, type, réf. W777-…, nom de client…)', today: 'RDV du jour', avail: 'Biens disponibles', reqs: 'Demandes ouvertes', stats: 'Statistiques', follow: 'Relances du jour', strong: 'Meilleurs matchs', newReq: 'Nouvelle demande', newAppt: 'Nouveau RDV', newProp: 'Nouveau bien', price: 'Comparer un prix', none: 'Aucun résultat. Essayez un autre mot.', found: 'Trouvé', props: 'bien(s)', reqsW: 'demande(s)', apptsW: 'RDV', open: 'Ouvrir', more: 'Tout voir', matches: 'Correspondances', avl: 'disponibles', openR: 'demandes ouvertes', strongW: 'matchs forts', apptT: 'RDV du jour', fu: 'relances', noAppt: 'Aucun RDV aujourd’hui ✓', noFu: 'Aucune relance ✓', limited: 'Mode gratuit : je comprends les boutons et les mots-clés.' },
+    en: { hello: 'Hello! How can I help?', thanks: 'You’re welcome!', help: 'I can search properties and show today’s appointments, requests, matches and stats.', hi: 'Hello! I’m the Al Wasset 777 assistant. Tap a button or type a word (district, type, ref W777-…, client name…)', today: 'Today’s appointments', avail: 'Available properties', reqs: 'Open requests', stats: 'Statistics', follow: 'Today’s follow-ups', strong: 'Best matches', newReq: 'New request', newAppt: 'New appointment', newProp: 'New property', price: 'Compare a price', none: 'No results. Try another word.', found: 'Found', props: 'property(ies)', reqsW: 'request(s)', apptsW: 'appointment(s)', open: 'Open', more: 'See all', matches: 'Matches', avl: 'available', openR: 'open requests', strongW: 'strong matches', apptT: 'Today’s appointments', fu: 'follow-ups', noAppt: 'No appointments today ✓', noFu: 'No follow-ups ✓', limited: 'Free mode: I understand buttons and keywords.' },
+    es: { hello: '¡Hola! ¿En qué puedo ayudarte?', thanks: '¡De nada!', help: 'Puedo buscar inmuebles y mostrar citas, solicitudes, coincidencias y estadísticas.', hi: '¡Hola! Soy el asistente de Al Wasset 777. Pulsa un botón o escribe una palabra (barrio, tipo, ref. W777-…, cliente…)', today: 'Citas de hoy', avail: 'Inmuebles disponibles', reqs: 'Solicitudes abiertas', stats: 'Estadísticas', follow: 'Seguimientos de hoy', strong: 'Mejores coincidencias', newReq: 'Nueva solicitud', newAppt: 'Nueva cita', newProp: 'Nuevo inmueble', price: 'Comparar precio', none: 'Sin resultados. Prueba otra palabra.', found: 'Encontrado', props: 'inmueble(s)', reqsW: 'solicitud(es)', apptsW: 'cita(s)', open: 'Abrir', more: 'Ver todo', matches: 'Coincidencias', avl: 'disponibles', openR: 'solicitudes abiertas', strongW: 'coincidencias fuertes', apptT: 'Citas de hoy', fu: 'seguimientos', noAppt: 'No hay citas hoy ✓', noFu: 'Sin seguimientos ✓', limited: 'Modo gratuito: entiendo botones y palabras clave.' },
+    it: { hello: 'Ciao! Come posso aiutarti?', thanks: 'Prego!', help: 'Posso cercare immobili e mostrare appuntamenti, richieste, abbinamenti e statistiche.', hi: 'Ciao! Sono l’assistente di Al Wasset 777. Tocca un pulsante o scrivi una parola (quartiere, tipo, rif. W777-…, cliente…)', today: 'Appuntamenti di oggi', avail: 'Immobili disponibili', reqs: 'Richieste aperte', stats: 'Statistiche', follow: 'Richiami di oggi', strong: 'Migliori abbinamenti', newReq: 'Nuova richiesta', newAppt: 'Nuovo appuntamento', newProp: 'Nuovo immobile', price: 'Confronta prezzo', none: 'Nessun risultato. Prova un’altra parola.', found: 'Trovato', props: 'immobile/i', reqsW: 'richiesta/e', apptsW: 'appuntamento/i', open: 'Apri', more: 'Vedi tutto', matches: 'Abbinamenti', avl: 'disponibili', openR: 'richieste aperte', strongW: 'abbinamenti forti', apptT: 'Appuntamenti di oggi', fu: 'richiami', noAppt: 'Nessun appuntamento oggi ✓', noFu: 'Nessun richiamo ✓', limited: 'Modalità gratuita: capisco pulsanti e parole chiave.' },
   };
   const lx = () => LX[agLang()] || LX.darija;
   const LX_ACTIONS = ['today', 'avail', 'reqs', 'stats', 'follow', 'strong', 'newReq', 'newAppt', 'newProp', 'price'];
   // كلمات مفتاحية (كل اللغات) ← نية
+  /* ---------- الدارجة: كنفهمو الهضرة المغربية (بالحروف العربية واللاتينية) ---------- */
+  // كلمات الدارجة باللاتينية (عربيزي) ← بالعربية
+  const DZ_LATIN = {
+    bghit: 'بغيت', abghit: 'بغيت', nbghi: 'بغيت', bghiti: 'بغيتي', f: 'ف', fi: 'ف', b: 'ب', bghina: 'بغينا', baghi: 'باغي', bgha: 'بغا', chi: 'شي', wach: 'واش', wesh: 'واش', kayn: 'كاين', kayna: 'كاينة', kaynin: 'كاينين', makaynch: 'ماكاينش', makayn: 'ماكاين',
+    dar: 'دار', diar: 'ديور', dyal: 'ديال', dial: 'ديال', dyali: 'ديالي', dyalna: 'ديالنا', chqa: 'شقة', chka: 'شقة', chaqa: 'شقة', apart: 'شقة', appart: 'شقة', appartement: 'شقة',
+    villa: 'فيلا', ard: 'أرض', terrain: 'أرض', b9a3: 'بقعة', bo9a3: 'بقعة', bo9a: 'بقعة', hanout: 'محل', mahal: 'محل', magasin: 'محل', garage: 'كراج', riad: 'رياض', studio: 'استوديو', duplex: 'دوبلكس',
+    kra: 'كراء', lkra: 'كراء', kira: 'كراء', nkri: 'كراء', nkra: 'كراء', mkri: 'كراء', chra: 'بيع', nchri: 'بيع', bi3: 'بيع', lbi3: 'بيع', nbi3: 'بيع', bay3: 'بيع', vente: 'بيع', location: 'كراء',
+    lyoum: 'اليوم', lyoma: 'اليوم', lyom: 'اليوم', ghda: 'غدا', ghedda: 'غدا', '3afak': 'عافاك', afak: 'عافاك', chhal: 'شحال', ch7al: 'شحال', bch7al: 'بشحال', bchhal: 'بشحال',
+    salam: 'سلام', slm: 'سلام', labas: 'لاباس', cv: 'لاباس', choukran: 'شكرا', chokran: 'شكرا', chkran: 'شكرا', merci: 'شكرا', tbarkellah: 'تبارك الله', '3awni': 'عاوني', '3awenni': 'عاوني',
+    taht: 'تحت', ta7t: 'تحت', mlyon: 'مليون', mlyoun: 'مليون', melyon: 'مليون', melyoun: 'مليون', million: 'مليون', millions: 'مليون', alf: 'ألف', fin: 'فين', m3a: 'مع', bit: 'بيت', byout: 'بيوت', biout: 'بيوت',
+    rdv: 'موعد', maw3id: 'موعد', mow3id: 'موعد', mawa3id: 'مواعيد', klyan: 'الزبناء', clients: 'الزبناء', client: 'زبون', zboun: 'زبون', zbnaa: 'الزبناء', jdid: 'جديد', jdida: 'جديدة', zid: 'زيد',
+    wahed: 'واحد', wa7ed: 'واحد', jouj: 'جوج', jooj: 'جوج', zouj: 'جوج', tlata: 'تلاتة', rb3a: 'ربعة', khamsa: 'خمسة', sta: 'ستة', sb3a: 'سبعة', tmnya: 'تمنية', tes3od: 'تسعة', '3achra': 'عشرة',
+    '3chrin': 'عشرين', tlatin: 'تلاتين', rb3in: 'ربعين', khamsin: 'خمسين', stin: 'ستين', sb3in: 'سبعين', tmanin: 'تمانين', tes3in: 'تسعين', mya: 'مية', myat: 'مية', mitin: 'ميتين', nos: 'نص', ns: 'نص',
+  };
+  // أرقام الدارجة
+  const DZ_NUM = {
+    واحد: 1, وحدة: 1, جوج: 2, زوج: 2, اثنين: 2, تلاتة: 3, تلاته: 3, ثلاثة: 3, تلت: 3, ربعة: 4, اربعة: 4, ربع: 4, خمسة: 5, خمس: 5, ستة: 6, ست: 6, سبعة: 7, سبع: 7, تمنية: 8, ثمانية: 8, تمن: 8,
+    تسعة: 9, تسعود: 9, تسع: 9, عشرة: 10, حداش: 11, طناش: 12, تلطاش: 13, ربعطاش: 14, خمسطاش: 15, سطاش: 16, سبعطاش: 17, تمنطاش: 18, تسعطاش: 19,
+    عشرين: 20, تلاتين: 30, ثلاثين: 30, ربعين: 40, اربعين: 40, خمسين: 50, ستين: 60, سبعين: 70, تمانين: 80, ثمانين: 80, تسعين: 90,
+    مية: 100, مائة: 100, ميا: 100, ميتين: 200, تلتمية: 300, ربعمية: 400, خمسمية: 500, ستمية: 600, سبعمية: 700, تمنمية: 800, تسعمية: 900, ألف: 1000, الف: 1000, ألفين: 2000, الفين: 2000,
+  };
+  function dzNumbers(t) {
+    const w = t.split(/\s+/), out = [];
+    const val = x => x in DZ_NUM ? DZ_NUM[x] : (/^و\S+$/.test(x) && x.slice(1) in DZ_NUM ? DZ_NUM[x.slice(1)] : null);
+    for (let i = 0; i < w.length; i++) {
+      if (!(w[i] in DZ_NUM)) { out.push(w[i]); continue; }
+      let total = 0, cur = 0, last = Infinity, j = i;
+      while (j < w.length) {
+        let v = j === i ? DZ_NUM[w[j]] : val(w[j]), step = 1;
+        if (w[j] === 'و' && val(w[j + 1]) !== null && !/^و/.test(w[j + 1])) { v = val(w[j + 1]); step = 2; }
+        if (v === null) break;
+        const joined = j !== i && (step === 2 || /^و/.test(w[j]));
+        // «ميتين و خمسين» = 250، ولكن «مية و ميتين» = جوج أرقام
+        if (joined && v >= last && v !== 1000) break;
+        if (!joined && j !== i && !(v === 100 && cur > 0 && cur < 10) && v !== 1000) break;
+        if (v === 100 && cur > 0 && cur < 10) { cur *= 100; last = 100; }
+        else if (v === 1000) { total += (cur || 1) * 1000; cur = 0; last = 1000; }
+        else { cur += v; last = v; }
+        j += step;
+      }
+      total += cur;
+      if (w[j] === 'ونص' || (w[j] === 'و' && w[j + 1] === 'نص')) { total += 0.5; j += w[j] === 'و' ? 2 : 1; }
+      out.push(String(total)); i = j - 1;
+    }
+    return out.join(' ');
+  }
+  // كنردو الجملة لصيغة وحدة باش الفهم يكون ساهل
+  function dzNorm(text) {
+    let t = ' ' + String(text || '').toLowerCase().replace(/[؟?!.,،:;«»"()]/g, ' ') + ' ';
+    t = t.split(/\s+/).map(x => DZ_LATIN[x] || x).join(' ');
+    t = t.replace(/(^|\s)نص\s+مليون/g, '$1 0.5 مليون');
+    t = dzNumbers(t.trim()).replace(/(\d+) مليون ونص/g, '$1.5 مليون').replace(/(^|\s)مليون ونص/g, '$1 1.5 مليون');
+    t = ' ' + t + ' ';
+    const R = [
+      [/\s(بيتين|غرفتين|شومبرتين|شمبرتين)\s/g, ' 2 غرف '],
+      [/\s(\d+)\s*(بيوت|بيت|غرفة|غرف|شومبرات|شمبرات|شومبرة|شمبرة|chambres?)\s/g, ' $1 غرف '],
+      [/\s(للكرا|الكرا|كرا|كراية|نكري|نكتري|مكتري|نكريو|يتكرا|كاري)\s/g, ' كراء '],
+      [/\s(نشري|نشريو|شري|شاري|نبيع|نبيعو|بايع|للبيع|يتباع|تباع)\s/g, ' بيع '],
+      [/\s(ما يفوتش|مايفوتش|ماشي فوق|ما يكونش فوق|مايكونش فوق|ماكثرش من|ما كثرش من|فحدود|فالحدود|ماشي كثر من|الماكسيموم|maximum)\s/g, ' تحت '],
+      [/\s(رونديفو|روندفو|روندي فو|المواعد|الرونديفوات)\s/g, ' مواعيد '],
+      [/\s(الكليان|الكليانات|الزبائن|الكلاينط|الكليونات)\s/g, ' الزبناء '],
+      [/\s(ابارتمو|أبارتمو|اپارتمو|ابارطمة|أبارطمة|ابارتمان|أبارتمان|شقق)\s/g, ' شقة '],
+      [/\s(دويرة|ديور|منزل)\s/g, ' دار '],
+      [/\s(بقع|طيران|التيران|تيران)\s/g, ' بقعة '],
+      [/\s(حانوت|حوانت|ماگازا|ماكازا|ماغازا|محلات)\s/g, ' محل '],
+    ];
+    R.forEach(([re, to]) => { t = t.replace(re, to).replace(re, to); });
+    return t.replace(/\s+/g, ' ').trim();
+  }
+  // النوع من الجملة ← فلتر
+  const DZ_TYPES = [
+    [/فيلا|villa/i, p => /^villa/.test(p.type)],
+    [/شقة|استوديو|دوبلكس|appart|studio|duplex|apartment|piso|appartamento/i, p => (TYPE[p.type] || {}).cat === 'apartment'],
+    [/(^|\s)دار(\s|$)|رياض|maison|house|casa/i, p => (TYPE[p.type] || {}).cat === 'house' && !/^villa/.test(p.type)],
+    [/بقعة|أرض|ارض|terrain|land|terreno/i, p => (TYPE[p.type] || {}).cat === 'land'],
+    [/محل|مكتب|كراج|local|commerce|shop|office|bureau/i, p => (TYPE[p.type] || {}).cat === 'commercial'],
+  ];
   const LX_INTENTS = [
-    ['today', /موعد|مواعيد|rdv|rendez|appoint|cita|appuntament|agenda/i],
-    ['stats', /احصا|إحصا|stat|bilan|resum|riepilog|ملخص/i],
-    ['follow', /متابع|relance|follow|seguim|richiam/i],
+    ['hello', /^(سلام|السلام|مرحبا|اهلا|أهلا|صباح الخير|مساء الخير|لاباس|كيداير|كيدايرة|كيف داير|bonjour|salut|hello|hi|hola|ciao|buongiorno)(\s|$)(?!.*(شقة|دار|فيلا|بقعة|محل|كراء|بيع|موعد|مواعيد|طلب))/i],
+    ['thanks', /^(شكرا|تبارك الله|بارك الله فيك|الله يخليك|يعطيك الصحة|merci|thanks|thank you|gracias|grazie)/i],
+    ['help', /(شنو كتعرف|شنو تقدر|اش تقدر|آش تقدر|عاوني|كيفاش نخدم|كيفاش نستعمل|aide|help|ayuda|aiuto)/i],
+    ['today', /موعد|مواعيد|عندي اليوم|شكون جاي|rdv|rendez|appoint|cita|appuntament|agenda/i],
+    ['stats', /احصا|إحصا|شحال عندي|كيف دايرة الخدمة|الحصيلة|stat|bilan|resum|riepilog|ملخص/i],
+    ['follow', /متابع|شكون نعيط|نعيط ل|نتاصل|relance|follow|seguim|richiam/i],
+    ['reqs', /(الزبناء|الطلبات|شكون باغي)(?!.*(شقة|دار|فيلا|بقعة|محل))/i],
+    ['avail', /^(شنو كاين|اش كاين|آش كاين|شنو عندك|شنو عندنا|العقارات)$/i],
     ['strong', /مطابق|match|correspond|coincid|abbinam/i],
     ['newReq', /(زيد|اضف|أضف|جديد|nouvelle|new|nueva|nuova).{0,12}(طلب|demande|request|solicitud|richiesta)/i],
     ['newAppt', /(زيد|اضف|أضف|جديد|nouveau|new|nueva|nuovo).{0,12}(موعد|rdv|appoint|cita|appuntament)/i],
@@ -2299,8 +2381,16 @@
     }
     const b = text.match(/(\d)\s*(غرف|بيوت|chambres?|bedrooms?|habitaciones|camere)/i);
     if (b) f.beds = +b[1];
+    // «بين 50 و 80 مليون»
+    const bw = !m && text.match(/(بين|entre|between|tra)\s*([\d.]+)\s*(?:و|et|and|y|e)\s*([\d.]+)\s*(مليون|million|ألف|الف|k)?/i);
+    if (bw) { const k = /مليون/.test(bw[4] || '') ? 10000 : /million/.test(bw[4] || '') ? 1e6 : /k|ألف|الف/.test(bw[4] || '') ? 1000 : 1; f.min = +bw[2] * k; f.max = +bw[3] * k; }
+    // «بـ 350000» / «ميزانية 80 مليون» ← ثمن تقريبي (+10%)
+    const bp = !m && !bw && text.match(/(?:^|\s)(?:ب|بـ|بثمن|ثمن|الثمن|ميزانية|budget|prix|price|precio|prezzo)\s*([\d.]+)\s*(مليون|million|ألف|الف|k)?(?=\s|$)/i);
+    if (bp) { const k = /مليون/.test(bp[2] || '') ? 10000 : /million/.test(bp[2] || '') ? 1e6 : /k|ألف|الف/.test(bp[2] || '') ? 1000 : 1; const v = +bp[1] * k; if (v >= 1000) f.max = Math.round(v * 1.1); }
+    const ty = DZ_TYPES.find(([re]) => re.test(text)); if (ty) f.type = ty[1];
     // الكلمات اللي كتبقى للبحث (نحيدو الأرقام وكلمات الثمن والعملية)
-    f.q = text.replace(m ? m[0] : '', ' ').replace(/(^|\s)(كراء|للكراء|بيع|للبيع|vente|location|à vendre|à louer|for sale|for rent|en venta|en alquiler|in vendita|in affitto|قلب|لقا|ليا|عافاك|بغيت|cherche|find|busca|cerca|على|sur|une|un|a|an|the|el|la|il|de|fi|ف)(?=\s|$)/gi, ' ').replace(/(^|\s)(كراء|للكراء|بيع|للبيع|vente|location|for|sale|rent|en|venta|alquiler|in|vendita|affitto)(?=\s|$)/gi, ' ').replace(/\s+/g, ' ').trim();
+    f.q = text.replace(m ? m[0] : '', ' ').replace(bw ? bw[0] : '', ' ').replace(bp ? bp[0] : '', ' ').replace(b ? b[0] : '', ' ')
+      .replace(/(^|\s)(شي|واش|كاين|كاينة|كاينين|عندك|عندكم|عندنا|بغيت|بغينا|باغي|نقلب|قلب ليا|جيب ليا|وريني|ورينا|عطيني|ديال|اللي|لي|فيه|فيها|مزيانة|مزيان|شقة|دار|فيلا|بقعة|أرض|ارض|محل|مكتب|استوديو|دوبلكس|appartement|villa|maison|terrain|local|درهم|دراهم|ريال|سنتيم|dh|dhs|mad|بزاف|عافاك|الله يخليك|من فضلك)(?=\s|$)/gi, ' ').replace(/(^|\s)(كراء|للكراء|بيع|للبيع|vente|location|à vendre|à louer|for sale|for rent|en venta|en alquiler|in vendita|in affitto|قلب|لقا|ليا|عافاك|بغيت|cherche|find|busca|cerca|على|sur|une|un|a|an|the|el|la|il|de|fi|ف)(?=\s|$)/gi, ' ').replace(/(^|\s)(كراء|للكراء|بيع|للبيع|vente|location|for|sale|rent|en|venta|alquiler|in|vendita|affitto)(?=\s|$)/gi, ' ').replace(/\s+/g, ' ').trim();
     f.n = n;
     return f;
   }
@@ -2342,6 +2432,9 @@
         const ap = S.appts.filter(a => a.date === today() && a.status === 'planned').length, fu = S.reqs.filter(r => openReq(r) && r.followUp && r.followUp <= today()).length;
         return `<b>📊 ${esc(t.stats)}</b><div class="ag-stats"><span><b>${avail}</b> ${esc(t.avl)}</span><span><b>${open}</b> ${esc(t.openR)}</span><span><b>${strong}</b> ${esc(t.strongW)}</span><span><b>${ap}</b> ${esc(t.apptsW)}</span><span><b>${fu}</b> ${esc(t.fu)}</span></div>`;
       }
+      case 'hello': return esc(t.hello);
+      case 'thanks': return esc(t.thanks);
+      case 'help': return esc(t.help);
       case 'newReq': return `✍️ ${esc(t.newReq)}` + go('#/request/new');
       case 'newAppt': return `📅 ${esc(t.newAppt)}` + go('#/appointment/new');
       case 'newProp': return `🏠 ${esc(t.newProp)}` + go('#/property/new');
@@ -2362,6 +2455,8 @@
     if (f.trx) props = props.filter(p => f.trx === 'rent' ? isRent(p.transaction) : !isRent(p.transaction));
     if (f.max) props = props.filter(p => { const v = num(p.priceMax) || num(p.priceMin); return v && v <= f.max; });
     if (f.beds) props = props.filter(p => num((p.specs || {}).bedrooms) >= f.beds);
+    if (f.min) props = props.filter(p => { const v = num(p.priceMax) || num(p.priceMin); return v && v >= f.min; });
+    if (f.type) props = props.filter(f.type);
     const reqs = f.q && !f.max ? lxFind(S.reqs.filter(openReq), reqHay, f.q) : [];
     if (!props.length && !reqs.length) return esc(t.none);
     let h = '';
@@ -2370,8 +2465,9 @@
     return h;
   }
   function agLocal(text, kind) {
-    if (!kind) { const hitI = LX_INTENTS.find(([, re]) => re.test(text)); kind = hitI ? hitI[0] : null; }
-    const html = lxAnswer(kind, text);
+    const dz = /W777-\d+|DM-\d+/i.test(text) ? text : dzNorm(text);
+    if (!kind) { const hitI = LX_INTENTS.find(([, re]) => re.test(dz)); kind = hitI ? hitI[0] : null; }
+    const html = lxAnswer(kind, dz);
     AG.view.push({ who: 'bot', html });
     agSpeak(html, true);
     agRender();
