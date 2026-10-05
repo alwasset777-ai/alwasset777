@@ -2046,6 +2046,7 @@
     it: { hi: 'Ciao! Sono l’assistente di Al Wasset 777. Come posso aiutarti?', ph: 'Scrivi la tua domanda…', send: 'Invia', fresh: 'Nuova chat', think: 'Sto lavorando…', login: 'Accedi prima (Impostazioni → Sincronizzazione).', nokey: 'L’assistente non è ancora attivo: l’amministratore deve aggiungere la chiave Claude in Supabase.', quota: 'Limite giornaliero raggiunto.', err: 'Si è verificato un errore, riprova.', s: ['Quali appuntamenti ci sono oggi?', 'Cerca un appartamento in vendita a Marjane sotto 700.000 DH', 'Statistiche dell’agenzia'] },
   };
   const AG = { open: false, busy: false, history: [], view: [], cfg: null };
+  const agAI = () => !!(AG.cfg && AG.cfg.ai_enabled);
   const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'darija'; } catch (e) { return 'darija'; } };
   const agT = () => AG_T[agLang()] || AG_T.darija;
   function agCfgCached() { try { return JSON.parse(localStorage.getItem('w777_agent_cfg') || 'null'); } catch (e) { return null; } }
@@ -2054,7 +2055,7 @@
     AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد الوسيط 777', photo: null };
     if (!Sy || !Sy.isOn()) return AG.cfg;
     try {
-      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,updated_at')).json())[0];
+      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,ai_enabled,updated_at')).json())[0];
       if (r) { AG.cfg = r; try { localStorage.setItem('w777_agent_cfg', JSON.stringify(r)); } catch (e) { /* */ } }
     } catch (e) { /* بدون إنترنت */ }
     agPaintButton();
@@ -2084,10 +2085,11 @@
     p.id = 'agent-panel'; p.className = 'agent-panel'; p.dir = L.dir;
     p.innerHTML = `
       <div class="ag-head"><img id="agent-head-img" src="${agPhoto()}" alt="">
-        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>AI · Claude</small></div>
+        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>${agAI() ? 'AI · Claude' : '🆓 ' + esc(lx().limited.split(':')[0].split('：')[0])}</small></div>
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
         <button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
       <div class="ag-body" id="ag-body"></div>
+      <div class="ag-acts" id="ag-acts"></div>
       <form class="ag-input" id="ag-form"><textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
     document.body.appendChild(p);
     $('#ag-close').onclick = agClose;
@@ -2104,13 +2106,20 @@
   function agRender() {
     const body = $('#ag-body'); if (!body) return;
     const t = agT();
-    const items = AG.view.length ? AG.view : [{ who: 'bot', text: t.hi }];
+    const items = AG.view.length ? AG.view : [{ who: 'bot', text: agAI() ? t.hi : lx().hi }];
     body.innerHTML = items.map(m => m.who === 'tool'
       ? `<div class="ag-tool">⚙️ ${esc(m.text)}</div>`
-      : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div>${agFmt(m.text)}</div></div>`).join('')
-      + (!AG.view.length ? `<div class="ag-sugg">${t.s.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
+      : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div>${m.html || agFmt(m.text)}</div></div>`).join('')
+      + (!AG.view.length && agAI() ? `<div class="ag-sugg">${t.s.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
       + (AG.busy ? `<div class="ag-msg bot"><img src="${agPhoto()}" alt=""><div class="ag-dots">${esc(t.think)}<span>.</span><span>.</span><span>.</span></div></div>` : '');
     $$('.ag-sugg button', body).forEach(b => b.onclick = () => agSend(b.textContent));
+    $$('a.ag-card, a.ag-more', body).forEach(a => a.addEventListener('click', () => { if (window.innerWidth < 960) agClose(); }));
+    const acts = $('#ag-acts');
+    if (acts) {
+      acts.classList.toggle('hidden', agAI());
+      acts.innerHTML = LX_ACTIONS.map(k => `<button type="button" data-k="${k}">${esc(lx()[k])}</button>`).join('');
+      $$('button', acts).forEach(b => b.onclick = () => { AG.view.push({ who: 'me', text: b.textContent }); agLocal(b.textContent, b.dataset.k); });
+    }
     body.scrollTop = body.scrollHeight;
   }
   async function agCall() {
@@ -2125,6 +2134,7 @@
   async function agSend(text) {
     const Sy = window.W777_SYNC, t = agT();
     AG.view.push({ who: 'me', text });
+    if (!agAI()) { agLocal(text); return; }
     if (!Sy || !Sy.isOn()) { AG.view.push({ who: 'bot', text: t.login }); agRender(); return; }
     AG.history.push({ role: 'user', content: text });
     AG.busy = true; agRender();
@@ -2154,6 +2164,119 @@
       }
     } finally { AG.busy = false; agRender(); }
   }
+  /* ---------- المساعد المحلي (فابور، بلا AI): أزرار + كلمات مفتاحية فـ 6 لغات ---------- */
+  const LX = {
+    darija: { hi: 'مرحبا! أنا المساعد ديال الوسيط 777. ضغط على شي زر ولا كتب كلمة (حي، نوع، رقم W777-…، سمية زبون…)', today: 'مواعيد اليوم', avail: 'العقارات المتاحة', reqs: 'الطلبات المفتوحة', stats: 'الإحصائيات', follow: 'متابعات اليوم', strong: 'أحسن المطابقات', newReq: 'زيد طلب', newAppt: 'زيد موعد', newProp: 'زيد عقار', price: 'مقارنة الثمن', none: 'ما لقيت والو. جرب كلمة أخرى (حي، نوع، سمية، رقم…).', found: 'لقيت', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'حل', more: 'شوف الكل', matches: 'المطابقات', avl: 'متاح', openR: 'طلب مفتوح', strongW: 'مطابقة قوية', apptT: 'مواعيد اليوم', fu: 'متابعات', noAppt: 'ما كاين حتى موعد اليوم ✓', noFu: 'ما كاين حتى متابعة ✓', limited: 'وضع مجاني: كنفهم غير الأزرار والكلمات المفتاحية.' },
+    ar: { hi: 'مرحبا! أنا مساعد الوسيط 777. اضغط على زر أو اكتب كلمة (حي، نوع، مرجع W777-…، اسم زبون…)', today: 'مواعيد اليوم', avail: 'العقارات المتاحة', reqs: 'الطلبات المفتوحة', stats: 'الإحصائيات', follow: 'متابعات اليوم', strong: 'أفضل المطابقات', newReq: 'طلب جديد', newAppt: 'موعد جديد', newProp: 'عقار جديد', price: 'مقارنة الثمن', none: 'لا توجد نتائج. جرّب كلمة أخرى.', found: 'وجدت', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'فتح', more: 'عرض الكل', matches: 'المطابقات', avl: 'متاح', openR: 'طلب مفتوح', strongW: 'مطابقة قوية', apptT: 'مواعيد اليوم', fu: 'متابعات', noAppt: 'لا توجد مواعيد اليوم ✓', noFu: 'لا توجد متابعات ✓', limited: 'الوضع المجاني: أفهم الأزرار والكلمات المفتاحية فقط.' },
+    fr: { hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Touchez un bouton ou tapez un mot (quartier, type, réf. W777-…, nom de client…)', today: 'RDV du jour', avail: 'Biens disponibles', reqs: 'Demandes ouvertes', stats: 'Statistiques', follow: 'Relances du jour', strong: 'Meilleurs matchs', newReq: 'Nouvelle demande', newAppt: 'Nouveau RDV', newProp: 'Nouveau bien', price: 'Comparer un prix', none: 'Aucun résultat. Essayez un autre mot.', found: 'Trouvé', props: 'bien(s)', reqsW: 'demande(s)', apptsW: 'RDV', open: 'Ouvrir', more: 'Tout voir', matches: 'Correspondances', avl: 'disponibles', openR: 'demandes ouvertes', strongW: 'matchs forts', apptT: 'RDV du jour', fu: 'relances', noAppt: 'Aucun RDV aujourd’hui ✓', noFu: 'Aucune relance ✓', limited: 'Mode gratuit : je comprends les boutons et les mots-clés.' },
+    en: { hi: 'Hello! I’m the Al Wasset 777 assistant. Tap a button or type a word (district, type, ref W777-…, client name…)', today: 'Today’s appointments', avail: 'Available properties', reqs: 'Open requests', stats: 'Statistics', follow: 'Today’s follow-ups', strong: 'Best matches', newReq: 'New request', newAppt: 'New appointment', newProp: 'New property', price: 'Compare a price', none: 'No results. Try another word.', found: 'Found', props: 'property(ies)', reqsW: 'request(s)', apptsW: 'appointment(s)', open: 'Open', more: 'See all', matches: 'Matches', avl: 'available', openR: 'open requests', strongW: 'strong matches', apptT: 'Today’s appointments', fu: 'follow-ups', noAppt: 'No appointments today ✓', noFu: 'No follow-ups ✓', limited: 'Free mode: I understand buttons and keywords.' },
+    es: { hi: '¡Hola! Soy el asistente de Al Wasset 777. Pulsa un botón o escribe una palabra (barrio, tipo, ref. W777-…, cliente…)', today: 'Citas de hoy', avail: 'Inmuebles disponibles', reqs: 'Solicitudes abiertas', stats: 'Estadísticas', follow: 'Seguimientos de hoy', strong: 'Mejores coincidencias', newReq: 'Nueva solicitud', newAppt: 'Nueva cita', newProp: 'Nuevo inmueble', price: 'Comparar precio', none: 'Sin resultados. Prueba otra palabra.', found: 'Encontrado', props: 'inmueble(s)', reqsW: 'solicitud(es)', apptsW: 'cita(s)', open: 'Abrir', more: 'Ver todo', matches: 'Coincidencias', avl: 'disponibles', openR: 'solicitudes abiertas', strongW: 'coincidencias fuertes', apptT: 'Citas de hoy', fu: 'seguimientos', noAppt: 'No hay citas hoy ✓', noFu: 'Sin seguimientos ✓', limited: 'Modo gratuito: entiendo botones y palabras clave.' },
+    it: { hi: 'Ciao! Sono l’assistente di Al Wasset 777. Tocca un pulsante o scrivi una parola (quartiere, tipo, rif. W777-…, cliente…)', today: 'Appuntamenti di oggi', avail: 'Immobili disponibili', reqs: 'Richieste aperte', stats: 'Statistiche', follow: 'Richiami di oggi', strong: 'Migliori abbinamenti', newReq: 'Nuova richiesta', newAppt: 'Nuovo appuntamento', newProp: 'Nuovo immobile', price: 'Confronta prezzo', none: 'Nessun risultato. Prova un’altra parola.', found: 'Trovato', props: 'immobile/i', reqsW: 'richiesta/e', apptsW: 'appuntamento/i', open: 'Apri', more: 'Vedi tutto', matches: 'Abbinamenti', avl: 'disponibili', openR: 'richieste aperte', strongW: 'abbinamenti forti', apptT: 'Appuntamenti di oggi', fu: 'richiami', noAppt: 'Nessun appuntamento oggi ✓', noFu: 'Nessun richiamo ✓', limited: 'Modalità gratuita: capisco pulsanti e parole chiave.' },
+  };
+  const lx = () => LX[agLang()] || LX.darija;
+  const LX_ACTIONS = ['today', 'avail', 'reqs', 'stats', 'follow', 'strong', 'newReq', 'newAppt', 'newProp', 'price'];
+  // كلمات مفتاحية (كل اللغات) ← نية
+  const LX_INTENTS = [
+    ['today', /موعد|مواعيد|rdv|rendez|appoint|cita|appuntament|agenda/i],
+    ['stats', /احصا|إحصا|stat|bilan|resum|riepilog|ملخص/i],
+    ['follow', /متابع|relance|follow|seguim|richiam/i],
+    ['strong', /مطابق|match|correspond|coincid|abbinam/i],
+    ['newReq', /(زيد|اضف|أضف|جديد|nouvelle|new|nueva|nuova).{0,12}(طلب|demande|request|solicitud|richiesta)/i],
+    ['newAppt', /(زيد|اضف|أضف|جديد|nouveau|new|nueva|nuovo).{0,12}(موعد|rdv|appoint|cita|appuntament)/i],
+    ['newProp', /(زيد|اضف|أضف|جديد|nouveau|new|nuevo|nuovo).{0,12}(عقار|bien|property|inmueble|immobile)/i],
+    ['price', /ثمن السوق|مقارن|compar|prix du march|market price|precio de mercado|prezzo di mercato/i],
+  ];
+  function lxParse(text) {
+    const n = norm(text);
+    const f = {};
+    if (/كراء|كرا|location|louer|rent|alquil|affitt/i.test(text)) f.trx = 'rent';
+    else if (/بيع|شراء|vente|achat|sale|buy|venta|compra|vendit|acquist/i.test(text)) f.trx = 'sale';
+    // ثمن أقصى: «تحت 70 مليون» / «moins de 700000» / «under 700k»
+    const m = text.match(/(تحت|اقل من|أقل من|حتى|moins de|max|under|below|menos de|hasta|sotto|meno di)\s*([\d\s.,]+)\s*(مليون|million|k|ألف|الف|mil)?/i);
+    if (m) {
+      let v = parseFloat(m[2].replace(/[\s,]/g, '').replace(/\.(?=\d{3}\b)/g, ''));
+      const u = (m[3] || '').toLowerCase();
+      if (/مليون/.test(u)) v *= 10000; else if (/million/.test(u)) v *= 1e6; else if (/k|ألف|الف|mil/.test(u)) v *= 1000;
+      if (v > 0) f.max = v;
+    }
+    const b = text.match(/(\d)\s*(غرف|بيوت|chambres?|bedrooms?|habitaciones|camere)/i);
+    if (b) f.beds = +b[1];
+    // الكلمات اللي كتبقى للبحث (نحيدو الأرقام وكلمات الثمن والعملية)
+    f.q = text.replace(m ? m[0] : '', ' ').replace(/(^|\s)(كراء|للكراء|بيع|للبيع|vente|location|à vendre|à louer|for sale|for rent|en venta|en alquiler|in vendita|in affitto|قلب|لقا|ليا|عافاك|بغيت|cherche|find|busca|cerca|على|sur|une|un|a|an|the|el|la|il|de|fi|ف)(?=\s|$)/gi, ' ').replace(/(^|\s)(كراء|للكراء|بيع|للبيع|vente|location|for|sale|rent|en|venta|alquiler|in|vendita|affitto)(?=\s|$)/gi, ' ').replace(/\s+/g, ' ').trim();
+    f.n = n;
+    return f;
+  }
+  // بحث مرن: كل كلمة كتحسب نقطة، نحيدو «ف/ب/ل/و/ال» من البداية، والأسماء اللاتينية ديال الأحياء
+  function lxFind(list, hayFn, q) {
+    const toks = tokens(q).map(w => {
+      const al = DISTRICT_ALIASES[w.toLowerCase()];
+      if (al) return [norm(al).split(/[\s(]/)[0]];
+      const v = [w]; const st = w.replace(/^(وال|فال|بال|لل|ال|ف|ب|ل|و)(?=\S{3,})/, ''); if (st !== w) v.push(st);
+      return v;
+    }).filter(v => v[0].length > 1);
+    if (!toks.length) return list.slice();
+    let best = 0;
+    const sc = list.map(x => { const h = hayFn(x); const n = toks.filter(v => v.some(w => h.includes(w))).length; if (n > best) best = n; return [x, n]; });
+    return best ? sc.filter(([, n]) => n === best).map(([x]) => x) : [];
+  }
+  const lxCard = p => `<a class="ag-card" href="#/property/${p.id}"><b>${esc(p.ref || '')}</b> · ${esc(p.title || typeAr(p.type))}<small>${esc([p.district, p.city].filter(Boolean).join('، '))} · ${esc(priceText(p))} ${mktBadge(p)}</small></a>`;
+  const lxReq = r => `<a class="ag-card" href="#/request/${r.id}"><b>${esc((r.client || {}).name || '')}</b> · ${esc(r.ref || '')}<small>${esc(trxAr(r.transaction))} · ${esc([((r.districts || [])[0]), r.city].filter(Boolean).join('، '))}${r.budgetMax ? ' · ' + esc(fmt(r.budgetMax)) + ' د' : ''}</small></a>`;
+  const lxMore = (href, n) => n > 5 ? `<a class="ag-more" href="${href}">${esc(lx().more)} (${n}) ←</a>` : '';
+  function lxAnswer(kind, text) {
+    const t = lx();
+    const go = h => { location.hash = h; return `<a class="ag-more" href="${h}">${esc(t.open)} ←</a>`; };
+    switch (kind) {
+      case 'today': {
+        const list = S.appts.filter(a => a.date === today() && a.status === 'planned').sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+        return `<b>📅 ${esc(t.apptT)} (${list.length})</b>` + (list.length ? list.map(a => `<a class="ag-card" href="#/appointment/${a.id}"><b>${esc(a.time || '')}</b> · ${esc((a.client || {}).name || '')}<small>${esc(APPT_TYPES[a.type] || '')}${a.place ? ' · ' + esc(a.place) : ''}</small></a>`).join('') : `<div>${esc(t.noAppt)}</div>`);
+      }
+      case 'avail': { const l = S.props.filter(p => p.status === 'available'); return `<b>🏠 ${esc(t.avail)} (${l.length})</b>` + l.slice(0, 5).map(lxCard).join('') + lxMore('#/properties', l.length); }
+      case 'reqs': { const l = S.reqs.filter(openReq); return `<b>👥 ${esc(t.reqs)} (${l.length})</b>` + l.slice(0, 5).map(lxReq).join('') + lxMore('#/requests', l.length); }
+      case 'follow': { const l = S.reqs.filter(r => openReq(r) && r.followUp && r.followUp <= today()); return `<b>📞 ${esc(t.follow)} (${l.length})</b>` + (l.length ? l.slice(0, 5).map(lxReq).join('') : `<div>${esc(t.noFu)}</div>`) + lxMore('#/requests', l.length); }
+      case 'strong': {
+        const o = []; S.reqs.filter(openReq).forEach(r => matchesForReq(r).forEach(x => { if (x.m.score >= 75) o.push({ r, p: x.p, s: x.m.score }); }));
+        o.sort((a, b) => b.s - a.s);
+        return `<b>🎯 ${esc(t.strong)} (${o.length})</b>` + o.slice(0, 5).map(x => `<a class="ag-card" href="#/request/${x.r.id}"><b>${x.s}%</b> · ${esc((x.r.client || {}).name || '')} ← ${esc(x.p.ref || '')}<small>${esc(x.p.title || typeAr(x.p.type))} · ${esc(priceText(x.p))}</small></a>`).join('') + lxMore('#/matching', o.length);
+      }
+      case 'stats': {
+        const avail = S.props.filter(p => p.status === 'available').length, open = S.reqs.filter(openReq).length;
+        let strong = 0; S.reqs.filter(openReq).forEach(r => matchesForReq(r).forEach(x => { if (x.m.score >= 75) strong++; }));
+        const ap = S.appts.filter(a => a.date === today() && a.status === 'planned').length, fu = S.reqs.filter(r => openReq(r) && r.followUp && r.followUp <= today()).length;
+        return `<b>📊 ${esc(t.stats)}</b><div class="ag-stats"><span><b>${avail}</b> ${esc(t.avl)}</span><span><b>${open}</b> ${esc(t.openR)}</span><span><b>${strong}</b> ${esc(t.strongW)}</span><span><b>${ap}</b> ${esc(t.apptsW)}</span><span><b>${fu}</b> ${esc(t.fu)}</span></div>`;
+      }
+      case 'newReq': return `✍️ ${esc(t.newReq)}` + go('#/request/new');
+      case 'newAppt': return `📅 ${esc(t.newAppt)}` + go('#/appointment/new');
+      case 'newProp': return `🏠 ${esc(t.newProp)}` + go('#/property/new');
+      case 'price': return `📊 ${esc(t.price)}` + go('#/estimate');
+    }
+    // مرجع مباشر
+    const ref = (text.match(/W777-\d+|DM-\d+/i) || [])[0];
+    if (ref) {
+      const p = S.props.find(x => (x.ref || '').toLowerCase() === ref.toLowerCase());
+      if (p) { const ms = matchesForProp(p); return lxCard(p) + (ms.length ? `<b>🎯 ${esc(t.matches)} (${ms.length})</b>` + ms.slice(0, 4).map(x => `<a class="ag-card" href="#/request/${x.r.id}"><b>${x.m.score}%</b> · ${esc((x.r.client || {}).name || '')}<small>${esc(x.r.ref || '')}</small></a>`).join('') : ''); }
+      const r = S.reqs.find(x => (x.ref || '').toLowerCase() === ref.toLowerCase());
+      if (r) { const ms = matchesForReq(r); return lxReq(r) + (ms.length ? `<b>🎯 ${esc(t.matches)} (${ms.length})</b>` + ms.slice(0, 4).map(x => lxCard(x.p).replace('<b>', `<b>${x.m.score}% · `)).join('') : ''); }
+    }
+    // بحث حر
+    const f = lxParse(text);
+    let props = lxFind(S.props, propHay, f.q || '');
+    props = props.filter(p => p.status === 'available');
+    if (f.trx) props = props.filter(p => f.trx === 'rent' ? isRent(p.transaction) : !isRent(p.transaction));
+    if (f.max) props = props.filter(p => { const v = num(p.priceMax) || num(p.priceMin); return v && v <= f.max; });
+    if (f.beds) props = props.filter(p => num((p.specs || {}).bedrooms) >= f.beds);
+    const reqs = f.q && !f.max ? lxFind(S.reqs.filter(openReq), reqHay, f.q) : [];
+    if (!props.length && !reqs.length) return esc(t.none);
+    let h = '';
+    if (props.length) h += `<b>🏠 ${esc(t.found)} ${props.length} ${esc(t.props)}</b>` + props.slice(0, 5).map(lxCard).join('') + lxMore('#/properties?q=' + encodeURIComponent(f.q || ''), props.length);
+    if (reqs.length) h += `<b>👥 ${reqs.length} ${esc(t.reqsW)}</b>` + reqs.slice(0, 4).map(lxReq).join('');
+    return h;
+  }
+  function agLocal(text, kind) {
+    if (!kind) { const hitI = LX_INTENTS.find(([, re]) => re.test(text)); kind = hitI ? hitI[0] : null; }
+    AG.view.push({ who: 'bot', html: lxAnswer(kind, text) });
+    agRender();
+  }
+
   // ---------- الأدوات (كتخدم على بيانات الجهاز) ----------
   const agProp = p => ({ ref: p.ref, title: p.title || typeAr(p.type), type: typeAr(p.type), transaction: trxAr(p.transaction), city: p.city, district: p.district, price: priceText(p), area_m2: areaOf(p), bedrooms: (p.specs || {}).bedrooms || null, status: (PSTATUS[p.status] || {}).ar || p.status });
   const agReq = r => ({ ref: r.ref, client: (r.client || {}).name, phone: (r.client || {}).phone, transaction: trxAr(r.transaction), types: (r.types || []).map(typeAr), city: r.city, districts: r.districts || [], budget_max: r.budgetMax || null, status: (RSTATUS[r.status] || {}).ar || r.status, follow_up: r.followUp || null });
@@ -2265,7 +2388,8 @@
           <div class="muted" style="font-size:13px">الزر ديالو لتحت على اليسار. كل شريك كيختار اللغة ديالو من داخل المحادثة.</div></div></div>
       ${isAdmin ? `<div class="btn-row" style="margin-top:12px">
         <label class="btn gold sm">${ic('camera', 15)} بدّل الصورة<input type="file" id="ag-photo" accept="image/*" hidden></label>
-        <button class="btn sm" id="ag-rename">${ic('edit', 15)} بدّل الاسم</button></div>
+        <button class="btn sm" id="ag-rename">${ic('edit', 15)} بدّل الاسم</button>
+        <button class="btn sm" id="ag-ai">${agAI() ? '🟢 Claude مفعّل (مدفوع) — طفيه' : '⚪ الوضع المجاني — شعل Claude (مدفوع)'}</button></div>
         <p class="muted" style="font-size:12.5px;margin-bottom:0">الصورة والاسم كيبانو لجميع الوكالات. غير نتا (المدير) اللي يقدر يبدلهم.</p>` : ''}
     </div>`;
   }
@@ -2284,6 +2408,11 @@
         const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
         await save({ photo: dataUrl });
       } catch (er) { toast('تعذر: ' + er.message, 4000); }
+    };
+    const ai = $('#ag-ai');
+    if (ai) ai.onclick = async () => {
+      if (!agAI() && !(await confirmBox('تشعيل Claude كيحتاج المفتاح ANTHROPIC_API_KEY فـ Supabase وكيتخلص على كل سؤال. نشعلو؟', 'شعل', false))) return;
+      await save({ ai_enabled: !agAI() });
     };
     const rn = $('#ag-rename');
     if (rn) rn.onclick = () => modal(`<h3>اسم الوكيل</h3><form id="agn" class="form-grid">${fInput('name', 'الاسم', (AG.cfg && AG.cfg.name) || '')}</form><div class="btn-row" style="margin-top:12px"><button class="btn gold" id="agn-ok">حفظ</button></div>`, (box, close) => {
