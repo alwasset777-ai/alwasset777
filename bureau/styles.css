@@ -547,3 +547,13 @@ a.chip { text-decoration: none; }
 .ag-input { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); background: var(--surface); }
 .ag-input textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); max-height: 120px; }
 @media print { .agent-fab, .agent-panel { display: none !important; } }
+.ag-acts { display: flex; gap: 6px; overflow-x: auto; padding: 8px 10px 0; background: var(--surface); scrollbar-width: none; flex: none; }
+.ag-acts::-webkit-scrollbar { display: none; }
+.ag-acts button { flex: none; border: 1px solid var(--gold); background: var(--surface); color: var(--gold-ink); border-radius: 999px; padding: 6px 11px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.ag-card { display: block; text-decoration: none; color: var(--ink); background: var(--surface-2); border-radius: 10px; padding: 7px 9px; margin-top: 6px; font-size: 13px; }
+.ag-card small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.ag-more { display: inline-block; margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--gold-ink); }
+.ag-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+.ag-stats span { background: var(--surface-2); border-radius: 10px; padding: 6px 8px; font-size: 12.5px; }
+.ag-stats b { font-size: 16px; display: block; }
+.ag-msg.bot > div { max-width: 100%; min-width: 0; }
