@@ -6,7 +6,7 @@
   <title>إضافة عقارات — شريك الوسيط 777</title>
   <meta name="theme-color" content="#0f2a4a">
   <meta name="robots" content="noindex">
-  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="icon" href="icons/icon-192.png?v=2" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
@@ -73,7 +73,7 @@
       if (!info || !info.name) { box.innerHTML = `<div class="card card-pad">هذا الرابط غير مفعل أو انتهت صلاحيته. تواصل مع مكتب الوسيط 777.</div>`; return; }
       const saved = JSON.parse(localStorage.getItem(LS) || '{}');
       box.innerHTML = `
-        <div class="pt-head"><img src="icons/logo.png" alt="" style="height:44px">
+        <div class="pt-head"><img src="icons/logo.png?v=2" alt="" style="height:44px">
           <div><h1>مرحبا ${esc(info.name)} 👋</h1><div class="sub">أضف عقاراتك لمكتب الوسيط 777 — Ajoutez vos biens à l'agence Al Wasset 777</div></div></div>
         <form class="card card-pad" id="f">
           <div class="form-grid">
