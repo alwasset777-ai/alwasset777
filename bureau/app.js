@@ -2038,12 +2038,12 @@
     { id: 'en', l: 'English', dir: 'ltr' }, { id: 'es', l: 'Español', dir: 'ltr' }, { id: 'it', l: 'Italiano', dir: 'ltr' },
   ];
   const AG_T = {
-    darija: { hi: 'مرحبا! أنا المساعد ديال الوسيط 777. شنو نقدر نعاونك؟', ph: 'كتب سؤالك…', send: 'صيفط', fresh: 'محادثة جديدة', think: 'كنخدم…', login: 'دخل بالحساب ديالك أولا (الإعدادات ← المزامنة).', nokey: 'الوكيل مازال ما تفعّلش: خاص المدير يزيد مفتاح Claude فـ Supabase.', quota: 'وصلتي للحد اليومي ديال الرسائل. رجع غدا.', err: 'وقع مشكل، عاود من بعد.', s: ['شنو المواعيد ديال اليوم؟', 'قلب ليا على شقة للبيع فمرجان تحت 700 ألف', 'شكون الزبناء اللي كيناسبهم آخر عقار؟'] },
-    ar: { hi: 'مرحبا! أنا مساعد الوسيط 777. كيف يمكنني مساعدتك؟', ph: 'اكتب سؤالك…', send: 'إرسال', fresh: 'محادثة جديدة', think: 'جارٍ العمل…', login: 'سجّل الدخول أولا (الإعدادات ← المزامنة).', nokey: 'المساعد غير مفعّل بعد: يجب على المدير إضافة مفتاح Claude في Supabase.', quota: 'بلغت الحد اليومي من الرسائل.', err: 'حدث خطأ، أعد المحاولة لاحقا.', s: ['ما هي مواعيد اليوم؟', 'ابحث عن شقة للبيع في مرجان بأقل من 700 ألف درهم', 'ما هي إحصائيات المكتب؟'] },
-    fr: { hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Comment puis-je vous aider ?', ph: 'Écrivez votre question…', send: 'Envoyer', fresh: 'Nouvelle conversation', think: 'Je travaille…', login: 'Connectez-vous d’abord (Paramètres → Synchronisation).', nokey: 'L’assistant n’est pas encore activé : l’administrateur doit ajouter la clé Claude dans Supabase.', quota: 'Limite quotidienne atteinte.', err: 'Une erreur est survenue, réessayez.', s: ['Quels sont les rendez-vous du jour ?', 'Cherche un appartement à vendre à Marjane sous 700 000 DH', 'Statistiques de l’agence'] },
-    en: { hi: 'Hello! I’m the Al Wasset 777 assistant. How can I help?', ph: 'Type your question…', send: 'Send', fresh: 'New chat', think: 'Working…', login: 'Please sign in first (Settings → Sync).', nokey: 'The assistant isn’t activated yet: the admin must add the Claude key in Supabase.', quota: 'Daily message limit reached.', err: 'Something went wrong, try again.', s: ['What are today’s appointments?', 'Find an apartment for sale in Marjane under 700,000 DH', 'Office statistics'] },
-    es: { hi: '¡Hola! Soy el asistente de Al Wasset 777. ¿En qué puedo ayudarte?', ph: 'Escribe tu pregunta…', send: 'Enviar', fresh: 'Nueva conversación', think: 'Trabajando…', login: 'Inicia sesión primero (Ajustes → Sincronización).', nokey: 'El asistente aún no está activado: el administrador debe añadir la clave de Claude en Supabase.', quota: 'Límite diario alcanzado.', err: 'Ha ocurrido un error, inténtalo de nuevo.', s: ['¿Qué citas hay hoy?', 'Busca un piso en venta en Marjane por menos de 700.000 DH', 'Estadísticas de la agencia'] },
-    it: { hi: 'Ciao! Sono l’assistente di Al Wasset 777. Come posso aiutarti?', ph: 'Scrivi la tua domanda…', send: 'Invia', fresh: 'Nuova chat', think: 'Sto lavorando…', login: 'Accedi prima (Impostazioni → Sincronizzazione).', nokey: 'L’assistente non è ancora attivo: l’amministratore deve aggiungere la chiave Claude in Supabase.', quota: 'Limite giornaliero raggiunto.', err: 'Si è verificato un errore, riprova.', s: ['Quali appuntamenti ci sono oggi?', 'Cerca un appartamento in vendita a Marjane sotto 700.000 DH', 'Statistiche dell’agenzia'] },
+    darija: { hi: 'مرحبا! أنا المساعد ديال الوسيط 777. شنو نقدر نعاونك؟', ph: 'كتب سؤالك…', send: 'صيفط', fresh: 'محادثة جديدة', think: 'كنخدم…', login: 'دخل بالحساب ديالك أولا (الإعدادات ← المزامنة).', nokey: 'الوكيل مازال ما تفعّلش: خاص المدير يزيد المفتاح فالإعدادات.', quota: 'وصلتي للحد اليومي ديال الرسائل. رجع غدا.', err: 'وقع مشكل، عاود من بعد.', s: ['شنو المواعيد ديال اليوم؟', 'قلب ليا على شقة للبيع فمرجان تحت 700 ألف', 'شكون الزبناء اللي كيناسبهم آخر عقار؟'] },
+    ar: { hi: 'مرحبا! أنا مساعد الوسيط 777. كيف يمكنني مساعدتك؟', ph: 'اكتب سؤالك…', send: 'إرسال', fresh: 'محادثة جديدة', think: 'جارٍ العمل…', login: 'سجّل الدخول أولا (الإعدادات ← المزامنة).', nokey: 'المساعد غير مفعّل بعد: يجب على المدير إضافة المفتاح في الإعدادات.', quota: 'بلغت الحد اليومي من الرسائل.', err: 'حدث خطأ، أعد المحاولة لاحقا.', s: ['ما هي مواعيد اليوم؟', 'ابحث عن شقة للبيع في مرجان بأقل من 700 ألف درهم', 'ما هي إحصائيات المكتب؟'] },
+    fr: { hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Comment puis-je vous aider ?', ph: 'Écrivez votre question…', send: 'Envoyer', fresh: 'Nouvelle conversation', think: 'Je travaille…', login: 'Connectez-vous d’abord (Paramètres → Synchronisation).', nokey: 'L’assistant n’est pas encore activé : l’administrateur doit ajouter la clé dans les Paramètres.', quota: 'Limite quotidienne atteinte.', err: 'Une erreur est survenue, réessayez.', s: ['Quels sont les rendez-vous du jour ?', 'Cherche un appartement à vendre à Marjane sous 700 000 DH', 'Statistiques de l’agence'] },
+    en: { hi: 'Hello! I’m the Al Wasset 777 assistant. How can I help?', ph: 'Type your question…', send: 'Send', fresh: 'New chat', think: 'Working…', login: 'Please sign in first (Settings → Sync).', nokey: 'The assistant isn’t activated yet: the admin must add the key in Settings.', quota: 'Daily message limit reached.', err: 'Something went wrong, try again.', s: ['What are today’s appointments?', 'Find an apartment for sale in Marjane under 700,000 DH', 'Office statistics'] },
+    es: { hi: '¡Hola! Soy el asistente de Al Wasset 777. ¿En qué puedo ayudarte?', ph: 'Escribe tu pregunta…', send: 'Enviar', fresh: 'Nueva conversación', think: 'Trabajando…', login: 'Inicia sesión primero (Ajustes → Sincronización).', nokey: 'El asistente aún no está activado: el administrador debe añadir la clave en Ajustes.', quota: 'Límite diario alcanzado.', err: 'Ha ocurrido un error, inténtalo de nuevo.', s: ['¿Qué citas hay hoy?', 'Busca un piso en venta en Marjane por menos de 700.000 DH', 'Estadísticas de la agencia'] },
+    it: { hi: 'Ciao! Sono l’assistente di Al Wasset 777. Come posso aiutarti?', ph: 'Scrivi la tua domanda…', send: 'Invia', fresh: 'Nuova chat', think: 'Sto lavorando…', login: 'Accedi prima (Impostazioni → Sincronizzazione).', nokey: 'L’assistente non è ancora attivo: l’amministratore deve aggiungere la chiave nelle Impostazioni.', quota: 'Limite giornaliero raggiunto.', err: 'Si è verificato un errore, riprova.', s: ['Quali appuntamenti ci sono oggi?', 'Cerca un appartamento in vendita a Marjane sotto 700.000 DH', 'Statistiche dell’agenzia'] },
   };
   const AG = { open: false, busy: false, history: [], view: [], cfg: null };
   const agAI = () => !!(AG.cfg && AG.cfg.ai_enabled);
@@ -2119,7 +2119,7 @@
     p.id = 'agent-panel'; p.className = 'agent-panel'; p.dir = L.dir;
     p.innerHTML = `
       <div class="ag-head"><img id="agent-head-img" src="${agPhoto()}" alt="">
-        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>${agAI() ? 'AI · Claude' : '🆓 ' + esc(lx().limited.split(':')[0].split('：')[0])}</small></div>
+        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>${agAI() ? 'AI' : '🆓 ' + esc(lx().limited.split(':')[0].split('：')[0])}</small></div>
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
         <button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
       <div class="ag-body" id="ag-body"></div>
@@ -2178,6 +2178,8 @@
         let r;
         try { r = await agCall(); } catch (e) {
           const m = String(e.message || e);
+          // ما كاينش مفتاح: نجاوبو بالمساعد المجاني بلا ما نوقفو الخدمة
+          if (/no_key/.test(m)) { AG.history.pop(); AG.busy = false; agLocal(text); return; }
           AG.view.push({ who: 'bot', text: /no_key/.test(m) ? t.nokey : /quota/.test(m) ? t.quota : t.err });
           AG.history.pop(); break;
         }
@@ -2420,21 +2422,27 @@
       <div style="display:flex;gap:14px;align-items:center">
         <img src="${agPhoto()}" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--gold)">
         <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b>
-          <div class="muted" style="font-size:13px">الزر ديالو لتحت على اليسار. كل شريك كيختار اللغة ديالو من داخل المحادثة.</div></div></div>
+          <div class="muted" style="font-size:13px">الزر ديالو لتحت على اليسار، كيبان لجميع الوكالات.</div></div></div>
+      <label style="display:flex;gap:10px;align-items:center;margin-top:12px"><b>🌐 لغة المساعد</b>
+        <select id="ag-lang-set" style="flex:1;max-width:220px">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === agLang() ? 'selected' : ''}>${x.l}</option>`).join('')}</select></label>
       ${isAdmin ? `<div class="btn-row" style="margin-top:12px">
         <label class="btn gold sm">${ic('camera', 15)} بدّل الصورة<input type="file" id="ag-photo" accept="image/*" hidden></label>
         <button class="btn sm" id="ag-rename">${ic('edit', 15)} بدّل الاسم</button>
-        <button class="btn sm" id="ag-ai">${agAI() ? '🟢 Claude مفعّل (مدفوع) — طفيه' : '⚪ الوضع المجاني — شعل Claude (مدفوع)'}</button></div>
+        <button class="btn sm" id="ag-ai">${agAI() ? '🟢 الوكيل الذكي (AI) مشعول — طفيه' : '⚪ الوضع البسيط — شعل الوكيل الذكي (AI)'}</button></div>
         <p class="muted" style="font-size:12.5px">الصورة والاسم كيبانو لجميع الوكالات. غير نتا (المدير) اللي يقدر يبدلهم.</p>
-        <div style="border-top:1px solid var(--line);padding-top:12px">
-          <b>🔑 مفتاح Claude</b> <span id="ag-key-st" class="muted" style="font-size:13px">…</span>
-          <div class="btn-row" style="margin-top:8px">
-            <input type="password" id="ag-key" placeholder="sk-ant-…" autocomplete="off" dir="ltr" style="flex:1;min-width:180px">
-            <button class="btn gold sm" id="ag-key-save">حفظ المفتاح</button>
-            <button class="btn sm" id="ag-key-del">مسح</button></div>
-          <p class="muted" style="font-size:12.5px;margin-bottom:0">خود المفتاح من <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (API Keys → Create Key). كيتسجل مخبّي فـ Supabase، حتى واحد ما يقدر يقراه من التطبيق.</p></div>` : ''}
+        ${agKeyRow('gemini', '🔑 مفتاح Gemini (فابور)', 'AIza…', 'https://aistudio.google.com/app/apikey', 'aistudio.google.com', 'Get API key → Create API key')}
+        ${agKeyRow('anthropic', '🔑 مفتاح Claude (مدفوع — اختياري)', 'sk-ant-…', 'https://console.anthropic.com/settings/keys', 'console.anthropic.com', 'API Keys → Create Key')}
+        <p class="muted" style="font-size:12.5px;margin-bottom:0">إلا كانو بجوج، كيخدم Claude. المفاتيح كيتسجلو مخبيين فـ Supabase، حتى واحد ما يقدر يقراهم من التطبيق.</p></div>` : ''}
     </div>`;
   }
+  const agKeyRow = (id, label, ph, url, host, how) => `<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:12px">
+          <b>${label}</b> <span id="ag-key-st-${id}" class="muted" style="font-size:13px">…</span>
+          <div class="btn-row" style="margin-top:8px">
+            <input type="password" id="ag-key-${id}" placeholder="${ph}" autocomplete="off" dir="ltr" style="flex:1;min-width:180px">
+            <button class="btn gold sm" data-key-save="${id}">حفظ</button>
+            <button class="btn sm" data-key-del="${id}">مسح</button></div>
+          <div class="muted" style="font-size:12.5px;margin-top:6px">من <a href="${url}" target="_blank" rel="noopener">${host}</a> (${how})</div></div>`;
+  const AG_KEYS = { gemini: { n: 'gemini_api_key', re: /^AIza[\w-]{30,}$/, bad: 'مفتاح Gemini كيبدا بـ AIza' }, anthropic: { n: 'anthropic_api_key', re: /^sk-ant-[\w-]{20,}$/, bad: 'مفتاح Claude كيبدا بـ sk-ant-' } };
   function bindAgentCard() {
     const Sy = window.W777_SYNC;
     const save = async patch => {
@@ -2453,28 +2461,30 @@
     };
     const ai = $('#ag-ai');
     if (ai) ai.onclick = async () => {
-      if (!agAI() && !(await confirmBox('تشعيل Claude كيحتاج مفتاح Claude محفوظ (الخانة 🔑 لتحت) وكيتخلص على كل سؤال. نشعلو؟', 'شعل', false))) return;
+      if (!agAI() && !(await confirmBox('الوكيل الذكي كيحتاج مفتاح محفوظ: Gemini (فابور) ولا Claude (مدفوع). نشعلو؟', 'شعل', false))) return;
       await save({ ai_enabled: !agAI() });
     };
-    const st = $('#ag-key-st');
-    const setKey = async v => {
-      const r = await Sy.request('/rest/v1/rpc/w777_set_secret', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: 'anthropic_api_key', v }) });
-      if (!r.ok) throw new Error((await r.text()).slice(0, 120));
-      return r.json();
-    };
-    if (st) {
-      Sy.request('/rest/v1/rpc/w777_has_secret', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: 'anthropic_api_key' }) })
-        .then(r => r.ok ? r.json() : null).then(ok => { st.textContent = ok === true ? '— 🟢 محفوظ' : ok === false ? '— ⚪ ما كاينش' : ''; }).catch(() => { st.textContent = ''; });
-      $('#ag-key-save').onclick = async () => {
-        const v = $('#ag-key').value.trim();
-        if (!/^sk-ant-[\w-]{20,}$/.test(v)) return toast('المفتاح خاصو يبدا بـ sk-ant-', 3500);
-        try { await setKey(v); $('#ag-key').value = ''; st.textContent = '— 🟢 محفوظ'; toast('المفتاح تسجل ✓ دابا شعل Claude'); } catch (er) { toast('تعذر: ' + er.message, 4000); }
+    const ls = $('#ag-lang-set');
+    if (ls) ls.onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } if (AG.open) { agClose(); agOpen(); } toast('تم ✓'); };
+    const rpc = (fn, body) => Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const setKey = async (n, v) => { const r = await rpc('w777_set_secret', { n, v }); if (!r.ok) throw new Error((await r.text()).slice(0, 120)); return r.json(); };
+    Object.entries(AG_KEYS).forEach(([id, k]) => {
+      const st = $('#ag-key-st-' + id); if (!st) return;
+      rpc('w777_has_secret', { n: k.n }).then(r => r.ok ? r.json() : null)
+        .then(ok => { st.textContent = ok === true ? '— 🟢 محفوظ' : ok === false ? '— ⚪ ما كاينش' : ''; }).catch(() => { st.textContent = ''; });
+      $(`[data-key-save="${id}"]`).onclick = async () => {
+        const inp = $('#ag-key-' + id), v = inp.value.trim();
+        if (!k.re.test(v)) return toast(k.bad, 3500);
+        try {
+          await setKey(k.n, v); inp.value = ''; st.textContent = '— 🟢 محفوظ';
+          if (!agAI() && await confirmBox('المفتاح تسجل ✓ نشعلو الوكيل الذكي دابا؟', 'شعل', false)) await save({ ai_enabled: true }); else toast('المفتاح تسجل ✓');
+        } catch (er) { toast('تعذر: ' + er.message, 4000); }
       };
-      $('#ag-key-del').onclick = async () => {
-        if (!(await confirmBox('نمسحو المفتاح؟ الوكيل غادي يرجع للوضع المجاني.', 'مسح', true))) return;
-        try { await setKey(''); st.textContent = '— ⚪ ما كاينش'; if (agAI()) await save({ ai_enabled: false }); else toast('تمسح ✓'); } catch (er) { toast('تعذر: ' + er.message, 4000); }
+      $(`[data-key-del="${id}"]`).onclick = async () => {
+        if (!(await confirmBox('نمسحو هاد المفتاح؟', 'مسح', true))) return;
+        try { await setKey(k.n, ''); st.textContent = '— ⚪ ما كاينش'; toast('تمسح ✓'); } catch (er) { toast('تعذر: ' + er.message, 4000); }
       };
-    }
+    });
     const rn = $('#ag-rename');
     if (rn) rn.onclick = () => modal(`<h3>اسم الوكيل</h3><form id="agn" class="form-grid">${fInput('name', 'الاسم', (AG.cfg && AG.cfg.name) || '')}</form><div class="btn-row" style="margin-top:12px"><button class="btn gold" id="agn-ok">حفظ</button></div>`, (box, close) => {
       $('#agn-ok', box).onclick = async () => { const v = collect($('#agn', box)).name; if (v) { close(); await save({ name: v }); } };
