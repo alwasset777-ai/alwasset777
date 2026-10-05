@@ -2077,7 +2077,41 @@
     b.onclick = () => (AG.open ? agClose() : agOpen());
     agLoadCfg();
   }
-  function agClose() { AG.open = false; const p = $('#agent-panel'); if (p) p.remove(); }
+  // ---------- الميكروفون (التعرف على الصوت ديال المتصفح — فابور) ----------
+  const agSR = () => window.SpeechRecognition || window.webkitSpeechRecognition;
+  const AG_SR_LANG = { darija: 'ar-MA', ar: 'ar-SA', fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT' };
+  const agMicSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  let agRec = null;
+  function agListen() {
+    const SR = agSR(), mic = $('#ag-mic'), ta = $('#ag-text');
+    if (!SR || !mic) return;
+    if (agRec) { agRec.stop(); return; }
+    const rec = new SR();
+    rec.lang = AG_SR_LANG[agLang()] || 'ar-MA';
+    rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    let finalText = '';
+    rec.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript; else interim += r[0].transcript;
+      }
+      ta.value = (finalText + interim).trim();
+    };
+    rec.onerror = e => {
+      const m = { 'not-allowed': '🎤 عطي الإذن للميكروفون من إعدادات المتصفح', 'no-speech': '🎤 ما سمعت والو، عاود', network: '🎤 خاص الإنترنت باش يخدم الصوت' }[e.error];
+      if (m) toast(m, 3500);
+    };
+    rec.onend = () => {
+      agRec = null; mic.classList.remove('on'); ta.placeholder = agT().ph;
+      const v = (finalText || ta.value).trim();
+      if (v && !AG.busy) { ta.value = ''; agSend(v); }
+    };
+    try { rec.start(); agRec = rec; mic.classList.add('on'); ta.value = ''; ta.placeholder = '🎤 …'; }
+    catch (e) { toast('🎤 ' + e.message); }
+  }
+  function agClose() {
+    if (agRec) { try { agRec.abort(); } catch (e) { /* */ } agRec = null; } AG.open = false; const p = $('#agent-panel'); if (p) p.remove(); }
   function agOpen() {
     AG.open = true;
     const t = agT(), L = AG_LANGS.find(x => x.id === agLang()) || AG_LANGS[0];
@@ -2090,7 +2124,7 @@
         <button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
-      <form class="ag-input" id="ag-form"><textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
+      <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
     document.body.appendChild(p);
     $('#ag-close').onclick = agClose;
     $('#ag-new').onclick = () => { AG.history = []; AG.view = []; agRender(); };
@@ -2098,6 +2132,7 @@
     const ta = $('#ag-text');
     ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
     $('#ag-form').onsubmit = e => { e.preventDefault(); const v = ta.value.trim(); if (v && !AG.busy) { ta.value = ''; agSend(v); } };
+    const mic = $('#ag-mic'); if (mic) mic.onclick = agListen;
     agRender();
     setTimeout(() => ta.focus(), 50);
   }

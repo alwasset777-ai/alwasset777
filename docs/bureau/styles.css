@@ -557,3 +557,6 @@ a.chip { text-decoration: none; }
 .ag-stats span { background: var(--surface-2); border-radius: 10px; padding: 6px 8px; font-size: 12.5px; }
 .ag-stats b { font-size: 16px; display: block; }
 .ag-msg.bot > div { max-width: 100%; min-width: 0; }
+.ag-mic { flex: none; width: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
+.ag-mic.on { background: #dc2626; color: #fff; border-color: #dc2626; animation: agpulse 1.2s infinite; }
+@keyframes agpulse { 0% { box-shadow: 0 0 0 0 rgba(220,38,38,.55); } 70% { box-shadow: 0 0 0 12px rgba(220,38,38,0); } 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); } }
