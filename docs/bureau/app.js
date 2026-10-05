@@ -1754,6 +1754,8 @@
           </div>
         </div>
 
+        ${agentSettingsCard()}
+
         ${EMBED || S.role === 'agency' ? '' : `<div class="card card-pad" id="partners-card">
           <h3 class="section-title">🤝 الوكالات الشريكة</h3>
           <p class="muted" style="margin-top:0">زيد وكالة وعطيها رابط خاص بيها. منو تقدر تزيد العقارات ديالها، وكيوصلو عندك فـ «العقارات» بسمية الوكالة.</p>
@@ -1807,7 +1809,7 @@
         <p class="muted" style="text-align:center;font-size:12.5px">مكتب الوسيط 777 — الإصدار 1.0 · يعمل بدون إنترنت</p>
       </div>`;
 
-    if (!EMBED) { bindCloudCard(); if (S.role !== 'agency') renderPartners(); }
+    if (!EMBED) { bindCloudCard(); bindAgentCard(); if (S.role !== 'agency') renderPartners(); }
     $('#sform').onsubmit = async e => {
       e.preventDefault();
       Object.assign(S.settings, collect(e.target), { updatedAt: new Date().toISOString() });
@@ -2025,6 +2027,268 @@
     });
     btn.onclick = () => { Sy.syncNow(); toast('جاري المزامنة…'); };
     paint(Sy.status());
+  }
+
+  /* ============================================================
+     الوكيل الذكي 🤖 (أفاتار بصورة المدير) — Claude عبر Supabase Edge Function
+     الأدوات كتخدم هنا فالجهاز، على بيانات الحساب اللي داخل.
+     ============================================================ */
+  const AG_LANGS = [
+    { id: 'darija', l: 'الدارجة', dir: 'rtl' }, { id: 'ar', l: 'العربية', dir: 'rtl' }, { id: 'fr', l: 'Français', dir: 'ltr' },
+    { id: 'en', l: 'English', dir: 'ltr' }, { id: 'es', l: 'Español', dir: 'ltr' }, { id: 'it', l: 'Italiano', dir: 'ltr' },
+  ];
+  const AG_T = {
+    darija: { hi: 'مرحبا! أنا المساعد ديال الوسيط 777. شنو نقدر نعاونك؟', ph: 'كتب سؤالك…', send: 'صيفط', fresh: 'محادثة جديدة', think: 'كنخدم…', login: 'دخل بالحساب ديالك أولا (الإعدادات ← المزامنة).', nokey: 'الوكيل مازال ما تفعّلش: خاص المدير يزيد مفتاح Claude فـ Supabase.', quota: 'وصلتي للحد اليومي ديال الرسائل. رجع غدا.', err: 'وقع مشكل، عاود من بعد.', s: ['شنو المواعيد ديال اليوم؟', 'قلب ليا على شقة للبيع فمرجان تحت 700 ألف', 'شكون الزبناء اللي كيناسبهم آخر عقار؟'] },
+    ar: { hi: 'مرحبا! أنا مساعد الوسيط 777. كيف يمكنني مساعدتك؟', ph: 'اكتب سؤالك…', send: 'إرسال', fresh: 'محادثة جديدة', think: 'جارٍ العمل…', login: 'سجّل الدخول أولا (الإعدادات ← المزامنة).', nokey: 'المساعد غير مفعّل بعد: يجب على المدير إضافة مفتاح Claude في Supabase.', quota: 'بلغت الحد اليومي من الرسائل.', err: 'حدث خطأ، أعد المحاولة لاحقا.', s: ['ما هي مواعيد اليوم؟', 'ابحث عن شقة للبيع في مرجان بأقل من 700 ألف درهم', 'ما هي إحصائيات المكتب؟'] },
+    fr: { hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Comment puis-je vous aider ?', ph: 'Écrivez votre question…', send: 'Envoyer', fresh: 'Nouvelle conversation', think: 'Je travaille…', login: 'Connectez-vous d’abord (Paramètres → Synchronisation).', nokey: 'L’assistant n’est pas encore activé : l’administrateur doit ajouter la clé Claude dans Supabase.', quota: 'Limite quotidienne atteinte.', err: 'Une erreur est survenue, réessayez.', s: ['Quels sont les rendez-vous du jour ?', 'Cherche un appartement à vendre à Marjane sous 700 000 DH', 'Statistiques de l’agence'] },
+    en: { hi: 'Hello! I’m the Al Wasset 777 assistant. How can I help?', ph: 'Type your question…', send: 'Send', fresh: 'New chat', think: 'Working…', login: 'Please sign in first (Settings → Sync).', nokey: 'The assistant isn’t activated yet: the admin must add the Claude key in Supabase.', quota: 'Daily message limit reached.', err: 'Something went wrong, try again.', s: ['What are today’s appointments?', 'Find an apartment for sale in Marjane under 700,000 DH', 'Office statistics'] },
+    es: { hi: '¡Hola! Soy el asistente de Al Wasset 777. ¿En qué puedo ayudarte?', ph: 'Escribe tu pregunta…', send: 'Enviar', fresh: 'Nueva conversación', think: 'Trabajando…', login: 'Inicia sesión primero (Ajustes → Sincronización).', nokey: 'El asistente aún no está activado: el administrador debe añadir la clave de Claude en Supabase.', quota: 'Límite diario alcanzado.', err: 'Ha ocurrido un error, inténtalo de nuevo.', s: ['¿Qué citas hay hoy?', 'Busca un piso en venta en Marjane por menos de 700.000 DH', 'Estadísticas de la agencia'] },
+    it: { hi: 'Ciao! Sono l’assistente di Al Wasset 777. Come posso aiutarti?', ph: 'Scrivi la tua domanda…', send: 'Invia', fresh: 'Nuova chat', think: 'Sto lavorando…', login: 'Accedi prima (Impostazioni → Sincronizzazione).', nokey: 'L’assistente non è ancora attivo: l’amministratore deve aggiungere la chiave Claude in Supabase.', quota: 'Limite giornaliero raggiunto.', err: 'Si è verificato un errore, riprova.', s: ['Quali appuntamenti ci sono oggi?', 'Cerca un appartamento in vendita a Marjane sotto 700.000 DH', 'Statistiche dell’agenzia'] },
+  };
+  const AG = { open: false, busy: false, history: [], view: [], cfg: null };
+  const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'darija'; } catch (e) { return 'darija'; } };
+  const agT = () => AG_T[agLang()] || AG_T.darija;
+  function agCfgCached() { try { return JSON.parse(localStorage.getItem('w777_agent_cfg') || 'null'); } catch (e) { return null; } }
+  async function agLoadCfg() {
+    const Sy = window.W777_SYNC;
+    AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد الوسيط 777', photo: null };
+    if (!Sy || !Sy.isOn()) return AG.cfg;
+    try {
+      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,updated_at')).json())[0];
+      if (r) { AG.cfg = r; try { localStorage.setItem('w777_agent_cfg', JSON.stringify(r)); } catch (e) { /* */ } }
+    } catch (e) { /* بدون إنترنت */ }
+    agPaintButton();
+    return AG.cfg;
+  }
+  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png';
+  function agPaintButton() {
+    const b = $('#agent-fab'); if (!b) return;
+    b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
+    const h = $('#agent-head-img'); if (h) h.src = agPhoto();
+  }
+  function setupAgent() {
+    if (EMBED) return;
+    const b = document.createElement('button');
+    b.id = 'agent-fab'; b.className = 'agent-fab'; b.setAttribute('aria-label', 'AI');
+    document.body.appendChild(b);
+    AG.cfg = agCfgCached();
+    agPaintButton();
+    b.onclick = () => (AG.open ? agClose() : agOpen());
+    agLoadCfg();
+  }
+  function agClose() { AG.open = false; const p = $('#agent-panel'); if (p) p.remove(); }
+  function agOpen() {
+    AG.open = true;
+    const t = agT(), L = AG_LANGS.find(x => x.id === agLang()) || AG_LANGS[0];
+    const p = document.createElement('div');
+    p.id = 'agent-panel'; p.className = 'agent-panel'; p.dir = L.dir;
+    p.innerHTML = `
+      <div class="ag-head"><img id="agent-head-img" src="${agPhoto()}" alt="">
+        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>AI · Claude</small></div>
+        <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
+        <button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
+      <div class="ag-body" id="ag-body"></div>
+      <form class="ag-input" id="ag-form"><textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
+    document.body.appendChild(p);
+    $('#ag-close').onclick = agClose;
+    $('#ag-new').onclick = () => { AG.history = []; AG.view = []; agRender(); };
+    $('#ag-lang').onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } agClose(); agOpen(); };
+    const ta = $('#ag-text');
+    ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
+    $('#ag-form').onsubmit = e => { e.preventDefault(); const v = ta.value.trim(); if (v && !AG.busy) { ta.value = ''; agSend(v); } };
+    agRender();
+    setTimeout(() => ta.focus(), 50);
+  }
+  // نص بسيط: **عريض** + سطور
+  const agFmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+  function agRender() {
+    const body = $('#ag-body'); if (!body) return;
+    const t = agT();
+    const items = AG.view.length ? AG.view : [{ who: 'bot', text: t.hi }];
+    body.innerHTML = items.map(m => m.who === 'tool'
+      ? `<div class="ag-tool">⚙️ ${esc(m.text)}</div>`
+      : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div>${agFmt(m.text)}</div></div>`).join('')
+      + (!AG.view.length ? `<div class="ag-sugg">${t.s.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
+      + (AG.busy ? `<div class="ag-msg bot"><img src="${agPhoto()}" alt=""><div class="ag-dots">${esc(t.think)}<span>.</span><span>.</span><span>.</span></div></div>` : '');
+    $$('.ag-sugg button', body).forEach(b => b.onclick = () => agSend(b.textContent));
+    body.scrollTop = body.scrollHeight;
+  }
+  async function agCall() {
+    const Sy = window.W777_SYNC;
+    const ctx = { today: today(), agency: S.role === 'agency' ? myAgencyName() : S.settings.officeName, role: S.role || 'office', page: location.hash || '#/' };
+    const res = await Sy.request('/functions/v1/w777-agent', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: AG.history, lang: agLang(), ctx }),
+    }).catch(e => { throw e; });
+    return res.json();
+  }
+  async function agSend(text) {
+    const Sy = window.W777_SYNC, t = agT();
+    AG.view.push({ who: 'me', text });
+    if (!Sy || !Sy.isOn()) { AG.view.push({ who: 'bot', text: t.login }); agRender(); return; }
+    AG.history.push({ role: 'user', content: text });
+    AG.busy = true; agRender();
+    try {
+      for (let step = 0; step < 8; step++) {
+        let r;
+        try { r = await agCall(); } catch (e) {
+          const m = String(e.message || e);
+          AG.view.push({ who: 'bot', text: /no_key/.test(m) ? t.nokey : /quota/.test(m) ? t.quota : t.err });
+          AG.history.pop(); break;
+        }
+        if (!r || !r.content) { AG.view.push({ who: 'bot', text: t.err }); AG.history.pop(); break; }
+        AG.history.push({ role: 'assistant', content: r.content });
+        const txt = r.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+        if (txt) AG.view.push({ who: 'bot', text: txt });
+        if (r.stop_reason === 'refusal' && !txt) AG.view.push({ who: 'bot', text: t.err });
+        if (r.stop_reason !== 'tool_use') break;
+        const results = [];
+        for (const b of r.content.filter(x => x.type === 'tool_use')) {
+          AG.view.push({ who: 'tool', text: b.name.replace(/_/g, ' ') });
+          agRender();
+          let out, isErr = false;
+          try { out = await agRunTool(b.name, b.input || {}); } catch (e) { out = { error: String(e.message || e) }; isErr = true; }
+          results.push({ type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out).replace(/[\u2066-\u2069]/g, '').slice(0, 12000), ...(isErr ? { is_error: true } : {}) });
+        }
+        AG.history.push({ role: 'user', content: results });
+      }
+    } finally { AG.busy = false; agRender(); }
+  }
+  // ---------- الأدوات (كتخدم على بيانات الجهاز) ----------
+  const agProp = p => ({ ref: p.ref, title: p.title || typeAr(p.type), type: typeAr(p.type), transaction: trxAr(p.transaction), city: p.city, district: p.district, price: priceText(p), area_m2: areaOf(p), bedrooms: (p.specs || {}).bedrooms || null, status: (PSTATUS[p.status] || {}).ar || p.status });
+  const agReq = r => ({ ref: r.ref, client: (r.client || {}).name, phone: (r.client || {}).phone, transaction: trxAr(r.transaction), types: (r.types || []).map(typeAr), city: r.city, districts: r.districts || [], budget_max: r.budgetMax || null, status: (RSTATUS[r.status] || {}).ar || r.status, follow_up: r.followUp || null });
+  const byRef = (list, ref) => list.find(x => String(x.ref || '').toLowerCase() === String(ref || '').trim().toLowerCase());
+  const agAsk = async msg => confirmBox(msg, '✓', false);
+  async function agRunTool(name, a) {
+    const lim = Math.min(num(a.limit) || 10, 25);
+    switch (name) {
+      case 'search_properties': {
+        let list = a.query ? searchProps(a.query) : S.props.slice();
+        const st = a.status || 'available';
+        if (st !== 'all') list = list.filter(p => p.status === st);
+        if (a.transaction) list = list.filter(p => p.transaction === a.transaction);
+        if (a.category) list = list.filter(p => catOf(p.type) === a.category);
+        if (a.city) list = list.filter(p => norm(p.city || '').includes(norm(a.city)));
+        const pr = p => num(p.priceMax) || num(p.priceMin) || 0;
+        if (num(a.price_max)) list = list.filter(p => pr(p) && pr(p) <= num(a.price_max));
+        if (num(a.price_min)) list = list.filter(p => pr(p) >= num(a.price_min));
+        if (num(a.bedrooms_min)) list = list.filter(p => num((p.specs || {}).bedrooms) >= num(a.bedrooms_min));
+        return { total: list.length, results: list.slice(0, lim).map(agProp) };
+      }
+      case 'get_property': {
+        const p = byRef(S.props, a.ref); if (!p) return { error: 'not found' };
+        return Object.assign(agProp(p), { description: p.description, features: p.features, owner: p.owner, notes: p.notes, photos: (p.media || []).filter(m => m.kind === 'photo').length, market: (marketCmp(p) || {}).diff ?? null });
+      }
+      case 'search_requests': {
+        let list = a.query ? searchReqs(a.query) : S.reqs.slice();
+        const st = a.status || 'open';
+        if (st === 'open') list = list.filter(openReq); else if (st !== 'all') list = list.filter(r => r.status === st);
+        return { total: list.length, results: list.slice(0, lim).map(agReq) };
+      }
+      case 'get_request': { const r = byRef(S.reqs, a.ref); return r ? Object.assign(agReq(r), { notes: r.notes, description: r.description, bedrooms_min: r.bedroomsMin, financing: r.financing }) : { error: 'not found' }; }
+      case 'matches_for_request': { const r = byRef(S.reqs, a.ref); if (!r) return { error: 'not found' }; return { results: matchesForReq(r).slice(0, 10).map(x => Object.assign(agProp(x.p), { score: x.m.score })) }; }
+      case 'matches_for_property': { const p = byRef(S.props, a.ref); if (!p) return { error: 'not found' }; return { results: matchesForProp(p).slice(0, 10).map(x => Object.assign(agReq(x.r), { score: x.m.score })) }; }
+      case 'create_request': {
+        const ok = await agAsk(`🤖 زيد طلب جديد: ${a.client_name} — ${trxAr(a.transaction) || a.transaction}${a.city ? ' — ' + a.city : ''}${a.budget_max ? ' — ' + fmt(a.budget_max) + ' د' : ''}؟`);
+        if (!ok) return { cancelled: true };
+        const r = { id: uid(), createdAt: new Date().toISOString(), proposals: {}, status: 'new', priority: 'normal',
+          client: { name: a.client_name, phone: a.phone || '', source: 'المساعد الذكي' }, transaction: a.transaction || 'sale',
+          types: a.property_type ? [a.property_type] : [], city: a.city || S.settings.officeCity || '', districts: a.districts ? String(a.districts).split(/[،,]/).map(x => x.trim()).filter(Boolean) : [],
+          budgetMax: num(a.budget_max) || null, bedroomsMin: a.bedrooms_min ? String(a.bedrooms_min) : '', notes: a.notes || '' };
+        r.ref = await DB.nextRef('DM', maxRef(S.reqs));
+        await DB.saveRec('requests', r); await loadAll();
+        return { created: r.ref, matches: matchesForReq(r).length };
+      }
+      case 'list_appointments': {
+        const from = a.date_from || today(), to = a.date_to || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+        return { results: S.appts.filter(x => x.date >= from && x.date <= to).sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time))
+          .map(x => ({ date: x.date, time: x.time, client: (x.client || {}).name, phone: (x.client || {}).phone, type: APPT_TYPES[x.type] || x.type, place: x.place, status: (APPT_STATUS[x.status] || {}).ar })) };
+      }
+      case 'create_appointment': {
+        const ok = await agAsk(`🤖 زيد موعد: ${a.client_name} — ${a.date} ${a.time}${a.place ? ' — ' + a.place : ''}؟`);
+        if (!ok) return { cancelled: true };
+        const p = a.property_ref && byRef(S.props, a.property_ref), r = a.request_ref && byRef(S.reqs, a.request_ref);
+        const o = { id: uid(), createdAt: new Date().toISOString(), client: { name: a.client_name, phone: a.phone || '' }, date: a.date, time: a.time,
+          type: APPT_TYPES[a.type] ? a.type : 'meeting', remind: String(num(a.remind_minutes) ?? 30), place: a.place || '', status: 'planned', reqId: r ? r.id : '', propId: p ? p.id : '', notes: a.notes || '' };
+        await DB.saveRec('appointments', o); await loadAll();
+        return { created: true, date: o.date, time: o.time };
+      }
+      case 'update_property_status': {
+        const p = byRef(S.props, a.ref); if (!p) return { error: 'not found' };
+        if (!PSTATUS[a.status]) return { error: 'unknown status', allowed: Object.keys(PSTATUS) };
+        const ok = await agAsk(`🤖 بدّل الحالة ديال ${p.ref} إلى «${PSTATUS[a.status].ar}»؟`);
+        if (!ok) return { cancelled: true };
+        p.status = a.status; await DB.saveRec('properties', p); await loadAll();
+        return { updated: p.ref, status: PSTATUS[a.status].ar };
+      }
+      case 'market_price': {
+        const p = { transaction: 'sale', city: a.city, district: a.district || '', type: a.property_type || 'apartment', priceMin: a.price, areaTotal: a.area, areaBuilt: a.area };
+        const m = marketCmp(p) || {};
+        return { reference_dh_m2: m.ref ? m.ref.v : null, where: m.ref ? m.ref.where : null, price_dh_m2: m.ppm ? Math.round(m.ppm) : null, diff_percent: m.diff ?? null, market_value: m.est ? Math.round(m.est) : null, official_trend: trendOf(a.city, p.type) };
+      }
+      case 'office_stats': {
+        const avail = S.props.filter(p => p.status === 'available'), open = S.reqs.filter(openReq);
+        let strong = 0; open.forEach(r => matchesForReq(r).forEach(x => { if (x.m.score >= 75) strong++; }));
+        return { properties_total: S.props.length, available: avail.length, open_requests: open.length, strong_matches: strong,
+          appointments_today: S.appts.filter(x => x.date === today() && x.status === 'planned').length,
+          followups_due: open.filter(r => r.followUp && r.followUp <= today()).length };
+      }
+      case 'network_search': {
+        if (!inNetwork()) return { error: 'not a network member' };
+        let list = await loadNetwork();
+        const tk = tokens(a.query || '');
+        list = list.filter(x => (!a.city || norm(x.city || '').includes(norm(a.city))) && (!a.transaction || x.trx === a.transaction)
+          && (!tk.length || hit(norm([x.agency, (x.data || {}).title, typeAr(x.type), (x.data || {}).district, x.city].join(' ')), tk)));
+        return { total: list.length, results: list.slice(0, lim).map(x => ({ agency: x.agency, agency_phone: x.phone, ref: (x.data || {}).ref, type: typeAr(x.type), city: x.city, district: (x.data || {}).district, price: priceText(netAsProp(x)) })) };
+      }
+      case 'open_page': {
+        const pg = a.page, ref = a.ref;
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', contracts: '#/contracts', learn: '#/learn', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
+        else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
+        else if (map[pg]) location.hash = map[pg];
+        else return { error: 'unknown page' };
+        return { opened: pg };
+      }
+      default: return { error: 'unknown tool' };
+    }
+  }
+  // بطاقة الإعدادات: الصورة كيبدلها غير المدير
+  function agentSettingsCard() {
+    if (EMBED) return '';
+    const isAdmin = S.role === 'admin';
+    return `<div class="card card-pad" id="agent-card">
+      <h3 class="section-title">🤖 الوكيل الذكي (AI)</h3>
+      <div style="display:flex;gap:14px;align-items:center">
+        <img src="${agPhoto()}" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--gold)">
+        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b>
+          <div class="muted" style="font-size:13px">الزر ديالو لتحت على اليسار. كل شريك كيختار اللغة ديالو من داخل المحادثة.</div></div></div>
+      ${isAdmin ? `<div class="btn-row" style="margin-top:12px">
+        <label class="btn gold sm">${ic('camera', 15)} بدّل الصورة<input type="file" id="ag-photo" accept="image/*" hidden></label>
+        <button class="btn sm" id="ag-rename">${ic('edit', 15)} بدّل الاسم</button></div>
+        <p class="muted" style="font-size:12.5px;margin-bottom:0">الصورة والاسم كيبانو لجميع الوكالات. غير نتا (المدير) اللي يقدر يبدلهم.</p>` : ''}
+    </div>`;
+  }
+  function bindAgentCard() {
+    const Sy = window.W777_SYNC;
+    const save = async patch => {
+      await Sy.request('/rest/v1/w777_agent_config?id=eq.1', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(patch, { updated_at: new Date().toISOString() })) });
+      await agLoadCfg(); toast('تم ✓'); viewSettings();
+    };
+    const f = $('#ag-photo');
+    if (f) f.onchange = async e => {
+      const file = e.target.files[0]; if (!file) return;
+      try {
+        const out = await compressImage(file, 320, 0.82);
+        const blob = out.blob || out;
+        const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+        await save({ photo: dataUrl });
+      } catch (er) { toast('تعذر: ' + er.message, 4000); }
+    };
+    const rn = $('#ag-rename');
+    if (rn) rn.onclick = () => modal(`<h3>اسم الوكيل</h3><form id="agn" class="form-grid">${fInput('name', 'الاسم', (AG.cfg && AG.cfg.name) || '')}</form><div class="btn-row" style="margin-top:12px"><button class="btn gold" id="agn-ok">حفظ</button></div>`, (box, close) => {
+      $('#agn-ok', box).onclick = async () => { const v = collect($('#agn', box)).name; if (v) { close(); await save({ name: v }); } };
+    });
   }
 
   /* ============================================================
@@ -3430,6 +3694,7 @@
     cleanOrphans();
     setupSearch();
     setupFab();
+    setupAgent();
     setupSyncUi();
     window.addEventListener('hashchange', route);
     await route();
