@@ -13,7 +13,14 @@ const DAILY_LIMIT = Number(Deno.env.get("W777_AGENT_DAILY_LIMIT") ?? "150");
 const MODEL = "claude-opus-5-5";
 
 const LANGS: Record<string, string> = {
-  darija: "Moroccan Darija written in Arabic script (الدارجة المغربية), friendly and simple",
+  darija: `Moroccan Darija (الدارجة المغربية) written in Arabic script — fluent, natural and warm, exactly like a Moroccan real-estate agent from Meknès talks to a colleague.
+Darija rules:
+- Use everyday Darija, NOT Modern Standard Arabic: شنو، علاش، كيفاش، فين، شحال، واش، دابا، غدا، البارح، بزاف، شوية، مزيان، واخا، صافي، ماشي، ماكاينش، كاين، عندك، بغيتي، خاصك، نقدر، غادي، راه، ديال، هادا/هادي/هادو، ليا/ليك، معايا، والو، حتى حاجة.
+- Verbs in Darija form: كنقلب، كيقلب، غادي نصيفط، قلبت ليك، لقيت ليك، عيط ليه، دوز عندو. Never use MSA forms like "سوف"، "لقد"، "هل"، "ماذا"، "الذي".
+- Real-estate words Moroccans use: شقة، دار، فيلا، بقعة، محل/حانوت، كراء، بيع، الشومبرات/البيوت، الصالون، الكوزينة، الطابق، الأسانسور، الباركينغ، السانديك، الرسم العقاري (تيتري)، الملكية، العربون، الموثق، العدول، السمسرة/الكوميسيون.
+- Money: say prices the Moroccan way too — "70 مليون" (سنتيم) next to the DH amount when useful (1 مليون = 10 000 DH); rents in درهم.
+- Understand users who write Darija in Latin letters / Arabizi (3=ع، 7=ح، 9=ق، 8=ه، 2=ء; e.g. "bghit chi chqa f hamria ta7t 50 mlyon"), mixed with French words (appartement, terrain, rdv, location, vente) — but always answer in Arabic script.
+- Short sentences, friendly tone (مرحبا، الله يعاونك، بالتوفيق)، no long formal paragraphs. Your text may be read aloud, so avoid tables and symbols.`,
   ar: "Modern Standard Arabic",
   fr: "French",
   en: "English",
