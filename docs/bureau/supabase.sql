@@ -205,3 +205,22 @@ begin
 end $$;
 revoke execute on function public.w777_agent_hit(uuid, int) from public, anon, authenticated;
 alter table public.w777_agent_config add column if not exists ai_enabled boolean not null default false;
+
+-- ============================================================
+-- مفتاح Claude: كيتسجل من التطبيق (المدير فقط) وما كيتقراش من الواجهة
+-- ============================================================
+create table if not exists public.w777_secrets (name text primary key, value text not null, updated_at timestamptz not null default now());
+alter table public.w777_secrets enable row level security;
+revoke all on public.w777_secrets from anon, authenticated;
+create or replace function public.w777_set_secret(n text, v text) returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  if n not in ('anthropic_api_key') then raise exception 'bad name'; end if;
+  if v is null or length(trim(v)) = 0 then delete from w777_secrets where name = n; return false; end if;
+  insert into w777_secrets(name, value, updated_at) values (n, trim(v), now()) on conflict (name) do update set value = excluded.value, updated_at = now();
+  return true;
+end $$;
+create or replace function public.w777_has_secret(n text) returns boolean language sql stable security definer set search_path = public as $$
+  select w777_is_admin() and exists(select 1 from w777_secrets where name = n) $$;
+revoke execute on function public.w777_set_secret(text, text) from public, anon;
+grant execute on function public.w777_set_secret(text, text), public.w777_has_secret(text) to authenticated;

@@ -2425,7 +2425,14 @@
         <label class="btn gold sm">${ic('camera', 15)} بدّل الصورة<input type="file" id="ag-photo" accept="image/*" hidden></label>
         <button class="btn sm" id="ag-rename">${ic('edit', 15)} بدّل الاسم</button>
         <button class="btn sm" id="ag-ai">${agAI() ? '🟢 Claude مفعّل (مدفوع) — طفيه' : '⚪ الوضع المجاني — شعل Claude (مدفوع)'}</button></div>
-        <p class="muted" style="font-size:12.5px;margin-bottom:0">الصورة والاسم كيبانو لجميع الوكالات. غير نتا (المدير) اللي يقدر يبدلهم.</p>` : ''}
+        <p class="muted" style="font-size:12.5px">الصورة والاسم كيبانو لجميع الوكالات. غير نتا (المدير) اللي يقدر يبدلهم.</p>
+        <div style="border-top:1px solid var(--line);padding-top:12px">
+          <b>🔑 مفتاح Claude</b> <span id="ag-key-st" class="muted" style="font-size:13px">…</span>
+          <div class="btn-row" style="margin-top:8px">
+            <input type="password" id="ag-key" placeholder="sk-ant-…" autocomplete="off" dir="ltr" style="flex:1;min-width:180px">
+            <button class="btn gold sm" id="ag-key-save">حفظ المفتاح</button>
+            <button class="btn sm" id="ag-key-del">مسح</button></div>
+          <p class="muted" style="font-size:12.5px;margin-bottom:0">خود المفتاح من <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (API Keys → Create Key). كيتسجل مخبّي فـ Supabase، حتى واحد ما يقدر يقراه من التطبيق.</p></div>` : ''}
     </div>`;
   }
   function bindAgentCard() {
@@ -2446,9 +2453,28 @@
     };
     const ai = $('#ag-ai');
     if (ai) ai.onclick = async () => {
-      if (!agAI() && !(await confirmBox('تشعيل Claude كيحتاج المفتاح ANTHROPIC_API_KEY فـ Supabase وكيتخلص على كل سؤال. نشعلو؟', 'شعل', false))) return;
+      if (!agAI() && !(await confirmBox('تشعيل Claude كيحتاج مفتاح Claude محفوظ (الخانة 🔑 لتحت) وكيتخلص على كل سؤال. نشعلو؟', 'شعل', false))) return;
       await save({ ai_enabled: !agAI() });
     };
+    const st = $('#ag-key-st');
+    const setKey = async v => {
+      const r = await Sy.request('/rest/v1/rpc/w777_set_secret', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: 'anthropic_api_key', v }) });
+      if (!r.ok) throw new Error((await r.text()).slice(0, 120));
+      return r.json();
+    };
+    if (st) {
+      Sy.request('/rest/v1/rpc/w777_has_secret', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: 'anthropic_api_key' }) })
+        .then(r => r.ok ? r.json() : null).then(ok => { st.textContent = ok === true ? '— 🟢 محفوظ' : ok === false ? '— ⚪ ما كاينش' : ''; }).catch(() => { st.textContent = ''; });
+      $('#ag-key-save').onclick = async () => {
+        const v = $('#ag-key').value.trim();
+        if (!/^sk-ant-[\w-]{20,}$/.test(v)) return toast('المفتاح خاصو يبدا بـ sk-ant-', 3500);
+        try { await setKey(v); $('#ag-key').value = ''; st.textContent = '— 🟢 محفوظ'; toast('المفتاح تسجل ✓ دابا شعل Claude'); } catch (er) { toast('تعذر: ' + er.message, 4000); }
+      };
+      $('#ag-key-del').onclick = async () => {
+        if (!(await confirmBox('نمسحو المفتاح؟ الوكيل غادي يرجع للوضع المجاني.', 'مسح', true))) return;
+        try { await setKey(''); st.textContent = '— ⚪ ما كاينش'; if (agAI()) await save({ ai_enabled: false }); else toast('تمسح ✓'); } catch (er) { toast('تعذر: ' + er.message, 4000); }
+      };
+    }
     const rn = $('#ag-rename');
     if (rn) rn.onclick = () => modal(`<h3>اسم الوكيل</h3><form id="agn" class="form-grid">${fInput('name', 'الاسم', (AG.cfg && AG.cfg.name) || '')}</form><div class="btn-row" style="margin-top:12px"><button class="btn gold" id="agn-ok">حفظ</button></div>`, (box, close) => {
       $('#agn-ok', box).onclick = async () => { const v = collect($('#agn', box)).name; if (v) { close(); await save({ name: v }); } };
