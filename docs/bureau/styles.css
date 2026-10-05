@@ -560,3 +560,37 @@ a.chip { text-decoration: none; }
 .ag-mic { flex: none; width: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
 .ag-mic.on { background: #dc2626; color: #fff; border-color: #dc2626; animation: agpulse 1.2s infinite; }
 @keyframes agpulse { 0% { box-shadow: 0 0 0 0 rgba(220,38,38,.55); } 70% { box-shadow: 0 0 0 12px rgba(220,38,38,0); } 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); } }
+
+/* ===== الوكيل: الصورة كخلفية + أفاتار 3D كيهضر ===== */
+.agent-panel { height: min(680px, calc(100vh - 150px)); }
+.ag-body { position: relative; background:
+  linear-gradient(color-mix(in srgb, var(--bg) 88%, transparent), color-mix(in srgb, var(--bg) 93%, transparent)),
+  var(--ag-photo) center 20% / cover no-repeat; }
+.ag-stage { position: relative; flex: none; height: 168px; overflow: hidden; display: grid; place-items: center; perspective: 700px; cursor: pointer;
+  background: #0b0b0b; border-bottom: 1px solid #000; transition: height .35s ease; touch-action: pan-y; }
+.ag-stage::before { content: ''; position: absolute; inset: -20px; background: var(--ag-photo) center 25% / cover no-repeat; filter: blur(18px) brightness(.45) saturate(1.2); transform: scale(1.1); }
+.ag-stage::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 120%, rgba(212,160,23,.35), transparent 60%); pointer-events: none; }
+.ag-3d { --rx: 0deg; --ry: 0deg; position: relative; z-index: 1; width: 124px; height: 124px; border-radius: 50%;
+  transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)) translateZ(0);
+  transition: transform .25s ease-out, width .35s, height .35s;
+  box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 0 3px var(--gold), 0 0 0 7px rgba(212,160,23,.25);
+  animation: agbreath 4.5s ease-in-out infinite; }
+.ag-3d img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; background: #fff; transform: translateZ(18px) scale(1.02); }
+.ag-gloss { position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at calc(35% + var(--ry) * 1.5) calc(25% - var(--rx) * 1.5), rgba(255,255,255,.45), transparent 45%),
+              radial-gradient(circle at 50% 110%, rgba(0,0,0,.45), transparent 55%); transform: translateZ(19px); }
+@keyframes agbreath { 0%, 100% { translate: 0 0; scale: 1; } 50% { translate: 0 -3px; scale: 1.015; } }
+.ag-wave { position: absolute; z-index: 1; bottom: 10px; display: flex; gap: 4px; align-items: flex-end; height: 18px; opacity: 0; transition: opacity .2s; }
+.ag-wave span { width: 4px; height: 4px; border-radius: 2px; background: var(--gold); }
+.ag-stage.talk .ag-wave { opacity: 1; }
+.ag-stage.talk .ag-wave span { animation: agwave .7s ease-in-out infinite; }
+.ag-stage.talk .ag-wave span:nth-child(2) { animation-delay: .1s; } .ag-stage.talk .ag-wave span:nth-child(3) { animation-delay: .25s; }
+.ag-stage.talk .ag-wave span:nth-child(4) { animation-delay: .05s; } .ag-stage.talk .ag-wave span:nth-child(5) { animation-delay: .18s; }
+@keyframes agwave { 0%, 100% { height: 4px; } 50% { height: 18px; } }
+.ag-stage.talk .ag-3d { animation: agtalk .9s ease-in-out infinite; box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 0 3px var(--gold), 0 0 22px 8px rgba(212,160,23,.55); }
+@keyframes agtalk { 0%, 100% { translate: 0 0; rotate: 0deg; } 30% { translate: 0 -2px; rotate: -1.2deg; } 70% { translate: 0 1px; rotate: 1deg; } }
+.ag-stage.beat .ag-3d img { animation: agbeat .22s ease-out; }
+@keyframes agbeat { 0% { transform: translateZ(18px) scale(1.02); } 45% { transform: translateZ(24px) scale(1.05, 1.035); } 100% { transform: translateZ(18px) scale(1.02); } }
+.ag-stage.mini { height: 64px; } .ag-stage.mini .ag-3d { width: 48px; height: 48px; } .ag-stage.mini .ag-wave { bottom: 4px; }
+@media (max-height: 640px) { .ag-stage { height: 120px; } .ag-3d { width: 88px; height: 88px; } }
+@media (prefers-reduced-motion: reduce) { .ag-3d, .ag-stage.talk .ag-3d, .ag-stage.talk .ag-wave span { animation: none; } }
