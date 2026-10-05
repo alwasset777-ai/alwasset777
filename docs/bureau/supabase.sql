@@ -204,3 +204,4 @@ begin
   return c;
 end $$;
 revoke execute on function public.w777_agent_hit(uuid, int) from public, anon, authenticated;
+alter table public.w777_agent_config add column if not exists ai_enabled boolean not null default false;
