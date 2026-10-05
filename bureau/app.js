@@ -2077,6 +2077,51 @@
     b.onclick = () => (AG.open ? agClose() : agOpen());
     agLoadCfg();
   }
+  // ---------- الصوت: الوكيل كيجاوب بالهضرة (Speech Synthesis ديال المتصفح — فابور) ----------
+  const agTTS = () => 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  const agVoiceOn = () => { try { return localStorage.getItem('w777_agent_voice') !== '0'; } catch (e) { return true; } };
+  let agTTSReady = false;
+  function agUnlockTTS() { // iPhone: خاص أول نطق يكون من ضغطة
+    if (agTTSReady || !agTTS()) return; agTTSReady = true;
+    try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) { /* */ }
+  }
+  function agVoice(tag) {
+    const vs = speechSynthesis.getVoices(), base = tag.split('-')[0];
+    return vs.find(v => v.lang === tag) || vs.find(v => v.lang.replace('_', '-').startsWith(base + '-')) || vs.find(v => v.lang.startsWith(base)) || null;
+  }
+  const agStage = on => { const st = $('#ag-stage'); if (st) st.classList.toggle('talk', on); };
+  function agHush() { if (agTTS()) { try { speechSynthesis.cancel(); } catch (e) { /* */ } } agStage(false); }
+  function agSpeak(src, isHtml) {
+    if (!agTTS() || !agVoiceOn() || !AG.open) return;
+    let txt = src;
+    if (isHtml) { const d = document.createElement('div'); d.innerHTML = src; $$('.ag-card small, .ag-stats small', d).forEach(x => x.remove()); $$('*', d).forEach(x => x.append(' ')); txt = d.textContent; }
+    txt = String(txt).replace(/\*\*/g, '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, ' ').replace(/[#*_`>|]/g, ' ').replace(/https?:\/\/\S+/g, '').replace(/W777-0*(\d+)/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 600);
+    if (!txt) return;
+    agHush();
+    const tag = AG_SR_LANG[agLang()] || 'ar-MA', u = new SpeechSynthesisUtterance(txt);
+    u.lang = tag; const v = agVoice(tag); if (v) u.voice = v;
+    u.rate = 1; u.pitch = 1;
+    const st = () => $('#ag-stage');
+    u.onstart = () => agStage(true);
+    u.onend = u.onerror = () => agStage(false);
+    // كل كلمة: حركة صغيرة ديال الراس باش يبان كيهضر
+    u.onboundary = () => { const s = st(); if (s) { s.classList.remove('beat'); void s.offsetWidth; s.classList.add('beat'); } };
+    speechSynthesis.speak(u);
+  }
+  if (agTTS()) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch (e) { /* */ } }
+  // ---------- الصورة 3D: كتميل مع الصبع/الفأرة ----------
+  function agTilt(stage, card) {
+    if (!stage || !card) return;
+    const move = (x, y) => {
+      const r = stage.getBoundingClientRect();
+      const rx = ((y - r.top) / r.height - 0.5) * -16, ry = ((x - r.left) / r.width - 0.5) * 22;
+      card.style.setProperty('--rx', rx.toFixed(1) + 'deg'); card.style.setProperty('--ry', ry.toFixed(1) + 'deg');
+    };
+    const reset = () => { card.style.setProperty('--rx', '0deg'); card.style.setProperty('--ry', '0deg'); };
+    stage.addEventListener('pointermove', e => move(e.clientX, e.clientY));
+    stage.addEventListener('pointerleave', reset);
+    stage.addEventListener('click', () => stage.classList.toggle('mini'));
+  }
   // ---------- الميكروفون (التعرف على الصوت ديال المتصفح — فابور) ----------
   const agSR = () => window.SpeechRecognition || window.webkitSpeechRecognition;
   const AG_SR_LANG = { darija: 'ar-MA', ar: 'ar-SA', fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT' };
@@ -2111,17 +2156,22 @@
     catch (e) { toast('🎤 ' + e.message); }
   }
   function agClose() {
+    agHush();
     if (agRec) { try { agRec.abort(); } catch (e) { /* */ } agRec = null; } AG.open = false; const p = $('#agent-panel'); if (p) p.remove(); }
   function agOpen() {
     AG.open = true;
     const t = agT(), L = AG_LANGS.find(x => x.id === agLang()) || AG_LANGS[0];
     const p = document.createElement('div');
     p.id = 'agent-panel'; p.className = 'agent-panel'; p.dir = L.dir;
+    p.style.setProperty('--ag-photo', `url("${agPhoto().replace(/"/g, '%22')}")`);
     p.innerHTML = `
       <div class="ag-head"><img id="agent-head-img" src="${agPhoto()}" alt="">
         <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>${agAI() ? 'AI' : '🆓 ' + esc(lx().limited.split(':')[0].split('：')[0])}</small></div>
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
-        <button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
+        ${agTTS() ? `<button class="ag-x" id="ag-voice" title="🔊">${agVoiceOn() ? '🔊' : '🔇'}</button>` : ''}<button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
+      <div class="ag-stage" id="ag-stage">
+        <div class="ag-3d" id="ag-3d"><img src="${agPhoto()}" alt=""><i class="ag-gloss"></i></div>
+        <div class="ag-wave"><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
       <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
@@ -2131,8 +2181,11 @@
     $('#ag-lang').onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } agClose(); agOpen(); };
     const ta = $('#ag-text');
     ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
-    $('#ag-form').onsubmit = e => { e.preventDefault(); const v = ta.value.trim(); if (v && !AG.busy) { ta.value = ''; agSend(v); } };
-    const mic = $('#ag-mic'); if (mic) mic.onclick = agListen;
+    $('#ag-form').onsubmit = e => { e.preventDefault(); agUnlockTTS(); const v = ta.value.trim(); if (v && !AG.busy) { ta.value = ''; agSend(v); } };
+    const mic = $('#ag-mic'); if (mic) mic.onclick = () => { agUnlockTTS(); agHush(); agListen(); };
+    const vb = $('#ag-voice');
+    if (vb) vb.onclick = () => { const on = !agVoiceOn(); try { localStorage.setItem('w777_agent_voice', on ? '1' : '0'); } catch (e) { /* */ } vb.textContent = on ? '🔊' : '🔇'; if (!on) agHush(); };
+    agTilt($('#ag-stage'), $('#ag-3d'));
     agRender();
     setTimeout(() => ta.focus(), 50);
   }
@@ -2153,7 +2206,7 @@
     if (acts) {
       acts.classList.toggle('hidden', agAI());
       acts.innerHTML = LX_ACTIONS.map(k => `<button type="button" data-k="${k}">${esc(lx()[k])}</button>`).join('');
-      $$('button', acts).forEach(b => b.onclick = () => { AG.view.push({ who: 'me', text: b.textContent }); agLocal(b.textContent, b.dataset.k); });
+      $$('button', acts).forEach(b => b.onclick = () => { agUnlockTTS(); AG.view.push({ who: 'me', text: b.textContent }); agLocal(b.textContent, b.dataset.k); });
     }
     body.scrollTop = body.scrollHeight;
   }
@@ -2173,6 +2226,7 @@
     if (!Sy || !Sy.isOn()) { AG.view.push({ who: 'bot', text: t.login }); agRender(); return; }
     AG.history.push({ role: 'user', content: text });
     AG.busy = true; agRender();
+    let lastTxt = '';
     try {
       for (let step = 0; step < 8; step++) {
         let r;
@@ -2186,7 +2240,7 @@
         if (!r || !r.content) { AG.view.push({ who: 'bot', text: t.err }); AG.history.pop(); break; }
         AG.history.push({ role: 'assistant', content: r.content });
         const txt = r.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-        if (txt) AG.view.push({ who: 'bot', text: txt });
+        if (txt) { AG.view.push({ who: 'bot', text: txt }); lastTxt = txt; }
         if (r.stop_reason === 'refusal' && !txt) AG.view.push({ who: 'bot', text: t.err });
         if (r.stop_reason !== 'tool_use') break;
         const results = [];
@@ -2199,7 +2253,7 @@
         }
         AG.history.push({ role: 'user', content: results });
       }
-    } finally { AG.busy = false; agRender(); }
+    } finally { AG.busy = false; agRender(); if (lastTxt) agSpeak(lastTxt); }
   }
   /* ---------- المساعد المحلي (فابور، بلا AI): أزرار + كلمات مفتاحية فـ 6 لغات ---------- */
   const LX = {
@@ -2310,7 +2364,9 @@
   }
   function agLocal(text, kind) {
     if (!kind) { const hitI = LX_INTENTS.find(([, re]) => re.test(text)); kind = hitI ? hitI[0] : null; }
-    AG.view.push({ who: 'bot', html: lxAnswer(kind, text) });
+    const html = lxAnswer(kind, text);
+    AG.view.push({ who: 'bot', html });
+    agSpeak(html, true);
     agRender();
   }
 
