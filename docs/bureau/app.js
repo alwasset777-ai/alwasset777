@@ -2066,6 +2066,12 @@
     const b = $('#agent-fab'); if (!b) return;
     b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
     const h = $('#agent-head-img'); if (h) h.src = agPhoto();
+    // الصورة الجديدة كتبان حتى فالأفاتار 3D والخلفية ديال المحادثة
+    const p = $('#agent-panel');
+    if (p) {
+      p.style.setProperty('--ag-photo', `url("${agPhoto().replace(/"/g, '%22')}")`);
+      $$('#ag-3d img, .ag-msg.bot img', p).forEach(i => { i.src = agPhoto(); });
+    }
   }
   function setupAgent() {
     if (EMBED) return;
@@ -2186,6 +2192,7 @@
     const vb = $('#ag-voice');
     if (vb) vb.onclick = () => { const on = !agVoiceOn(); try { localStorage.setItem('w777_agent_voice', on ? '1' : '0'); } catch (e) { /* */ } vb.textContent = on ? '🔊' : '🔇'; if (!on) agHush(); };
     agTilt($('#ag-stage'), $('#ag-3d'));
+    agLoadCfg(); // ديما آخر صورة واسم حطهم المدير
     agRender();
     setTimeout(() => ta.focus(), 50);
   }
@@ -2509,7 +2516,7 @@
     if (f) f.onchange = async e => {
       const file = e.target.files[0]; if (!file) return;
       try {
-        const out = await compressImage(file, 320, 0.82);
+        const out = await compressImage(file, 720, 0.85);
         const blob = out.blob || out;
         const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
         await save({ photo: dataUrl });
