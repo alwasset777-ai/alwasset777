@@ -7,7 +7,7 @@
   const D = window.W777_DATA;
   // نسخة مدمجة (صفحة claude.ai): لا طباعة ولا تنزيل ملفات ولا اتصال خارجي
   const EMBED = !!window.W777_EMBED;
-  const LOGO = window.W777_LOGO || 'icons/logo.png?v=2';
+  const LOGO = window.W777_LOGO || 'icons/logo.png?v=3';
   const DB = window.W777_DB;
 
   /* ============================================================
