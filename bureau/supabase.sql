@@ -172,3 +172,35 @@ create policy w777_media_shared on storage.objects for select to authenticated u
 create or replace function public.w777_admin_record(o uuid, i text) returns jsonb language sql stable security definer set search_path=public as
 $$ select data from w777_records where w777_is_admin() and owner = o and kind = 'properties' and id = i $$;
 grant execute on function public.w777_is_admin(), public.w777_can_use(), public.w777_admin_record(uuid, text) to authenticated;
+-- ============================================================
+-- الوكيل الذكي: الإعدادات (الصورة يبدلها غير المدير) + الحصة اليومية
+-- ============================================================
+create table if not exists public.w777_agent_config (
+  id int primary key default 1 check (id = 1),
+  name text not null default 'مساعد الوسيط 777',
+  photo text,
+  updated_at timestamptz not null default now());
+insert into public.w777_agent_config(id) values (1) on conflict do nothing;
+alter table public.w777_agent_config enable row level security;
+drop policy if exists w777_agc_sel on public.w777_agent_config;
+create policy w777_agc_sel on public.w777_agent_config for select to authenticated using (public.w777_can_use());
+drop policy if exists w777_agc_upd on public.w777_agent_config;
+create policy w777_agc_upd on public.w777_agent_config for update to authenticated using (public.w777_is_admin()) with check (public.w777_is_admin());
+
+create table if not exists public.w777_agent_usage (
+  uid uuid not null references auth.users(id) on delete cascade,
+  day date not null default current_date,
+  n int not null default 0,
+  primary key (uid, day));
+alter table public.w777_agent_usage enable row level security;
+drop policy if exists w777_agu_sel on public.w777_agent_usage;
+create policy w777_agu_sel on public.w777_agent_usage for select to authenticated using (uid = auth.uid() or public.w777_is_admin());
+create or replace function public.w777_agent_hit(u uuid, lim int) returns int language plpgsql security definer set search_path = public as $$
+declare c int;
+begin
+  insert into w777_agent_usage(uid, day, n) values (u, current_date, 1)
+  on conflict (uid, day) do update set n = w777_agent_usage.n + 1 returning n into c;
+  if c > lim then return -1; end if;
+  return c;
+end $$;
+revoke execute on function public.w777_agent_hit(uuid, int) from public, anon, authenticated;
