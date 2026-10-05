@@ -63,10 +63,15 @@ Deno.serve(async (req) => {
   const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
   if (req.method !== "POST") return json({ error: "method" }, 405);
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const service = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  let apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) {
+    const { data: sec } = await service.from("w777_secrets").select("value").eq("name", "anthropic_api_key").maybeSingle();
+    apiKey = sec?.value;
+  }
   if (!apiKey) return json({ error: "no_key" }, 503);
 
-  const url = Deno.env.get("SUPABASE_URL")!;
   const auth = req.headers.get("Authorization") ?? "";
   const userDb = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
   const { data: { user } } = await userDb.auth.getUser();
@@ -74,7 +79,6 @@ Deno.serve(async (req) => {
   const { data: allowed } = await userDb.rpc("w777_can_use");
   if (!allowed) return json({ error: "forbidden" }, 403);
 
-  const service = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: used } = await service.rpc("w777_agent_hit", { u: user.id, lim: DAILY_LIMIT });
   if (used === -1) return json({ error: "quota", limit: DAILY_LIMIT }, 429);
 
