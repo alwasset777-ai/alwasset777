@@ -1,5 +1,5 @@
 // الوكيل الذكي ديال الوسيط 777 — Supabase Edge Function
-// كيحفظ مفتاح Claude فالسيرفر، كيتحقق من الحساب والحصة اليومية، وكيعطي الأدوات.
+// كيحفظ المفتاح (Claude مدفوع ولا Gemini فابور) فالسيرفر، كيتحقق من الحساب والحصة اليومية، وكيعطي الأدوات.
 // الأدوات كتنفذ فالتطبيق (على بيانات كل وكالة ديالها) — هنا غير التعريف ديالها.
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -58,6 +58,75 @@ const TOOLS = [
   { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | contracts | learn | ownership | estimate | settings | new_property | new_request"), ref: str("ref when page is property or request") }, ["page"]) },
 ];
 
+// ---------- Gemini (Google AI Studio — فيه مستوى فابور) ----------
+// التطبيق كيبقى يخدم بصيغة Claude (text / tool_use / tool_result)؛ هنا كنترجمو للصيغة ديال Gemini ورجوع.
+const GEMINI_MODELS = [Deno.env.get("W777_GEMINI_MODEL") || "gemini-flash-latest", "gemini-2.5-flash"];
+// deno-lint-ignore no-explicit-any
+type Blk = any;
+const G_TOOLS = [{
+  functionDeclarations: TOOLS.map((t) => ({
+    name: t.name,
+    description: t.description,
+    ...(Object.keys(t.input_schema.properties).length ? { parameters: t.input_schema } : {}),
+  })),
+}];
+function toGemini(messages: Blk[]) {
+  const names = new Map<string, string>();
+  const contents: Blk[] = [];
+  for (const m of messages) {
+    const blocks: Blk[] = typeof m.content === "string" ? [{ type: "text", text: m.content }] : (m.content ?? []);
+    const parts: Blk[] = [];
+    for (const b of blocks) {
+      const sig = b.sig ? { thoughtSignature: b.sig } : {};
+      if (b.type === "text" && b.text) parts.push({ text: b.text, ...sig });
+      else if (b.type === "tool_use") {
+        names.set(b.id, b.name);
+        parts.push({ functionCall: { name: b.name, args: b.input ?? {} }, ...sig });
+      } else if (b.type === "tool_result") {
+        let r: unknown = b.content;
+        try { r = JSON.parse(String(b.content)); } catch { /* نص مقطوع */ }
+        const response = r && typeof r === "object" && !Array.isArray(r) ? r : { result: r };
+        parts.push({ functionResponse: { name: names.get(b.tool_use_id) ?? "tool", response } });
+      }
+    }
+    if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
+  }
+  return contents;
+}
+async function gemini(key: string, system: string, messages: Blk[]) {
+  const payload = JSON.stringify({
+    systemInstruction: { parts: [{ text: system }] },
+    contents: toGemini(messages),
+    tools: G_TOOLS,
+    toolConfig: { functionCallingConfig: { mode: "AUTO" } },
+    generationConfig: { maxOutputTokens: 8192 },
+  });
+  let res: Response | null = null;
+  for (const model of GEMINI_MODELS) {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: payload,
+    });
+    if (res.status !== 404) break;
+  }
+  const data = await res!.json().catch(() => ({}));
+  if (!res!.ok) throw Object.assign(new Error(data?.error?.message ?? `gemini ${res!.status}`), { status: res!.status });
+  const parts: Blk[] = data?.candidates?.[0]?.content?.parts ?? [];
+  const content: Blk[] = [];
+  parts.forEach((p, i) => {
+    const sig = p.thoughtSignature ? { sig: p.thoughtSignature } : {};
+    if (p.functionCall) {
+      content.push({ type: "tool_use", id: `g${Date.now().toString(36)}_${i}`, name: p.functionCall.name, input: p.functionCall.args ?? {}, ...sig });
+    } else if (typeof p.text === "string" && !p.thought) {
+      content.push({ type: "text", text: p.text, ...sig });
+    }
+  });
+  const hasTool = content.some((b) => b.type === "tool_use");
+  if (!content.length) content.push({ type: "text", text: "" });
+  return { content, stop_reason: hasTool ? "tool_use" : content.some((b) => b.text) ? "end_turn" : "refusal", usage: data?.usageMetadata };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -65,12 +134,12 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const service = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  let apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) {
-    const { data: sec } = await service.from("w777_secrets").select("value").eq("name", "anthropic_api_key").maybeSingle();
-    apiKey = sec?.value;
-  }
-  if (!apiKey) return json({ error: "no_key" }, 503);
+  // Claude إلا كان المفتاح ديالو، وإلا Gemini (فابور)
+  const { data: secs } = await service.from("w777_secrets").select("name,value");
+  const sec = (n: string) => (secs ?? []).find((r: { name: string }) => r.name === n)?.value as string | undefined;
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY") || sec("anthropic_api_key");
+  const geminiKey = Deno.env.get("GEMINI_API_KEY") || sec("gemini_api_key");
+  if (!apiKey && !geminiKey) return json({ error: "no_key" }, 503);
 
   const auth = req.headers.get("Authorization") ?? "";
   const userDb = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
@@ -90,6 +159,18 @@ Deno.serve(async (req) => {
   const ctx = body.ctx ?? {};
   const turnInfo = `Reply in ${lang}. Today is ${String(ctx.today ?? "")}. Agency: ${String(ctx.agency ?? "")}. Role: ${String(ctx.role ?? "")}. Current page: ${String(ctx.page ?? "")}.`;
 
+  if (!apiKey) {
+    try {
+      const r = await gemini(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages);
+      return json({ ...r, used, provider: "gemini" });
+    } catch (e) {
+      const st = (e as { status?: number }).status ?? 0;
+      if (st === 429) return json({ error: "busy" }, 429);
+      if (st === 400 || st === 401 || st === 403) return json({ error: "api", status: st, message: String((e as Error).message) }, 502);
+      return json({ error: "server", message: String(e) }, 500);
+    }
+  }
+
   const client = new Anthropic({ apiKey });
   try {
     const resp = await client.beta.messages.create({
@@ -108,7 +189,7 @@ Deno.serve(async (req) => {
       // deno-lint-ignore no-explicit-any
       messages: messages as any,
     });
-    return json({ content: resp.content, stop_reason: resp.stop_reason, usage: resp.usage, used });
+    return json({ content: resp.content, stop_reason: resp.stop_reason, usage: resp.usage, used, provider: "claude" });
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) return json({ error: "busy" }, 429);
     if (e instanceof Anthropic.APIError) return json({ error: "api", status: e.status, message: e.message }, 502);
