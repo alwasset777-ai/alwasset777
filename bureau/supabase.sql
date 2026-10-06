@@ -224,3 +224,142 @@ create or replace function public.w777_has_secret(n text) returns boolean langua
   select w777_is_admin() and exists(select 1 from w777_secrets where name = n) $$;
 revoke execute on function public.w777_set_secret(text, text) from public, anon;
 grant execute on function public.w777_set_secret(text, text), public.w777_has_secret(text) to authenticated;
+
+-- ============================================================
+-- الشبكة الموسعة: الوسطاء، شركات المقاولات، شركات التشطيب (777 لكل وحدة)
+-- نفس جدول الحسابات ديال الوكالات + نوع الحساب + الدولة
+-- ============================================================
+alter table public.w777_agencies add column if not exists kind text not null default 'agency';
+alter table public.w777_agencies drop constraint if exists w777_agencies_kind_chk;
+alter table public.w777_agencies add constraint w777_agencies_kind_chk check (kind in ('agency', 'broker', 'contractor', 'finishing'));
+alter table public.w777_agencies add column if not exists country text not null default 'المغرب';
+alter table public.w777_agencies add column if not exists city text;
+alter table public.w777_agencies add column if not exists services text;
+alter table public.w777_agencies add column if not exists about text;
+-- 700 وكالة داخل المغرب (001–700) و 77 خارج المغرب (701–777)
+update public.w777_agencies set country = 'خارج المغرب' where kind = 'agency' and code ~ '^\d+$' and code::int between 701 and 777 and country = 'المغرب';
+create or replace function public.w777_ag_guard() returns trigger language plpgsql security definer set search_path=public as
+$$ begin if not w777_is_admin() then new.active := old.active; new.code := old.code; new.email := old.email; new.uid := old.uid; new.kind := old.kind; end if; return new; end $$;
+create or replace function public.w777_my_kind() returns text language sql stable security definer set search_path=public as
+$$ select case when w777_is_admin() then 'admin' else (select kind from w777_agencies where uid = auth.uid() and active) end $$;
+grant execute on function public.w777_my_kind() to authenticated;
+-- الحسابات: W001–W777 (وسيط: wasitNNN@alwasset777.ma)، B001–B777 (مقاولة: btpNNN@…)، F001–F777 (تشطيب: finitionNNN@…)
+-- تتخلق بنفس طريقة الوكالات (auth.users + auth.identities + w777_agencies(kind) + w777_agency_secrets)
+-- وكلمات السر كيشوفها غير المدير من التطبيق (الإدارة ← كل خانة).
+
+-- ============================================================
+-- المشاريع (تمويل) · الهبة · النزاعات · المناسبات · الأخبار
+-- ============================================================
+-- المشاريع: أي مشترك كينشر، كيبان للجميع غير من بعد موافقة المدير
+create table if not exists public.w777_projects (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  owner_name text, title text not null, category text, city text, country text default 'المغرب',
+  amount numeric, contribution text, description text, phone text,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'closed')),
+  admin_note text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+alter table public.w777_projects enable row level security;
+drop policy if exists w777_pj_sel on public.w777_projects;
+create policy w777_pj_sel on public.w777_projects for select to authenticated using (w777_is_admin() or owner = auth.uid() or (status = 'approved' and w777_can_use()));
+drop policy if exists w777_pj_ins on public.w777_projects;
+create policy w777_pj_ins on public.w777_projects for insert to authenticated with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_pj_upd on public.w777_projects;
+create policy w777_pj_upd on public.w777_projects for update to authenticated using (w777_is_admin() or owner = auth.uid()) with check (w777_is_admin() or owner = auth.uid());
+drop policy if exists w777_pj_del on public.w777_projects;
+create policy w777_pj_del on public.w777_projects for delete to authenticated using (w777_is_admin() or owner = auth.uid());
+
+-- الهبة: المشتركين كيقترحو حالات (بلا سمية ولا تصاور)، المدير كيراجع وينشر، والتبرع كيمر عبر مكتب الوسيط
+create table if not exists public.w777_donations (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  owner_name text, title text not null, need text check (need in ('rent', 'buy', 'repair', 'other')), city text,
+  amount numeric, story text, status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'funded', 'closed')),
+  raised numeric default 0, admin_note text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+alter table public.w777_donations enable row level security;
+drop policy if exists w777_dn_sel on public.w777_donations;
+create policy w777_dn_sel on public.w777_donations for select to authenticated using (w777_is_admin() or owner = auth.uid() or (status in ('approved', 'funded') and w777_can_use()));
+drop policy if exists w777_dn_ins on public.w777_donations;
+create policy w777_dn_ins on public.w777_donations for insert to authenticated with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_dn_upd on public.w777_donations;
+create policy w777_dn_upd on public.w777_donations for update to authenticated using (w777_is_admin() or owner = auth.uid()) with check (w777_is_admin() or owner = auth.uid());
+drop policy if exists w777_dn_del on public.w777_donations;
+create policy w777_dn_del on public.w777_donations for delete to authenticated using (w777_is_admin() or owner = auth.uid());
+
+-- النزاعات: خاصة بين المشترك والمدير فقط
+create table if not exists public.w777_disputes (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  owner_name text, category text, title text not null, description text, city text, phone text,
+  specialist text, status text not null default 'new' check (status in ('new', 'escalated', 'in_progress', 'closed')),
+  admin_note text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+alter table public.w777_disputes enable row level security;
+drop policy if exists w777_ds_sel on public.w777_disputes;
+create policy w777_ds_sel on public.w777_disputes for select to authenticated using (w777_is_admin() or owner = auth.uid());
+drop policy if exists w777_ds_ins on public.w777_disputes;
+create policy w777_ds_ins on public.w777_disputes for insert to authenticated with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_ds_upd on public.w777_disputes;
+create policy w777_ds_upd on public.w777_disputes for update to authenticated using (w777_is_admin() or owner = auth.uid()) with check (w777_is_admin() or owner = auth.uid());
+drop policy if exists w777_ds_del on public.w777_disputes;
+create policy w777_ds_del on public.w777_disputes for delete to authenticated using (w777_is_admin() or owner = auth.uid());
+
+-- حارس: غير المدير ما يقدرش يبدل الحالة ولا ملاحظة المدير (إلا «طلب تحويل» ولا «إغلاق»)
+create or replace function public.w777_mod_guard() returns trigger language plpgsql security definer set search_path=public as
+$$ begin
+  new.updated_at := now();
+  if not w777_is_admin() then
+    new.owner := old.owner; new.admin_note := old.admin_note;
+    if tg_table_name = 'w777_disputes' then
+      if new.status not in ('new', 'escalated', 'closed') then new.status := old.status; end if;
+    elsif tg_table_name = 'w777_donations' then
+      new.raised := old.raised;
+      if new.status <> 'closed' then new.status := case when old.status = 'closed' then 'closed' else 'pending' end; end if;
+    else
+      if new.status <> 'closed' then new.status := case when old.status = 'closed' then 'closed' else 'pending' end; end if;
+    end if;
+  end if;
+  return new; end $$;
+create or replace function public.w777_mod_new() returns trigger language plpgsql security definer set search_path=public as
+$$ begin if not w777_is_admin() then new.status := case when tg_table_name = 'w777_disputes' then 'new' else 'pending' end; new.admin_note := null; end if; return new; end $$;
+drop trigger if exists w777_pj_guard on public.w777_projects;
+create trigger w777_pj_guard before update on public.w777_projects for each row execute function public.w777_mod_guard();
+drop trigger if exists w777_pj_new on public.w777_projects;
+create trigger w777_pj_new before insert on public.w777_projects for each row execute function public.w777_mod_new();
+drop trigger if exists w777_dn_guard on public.w777_donations;
+create trigger w777_dn_guard before update on public.w777_donations for each row execute function public.w777_mod_guard();
+drop trigger if exists w777_dn_new on public.w777_donations;
+create trigger w777_dn_new before insert on public.w777_donations for each row execute function public.w777_mod_new();
+drop trigger if exists w777_ds_guard on public.w777_disputes;
+create trigger w777_ds_guard before update on public.w777_disputes for each row execute function public.w777_mod_guard();
+drop trigger if exists w777_ds_new on public.w777_disputes;
+create trigger w777_ds_new before insert on public.w777_disputes for each row execute function public.w777_mod_new();
+
+-- المناسبات العقارية (المدير كيزيد، والتحديث اليومي)
+create table if not exists public.w777_events (
+  id uuid primary key default gen_random_uuid(), title text not null, kind text, starts date, ends date,
+  city text, country text default 'المغرب', venue text, url text, description text, source text,
+  created_at timestamptz not null default now(), unique (title, starts));
+alter table public.w777_events enable row level security;
+drop policy if exists w777_ev_sel on public.w777_events;
+create policy w777_ev_sel on public.w777_events for select to authenticated using (w777_can_use());
+drop policy if exists w777_ev_adm on public.w777_events;
+create policy w777_ev_adm on public.w777_events for all to authenticated using (w777_is_admin()) with check (w777_is_admin());
+
+-- الأخبار العقارية (المغرب + العالم) — كتتجدد كل نهار
+create table if not exists public.w777_news (
+  id uuid primary key default gen_random_uuid(), title text not null, summary text, url text unique, source text,
+  scope text not null default 'ma' check (scope in ('ma', 'world')), lang text default 'ar', published date,
+  created_at timestamptz not null default now());
+create index if not exists w777_news_pub on public.w777_news(published desc);
+alter table public.w777_news enable row level security;
+drop policy if exists w777_nw_sel on public.w777_news;
+create policy w777_nw_sel on public.w777_news for select to authenticated using (w777_can_use());
+drop policy if exists w777_nw_adm on public.w777_news;
+create policy w777_nw_adm on public.w777_news for all to authenticated using (w777_is_admin()) with check (w777_is_admin());
+
+-- التحديث اليومي ديال الأخبار: الدالة w777-news (supabase/functions/w777-news) كتنادى مرتين فالنهار
+-- (المفتاح news_cron_key كيتحط فـ w777_secrets — ما كيتكتبش هنا)
+-- create extension if not exists pg_cron; create extension if not exists pg_net;
+-- select cron.schedule('w777-news-daily', '7 5,17 * * *', $$ select net.http_post(
+--   url := 'https://<project>.supabase.co/functions/v1/w777-news',
+--   headers := jsonb_build_object('Content-Type','application/json','x-cron-key',(select value from public.w777_secrets where name='news_cron_key')),
+--   body := '{}'::jsonb, timeout_milliseconds := 60000) $$);

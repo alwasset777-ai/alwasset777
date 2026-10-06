@@ -44,12 +44,14 @@
     };
     save();
   }
-  // حسابات الوكالات: «agence001» أو «agence 1» أو «1» بلا @ ← agence001@alwasset777.ma
+  // حسابات الشبكة بلا @: «agence001»/«1» ← وكالة، «wasit001»/«W001» ← وسيط،
+  // «btp001»/«B001» ← مقاولة، «finition001»/«F001» ← تشطيب (…@alwasset777.ma)
+  const PREFIX = { agence: 'agence', agency: 'agence', ag: 'agence', a: 'agence', '': 'agence', wasit: 'wasit', w: 'wasit', btp: 'btp', b: 'btp', finition: 'finition', f: 'finition' };
   function normEmail(e) {
     e = String(e || '').trim().toLowerCase();
     if (e.includes('@')) return e;
-    const m = e.match(/^(?:agence|agency|ag)?\s*0*(\d{1,3})$/);
-    return m ? 'agence' + m[1].padStart(3, '0') + '@alwasset777.ma' : e;
+    const m = e.match(/^([a-z]*)[\s-]*0*(\d{1,3})$/);
+    return m && Object.prototype.hasOwnProperty.call(PREFIX, m[1]) ? PREFIX[m[1]] + m[2].padStart(3, '0') + '@alwasset777.ma' : e;
   }
   async function signIn(url, key, email, password) {
     url = cleanUrl(url); key = String(key || '').trim(); email = normEmail(email);
