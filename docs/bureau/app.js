@@ -593,7 +593,15 @@
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
-    else if (a === 'agencies') { nav = 'agencies'; await viewAgencies(parts, query); }
+    else if (a === 'agencies') { nav = 'agencies'; await viewNetKind('agency', parts, query); }
+    else if (a === 'brokers') { nav = a; await viewNetKind('broker', parts, query); }
+    else if (a === 'contractors') { nav = a; await viewNetKind('contractor', parts, query); }
+    else if (a === 'finishing') { nav = a; await viewNetKind('finishing', parts, query); }
+    else if (a === 'projects') { nav = a; await viewProjects(parts, query); }
+    else if (a === 'events') { nav = a; await viewEvents(parts); }
+    else if (a === 'news') { nav = a; await viewNews(parts); }
+    else if (a === 'donations') { nav = a; await viewDonations(parts); }
+    else if (a === 'disputes') { nav = a; await viewDisputes(parts); }
     else if (a === 'settings') { nav = 'settings'; await viewSettings(); }
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
@@ -603,6 +611,13 @@
   /* ============================================================
      الصفحة الرئيسية (لوحة القيادة)
      ============================================================ */
+  const HUB = [
+    ['agencies', '🏢', 'الوكالات العقارية', '700 داخل · 77 خارج'], ['brokers', '🤝', 'الوسطاء', '777 وسيط'],
+    ['contractors', '🏗️', 'شركات المقاولات', '777 شركة'], ['finishing', '🎨', 'شركات التشطيب', '777 شركة'],
+    ['projects', '🚀', 'مشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات', 'معارض وصالونات'],
+    ['news', '📰', 'الأخبار', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
+    ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'],
+  ];
   async function viewHome() {
     const avail = S.props.filter(p => p.status === 'available');
     const open = S.reqs.filter(openReq);
@@ -628,9 +643,10 @@
           <a class="btn" href="#/request/new">${ic('users', 18)} إضافة طلب</a>
           <a class="btn" href="#/matching">${ic('target', 18)} المطابقة</a>
           <a class="btn" href="#/appointments">${ic('calendar', 18)} المواعيد${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</a>
-          <a class="btn" href="#/agencies">${ic('building', 18)} الوكالات العقارية</a>
           <a class="btn" href="#/estimate">📊 مقارنة الثمن</a>
         </div>
+        <div class="hub-title">✦ شبكة الوسيط 777</div>
+        <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}"><span class="hi">${i}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
       </div>
       <div class="stats">
         <div class="card stat"><div class="ic">${ic('building')}</div><div class="v">${avail.length}</div><div class="l">عقار متاح (من ${S.props.length})</div></div>
@@ -1875,7 +1891,7 @@
       <form id="cl-form" class="form-grid">
         ${fInput('url', 'Supabase Project URL', d.url, { ph: 'https://xxxx.supabase.co', attrs: 'dir="ltr" autocapitalize="off"' })}
         ${fInput('key', 'anon public key', d.key, { ph: 'eyJhbGciOi…', attrs: 'dir="ltr" autocapitalize="off"' })}
-        ${fInput('email', 'البريد الإلكتروني أو رمز الوكالة (agence001)', '', { attrs: 'dir="ltr" autocapitalize="off" autocomplete="username"' })}
+        ${fInput('email', 'البريد أو الرمز (agence001 · W001 · B001 · F001)', '', { attrs: 'dir="ltr" autocapitalize="off" autocomplete="username"' })}
         ${fInput('password', 'كلمة السر', '', { type: 'password', attrs: 'dir="ltr"' })}
       </form>
       <div class="btn-row" style="margin-top:12px">
@@ -1978,7 +1994,7 @@
     if (b('cl-sync')) b('cl-sync').onclick = async () => { await Sy.syncNow(); viewSettings(); };
     if (b('cl-out')) b('cl-out').onclick = async () => {
       if (!(await confirmBox('تسجيل الخروج من المزامنة؟ البيانات تبقى على هذا الجهاز.', 'خروج', false))) return;
-      Sy.signOut(); S.role = null; S.agency = null; S.roleFor = null; S.net = null; localStorage.removeItem('w777_role'); viewSettings();
+      Sy.signOut(); S.role = null; S.kind = null; S.dir = null; S.agency = null; S.roleFor = null; S.net = null; localStorage.removeItem('w777_role'); viewSettings();
     };
     const go = async up => {
       const v = collect($('#cl-form'));
@@ -2562,7 +2578,7 @@
       }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', contracts: '#/contracts', learn: '#/learn', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -3188,22 +3204,24 @@
     try {
       const c = JSON.parse(localStorage.getItem('w777_role') || 'null');
       const Sy = window.W777_SYNC;
-      if (c && Sy && Sy.isOn() && c.u === Sy.uid()) { S.role = c.role; S.agency = c.agency; S.roleFor = c.u; }
+      if (c && Sy && Sy.isOn() && c.u === Sy.uid()) { S.role = c.role; S.agency = c.agency; S.kind = c.kind || (c.role === 'agency' ? 'agency' : c.role); S.roleFor = c.u; }
     } catch (e) { /* */ }
   }
   async function refreshRole(force) {
     const Sy = window.W777_SYNC;
-    if (!Sy || !Sy.isOn()) { S.role = null; S.agency = null; S.roleFor = null; return 0; }
+    if (!Sy || !Sy.isOn()) { S.role = null; S.kind = null; S.agency = null; S.roleFor = null; return 0; }
     const u = Sy.uid();
     if (!force && S.roleFor === u && S.roleAt && Date.now() - S.roleAt < 3600000) return 0;
     const before = S.role;
     try {
       const admin = await (await Sy.request('/rest/v1/rpc/w777_is_admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
       let ag = null;
-      if (!admin) ag = (await (await Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active`)).json())[0] || null;
+      if (!admin) ag = (await (await Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,services,about`)).json())[0] || null;
+      // «agency» = عضو فالشبكة (وكالة، وسيط، مقاولة ولا تشطيب) — النوع فـ S.kind
       S.role = admin === true ? 'admin' : ag ? 'agency' : 'solo';
+      S.kind = admin === true ? 'admin' : ag ? ag.kind || 'agency' : null;
       S.agency = ag; S.roleFor = u; S.roleAt = Date.now();
-      localStorage.setItem('w777_role', JSON.stringify({ u, role: S.role, agency: ag }));
+      localStorage.setItem('w777_role', JSON.stringify({ u, role: S.role, kind: S.kind, agency: ag }));
     } catch (e) { /* بدون إنترنت: نبقاو على اللي محفوظ */ }
     return before !== S.role ? 1 : 0;
   }
@@ -3314,65 +3332,6 @@
         <div class="prop-specs"><span>${esc(typeAr(p.type))}</span>${a ? `<span>${ic('area', 15)} ${fmt(a)} م²</span>` : ''}${sp.bedrooms ? `<span>${ic('bed', 15)} ${sp.bedrooms}</span>` : ''}</div>
       </div></a>`;
   }
-  async function viewAgencies(parts, query) {
-    const Sy = window.W777_SYNC;
-    if (EMBED || !Sy || !Sy.isOn()) {
-      main().innerHTML = `<div class="page-head"><h1>${ic('building', 24)} الوكالات العقارية</h1></div>
-        <div class="card empty"><div class="big">🏢</div><h3>دخل بالحساب ديالك أولا</h3>
-        <p>الوكالات كيدخلو من «الإعدادات» ← «المزامنة السحابية» بالرمز (مثلا <b dir="ltr">agence001</b>) وكلمة السر.</p>
-        <a class="btn gold" href="#/settings">${ic('lock', 18)} الدخول</a></div>`;
-      return;
-    }
-    main().innerHTML = `<div class="card empty">جاري التحميل…</div>`;
-    await refreshRole(true);
-    if (!inNetwork()) { main().innerHTML = `<div class="card empty"><div class="big">🔒</div><h3>هاد الحساب ماشي مفعل فشبكة الوكالات</h3><p>تواصل مع مكتب الوسيط 777.</p></div>`; return; }
-    if (parts[1] === 'p') return viewNetProp(parts[2], decodeURIComponent(parts[3] || ''));
-    const tab = parts[1] === 'manage' && S.role === 'admin' ? 'manage' : parts[1] === 'me' ? 'me' : 'net';
-    const tabs = `<div class="chips" style="margin-bottom:14px">
-      <a class="chip ${tab === 'net' ? 'on' : ''}" href="#/agencies">🏘️ عقارات الشبكة</a>
-      ${S.role === 'admin' ? `<a class="chip ${tab === 'manage' ? 'on' : ''}" href="#/agencies/manage">🔑 إدارة الوكالات (777)</a>` : `<a class="chip ${tab === 'me' ? 'on' : ''}" href="#/agencies/me">🏢 وكالتي</a>`}
-    </div>`;
-    const head = `<div class="page-head"><h1>${ic('building', 24)} الوكالات العقارية</h1>
-      <span class="badge ${S.role === 'admin' ? 'gold' : 'blue'}">${S.role === 'admin' ? '👑 المدير' : '🏢 ' + esc(myAgencyName())}</span></div>${tabs}`;
-    if (tab === 'manage') return viewAgManage(head, query);
-    if (tab === 'me') return viewAgMe(head);
-    let list;
-    try { list = await loadNetwork(query.r === '1'); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
-    const f = Object.assign({ q: '', trx: '', cat: '', city: '', ag: '' }, S.netFilters || {});
-    const agencies = [...new Set(list.map(x => x.agency).filter(Boolean))].sort();
-    const cities = [...new Set(list.map(x => x.city).filter(Boolean))].sort();
-    main().innerHTML = head + `
-      <div class="card card-pad" style="margin-bottom:14px">
-        <form id="nf" class="form-grid">
-          ${fInput('q', 'بحث', f.q, { ph: 'حي، نوع، ثمن، وكالة…' })}
-          ${fSelect('trx', 'العملية', [{ v: '', l: 'الكل' }, ...D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar }))], f.trx, { noEmpty: true })}
-          ${fSelect('cat', 'الصنف', [{ v: '', l: 'الكل' }, ...Object.entries(D.CATEGORIES).map(([v, c]) => ({ v, l: c.ar }))], f.cat, { noEmpty: true })}
-          ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], f.city, { noEmpty: true })}
-          ${fSelect('ag', 'الوكالة', [{ v: '', l: 'الكل' }, ...agencies.map(c => ({ v: c, l: c }))], f.ag, { noEmpty: true })}
-        </form>
-        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncount"></span><a class="btn sm" href="#/agencies?r=1">${ic('share', 15)} تحديث</a></div>
-      </div>
-      <div class="prop-grid" id="ngrid"></div>`;
-    const draw = () => {
-      const v = collect($('#nf'));
-      S.netFilters = v;
-      const t = tokens(v.q || '');
-      const res = list.filter(x => {
-        const p = netAsProp(x);
-        if (v.trx && p.transaction !== v.trx) return false;
-        if (v.cat && catOf(p.type) !== v.cat) return false;
-        if (v.city && x.city !== v.city) return false;
-        if (v.ag && x.agency !== v.ag) return false;
-        return !t.length || hit(norm([x.agency, p.ref, p.title, typeAr(p.type), trxAr(p.transaction), p.city, p.district, p.description, x.price].join(' ')), t);
-      });
-      $('#ncount').textContent = `${res.length} عقار من ${agencies.length} وكالة`;
-      $('#ngrid').innerHTML = res.slice(0, 120).map(netCard).join('') || '<div class="card empty" style="grid-column:1/-1">ما كاين حتى عقار</div>';
-      hydrateNet($('#ngrid'));
-    };
-    $$('#nf input, #nf select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
-    $('#nf').onsubmit = e => e.preventDefault();
-    draw();
-  }
   async function viewNetProp(owner, id) {
     const list = await loadNetwork();
     const x = list.find(r => r.owner === owner && r.id === id);
@@ -3428,60 +3387,257 @@
       } catch (e) { $('#own-box').textContent = 'تعذر: ' + e.message; }
     };
   }
-  async function viewAgMe(head) {
-    const ag = S.agency || {};
+  /* ============================================================
+     شبكة 777: الوكالات (700 داخل المغرب + 77 خارج المغرب)، الوسطاء،
+     شركات المقاولات، شركات التشطيب — 777 حساب لكل خانة، بنفس الطريقة
+     ============================================================ */
+  const W777_OFFICE = '0777777959';
+  const KINDS = {
+    agency: { ar: 'الوكالات العقارية', one: 'وكالة', ic: '🏢', route: 'agencies', def: /^Agence \d+$/,
+      sv: ['بيع', 'كراء', 'تسيير الأملاك', 'كراء موسمي', 'عقارات فاخرة', 'استثمار', 'أراضي', 'محلات تجارية'] },
+    broker: { ar: 'الوسطاء العقاريون', one: 'وسيط', ic: '🤝', route: 'brokers', def: /^وسيط \d+$/,
+      sv: ['بيع', 'كراء', 'أراضي', 'فيلات', 'شقق', 'محلات تجارية', 'عقارات فلاحية', 'مرافقة الزبون'] },
+    contractor: { ar: 'شركات المقاولات', one: 'شركة مقاولات', ic: '🏗️', route: 'contractors', def: /^مقاولة \d+$/,
+      sv: ['بناء فيلات وعمارات', 'أشغال كبرى', 'تجزئة وتهيئة', 'ترميم', 'هندسة مدنية', 'طرق وقنوات', 'بناء مفتاح فاليد'] },
+    finishing: { ar: 'شركات التشطيب', one: 'شركة تشطيب', ic: '🎨', route: 'finishing', def: /^تشطيب \d+$/,
+      sv: ['صباغة', 'زليج ورخام', 'جبس وPlaco', 'نجارة', 'ألومنيوم', 'كهرباء', 'ترصيص', 'تكييف', 'ديكور داخلي', 'مطابخ'] },
+  };
+  const kindOf = a => (a && a.kind) || 'agency';
+  const isNamed = a => !!a.name && !KINDS[kindOf(a)].def.test(a.name);
+  const isAbroad = a => (a.country || 'المغرب') !== 'المغرب';
+  const loginOf = a => kindOf(a) === 'agency' && /^\d+$/.test(a.code) ? 'agence' + a.code : a.code;
+  const roleBadge = () => S.role === 'admin' ? '<span class="badge gold">👑 المدير</span>'
+    : `<span class="badge blue">${(KINDS[S.kind] || KINDS.agency).ic} ${esc(myAgencyName())}</span>`;
+  const dAr = d => { if (!d) return ''; const x = new Date(String(d).length === 10 ? d + 'T12:00:00' : d); return isNaN(x) ? '' : x.toLocaleDateString('ar-MA', { day: 'numeric', month: 'long', year: 'numeric' }); };
+  const nm = n => `<span dir="ltr" style="unicode-bidi:isolate">${esc(fmtRaw(n || 0))}</span>`;
+  const refOf = (p, id) => p + '-' + String(id || '').replace(/-/g, '').slice(0, 6).toUpperCase();
+  const splitList = s => String(s || '').split(/[،,;\n]+/).map(x => x.trim()).filter(Boolean);
+  async function rq(path, method, body, prefer) {
+    const res = await window.W777_SYNC.request(path, { method: method || 'GET', headers: Object.assign({ 'Content-Type': 'application/json' }, prefer ? { Prefer: prefer } : {}), body: body ? JSON.stringify(body) : undefined });
+    const t = await res.text();
+    return t ? JSON.parse(t) : null;
+  }
+  async function fetchAll(path) {
+    const out = [];
+    for (let off = 0; ; off += 1000) {
+      const rows = await (await window.W777_SYNC.request(path, { headers: { Range: `${off}-${off + 999}` } })).json();
+      out.push(...rows);
+      if (rows.length < 1000) break;
+    }
+    return out;
+  }
+  async function loadDir(force) {
+    if (!force && S.dir && Date.now() - S.dirAt < 300000) return S.dir;
+    S.dir = await fetchAll('/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,services,about&order=code.asc');
+    S.dirAt = Date.now();
+    return S.dir;
+  }
+  // باب الدخول لكل خانات الشبكة
+  async function netGate(title, icon, force) {
+    const Sy = window.W777_SYNC;
+    if (EMBED || !Sy || !Sy.isOn()) {
+      main().innerHTML = `<div class="page-head"><h1>${icon} ${esc(title)}</h1></div>
+        <div class="card empty"><div class="big">${icon}</div><h3>دخل بالحساب ديالك أولا</h3>
+        <p>كل مشترك كيدخل من «الإعدادات» ← «المزامنة السحابية» بالرمز ديالو<br>(وكالة <b dir="ltr">agence001</b> · وسيط <b dir="ltr">W001</b> · مقاولة <b dir="ltr">B001</b> · تشطيب <b dir="ltr">F001</b>) وكلمة السر.</p>
+        <a class="btn gold" href="#/settings">${ic('lock', 18)} الدخول</a></div>`;
+      return false;
+    }
+    main().innerHTML = `<div class="card empty">جاري التحميل…</div>`;
+    await refreshRole(force || !S.role || S.role === 'solo');
+    if (!inNetwork()) {
+      main().innerHTML = `<div class="card empty"><div class="big">🔒</div><h3>هاد الحساب ماشي مفعل فشبكة الوسيط 777</h3>
+        <p>تواصل مع مكتب الوسيط 777: <a href="${telLink(W777_OFFICE)}" dir="ltr">${W777_OFFICE}</a></p></div>`;
+      return false;
+    }
+    return true;
+  }
+  function secHead(icon, title, sub, tabs, cur, base) {
+    return `<div class="page-head"><h1>${icon} ${esc(title)}</h1>${roleBadge()}</div>
+      ${sub ? `<p class="muted sec-sub">${sub}</p>` : ''}
+      <div class="chips" style="margin-bottom:14px">${tabs.map(([k, l]) => `<a class="chip ${cur === k ? 'on' : ''}" href="#/${base}${k ? '/' + k : ''}">${l}</a>`).join('')}</div>`;
+  }
+  const pickTab = (tabs, want, def) => tabs.some(t => t[0] === want) ? want : def;
+
+  async function viewNetKind(kind, parts, query) {
+    const K = KINDS[kind];
+    if (!await netGate(K.ar, K.ic, kind === 'agency')) return;
+    if (kind === 'agency' && parts[1] === 'p') return viewNetProp(parts[2], decodeURIComponent(parts[3] || ''));
+    const tabs = [];
+    if (kind === 'agency') tabs.push(['', '🏘️ عقارات الشبكة']);
+    tabs.push(['dir', '📇 الدليل']);
+    if (S.role === 'admin') tabs.push(['manage', '🔑 الإدارة (777)']);
+    else if (S.kind === kind) tabs.push(['me', K.ic + ' حسابي']);
+    const tab = pickTab(tabs, parts[1] || '', kind === 'agency' ? '' : 'dir');
+    const head = secHead(K.ic, K.ar, '', tabs, tab, K.route);
+    if (tab === 'manage') return viewAgManage(kind, head, query);
+    if (tab === 'me') return viewAgMe(kind, head);
+    if (tab === 'dir') return viewDir(kind, head, query);
+    return viewNetProps(head, query);
+  }
+
+  async function viewNetProps(head, query) {
+    let list, dir = [];
+    try { list = await loadNetwork(query.r === '1'); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    try { dir = await loadDir(); } catch (e) { /* الفلتر ديال الدولة اختياري */ }
+    const country = Object.fromEntries(dir.map(a => [a.uid, a.country || 'المغرب']));
+    const f = Object.assign({ q: '', trx: '', cat: '', city: '', ag: '', zone: '' }, S.netFilters || {});
+    const agencies = [...new Set(list.map(x => x.agency).filter(Boolean))].sort();
+    const cities = [...new Set(list.map(x => x.city).filter(Boolean))].sort();
+    main().innerHTML = head + `
+      <div class="card card-pad" style="margin-bottom:14px">
+        <form id="nf" class="form-grid">
+          ${fInput('q', 'بحث', f.q, { ph: 'حي، نوع، ثمن، وكالة…' })}
+          ${fSelect('zone', 'المنطقة', [{ v: '', l: 'الكل' }, { v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }], f.zone, { noEmpty: true })}
+          ${fSelect('trx', 'العملية', [{ v: '', l: 'الكل' }, ...D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar }))], f.trx, { noEmpty: true })}
+          ${fSelect('cat', 'الصنف', [{ v: '', l: 'الكل' }, ...Object.entries(D.CATEGORIES).map(([v, c]) => ({ v, l: c.ar }))], f.cat, { noEmpty: true })}
+          ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], f.city, { noEmpty: true })}
+          ${fSelect('ag', 'الوكالة', [{ v: '', l: 'الكل' }, ...agencies.map(c => ({ v: c, l: c }))], f.ag, { noEmpty: true })}
+        </form>
+        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncount"></span><a class="btn sm" href="#/agencies?r=1">${ic('share', 15)} تحديث</a></div>
+      </div>
+      <div class="prop-grid" id="ngrid"></div>`;
+    const draw = () => {
+      const v = collect($('#nf'));
+      S.netFilters = v;
+      const t = tokens(v.q || '');
+      const res = list.filter(x => {
+        const p = netAsProp(x);
+        if (v.zone && ((country[x.owner] || 'المغرب') !== 'المغرب') !== (v.zone === 'out')) return false;
+        if (v.trx && p.transaction !== v.trx) return false;
+        if (v.cat && catOf(p.type) !== v.cat) return false;
+        if (v.city && x.city !== v.city) return false;
+        if (v.ag && x.agency !== v.ag) return false;
+        return !t.length || hit(norm([x.agency, p.ref, p.title, typeAr(p.type), trxAr(p.transaction), p.city, p.district, p.description, x.price].join(' ')), t);
+      });
+      $('#ncount').textContent = `${res.length} عقار من ${agencies.length} عضو`;
+      $('#ngrid').innerHTML = res.slice(0, 120).map(netCard).join('') || '<div class="card empty" style="grid-column:1/-1">ما كاين حتى عقار</div>';
+      hydrateNet($('#ngrid'));
+    };
+    $$('#nf input, #nf select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
+    $('#nf').onsubmit = e => e.preventDefault();
+    draw();
+  }
+
+  // الدليل: كل عضو كمّل المعلومات ديالو كيبان هنا مع الخدمات والهاتف
+  async function viewDir(kind, head, query) {
+    const K = KINDS[kind];
+    let all;
+    try { all = (await loadDir(query.r === '1')).filter(a => kindOf(a) === kind); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const listed = all.filter(a => a.active && (isNamed(a) || a.phone));
+    const cities = [...new Set(listed.map(a => a.city).filter(Boolean))].sort();
+    const seats = kind === 'agency'
+      ? `<div><small>🇲🇦 داخل المغرب</small><b>${listed.filter(a => !isAbroad(a)).length} / ${all.filter(a => !isAbroad(a)).length}</b></div>
+         <div><small>🌍 خارج المغرب</small><b>${listed.filter(isAbroad).length} / ${all.filter(isAbroad).length}</b></div>`
+      : `<div><small>المقاعد</small><b>${all.length}</b></div><div><small>المسجلين</small><b>${listed.length}</b></div>`;
+    main().innerHTML = head + `
+      <div class="card card-pad" style="margin-bottom:14px">
+        <div class="kv">${seats}<div><small>المقاعد الحرة</small><b>${all.length - listed.length}</b></div></div>
+        <div class="seat-bar"><span style="width:${all.length ? Math.max(2, Math.round(listed.length * 100 / all.length)) : 0}%"></span></div>
+        <form id="df" class="form-grid" style="margin-top:12px">
+          ${fInput('q', 'بحث', '', { ph: 'اسم، مدينة، خدمة، هاتف…' })}
+          ${kind === 'agency' ? fSelect('zone', 'المنطقة', [{ v: '', l: 'الكل' }, { v: 'ma', l: '🇲🇦 داخل المغرب (700)' }, { v: 'out', l: '🌍 خارج المغرب (77)' }], query.zone || '', { noEmpty: true }) : ''}
+          ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], '', { noEmpty: true })}
+          ${fSelect('sv', 'الخدمة', [{ v: '', l: 'الكل' }, ...K.sv.map(c => ({ v: c, l: c }))], '', { noEmpty: true })}
+        </form>
+      </div>
+      <div class="dir-grid" id="dgrid"></div>`;
+    const draw = () => {
+      const v = collect($('#df'));
+      const t = tokens(v.q || '');
+      const res = listed.filter(a => (!v.zone || isAbroad(a) === (v.zone === 'out')) && (!v.city || a.city === v.city)
+        && (!v.sv || norm(a.services || '').includes(norm(v.sv)))
+        && (!t.length || hit(norm([a.code, a.name, a.city, a.country, a.services, a.about, a.phone].join(' ')), t)));
+      $('#dgrid').innerHTML = res.map(a => {
+        const msg = `السلام عليكم ${a.name}، شفت الحساب ديالكم فدليل ${K.ar} ديال الوسيط 777.`;
+        return `<div class="card dir-card">
+          <div class="dir-top"><div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>
+            <div class="grow"><b>${esc(a.name)}</b><small class="muted"><span dir="ltr">${esc(a.code)}</span>${a.city ? ' · 📍 ' + esc(a.city) : ''}${isAbroad(a) ? ' · 🌍 ' + esc(a.country) : ''}</small></div></div>
+          ${splitList(a.services).length ? `<div class="chips wrap">${splitList(a.services).map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
+          ${a.about ? `<p class="dir-about">${esc(a.about)}</p>` : ''}
+          <div class="btn-row">${a.phone ? `<a class="btn sm" href="${telLink(a.phone)}">${ic('phone', 15)} ${esc(a.phone)}</a>
+            <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} واتساب</a>` : '<span class="muted">التواصل عبر مكتب الوسيط 777</span>'}</div>
+        </div>`;
+      }).join('') || `<div class="card empty" style="grid-column:1/-1"><div class="big">${K.ic}</div><h3>مازال حتى ${esc(K.one)} ما كمّل المعلومات ديالو</h3><p>كل عضو كيبان هنا ملي كيكمّل «حسابي» (الاسم، الهاتف، المدينة، الخدمات).</p></div>`;
+    };
+    $$('#df input, #df select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
+    $('#df').onsubmit = e => e.preventDefault();
+    draw();
+  }
+
+  async function viewAgMe(kind, head) {
+    const K = KINDS[kind], ag = S.agency || {};
+    const abroad = isAbroad(ag);
     main().innerHTML = head + `
       <div class="card card-pad form">
-        <h3 class="section-title">🏢 معلومات الوكالة (كتبان مع العقارات ديالك فالشبكة)</h3>
+        <h3 class="section-title">${K.ic} معلومات ${esc(K.one)} (كتبان فالدليل${kind === 'agency' || kind === 'broker' ? ' ومع العقارات ديالك فالشبكة' : ''})</h3>
         <form id="agme" class="form-grid">
-          ${fInput('name', 'اسم الوكالة', ag.name, { req: true })}
-          ${fInput('phone', 'هاتف الوكالة', ag.phone, { type: 'tel' })}
+          ${fInput('name', 'الاسم', ag.name, { req: true })}
+          ${fInput('phone', 'الهاتف / واتساب', ag.phone, { type: 'tel' })}
+          ${fInput('city', 'المدينة', ag.city, { list: 'dl-cities' })}
+          ${abroad ? fInput('country', 'الدولة', ag.country === 'خارج المغرب' ? '' : ag.country, { ph: 'فرنسا، إسبانيا، بلجيكا، الإمارات…' }) : ''}
           <div class="field"><label>الرمز</label><input value="${esc(ag.code || '')}" disabled dir="ltr"></div>
+          ${fInput('services', 'الخدمات (فرّق بالفاصلة)', ag.services, { cls: 'full', ph: K.sv.slice(0, 4).join('، ') })}
+          <div class="field full"><div class="chips wrap" id="sv-pick">${K.sv.map(s => `<button type="button" class="chip" data-sv="${esc(s)}">+ ${esc(s)}</button>`).join('')}</div></div>
+          ${fText('about', 'تعريف قصير', ag.about, { ph: 'شكون نتوما، شحال من عام فالميدان، المناطق اللي خدامين فيها…' })}
           <div class="field" style="justify-content:flex-end"><button class="btn gold">${ic('check', 18)} حفظ</button></div>
         </form>
-        <p class="muted" style="font-size:13px">✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا للوكالات الأخرى، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.</p>
+        <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
+        <p class="muted" style="font-size:13px">✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.</p>
       </div>`;
+    $$('#sv-pick [data-sv]').forEach(b => b.onclick = () => {
+      const inp = $('#agme [name=services]'), cur = splitList(inp.value);
+      if (!cur.includes(b.dataset.sv)) inp.value = [...cur, b.dataset.sv].join('، ');
+    });
     $('#agme').onsubmit = async e => {
       e.preventDefault();
       const v = collect(e.target);
+      const body = { name: v.name, phone: v.phone || null, city: v.city || null, services: splitList(v.services).join('، ') || null, about: v.about || null };
+      if (abroad) body.country = (v.country || '').trim() || 'خارج المغرب';
       try {
-        await window.W777_SYNC.request(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: v.name, phone: v.phone || null }) });
+        await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', body);
         await refreshRole(true);
+        S.dir = null;
         await DB.setMeta('shared_hash', {});
         window.W777_SYNC.syncNow();
         toast('تم الحفظ ✓');
       } catch (er) { toast('تعذر: ' + er.message, 4000); }
     };
   }
-  async function viewAgManage(head, query) {
-    const Sy = window.W777_SYNC;
+
+  async function viewAgManage(kind, head, query) {
+    const K = KINDS[kind];
     let ags, secrets, counts = {};
     try {
       [ags, secrets] = await Promise.all([
-        Sy.request('/rest/v1/w777_agencies?select=uid,code,name,phone,email,active&order=code.asc', { headers: { Range: '0-999' } }).then(r => r.json()),
-        Sy.request('/rest/v1/w777_agency_secrets?select=uid,password', { headers: { Range: '0-999' } }).then(r => r.json()),
+        loadDir(true).then(l => l.filter(a => kindOf(a) === kind)),
+        fetchAll(`/rest/v1/w777_agency_secrets?select=uid,password,w777_agencies!inner(kind)&w777_agencies.kind=eq.${kind}`),
       ]);
       (await loadNetwork()).forEach(x => { counts[x.owner] = (counts[x.owner] || 0) + 1; });
     } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
     const pw = Object.fromEntries(secrets.map(s => [s.uid, s.password]));
     const appUrl = location.href.split('#')[0];
-    const credMsg = a => `السلام عليكم ${a.name}،\nمرحبا بكم فشبكة الوكالات ديال الوسيط 777 🏢\nالتطبيق: ${appUrl}\nالإعدادات ← المزامنة السحابية:\nالرمز: ${a.code}\nكلمة السر: ${pw[a.uid] || ''}\nمن بعد زيدو العقارات ديالكم وغادي يبانو لجميع الوكالات (بلا معلومات المالك).`;
+    const shares = kind === 'agency' || kind === 'broker';
+    const credMsg = a => `السلام عليكم ${a.name}،\nمرحبا بكم فشبكة ${K.ar} ديال الوسيط 777 ${K.ic}\nالتطبيق: ${appUrl}\nالإعدادات ← المزامنة السحابية:\nالرمز: ${loginOf(a)}\nكلمة السر: ${pw[a.uid] || ''}\n` +
+      (shares ? 'من بعد كمّلو «حسابي» وزيدو العقارات ديالكم، غادي يبانو لجميع الأعضاء (بلا معلومات المالك).' : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.');
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
-        <div class="kv"><div><small>الوكالات</small><b>${ags.length}</b></div><div><small>مفعلة</small><b>${ags.filter(a => a.active).length}</b></div>
+        <div class="kv"><div><small>الحسابات</small><b>${ags.length}</b></div><div><small>مفعلة</small><b>${ags.filter(a => a.active).length}</b></div>
+          <div><small>كمّلو المعلومات</small><b>${ags.filter(isNamed).length}</b></div>
+          ${kind === 'agency' ? `<div><small>🇲🇦 / 🌍</small><b>${ags.filter(a => !isAbroad(a)).length} / ${ags.filter(isAbroad).length}</b></div>` : ''}
           <div><small>اللي زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div></div>
-        <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف…' })}
-          ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' }], '', { noEmpty: true })}</div>
+        <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف، مدينة…' })}
+          ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
+            ...(kind === 'agency' ? [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }] : [])], '', { noEmpty: true })}</div>
       </div>
       <div class="card" id="aglist"></div>`;
     let shown = 60;
     const draw = () => {
       const q = norm($('[name=agq]').value || ''), f = $('[name=agf]').value;
-      const res = ags.filter(a => (!q || norm([a.code, a.name, a.phone].join(' ')).includes(q)) &&
-        (f !== 'named' || !/^Agence \d+$/.test(a.name)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active));
+      const res = ags.filter(a => (!q || norm([a.code, a.name, a.phone, a.city, a.country].join(' ')).includes(q)) &&
+        (f !== 'named' || isNamed(a)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active) && (f !== 'ma' || !isAbroad(a)) && (f !== 'out' || isAbroad(a)));
       $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
-        <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
-          <small class="muted">${esc(a.phone || 'بلا هاتف')} · <span dir="ltr">${esc(a.code)}</span> / <span dir="ltr" class="pw" data-pw="${a.uid}">••••••</span></small></div>
+        <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${isAbroad(a) ? `<span class="badge blue">🌍 ${esc(a.country)}</span>` : ''} ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
+          <small class="muted">${esc(a.phone || 'بلا هاتف')}${a.city ? ' · ' + esc(a.city) : ''} · <span dir="ltr">${esc(loginOf(a))}</span> / <span dir="ltr" class="pw" data-pw="${a.uid}">••••••</span></small></div>
         <div class="btn-row">
           <button class="btn sm" data-show="${a.uid}">${ic('eye', 15)}</button>
           <button class="btn sm" data-edit="${a.uid}">${ic('edit', 15)}</button>
@@ -3492,18 +3648,21 @@
       $$('[data-show]').forEach(b => b.onclick = () => { const s = $(`[data-pw="${b.dataset.show}"]`); s.textContent = s.textContent.startsWith('•') ? pw[b.dataset.show] || '?' : '••••••'; });
       $$('[data-tog]').forEach(b => b.onclick = async () => {
         const a = ags.find(x => x.uid === b.dataset.tog);
-        await Sy.request(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !a.active }) });
+        try { await rq(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, 'PATCH', { active: !a.active }); } catch (e) { toast('تعذر: ' + e.message); return; }
         a.active = !a.active; toast(a.active ? 'تفعلات ✓' : 'توقفات'); draw();
       });
       $$('[data-edit]').forEach(b => b.onclick = () => {
         const a = ags.find(x => x.uid === b.dataset.edit);
-        modal(`<h3>${esc(a.code)}</h3><form id="age" class="form-grid">${fInput('name', 'اسم الوكالة', a.name, { req: true })}${fInput('phone', 'الهاتف', a.phone, { type: 'tel' })}</form>
+        modal(`<h3>${K.ic} <span dir="ltr">${esc(a.code)}</span></h3><form id="age" class="form-grid">${fInput('name', 'الاسم', a.name, { req: true })}${fInput('phone', 'الهاتف', a.phone, { type: 'tel' })}
+          ${fInput('city', 'المدينة', a.city)}${fInput('country', 'الدولة', a.country || 'المغرب', { hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (77 وكالة خارج المغرب)' : '' })}
+          ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}</form>
           <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="age-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
           $('#age-ok', box).onclick = async () => {
             const v = collect($('#age', box));
+            const body = { name: v.name || a.name, phone: v.phone || null, city: v.city || null, country: (v.country || '').trim() || 'المغرب', services: splitList(v.services).join('، ') || null };
             try {
-              await Sy.request(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: v.name || a.name, phone: v.phone || null }) });
-              a.name = v.name || a.name; a.phone = v.phone || null; close(); draw(); toast('تم ✓');
+              await rq(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, 'PATCH', body);
+              Object.assign(a, body); S.dir = null; close(); draw(); toast('تم ✓');
             } catch (e) { toast('تعذر: ' + e.message); }
           };
         });
@@ -3512,6 +3671,471 @@
     $('[name=agq]').addEventListener('input', () => { shown = 60; draw(); });
     $('[name=agf]').addEventListener('change', () => { shown = 60; draw(); });
     draw();
+  }
+
+  /* ---------- حالات المراجعة المشتركة ---------- */
+  const MOD_ST = { pending: ['⏳ فانتظار المراجعة', 'gray'], approved: ['✅ منشور', 'green'], rejected: ['✖ مرفوض', 'red'], closed: ['🔒 مغلق', 'gray'],
+    funded: ['💚 تمّ التمويل', 'green'], new: ['🆕 جديد', 'blue'], escalated: ['📨 محوّل للمكتب', 'gold'], in_progress: ['⚙️ فالمعالجة', 'blue'] };
+  const stBadge = s => { const x = MOD_ST[s] || [s, 'gray']; return `<span class="badge ${x[1]}">${x[0]}</span>`; };
+  function noteModal(title, cur, onOk) {
+    modal(`<h3>${esc(title)}</h3><form id="nm" class="form-grid">${fText('note', 'ملاحظة (كيشوفها صاحب الطلب)', cur)}</form>
+      <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="nm-ok">${ic('check', 16)} تأكيد</button></div>`, (box, close) => {
+      $('#nm-ok', box).onclick = async () => { const v = collect($('#nm', box)); close(); await onOk(v.note || null); };
+    });
+  }
+  const emptyCard = (big, title, txt) => `<div class="card empty" style="grid-column:1/-1"><div class="big">${big}</div><h3>${esc(title)}</h3>${txt ? `<p>${txt}</p>` : ''}</div>`;
+
+  /* ============================================================
+     المشاريع: كل مشترك ينشر مشروع باش يلقى التمويل (بعد موافقة المدير)
+     ============================================================ */
+  const PJ_CATS = ['مشروع سكني', 'مشروع تجاري', 'مشروع سياحي / فندقي', 'تجزئة وأراضي', 'مشروع فلاحي', 'مشروع صناعي / مستودعات', 'ترميم وإعادة تأهيل', 'أخرى'];
+  const PJ_FUND = ['شراكة (حصة فالأرباح)', 'مساهمة فرأس المال', 'قرض / تمويل', 'بيع على التصميم (VEFA)', 'مستثمر واحد', 'أخرى'];
+  async function viewProjects(parts, query) {
+    if (!await netGate('المشاريع', '🚀')) return;
+    const admin = S.role === 'admin', me = window.W777_SYNC.uid();
+    const tabs = [['', '🚀 المشاريع المنشورة'], ['mine', '📁 مشاريعي'], ['new', '➕ نشر مشروع']];
+    if (admin) tabs.push(['review', '🛡️ المراجعة']);
+    const tab = pickTab(tabs, parts[1] || '', '');
+    const head = secHead('🚀', 'المشاريع والتمويل', 'نشر المشروع العقاري ديالك باش تلقى المموّل ولا الشريك. كل مشروع كيبان للجميع غير من بعد موافقة مكتب الوسيط 777.', tabs, tab, 'projects');
+    if (tab === 'new') return pjForm(head, query.id);
+    let rows;
+    try {
+      const filter = tab === 'mine' ? `owner=eq.${me}` : tab === 'review' ? 'status=in.(pending,rejected)' : 'status=eq.approved';
+      rows = await rq(`/rest/v1/w777_projects?select=*&${filter}&order=created_at.desc&limit=300`);
+    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const total = rows.reduce((s, r) => s + (num(r.amount) || 0), 0);
+    main().innerHTML = head + (tab === '' && rows.length ? `<div class="card card-pad" style="margin-bottom:14px"><div class="kv"><div><small>مشاريع منشورة</small><b>${rows.length}</b></div><div><small>مجموع التمويل المطلوب</small><b>${esc(millions(total) || fmt(total))} درهم</b></div></div></div>` : '') + `
+      <div class="dir-grid">${rows.map(r => {
+        const owner = r.owner === me;
+        const msg = `السلام عليكم، شفت المشروع «${r.title}» (${refOf('PJ', r.id)}) فتطبيق الوسيط 777 وبغيت نعرف أكثر.`;
+        const contact = r.phone || W777_OFFICE;
+        return `<div class="card card-pad pj-card">
+          <div class="btn-row" style="justify-content:space-between"><span class="badge gold">${esc(r.category || 'مشروع')}</span><span class="badge" dir="ltr">${refOf('PJ', r.id)}</span></div>
+          <h3>${esc(r.title)}</h3>
+          <div class="muted">📍 ${esc([r.city, r.country].filter(Boolean).join('، ') || '—')} · 👤 ${esc(r.owner_name || '—')}</div>
+          ${num(r.amount) ? `<div class="pj-amt">💰 ${nm(r.amount)} درهم ${millions(r.amount) ? `<small>(${esc(millions(r.amount))})</small>` : ''}</div>` : ''}
+          ${r.contribution ? `<div><span class="chip">🤝 ${esc(r.contribution)}</span></div>` : ''}
+          ${r.description ? `<p class="dir-about">${esc(r.description)}</p>` : ''}
+          ${tab !== '' ? `<div>${stBadge(r.status)}</div>` : ''}
+          ${r.admin_note && (owner || admin) ? `<div class="mod-note">📝 ${esc(r.admin_note)}</div>` : ''}
+          <div class="btn-row">
+            ${tab === '' ? `<a class="btn sm" href="${telLink(contact)}">${ic('phone', 15)} اتصل</a><a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(contact)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} واتساب</a>` : ''}
+            ${owner && r.status !== 'closed' ? `<a class="btn sm" href="#/projects/new?id=${r.id}">${ic('edit', 15)} تعديل</a><button class="btn sm" data-close-pj="${r.id}">🔒 إغلاق</button>` : ''}
+            ${admin && r.status !== 'approved' ? `<button class="btn sm gold" data-ok="${r.id}">✅ نشر</button>` : ''}
+            ${admin && r.status !== 'rejected' ? `<button class="btn sm" data-no="${r.id}">✖ رفض</button>` : ''}
+            ${owner || admin ? `<button class="btn sm" data-del="${r.id}">${ic('trash', 15)}</button>` : ''}
+          </div></div>`;
+      }).join('') || (tab === 'mine' ? emptyCard('📁', 'مازال ما نشرتي حتى مشروع', '<a class="btn gold" href="#/projects/new">➕ نشر مشروع</a>')
+        : tab === 'review' ? emptyCard('🛡️', 'ما كاين حتى مشروع فانتظار المراجعة', '') : emptyCard('🚀', 'مازال ما كاين حتى مشروع منشور', 'كن الأول! <a class="btn gold" href="#/projects/new">➕ نشر مشروع</a>'))}</div>`;
+    const patch = async (id, body, ok) => { try { await rq(`/rest/v1/w777_projects?id=eq.${id}`, 'PATCH', body); toast(ok); route(); } catch (e) { toast('تعذر: ' + e.message, 4000); } };
+    $$('[data-ok]').forEach(b => b.onclick = () => patch(b.dataset.ok, { status: 'approved' }, 'تنشر ✓'));
+    $$('[data-no]').forEach(b => b.onclick = () => noteModal('سبب الرفض', '', n => patch(b.dataset.no, { status: 'rejected', admin_note: n }, 'ترفض')));
+    $$('[data-close-pj]').forEach(b => b.onclick = async () => { if (await confirmBox('إغلاق هاد المشروع؟', 'إغلاق', false)) patch(b.dataset.closePj, { status: 'closed' }, 'تسد ✓'); });
+    $$('[data-del]').forEach(b => b.onclick = async () => {
+      if (!await confirmBox('حذف المشروع نهائيا؟', 'حذف')) return;
+      try { await rq(`/rest/v1/w777_projects?id=eq.${b.dataset.del}`, 'DELETE'); toast('تحذف'); route(); } catch (e) { toast('تعذر: ' + e.message); }
+    });
+  }
+  async function pjForm(head, id) {
+    let r = {};
+    if (id) { try { r = (await rq(`/rest/v1/w777_projects?id=eq.${id}&select=*`))[0] || {}; } catch (e) { /* */ } }
+    main().innerHTML = head + `
+      <div class="card card-pad form">
+        <h3 class="section-title">${id ? '✏️ تعديل المشروع' : '➕ مشروع جديد'}</h3>
+        <form id="pjf" class="form-grid">
+          ${fInput('title', 'عنوان المشروع', r.title, { req: true, cls: 'full', ph: 'مثلا: إقامة سكنية 24 شقة فمكناس' })}
+          ${fSelect('category', 'نوع المشروع', PJ_CATS, r.category || PJ_CATS[0], { noEmpty: true })}
+          ${fInput('city', 'المدينة', r.city || S.settings.officeCity, { list: 'dl-cities' })}
+          ${fInput('country', 'الدولة', r.country || 'المغرب')}
+          ${fInput('amount', 'التمويل المطلوب (درهم)', r.amount, { money: true })}
+          ${fSelect('contribution', 'نوع الشراكة', PJ_FUND, r.contribution || PJ_FUND[0], { noEmpty: true })}
+          ${fInput('phone', 'هاتف التواصل', r.phone || myAgencyPhone(), { type: 'tel', hint: 'خليه خاوي إلا بغيتي التواصل يكون عبر المكتب' })}
+          ${fText('description', 'وصف المشروع', r.description, { ph: 'الأرض، المساحة، الرخص، مدة الإنجاز، المردودية المتوقعة، الضمانات…' })}
+        </form>
+        <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
+        <p class="muted" style="font-size:13px">🛡️ المشروع كيمشي لمكتب الوسيط 777 للمراجعة، ومن بعد الموافقة كيبان لجميع المشتركين. أي تعديل كيرجعو للمراجعة.</p>
+        <div class="btn-row"><button class="btn gold" id="pj-save">${ic('check', 18)} ${id ? 'حفظ وإعادة الإرسال' : 'إرسال للمراجعة'}</button></div>
+      </div>`;
+    $('#pj-save').onclick = async () => {
+      const f = $('#pjf');
+      if (!f.reportValidity()) return;
+      const v = collect(f);
+      const body = { title: v.title, category: v.category, city: v.city || null, country: v.country || 'المغرب', amount: num(v.amount), contribution: v.contribution, phone: v.phone || null, description: v.description || null, owner_name: myAgencyName() };
+      try {
+        if (id) await rq(`/rest/v1/w777_projects?id=eq.${id}`, 'PATCH', body);
+        else await rq('/rest/v1/w777_projects', 'POST', body, 'return=minimal');
+        toast('تصيفط للمراجعة ✓', 3000);
+        location.hash = '#/projects/mine';
+      } catch (e) { toast('تعذر: ' + e.message, 4000); }
+    };
+  }
+
+  /* ============================================================
+     المناسبات العقارية (اللي فاتت والقادمة)
+     ============================================================ */
+  const EV_KINDS = ['معرض', 'صالون', 'مؤتمر', 'ملتقى', 'تكوين', 'أخرى'];
+  async function viewEvents(parts) {
+    if (!await netGate('المناسبات', '🎪')) return;
+    const admin = S.role === 'admin';
+    const tabs = [['', '📅 القادمة'], ['past', '🕘 اللي فاتت']];
+    const tab = pickTab(tabs, parts[1] || '', '');
+    const head = secHead('🎪', 'المناسبات العقارية', 'المعارض والصالونات والملتقيات العقارية فالمغرب والعالم — كتتجدد كل نهار.', tabs, tab, 'events');
+    const t = today();
+    let rows;
+    try {
+      rows = await rq(tab === 'past'
+        ? `/rest/v1/w777_events?select=*&or=(ends.lt.${t},and(ends.is.null,starts.lt.${t}))&order=starts.desc&limit=200`
+        : `/rest/v1/w777_events?select=*&or=(ends.gte.${t},and(ends.is.null,starts.gte.${t}))&order=starts.asc&limit=200`);
+    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const days = d => Math.round((new Date(d + 'T12:00:00') - new Date(t + 'T12:00:00')) / 864e5);
+    main().innerHTML = head + (admin ? `<div class="btn-row" style="margin-bottom:12px"><button class="btn gold" id="ev-add">➕ زيد مناسبة</button></div>` : '') + `
+      <div class="ev-list">${rows.map(e => {
+        const d = e.starts ? new Date(e.starts + 'T12:00:00') : null, n = e.starts ? days(e.starts) : null;
+        const live = e.starts && e.starts <= t && (e.ends || e.starts) >= t;
+        return `<div class="card ev-card">
+          <div class="ev-date">${d ? `<b>${d.getDate()}</b><small>${esc(d.toLocaleDateString('ar-MA', { month: 'short' }))}</small><small>${d.getFullYear()}</small>` : '<b>?</b>'}</div>
+          <div class="grow">
+            <div class="btn-row" style="gap:6px">${e.kind ? `<span class="badge gold">${esc(e.kind)}</span>` : ''}${live ? '<span class="badge green">🔴 دابا</span>' : n !== null && n > 0 ? `<span class="badge blue">باقي ${n} يوم</span>` : ''}${(e.country || 'المغرب') !== 'المغرب' ? `<span class="badge">🌍 ${esc(e.country)}</span>` : '<span class="badge">🇲🇦</span>'}</div>
+            <h3>${esc(e.title)}</h3>
+            <div class="muted">📍 ${esc([e.venue, e.city].filter(Boolean).join('، ') || '—')}${e.ends && e.ends !== e.starts ? ` · 🗓️ ${esc(dAr(e.starts))} ← ${esc(dAr(e.ends))}` : ''}</div>
+            ${e.description ? `<p class="dir-about">${esc(e.description)}</p>` : ''}
+            <div class="btn-row">${e.url ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(e.url)}">🔗 التفاصيل</a>` : ''}
+              ${admin ? `<button class="btn sm" data-ev="${e.id}">${ic('edit', 15)}</button><button class="btn sm" data-evdel="${e.id}">${ic('trash', 15)}</button>` : ''}</div>
+          </div></div>`;
+      }).join('') || emptyCard('🎪', tab === 'past' ? 'ما كاين حتى مناسبة فاتت' : 'ما كاين حتى مناسبة قادمة دابا', '')}</div>`;
+    const edit = e => {
+      e = e || {};
+      modal(`<h3>${e.id ? '✏️ تعديل' : '➕ مناسبة جديدة'}</h3><form id="evf" class="form-grid">
+        ${fInput('title', 'العنوان', e.title, { req: true, cls: 'full' })}${fSelect('kind', 'النوع', EV_KINDS, e.kind || 'معرض', { noEmpty: true })}
+        ${fInput('starts', 'البداية', e.starts, { type: 'date' })}${fInput('ends', 'النهاية', e.ends, { type: 'date' })}
+        ${fInput('city', 'المدينة', e.city)}${fInput('country', 'الدولة', e.country || 'المغرب')}${fInput('venue', 'المكان', e.venue)}
+        ${fInput('url', 'الرابط', e.url, { attrs: 'dir="ltr"' })}${fText('description', 'الوصف', e.description)}</form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="evf-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+        $('#evf-ok', box).onclick = async () => {
+          const f = $('#evf', box); if (!f.reportValidity()) return;
+          const v = collect(f);
+          const body = { title: v.title, kind: v.kind, starts: v.starts || null, ends: v.ends || null, city: v.city || null, country: v.country || 'المغرب', venue: v.venue || null, url: v.url || null, description: v.description || null, source: 'admin' };
+          try {
+            if (e.id) await rq(`/rest/v1/w777_events?id=eq.${e.id}`, 'PATCH', body); else await rq('/rest/v1/w777_events', 'POST', body, 'return=minimal');
+            close(); toast('تم ✓'); route();
+          } catch (er) { toast('تعذر: ' + er.message, 4000); }
+        };
+      });
+    };
+    const add = $('#ev-add'); if (add) add.onclick = () => edit();
+    $$('[data-ev]').forEach(b => b.onclick = () => edit(rows.find(x => x.id === b.dataset.ev)));
+    $$('[data-evdel]').forEach(b => b.onclick = async () => {
+      if (!await confirmBox('حذف هاد المناسبة؟', 'حذف')) return;
+      try { await rq(`/rest/v1/w777_events?id=eq.${b.dataset.evdel}`, 'DELETE'); route(); } catch (e) { toast('تعذر: ' + e.message); }
+    });
+  }
+
+  /* ============================================================
+     الأخبار العقارية: المغرب + العالم (كتتجدد أوتوماتيكيا كل نهار)
+     ============================================================ */
+  async function viewNews(parts) {
+    if (!await netGate('الأخبار', '📰')) return;
+    const tabs = [['', '🇲🇦 أخبار المغرب'], ['world', '🌍 أخبار العالم']];
+    const tab = pickTab(tabs, parts[1] || '', '');
+    const head = secHead('📰', 'الأخبار العقارية', 'آخر وأهم أخبار العقار فالمغرب وفالعالم — كتتجدد أوتوماتيكيا كل نهار من المصادر الإخبارية.', tabs, tab, 'news');
+    let rows;
+    try { rows = await rq(`/rest/v1/w777_news?select=*&scope=eq.${tab === 'world' ? 'world' : 'ma'}&order=published.desc.nullslast,created_at.desc&limit=150`); }
+    catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const last = rows.reduce((m, r) => r.created_at > m ? r.created_at : m, '');
+    main().innerHTML = head + `
+      <div class="card card-pad" style="margin-bottom:14px">
+        <div class="form-grid">${fInput('nq', 'بحث فالأخبار', '', { ph: 'كراء، سكن، أسعار، قروض، مكناس…' })}</div>
+        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncnt"></span>${last ? `<span class="muted">· آخر تحديث: ${esc(dAr(last))}</span>` : ''}
+          <button class="btn sm" id="nw-up">🔄 تحديث دابا</button></div>
+      </div>
+      <div class="card" id="nlist"></div>`;
+    const draw = () => {
+      const t = tokens($('[name=nq]').value || '');
+      const res = rows.filter(r => !t.length || hit(norm([r.title, r.summary, r.source].join(' ')), t));
+      $('#ncnt').textContent = `${res.length} خبر`;
+      $('#nlist').innerHTML = res.map(r => `<a class="list-row news-row" target="_blank" rel="noopener" href="${esc(r.url)}" dir="auto">
+        <div class="grow"><b>${esc(r.title)}</b>${r.summary ? `<p class="muted" style="margin:4px 0 0">${esc(r.summary)}</p>` : ''}
+        <small class="muted">📰 ${esc(r.source || '')}${r.published ? ' · ' + esc(dAr(r.published)) : ''}</small></div><span class="muted">↗</span></a>`).join('')
+        || '<div class="empty">الأخبار كتجمع… رجع من بعد شوية ولا ورك «تحديث دابا».</div>';
+    };
+    $('[name=nq]').addEventListener('input', draw);
+    $('#nw-up').onclick = async e => {
+      e.target.disabled = true; e.target.textContent = '⏳ …';
+      try {
+        const r = await (await window.W777_SYNC.request('/functions/v1/w777-news', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
+        toast(r && r.skipped ? 'الأخبار محدثة من قبل ✓' : `تزادو ${(r && r.added) || 0} خبر ✓`, 3000); route();
+      } catch (er) { toast('تعذر: ' + er.message, 4000); e.target.disabled = false; e.target.textContent = '🔄 تحديث دابا'; }
+    };
+    draw();
+  }
+
+  /* ============================================================
+     الهبة: حالات ديال ناس محتاجين للسكن (كراء/شراء/إصلاح)
+     التبرع كيمر عبر مكتب الوسيط 777 اللي كيتأكد من كل حالة
+     ============================================================ */
+  const DN_NEED = { rent: '🔑 كراء سكن', buy: '🏠 شراء سكن', repair: '🛠️ إصلاح سكن', other: '🤲 حاجة أخرى' };
+  async function viewDonations(parts) {
+    if (!await netGate('الهبة', '🤲')) return;
+    const admin = S.role === 'admin', me = window.W777_SYNC.uid();
+    const tabs = [['', '🤲 الحالات'], ['new', '➕ اقترح حالة'], ['mine', '📁 اقتراحاتي']];
+    if (admin) tabs.push(['review', '🛡️ المراجعة']);
+    const tab = pickTab(tabs, parts[1] || '', '');
+    const head = secHead('🤲', 'الهبة — سقف لكل عائلة', 'حالات ديال ناس محتاجين يكريو ولا يشريو ولا يصلحو السكن. التبرع كيدوز عبر مكتب الوسيط 777 اللي كيتأكد من كل حالة، والحالات كتبان بلا سمية ولا تصاور حفاظا على كرامة الناس.', tabs, tab, 'donations');
+    if (tab === 'new') return dnForm(head);
+    let rows;
+    try {
+      const filter = tab === 'mine' ? `owner=eq.${me}` : tab === 'review' ? 'status=in.(pending,rejected)' : 'status=in.(approved,funded)';
+      rows = await rq(`/rest/v1/w777_donations?select=*&${filter}&order=created_at.desc&limit=300`);
+    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const raised = rows.reduce((s, r) => s + (num(r.raised) || 0), 0);
+    main().innerHTML = head + (tab === '' ? `<div class="card card-pad dn-hero" style="margin-bottom:14px">
+        <div class="kv"><div><small>حالات منشورة</small><b>${rows.length}</b></div><div><small>تمّ تمويلها</small><b>${rows.filter(r => r.status === 'funded').length}</b></div><div><small>مجموع المساهمات</small><b>${nm(raised)} درهم</b></div></div>
+        <p class="muted" style="margin:10px 0 0;font-size:13px">💚 «ما نقص مال من صدقة». كل مساهمة كتوصل للمحتاج عن طريق المكتب، مع وصل.</p></div>` : '') + `
+      <div class="dir-grid">${rows.map(r => {
+        const pct = num(r.amount) ? Math.min(100, Math.round((num(r.raised) || 0) * 100 / num(r.amount))) : 0;
+        const owner = r.owner === me, ref = refOf('HB', r.id);
+        const msg = `السلام عليكم مكتب الوسيط 777، بغيت نساهم فالحالة ${ref} («${r.title}»).`;
+        return `<div class="card card-pad pj-card">
+          <div class="btn-row" style="justify-content:space-between"><span class="badge gold">${esc(DN_NEED[r.need] || DN_NEED.other)}</span><span class="badge" dir="ltr">${ref}</span></div>
+          <h3>${esc(r.title)}</h3>
+          ${r.city ? `<div class="muted">📍 ${esc(r.city)}</div>` : ''}
+          ${r.story ? `<p class="dir-about">${esc(r.story)}</p>` : ''}
+          ${num(r.amount) ? `<div class="dn-bar"><span style="width:${pct}%"></span></div><small class="muted">${nm(r.raised || 0)} / ${nm(r.amount)} درهم (${pct}%)</small>` : ''}
+          ${tab !== '' || r.status === 'funded' ? `<div>${stBadge(r.status)}</div>` : ''}
+          ${r.admin_note && (owner || admin) ? `<div class="mod-note">📝 ${esc(r.admin_note)}</div>` : ''}
+          <div class="btn-row">
+            ${tab === '' && r.status === 'approved' ? `<a class="btn sm gold" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">💚 ساهم عبر المكتب</a><a class="btn sm" href="${telLink(W777_OFFICE)}">${ic('phone', 15)}</a>` : ''}
+            ${admin && r.status !== 'approved' && r.status !== 'funded' ? `<button class="btn sm gold" data-ok="${r.id}">✅ نشر</button>` : ''}
+            ${admin && r.status === 'pending' ? `<button class="btn sm" data-no="${r.id}">✖ رفض</button>` : ''}
+            ${admin && tab === '' ? `<button class="btn sm" data-raise="${r.id}">💰 المساهمات</button>` : ''}
+            ${owner && r.status === 'pending' ? `<button class="btn sm" data-del="${r.id}">${ic('trash', 15)}</button>` : ''}
+            ${admin ? `<button class="btn sm" data-del="${r.id}">${ic('trash', 15)}</button>` : ''}
+          </div></div>`;
+      }).join('') || (tab === 'mine' ? emptyCard('📁', 'مازال ما اقترحتي حتى حالة', '<a class="btn gold" href="#/donations/new">➕ اقترح حالة</a>')
+        : tab === 'review' ? emptyCard('🛡️', 'ما كاين حتى حالة فانتظار المراجعة', '') : emptyCard('🤲', 'ما كاين حتى حالة منشورة دابا', 'تعرف شي عائلة محتاجة؟ <a class="btn gold" href="#/donations/new">➕ اقترح حالة</a>'))}</div>`;
+    const patch = async (id, body, ok) => { try { await rq(`/rest/v1/w777_donations?id=eq.${id}`, 'PATCH', body); toast(ok); route(); } catch (e) { toast('تعذر: ' + e.message, 4000); } };
+    $$('[data-ok]').forEach(b => b.onclick = () => patch(b.dataset.ok, { status: 'approved' }, 'تنشرات ✓'));
+    $$('[data-no]').forEach(b => b.onclick = () => noteModal('سبب الرفض', '', n => patch(b.dataset.no, { status: 'rejected', admin_note: n }, 'ترفضات')));
+    $$('[data-raise]').forEach(b => b.onclick = () => {
+      const r = rows.find(x => x.id === b.dataset.raise);
+      modal(`<h3>💰 ${esc(refOf('HB', r.id))}</h3><form id="rz" class="form-grid">${fInput('raised', 'المبلغ اللي توصل بيه المكتب (درهم)', r.raised, { money: true })}
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="funded" ${r.status === 'funded' ? 'checked' : ''}> 💚 تمّ التمويل</label></form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="rz-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+        $('#rz-ok', box).onclick = () => { const v = collect($('#rz', box)); close(); patch(r.id, { raised: num(v.raised) || 0, status: v.funded ? 'funded' : 'approved' }, 'تم ✓'); };
+      });
+    });
+    $$('[data-del]').forEach(b => b.onclick = async () => {
+      if (!await confirmBox('حذف هاد الحالة؟', 'حذف')) return;
+      try { await rq(`/rest/v1/w777_donations?id=eq.${b.dataset.del}`, 'DELETE'); route(); } catch (e) { toast('تعذر: ' + e.message); }
+    });
+  }
+  function dnForm(head) {
+    main().innerHTML = head + `
+      <div class="card card-pad form">
+        <h3 class="section-title">➕ اقتراح حالة</h3>
+        <form id="dnf" class="form-grid">
+          ${fInput('title', 'عنوان قصير', '', { req: true, cls: 'full', ph: 'مثلا: أرملة مع 3 دراري محتاجة كراء 6 شهور' })}
+          ${fSelect('need', 'نوع الحاجة', Object.entries(DN_NEED).map(([v, l]) => ({ v, l })), 'rent', { noEmpty: true })}
+          ${fInput('city', 'المدينة', S.settings.officeCity, { list: 'dl-cities' })}
+          ${fInput('amount', 'المبلغ المطلوب تقريبا (درهم)', '', { money: true })}
+          ${fText('story', 'الحالة', '', { ph: 'شرح الحالة بلا سمية كاملة، بلا رقم الهاتف، وبلا تصاور.' })}
+        </form>
+        <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
+        <p class="muted" style="font-size:13px">🔒 ماتكتبش السمية الكاملة ولا الهاتف ديال الشخص المحتاج — المكتب غادي يتواصل معاك نتا باش يتأكد من الحالة قبل النشر.</p>
+        <div class="btn-row"><button class="btn gold" id="dn-save">${ic('check', 18)} إرسال للمكتب</button></div>
+      </div>`;
+    $('#dn-save').onclick = async () => {
+      const f = $('#dnf'); if (!f.reportValidity()) return;
+      const v = collect(f);
+      try {
+        await rq('/rest/v1/w777_donations', 'POST', { title: hideDigits(v.title), need: v.need, city: v.city || null, amount: num(v.amount), story: hideDigits(v.story || '') || null, owner_name: myAgencyName() }, 'return=minimal');
+        toast('شكرا 💚 الحالة تصيفطات للمراجعة', 3000);
+        location.hash = '#/donations/mine';
+      } catch (e) { toast('تعذر: ' + e.message, 4000); }
+    };
+  }
+
+  /* ============================================================
+     النزاعات العقارية: توجيه قانوني أولي + تحويل للمختص عبر المكتب
+     (معلومات عامة على القانون المغربي، ماشي استشارة قانونية رسمية)
+     ============================================================ */
+  const SPECIALISTS = ['محامي', 'موثق', 'عدول', 'محاسب', 'مستشار قانوني', 'مستشار عقاري'];
+  const LAW = [
+    { id: 'rent', ic: '🔑', t: 'الكراء السكني والمهني (كاري ما خلصش، الإفراغ، الزيادة فالسومة)',
+      laws: ['القانون 67.12 المتعلق بعقود كراء المحلات المعدة للسكنى أو للاستعمال المهني', 'القانون 07.03 المتعلق بمراجعة أثمان الكراء', 'ظهير الالتزامات والعقود (ق.ل.ع)'],
+      steps: ['جمع الوثائق: عقد الكراء (مكتوب وثابت التاريخ)، التواصيل، المراسلات.', 'محاولة الحل الودي برسالة مكتوبة.', 'إلا ما خلصش: توجيه إنذار بالأداء عن طريق مفوض قضائي.', 'إلا بقا المشكل: دعوى الأداء و/أو الإفراغ أمام المحكمة الابتدائية المختصة.', 'الزيادة فالسومة ماشي بالخاطر: خاصها تحترم المدة والنسبة اللي كيحددها القانون.'],
+      sp: ['محامي', 'مستشار قانوني'] },
+    { id: 'commercial', ic: '🏪', t: 'الكراء التجاري (الأصل التجاري، الإفراغ، التعويض)',
+      laws: ['القانون 49.16 المتعلق بكراء العقارات أو المحلات المخصصة للاستعمال التجاري أو الصناعي أو الحرفي', 'مدونة التجارة (الأصل التجاري)'],
+      steps: ['تأكد من مدة الاستغلال وواش العقد مكتوب.', 'الإفراغ كيكون بإنذار مكتوب ومعلّل، والمكتري غالبا كيستحق تعويض إلا فحالات محددة فالقانون.', 'ما توقّعش على تنازل ولا تخلي المحل قبل ما تستشير.', 'النزاع كيتشاف أمام المحكمة التجارية ولا الابتدائية حسب الحالة.'],
+      sp: ['محامي', 'محاسب'] },
+    { id: 'copro', ic: '🏢', t: 'الملكية المشتركة والسانديك (واجبات، أشغال، الأجزاء المشتركة)',
+      laws: ['القانون 18.00 المتعلق بنظام الملكية المشتركة للعقارات المبنية، كما تم تغييره وتتميمه بالقانون 106.12'],
+      steps: ['راجع نظام الملكية المشتركة ومحاضر الجمع العام.', 'القرارات كتّخذ فالجمع العام حسب الأغلبية اللي كيحددها القانون.', 'السانديك يقدر يطالب بالواجبات غير المؤداة قضائيا، والمالك يقدر يطعن فقرار غير قانوني.', 'وثّق كل شي (صور، رسائل، محاضر).'],
+      sp: ['مستشار قانوني', 'محامي', 'محاسب'] },
+    { id: 'inherit', ic: '👨‍👩‍👧', t: 'الإرث والشياع والقسمة (ملك مشترك بين الورثة)',
+      laws: ['مدونة الأسرة (الميراث)', 'القانون 39.08 المتعلق بمدونة الحقوق العينية (الشياع، القسمة، الشفعة)'],
+      steps: ['استخراج الإراثة (رسم الإرث) عند العدول.', 'إحصاء الأملاك وتحديد الوضعية القانونية (محفظ / غير محفظ).', 'القسمة كتكون رضائية بين الورثة، ولا قضائية إلا ما تفاهموش.', 'إلا شريك باع حصتو لأجنبي: الشركاء عندهم حق الشفعة فآجال قصيرة — تحرك بسرعة.'],
+      sp: ['عدول', 'موثق', 'محامي'] },
+    { id: 'sale', ic: '🤝', t: 'البيع والوعد بالبيع والعربون (التراجع، عدم إتمام البيع)',
+      laws: ['ظهير الالتزامات والعقود (ق.ل.ع)', 'المادة 4 من مدونة الحقوق العينية 39.08: التصرفات الناقلة للملكية خاصها محرر رسمي (موثق/عدول) أو محرر ثابت التاريخ من محامي مقبول أمام محكمة النقض، تحت طائلة البطلان'],
+      steps: ['راجع واش الاتفاق مكتوب، ومن حرّرو، وشروطو (الثمن، الأجل، العربون، الشرط الجزائي).', 'وجّه إنذار مكتوب للطرف الآخر باش ينفذ التزاماتو.', 'عقد البيع النهائي ديما عند موثق ولا عدول ولا محامي مؤهل.', 'إلا بقا النزاع: دعوى إتمام البيع ولا الفسخ مع التعويض.'],
+      sp: ['موثق', 'محامي', 'عدول'] },
+    { id: 'vefa', ic: '🏗️', t: 'الشراء من المنعش (التأخير فالتسليم، العيوب، البيع فطور الإنجاز)',
+      laws: ['القانون 44.00 المتعلق ببيع العقار في طور الإنجاز، كما تم تغييره بالقانون 107.12', 'القانون 31.08 القاضي بتحديد تدابير لحماية المستهلك'],
+      steps: ['جمع العقد الابتدائي، التواصيل، ودفتر التحملات.', 'تأكد من أجل التسليم المتفق عليه ومن الضمانات (استرجاع الأقساط).', 'وجّه إنذار للمنعش بالتسليم أو بإصلاح العيوب.', 'القانون كيعطي الحق فالتعويض عن التأخير وفي بعض الحالات فسخ العقد واسترجاع المبالغ.'],
+      sp: ['محامي', 'موثق'] },
+    { id: 'title', ic: '📜', t: 'التحفيظ العقاري والتعرضات والرسوم العقارية',
+      laws: ['ظهير 12 غشت 1913 المتعلق بالتحفيظ العقاري، كما تم تغييره وتتميمه بالقانون 14.07'],
+      steps: ['جيب شهادة الملكية من المحافظة العقارية وتأكد من التقييدات والرهون.', 'التعرض على مطلب تحفيظ كيكون داخل آجال محددة — ما تعطلش.', 'التقييد الاحتياطي كيحمي الحق ديالك مؤقتا.', 'النزاعات على مطلب التحفيظ كتحال على المحكمة.'],
+      sp: ['مستشار عقاري', 'محامي', 'موثق'] },
+    { id: 'build', ic: '🧱', t: 'البناء والجيران والحدود والرخص',
+      laws: ['القانون 12.90 المتعلق بالتعمير', 'القانون 25.90 المتعلق بالتجزئات العقارية', 'القانون 66.12 المتعلق بمراقبة وزجر المخالفات في مجال التعمير والبناء'],
+      steps: ['تأكد من رخصة البناء والتصميم المصادق عليه.', 'مشكل الحدود: خبرة طبوغرافية (مهندس مساح) قبل أي نزاع.', 'المخالفات كيتبلّغ عليها للسلطات المحلية / الجماعة.', 'الأضرار بين الجيران: محاولة صلح، ومن بعد دعوى مع خبرة.'],
+      sp: ['مستشار عقاري', 'محامي'] },
+    { id: 'tax', ic: '🧾', t: 'الضرائب والرسوم العقارية (الأرباح العقارية، التسجيل، الأراضي غير المبنية)',
+      laws: ['المدونة العامة للضرائب (الضريبة على الأرباح العقارية، واجبات التسجيل)', 'القانون 47.06 المتعلق بجبايات الجماعات المحلية (الرسم على الأراضي الحضرية غير المبنية، رسم السكن والخدمات الجماعية)'],
+      steps: ['جمع عقود الشراء والبيع وفواتير الأشغال (كتنقص من الربح الخاضع للضريبة).', 'احترم آجال التصريح والأداء باش تتجنب الغرامات.', 'كاين إعفاءات فحالات محددة (مثلا السكن الرئيسي بشروط).', 'لأي خلاف مع الإدارة الضريبية: طلب مراجعة / تظلم داخل الآجال.'],
+      sp: ['محاسب', 'مستشار قانوني'] },
+    { id: 'commission', ic: '💼', t: 'عمولة الوسيط / السمسرة (العمولة ما تخلصاتش)',
+      laws: ['ظهير الالتزامات والعقود (ق.ل.ع) — أحكام السمسرة'],
+      steps: ['الأحسن ديما: تفويض مكتوب (عقد وكالة/سمسرة) فيه نسبة العمولة.', 'العمولة كتستحق ملي البيع ولا الكراء كيتم بسبب الوساطة ديالك — جمع الأدلة (رسائل، زيارات، شهود).', 'وجّه إنذار مكتوب بالأداء.', 'إلا بقا: أمر بالأداء ولا دعوى أمام المحكمة.'],
+      sp: ['محامي', 'مستشار قانوني'] },
+    { id: 'expro', ic: '🏛️', t: 'نزع الملكية للمنفعة العامة',
+      laws: ['القانون 7.81 المتعلق بنزع الملكية لأجل المنفعة العامة وبالاحتلال المؤقت'],
+      steps: ['تابع مقرر التخلي المنشور وتأكد من الأجزاء المعنية.', 'قدّم ملاحظاتك داخل الأجل فالبحث الإداري.', 'إلا ما قبلتيش التعويض المقترح: المحكمة الإدارية كتحدد التعويض.', 'جمع الأدلة على قيمة العقار (عقود مماثلة، خبرة).'],
+      sp: ['محامي', 'مستشار عقاري'] },
+    { id: 'other', ic: '❓', t: 'مشكل آخر',
+      laws: ['حسب طبيعة المشكل'],
+      steps: ['اكتب المشكل بالتفصيل (التواريخ، الأطراف، الوثائق اللي عندك).', 'استعمل «🤖 سول المساعد» لتوجيه أولي.', 'حوّل الملف للمكتب باش يوجهك للمختص المناسب.'],
+      sp: ['مستشار قانوني', 'مستشار عقاري'] },
+  ];
+  const lawOf = id => LAW.find(x => x.id === id) || LAW[LAW.length - 1];
+  const lawCard = L => `<div class="card card-pad law-card">
+      <h3 style="margin-top:0">${L.ic} ${esc(L.t)}</h3>
+      <b>📚 الإطار القانوني</b><ul>${L.laws.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <b>🧭 الخطوات المقترحة</b><ol>${L.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+      <div><b>👨‍⚖️ المختص المناسب:</b> ${L.sp.map(x => `<span class="chip">${esc(x)}</span>`).join(' ')}</div>
+      <p class="muted law-disc">⚠️ هادشي توجيه عام على القانون المغربي، ماشي استشارة قانونية رسمية. الآجال والتفاصيل كتختلف حسب كل حالة — للحالات المعقدة حوّل الملف لمكتب الوسيط 777.</p>
+    </div>`;
+  function escalateModal(d, done) {
+    const L = lawOf(d.category);
+    modal(`<h3>📨 تحويل الملف للمختص عبر مكتب الوسيط 777</h3><form id="esc" class="form-grid">
+      ${fSelect('specialist', 'شكون المختص اللي بغيتي؟', SPECIALISTS, d.specialist || L.sp[0], { noEmpty: true })}
+      ${fInput('phone', 'الهاتف ديالك باش يتصل بيك المكتب', d.phone || myAgencyPhone(), { type: 'tel', req: true })}</form>
+      <p class="muted" style="font-size:13px">المكتب غادي يراجع الملف ويتصل بيك باش يوجهك للمختص (محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري).</p>
+      <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="esc-ok">📨 حوّل الملف</button></div>`, (box, close) => {
+      $('#esc-ok', box).onclick = async () => {
+        const f = $('#esc', box); if (!f.reportValidity()) return;
+        const v = collect(f);
+        try {
+          await rq(`/rest/v1/w777_disputes?id=eq.${d.id}`, 'PATCH', { status: 'escalated', specialist: v.specialist, phone: v.phone });
+          close();
+          const msg = `السلام عليكم مكتب الوسيط 777، حوّلت ليكم الملف ${refOf('NZ', d.id)} («${d.title}») وبغيت ${v.specialist}.`;
+          modal(`<h3>✅ تحوّل الملف ${esc(refOf('NZ', d.id))}</h3><p>المكتب غادي يتصل بيك. تقدر تسرّع بواتساب:</p>
+            <div class="btn-row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 16)} واتساب المكتب</a></div>`);
+          if (done) done();
+        } catch (e) { toast('تعذر: ' + e.message, 4000); }
+      };
+    });
+  }
+  const askAgent = d => {
+    const text = `عندي مشكل عقاري (${lawOf(d.category).t}) فـ ${d.city || 'المغرب'}: ${d.title}. ${d.description || ''}\nعطيني توجيه قانوني أولي حسب القانون المغربي: شنو الحقوق ديالي، شنو الخطوات، وشكون المختص اللي خاصني.`;
+    if (!AG.open) agOpen();
+    agSend(text);
+  };
+  async function viewDisputes(parts) {
+    if (!await netGate('النزاعات', '⚖️')) return;
+    const admin = S.role === 'admin', me = window.W777_SYNC.uid();
+    const tabs = [['', '⚖️ مشكل جديد'], ['mine', '📁 ملفاتي'], ['guide', '📚 الدليل القانوني']];
+    if (admin) tabs.push(['all', '🛡️ كل الملفات']);
+    const tab = pickTab(tabs, parts[1] || '', '');
+    const head = secHead('⚖️', 'النزاعات العقارية', 'كتب المشكل العقاري ديالك وخود توجيه قانوني أولي فالحين. والنزاعات المستعصية كيحوّلها مكتب الوسيط 777 للمختص: محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري.', tabs, tab, 'disputes');
+    if (tab === 'guide') {
+      main().innerHTML = head + `<div class="law-grid">${LAW.filter(L => L.id !== 'other').map(lawCard).join('')}</div>`;
+      return;
+    }
+    if (tab === '') {
+      main().innerHTML = head + `
+        <div class="grid-2">
+          <div class="card card-pad form">
+            <h3 class="section-title">📝 وصف المشكل</h3>
+            <form id="dsf" class="form-grid">
+              ${fSelect('category', 'نوع المشكل', LAW.map(L => ({ v: L.id, l: L.ic + ' ' + L.t })), 'rent', { noEmpty: true, cls: 'full' })}
+              ${fInput('title', 'عنوان قصير', '', { req: true, cls: 'full', ph: 'مثلا: المكتري ما خلصش 5 شهور' })}
+              ${fInput('city', 'المدينة', S.settings.officeCity, { list: 'dl-cities' })}
+              ${fInput('phone', 'الهاتف (اختياري)', myAgencyPhone(), { type: 'tel' })}
+              ${fText('description', 'شرح المشكل', '', { ph: 'شنو وقع؟ إمتى؟ شنو الوثائق اللي عندك (عقد، تواصيل، شهادة الملكية…)؟' })}
+            </form>
+            <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
+            <p class="muted" style="font-size:12.5px">🔒 الملف ديالك سري: كيشوفو غير نتا ومكتب الوسيط 777.</p>
+            <div class="btn-row"><button class="btn gold" id="ds-save">⚖️ عطيني الحل القانوني</button></div>
+          </div>
+          <div id="ds-guide">${lawCard(LAW[0])}</div>
+        </div>`;
+      $('#dsf [name=category]').onchange = e => { $('#ds-guide').innerHTML = lawCard(lawOf(e.target.value)); };
+      $('#ds-save').onclick = async () => {
+        const f = $('#dsf'); if (!f.reportValidity()) return;
+        const v = collect(f);
+        try {
+          const d = (await rq('/rest/v1/w777_disputes', 'POST', { category: v.category, title: v.title, description: v.description || null, city: v.city || null, phone: v.phone || null, owner_name: myAgencyName() }, 'return=representation'))[0];
+          main().innerHTML = head + `
+            <div class="card card-pad" style="margin-bottom:14px;border-color:var(--gold)"><b>✅ تسجل الملف ${esc(refOf('NZ', d.id))}</b>
+              <p class="muted" style="margin:6px 0">هاهو التوجيه القانوني الأولي. إلا كان المشكل معقد، حوّلو للمختص عبر المكتب.</p>
+              <div class="btn-row"><button class="btn gold" id="ds-esc">📨 حوّل للمختص</button><button class="btn" id="ds-ai">🤖 سول المساعد الذكي</button><a class="btn" href="#/disputes/mine">📁 ملفاتي</a></div></div>
+            ${lawCard(lawOf(d.category))}`;
+          $('#ds-esc').onclick = () => escalateModal(d, () => { location.hash = '#/disputes/mine'; });
+          $('#ds-ai').onclick = () => askAgent(d);
+        } catch (e) { toast('تعذر: ' + e.message, 4000); }
+      };
+      return;
+    }
+    let rows;
+    try { rows = await rq(`/rest/v1/w777_disputes?select=*${tab === 'mine' ? `&owner=eq.${me}` : ''}&order=updated_at.desc&limit=300`); }
+    catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const cnt = s => rows.filter(r => r.status === s).length;
+    main().innerHTML = head + (tab === 'all' ? `<div class="card card-pad" style="margin-bottom:14px"><div class="kv">
+        <div><small>جديدة</small><b>${cnt('new')}</b></div><div><small>محوّلة للمكتب</small><b>${cnt('escalated')}</b></div><div><small>فالمعالجة</small><b>${cnt('in_progress')}</b></div><div><small>مغلقة</small><b>${cnt('closed')}</b></div></div></div>` : '') + `
+      <div class="dir-grid">${rows.map(d => {
+        const L = lawOf(d.category);
+        return `<div class="card card-pad pj-card">
+          <div class="btn-row" style="justify-content:space-between">${stBadge(d.status)}<span class="badge" dir="ltr">${refOf('NZ', d.id)}</span></div>
+          <h3>${L.ic} ${esc(d.title)}</h3>
+          <div class="muted">${esc(L.t)}${d.city ? ' · 📍 ' + esc(d.city) : ''}${tab === 'all' ? ` · 👤 ${esc(d.owner_name || '—')}` : ''}</div>
+          ${d.description ? `<p class="dir-about">${esc(d.description)}</p>` : ''}
+          ${d.specialist ? `<div>👨‍⚖️ <b>${esc(d.specialist)}</b></div>` : ''}
+          ${tab === 'all' && d.phone ? `<div><a href="${telLink(d.phone)}" dir="ltr">${esc(d.phone)}</a></div>` : ''}
+          ${d.admin_note ? `<div class="mod-note">💬 رد المكتب: ${esc(d.admin_note)}</div>` : ''}
+          <small class="muted">🗓️ ${esc(dAr(d.created_at))}</small>
+          <div class="btn-row">
+            <button class="btn sm" data-guide="${d.id}">📚 التوجيه</button>
+            ${tab === 'mine' && d.status === 'new' ? `<button class="btn sm gold" data-esc="${d.id}">📨 حوّل للمختص</button>` : ''}
+            ${tab === 'mine' ? `<button class="btn sm" data-ai="${d.id}">🤖</button>` : ''}
+            ${tab === 'mine' && d.status !== 'closed' ? `<button class="btn sm" data-cl="${d.id}">🔒 إغلاق</button>` : ''}
+            ${tab === 'all' ? `<button class="btn sm gold" data-adm="${d.id}">⚙️ معالجة</button>${d.phone ? `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(d.phone)}?text=${encodeURIComponent('السلام عليكم، مكتب الوسيط 777 بخصوص الملف ' + refOf('NZ', d.id))}">${ic('wa', 15)}</a>` : ''}` : ''}
+            ${tab === 'mine' || admin ? `<button class="btn sm" data-del="${d.id}">${ic('trash', 15)}</button>` : ''}
+          </div></div>`;
+      }).join('') || (tab === 'mine' ? emptyCard('📁', 'ما عندك حتى ملف', '<a class="btn gold" href="#/disputes">⚖️ مشكل جديد</a>') : emptyCard('🛡️', 'ما كاين حتى ملف', ''))}</div>`;
+    const byId = id => rows.find(x => x.id === id);
+    const patch = async (id, body, ok) => { try { await rq(`/rest/v1/w777_disputes?id=eq.${id}`, 'PATCH', body); toast(ok); route(); } catch (e) { toast('تعذر: ' + e.message, 4000); } };
+    $$('[data-guide]').forEach(b => b.onclick = () => modal(lawCard(lawOf(byId(b.dataset.guide).category))));
+    $$('[data-esc]').forEach(b => b.onclick = () => escalateModal(byId(b.dataset.esc), route));
+    $$('[data-ai]').forEach(b => b.onclick = () => askAgent(byId(b.dataset.ai)));
+    $$('[data-cl]').forEach(b => b.onclick = async () => { if (await confirmBox('إغلاق الملف؟ (تحل المشكل)', 'إغلاق', false)) patch(b.dataset.cl, { status: 'closed' }, 'تسد ✓'); });
+    $$('[data-del]').forEach(b => b.onclick = async () => {
+      if (!await confirmBox('حذف الملف نهائيا؟', 'حذف')) return;
+      try { await rq(`/rest/v1/w777_disputes?id=eq.${b.dataset.del}`, 'DELETE'); route(); } catch (e) { toast('تعذر: ' + e.message); }
+    });
+    $$('[data-adm]').forEach(b => b.onclick = () => {
+      const d = byId(b.dataset.adm);
+      modal(`<h3>⚙️ ${esc(refOf('NZ', d.id))}</h3><form id="dsa" class="form-grid">
+        ${fSelect('status', 'الحالة', ['new', 'escalated', 'in_progress', 'closed'].map(s => ({ v: s, l: MOD_ST[s][0] })), d.status, { noEmpty: true })}
+        ${fSelect('specialist', 'المختص', SPECIALISTS, d.specialist || '', {})}
+        ${fText('admin_note', 'رد المكتب (كيشوفو صاحب الملف)', d.admin_note)}</form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="dsa-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+        $('#dsa-ok', box).onclick = () => { const v = collect($('#dsa', box)); close(); patch(d.id, { status: v.status, specialist: v.specialist || null, admin_note: v.admin_note || null }, 'تم ✓'); };
+      });
+    });
   }
 
   /* ---------- استيراد العقارات من دوسي الصور ----------
