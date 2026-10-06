@@ -39,6 +39,8 @@ How to work:
 - Owner names and phone numbers are private to the agency that owns the property: never reveal them for network properties of other agencies.
 - Keep answers short and practical: lists with ref, type, district, price. Offer the next useful action (open the page, match, book a visit).
 - When the user wants to see something, use open_page so the app shows it.
+- The app also has the Wasset 777 network sections: directories of brokers, contractors (مقاولات) and finishing companies (تشطيب), projects seeking funding, real-estate events, daily real-estate news (Morocco + world), الهبة (housing donations that go through the Wasset 777 office) and النزاعات (real-estate disputes). Open them with open_page.
+- For legal questions give general guidance under Moroccan law (e.g. law 67.12 residential/professional rent, 49.16 commercial lease, 18.00/106.12 co-ownership, 39.08 real rights code, 44.00/107.12 off-plan sales, Dahir of 12 August 1913 / 14.07 land registration), say it is general guidance and not formal legal advice, and for complex cases suggest escalating from the disputes page to a specialist (lawyer, notary, adoul, accountant, legal or real-estate advisor) via the Wasset 777 office.
 - If something is outside what the tools can do, say so plainly and suggest where in the app to do it.`;
 
 const S = (props: Record<string, unknown>, required: string[] = []) => ({ type: "object", properties: props, required });
@@ -62,7 +64,7 @@ const TOOLS = [
   { name: "market_price", description: "Compare a price with the Moroccan market (DH per m², by city/district, Yakeey/Agenz + ANCFCC). Give price and area to get the % above/below market.", input_schema: S({ city: str("city in Arabic"), district: str("district"), property_type: str("apartment | villa | house | ..."), area: num("m²"), price: num("DH") }, ["city", "property_type"]) },
   { name: "office_stats", description: "Dashboard numbers: available properties, open requests, strong matches, today's appointments and follow-ups.", input_schema: S({}) },
   { name: "network_search", description: "Search properties shared by the other partner agencies of the network (no owner data). Only works for network members.", input_schema: S({ query: str("keywords"), city: str("city"), transaction: str("sale | rent | ..."), limit: num("default 10") }) },
-  { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | contracts | learn | ownership | estimate | settings | new_property | new_request"), ref: str("ref when page is property or request") }, ["page"]) },
+  { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | brokers | contractors | finishing | projects | events | news | donations | disputes | contracts | learn | ownership | estimate | settings | new_property | new_request"), ref: str("ref when page is property or request") }, ["page"]) },
 ];
 
 // ---------- Gemini (Google AI Studio — فيه مستوى فابور) ----------
