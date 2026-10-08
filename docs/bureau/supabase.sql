@@ -363,3 +363,100 @@ create policy w777_nw_adm on public.w777_news for all to authenticated using (w7
 --   url := 'https://<project>.supabase.co/functions/v1/w777-news',
 --   headers := jsonb_build_object('Content-Type','application/json','x-cron-key',(select value from public.w777_secrets where name='news_cron_key')),
 --   body := '{}'::jsonb, timeout_milliseconds := 60000) $$);
+
+-- ============================================================
+-- الحجز (شقق مفروشة وعقارات العطل) — بحال Airbnb، والأداء كيدوز عبر مكتب الوسيط 777
+-- المكتب كيستلم مبلغ الحجز، كيتواصل مع صاحب العقار، وكيسلّمو المبلغ من بعد وصول الزبون ورضاه
+-- ============================================================
+create table if not exists public.w777_stays (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  owner_name text, title text not null, kind text not null default 'apartment',
+  city text, district text, price_night numeric not null, cleaning_fee numeric default 0,
+  min_nights int not null default 1, max_guests int not null default 2,
+  bedrooms int default 1, beds int default 1, baths int default 1,
+  amenities text[] not null default '{}', description text, rules text,
+  photos text[] not null default '{}', address text, owner_phone text,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'closed')),
+  admin_note text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+alter table public.w777_stays enable row level security;
+drop policy if exists w777_st_sel on public.w777_stays;
+create policy w777_st_sel on public.w777_stays for select to anon, authenticated using (status = 'approved' or owner = auth.uid() or w777_is_admin());
+drop policy if exists w777_st_ins on public.w777_stays;
+create policy w777_st_ins on public.w777_stays for insert to authenticated with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_st_upd on public.w777_stays;
+create policy w777_st_upd on public.w777_stays for update to authenticated using (w777_is_admin() or owner = auth.uid()) with check (w777_is_admin() or owner = auth.uid());
+drop policy if exists w777_st_del on public.w777_stays;
+create policy w777_st_del on public.w777_stays for delete to authenticated using (w777_is_admin() or owner = auth.uid());
+-- العنوان الدقيق وهاتف صاحب العقار ما كيبانوش للعموم
+revoke select on public.w777_stays from anon;
+grant select (id, owner_name, title, kind, city, district, price_night, cleaning_fee, min_nights, max_guests, bedrooms, beds, baths, amenities, description, rules, photos, status, created_at) on public.w777_stays to anon;
+drop trigger if exists w777_st_guard on public.w777_stays;
+create trigger w777_st_guard before update on public.w777_stays for each row execute function public.w777_mod_guard();
+drop trigger if exists w777_st_new on public.w777_stays;
+create trigger w777_st_new before insert on public.w777_stays for each row execute function public.w777_mod_new();
+-- 5 صور لكل عقار (المدير بلا حد)
+create or replace function public.w777_st_photos() returns trigger language plpgsql security definer set search_path=public as
+$$ begin if not w777_is_admin() and coalesce(array_length(new.photos, 1), 0) > 5 then new.photos := new.photos[1:5]; end if; return new; end $$;
+drop trigger if exists w777_st_photos on public.w777_stays;
+create trigger w777_st_photos before insert or update on public.w777_stays for each row execute function public.w777_st_photos();
+
+create table if not exists public.w777_bookings (
+  id uuid primary key default gen_random_uuid(),
+  stay_id uuid not null references public.w777_stays(id) on delete cascade,
+  guest_name text not null, guest_phone text not null, guests int not null default 1,
+  check_in date not null, check_out date not null, nights int, total numeric,
+  status text not null default 'requested' check (status in ('requested', 'confirmed', 'checked_in', 'completed', 'cancelled', 'refunded')),
+  paid_amount numeric, paid_at timestamptz, commission numeric, payout_amount numeric, paid_out_at timestamptz,
+  note text, admin_note text, source text default 'app', created_by uuid default auth.uid(),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  check (check_out > check_in));
+alter table public.w777_bookings enable row level security;
+drop policy if exists w777_bk_adm on public.w777_bookings;
+create policy w777_bk_adm on public.w777_bookings for all to authenticated using (w777_is_admin()) with check (w777_is_admin());
+drop policy if exists w777_bk_mine on public.w777_bookings;
+create policy w777_bk_mine on public.w777_bookings for select to authenticated using (created_by = auth.uid());
+
+-- الأيام المحجوزة (للتقويم) — بلا معلومات الزبون
+create or replace function public.w777_stay_busy(s uuid) returns table (check_in date, check_out date) language sql stable security definer set search_path=public as
+$$ select b.check_in, b.check_out from w777_bookings b join w777_stays t on t.id = b.stay_id
+   where b.stay_id = s and t.status = 'approved' and b.status in ('requested', 'confirmed', 'checked_in') and b.check_out >= current_date $$;
+-- طلب حجز (من التطبيق ولا من صفحة الحجز العمومية)
+create or replace function public.w777_book(s uuid, name text, phone text, guests int, d1 date, d2 date, note text default null, src text default 'public')
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare t w777_stays; n int; tot numeric; bid uuid;
+begin
+  select * into t from w777_stays where id = s and status = 'approved';
+  if not found then raise exception 'العقار غير متوفر'; end if;
+  if coalesce(trim(name), '') = '' or length(regexp_replace(coalesce(phone, ''), '\D', '', 'g')) < 8 then raise exception 'الاسم والهاتف ضروريين'; end if;
+  if d1 < current_date or d2 <= d1 then raise exception 'التواريخ غير صحيحة'; end if;
+  n := d2 - d1;
+  if n > 90 then raise exception 'الحد الأقصى 90 ليلة'; end if;
+  if n < t.min_nights then raise exception 'الحد الأدنى % ليالي', t.min_nights; end if;
+  if guests < 1 or guests > t.max_guests then raise exception 'عدد الضيوف أكثر من المسموح (%)', t.max_guests; end if;
+  if exists (select 1 from w777_bookings b where b.stay_id = s and b.status in ('confirmed', 'checked_in') and b.check_in < d2 and b.check_out > d1) then
+    raise exception 'هاد التواريخ محجوزة'; end if;
+  if (select count(*) from w777_bookings b where regexp_replace(b.guest_phone, '\D', '', 'g') = regexp_replace(phone, '\D', '', 'g') and b.created_at > now() - interval '1 day') >= 5 then
+    raise exception 'بزاف ديال الطلبات، تواصل مع المكتب'; end if;
+  tot := n * t.price_night + coalesce(t.cleaning_fee, 0);
+  insert into w777_bookings (stay_id, guest_name, guest_phone, guests, check_in, check_out, nights, total, note, source, created_by)
+  values (s, left(trim(name), 120), left(trim(phone), 40), guests, d1, d2, n, tot, left(note, 1000), case when src = 'app' then 'app' else 'public' end, auth.uid())
+  returning id into bid;
+  return jsonb_build_object('id', bid, 'ref', 'BK-' || upper(left(replace(bid::text, '-', ''), 6)), 'nights', n, 'total', tot);
+end $$;
+-- صاحب العقار كيشوف حجوزات عقاراتو (بلا هاتف الزبون — المكتب هو الوسيط)
+create or replace function public.w777_owner_bookings() returns table (id uuid, stay_id uuid, title text, guest_name text, guests int, check_in date, check_out date, nights int, total numeric, payout_amount numeric, status text, paid_out_at timestamptz)
+language sql stable security definer set search_path=public as
+$$ select b.id, b.stay_id, t.title, split_part(b.guest_name, ' ', 1), b.guests, b.check_in, b.check_out, b.nights, b.total, b.payout_amount, b.status, b.paid_out_at
+   from w777_bookings b join w777_stays t on t.id = b.stay_id where t.owner = auth.uid() order by b.check_in desc $$;
+grant execute on function public.w777_stay_busy(uuid), public.w777_book(uuid, text, text, int, date, date, text, text) to anon, authenticated;
+grant execute on function public.w777_owner_bookings() to authenticated;
+
+-- صور العقارات ديال الحجز (عمومية للعرض)
+insert into storage.buckets (id, name, public) values ('w777-stays', 'w777-stays', true) on conflict (id) do update set public = true;
+drop policy if exists w777_stays_ins on storage.objects;
+create policy w777_stays_ins on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-stays' and (storage.foldername(name))[1] = auth.uid()::text and public.w777_can_use());
+drop policy if exists w777_stays_del on storage.objects;
+create policy w777_stays_del on storage.objects for delete to authenticated
+  using (bucket_id = 'w777-stays' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));

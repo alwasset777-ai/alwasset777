@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>الحجز — شقق مفروشة وعقارات العطل | مجموعة الوسيط 777</title>
+  <meta name="description" content="احجز شقة مفروشة ولا عقار للعطلة فالمغرب مع مكتب الوسيط 777 — المبلغ كيبقى عند المكتب حتى توصل وتكون راضي.">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="icons/icon-192.png?v=5" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { padding-bottom: 30px; }
+    .pb-wrap { max-width: 1160px; margin: 0 auto; padding: 14px 16px; }
+    .pb-top { display: flex; align-items: center; gap: 12px; justify-content: space-between; margin-bottom: 14px; }
+    .pb-top img { height: 48px; background: #fff; border-radius: 12px; padding: 4px 8px; }
+    .pb-hero { border-radius: 20px; padding: 22px; color: #fff; margin-bottom: 16px; background: radial-gradient(ellipse at 85% 0%, #4a0d19, transparent 60%), linear-gradient(150deg, #000, #1c1c1c 60%, #3a0b14); }
+    .pb-hero h1 { margin: 0 0 6px; font-size: 24px; }
+    .pb-hero p { margin: 0; color: rgba(255,255,255,.8); }
+  </style>
+</head>
+<body>
+  <div class="pb-wrap">
+    <div class="pb-top"><a href="stays.html"><img src="icons/logo.png?v=6" alt="مجموعة الوسيط 777"></a>
+      <a class="btn wa sm" id="pb-wa" target="_blank" rel="noopener" href="https://wa.me/212777777959">واتساب المكتب</a></div>
+    <div id="pb"><div class="card empty">جاري التحميل…</div></div>
+  </div>
+  <script src="../app/config.js" onerror="void 0"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = window.__ALWASSET_SUPABASE__ || {};
+    const URL_ = String(C.url || '').replace(/\/+$/, ''), KEY = C.anonKey || '';
+    const OFFICE = '212777777959';
+    const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+    const box = document.getElementById('pb');
+    const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = n => `<span dir="ltr" style="unicode-bidi:isolate">${new Intl.NumberFormat('fr-FR').format(Number(n) || 0).replace(/[  ]/g, ' ')}</span>`;
+    const today = () => new Date().toISOString().slice(0, 10);
+    const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+    const nights = (a, b) => a && b ? Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5) : 0;
+    const img = p => `${URL_}/storage/v1/object/public/w777-stays/${p}`;
+    const KINDS = { apartment: '🏢 شقة مفروشة', studio: '🛏️ استوديو', villa: '🏡 فيلا', riad: '🕌 رياض', house: '🏠 دار', chalet: '🏔️ شاليه', room: '🚪 غرفة', other: '✨ أخرى' };
+    const COLS = 'id,owner_name,title,kind,city,district,price_night,cleaning_fee,min_nights,max_guests,bedrooms,beds,baths,amenities,description,rules,photos';
+    const get = p => fetch(URL_ + '/rest/v1/' + p, { headers: H }).then(r => r.json());
+    const rpc = (fn, b) => fetch(URL_ + '/rest/v1/rpc/' + fn, { method: 'POST', headers: H, body: JSON.stringify(b) })
+      .then(async r => { const j = await r.json().catch(() => null); if (!r.ok) throw new Error((j && (j.message || j.hint)) || ('HTTP ' + r.status)); return j; });
+    const STEPS = ['اختار العقار والتواريخ وصيفط طلب الحجز.', 'كتأدي مبلغ الحجز لمكتب الوسيط 777 (ماشي لصاحب العقار).', 'المكتب كيتواصل مع صاحب العقار وكيأكد الحجز.', 'كتوصل وكتشوف العقار — إلا كنتي راضي…', '…المكتب كيسلّم المبلغ لصاحب العقار. وإلا ماشي راضي، المكتب كيتدخل.'];
+    const how = `<div class="card card-pad st-how"><b>🛡️ كيفاش كيخدم الحجز؟ (الأمان عبر مكتب الوسيط 777)</b><ol>${STEPS.map(x => `<li>${esc(x)}</li>`).join('')}</ol></div>`;
+    let ALL = [];
+    const busyCache = {};
+    const busyOf = async id => busyCache[id] || (busyCache[id] = await rpc('w777_stay_busy', { s: id }).catch(() => []));
+    function card(s, q) {
+      const ph = (s.photos || [])[0];
+      return `<a class="card st-card" href="#${s.id}${q || ''}"><div class="st-cover">${ph ? `<img src="${esc(img(ph))}" alt="" loading="lazy">` : '<div class="ph">🏖️</div>'}<span class="badge">${esc(KINDS[s.kind] || KINDS.other)}</span></div>
+        <div class="st-body"><b>${esc(s.title)}</b><small class="muted">📍 ${esc([s.district, s.city].filter(Boolean).join('، '))}</small><small class="muted">👥 ${s.max_guests} ضيوف · 🛏️ ${s.beds || 1} · 🚿 ${s.baths || 1}</small>
+        <div class="st-price">${fmt(s.price_night)} درهم <small>/ الليلة</small></div></div></a>`;
+    }
+    function calendar(busy) {
+      const t = today(); let html = '';
+      for (let m = 0; m < 2; m++) {
+        const f = new Date(t.slice(0, 7) + '-01T12:00:00'); f.setMonth(f.getMonth() + m);
+        const y = f.getFullYear(), mo = f.getMonth(), days = new Date(y, mo + 1, 0).getDate(), pad = (f.getDay() + 6) % 7;
+        let c = ''; for (let i = 0; i < pad; i++) c += '<i></i>';
+        for (let d = 1; d <= days; d++) { const ds = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; c += `<span class="${ds < t ? 'past' : busy.some(b => b.check_in <= ds && ds < b.check_out) ? 'busy' : 'free'}">${d}</span>`; }
+        html += `<div class="st-month"><b>${esc(f.toLocaleDateString('ar-MA', { month: 'long', year: 'numeric' }))}</b><div class="st-days">${['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح'].map(x => `<em>${x}</em>`).join('')}${c}</div></div>`;
+      }
+      return `<div class="st-cal">${html}</div><small class="muted">🟩 متوفر · 🟥 محجوز</small>`;
+    }
+    async function list() {
+      const f = JSON.parse(sessionStorage.getItem('pb_f') || '{}');
+      const cities = [...new Set(ALL.map(s => s.city).filter(Boolean))].sort();
+      box.innerHTML = `<div class="pb-hero"><h1>🏖️ احجز شقة مفروشة ولا عقار للعطلة</h1><p>عبر مكتب الوسيط 777 — المبلغ كيبقى عند المكتب حتى توصل وتكون راضي.</p></div>
+        <div class="card card-pad st-search"><form id="f" class="form-grid" onsubmit="return false">
+          <div class="field"><label>المدينة</label><select name="city"><option value="">كل المدن</option>${cities.map(c => `<option ${f.city === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+          <div class="field"><label>الوصول</label><input type="date" name="d1" min="${today()}" value="${esc(f.d1 || '')}"></div>
+          <div class="field"><label>المغادرة</label><input type="date" name="d2" min="${today()}" value="${esc(f.d2 || '')}"></div>
+          <div class="field"><label>الضيوف</label><select name="g"><option value="">أي عدد</option>${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<option ${String(f.g) === String(n) ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+        </form><div class="muted" id="cnt" style="margin-top:8px"></div></div><div class="st-grid" id="g"></div>${how}`;
+      const draw = async () => {
+        const v = Object.fromEntries(new FormData($('#f')).entries()); sessionStorage.setItem('pb_f', JSON.stringify(v));
+        let r = ALL.filter(s => (!v.city || s.city === v.city) && (!v.g || s.max_guests >= +v.g));
+        if (v.d1 && v.d2 && v.d2 > v.d1) {
+          await Promise.all(r.map(s => busyOf(s.id)));
+          r = r.filter(s => !busyCache[s.id].some(b => b.check_in < v.d2 && b.check_out > v.d1) && nights(v.d1, v.d2) >= (s.min_nights || 1));
+        }
+        $('#cnt').textContent = `${r.length} عقار متوفر`;
+        $('#g').innerHTML = r.map(s => card(s, v.d1 && v.d2 ? `?d1=${v.d1}&d2=${v.d2}` : '')).join('') || '<div class="card empty" style="grid-column:1/-1">ما كاين حتى عقار بهاد الشروط — تواصل مع المكتب فواتساب 🙏</div>';
+      };
+      $$('#f input, #f select').forEach(el => el.addEventListener('change', draw));
+      draw();
+    }
+    async function detail(id, q) {
+      const s = ALL.find(x => x.id === id);
+      if (!s) { box.innerHTML = '<div class="card empty">العقار غير متوفر. <a href="stays.html">رجوع</a></div>'; return; }
+      const busy = await busyOf(id);
+      const ph = s.photos || [];
+      box.innerHTML = `<div class="page-head"><a class="btn" href="#">→ كل العقارات</a></div>
+        <div class="st-gallery n${Math.min(ph.length, 5)}">${ph.map(p => `<img src="${esc(img(p))}" alt="">`).join('') || '<div class="card empty">🏖️</div>'}</div>
+        <div class="detail-grid" style="margin-top:16px"><div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card card-pad"><span class="badge gold">${esc(KINDS[s.kind] || KINDS.other)}</span><h1 style="margin:8px 0 4px;font-size:24px">${esc(s.title)}</h1>
+            <div class="muted">📍 ${esc([s.district, s.city].filter(Boolean).join('، '))}</div>
+            <div class="kv" style="margin-top:12px"><div><small>الضيوف</small><b>👥 ${s.max_guests}</b></div><div><small>غرف النوم</small><b>${s.bedrooms || 1}</b></div><div><small>الأسرّة</small><b>${s.beds || 1}</b></div><div><small>الحمامات</small><b>${s.baths || 1}</b></div><div><small>أقل مدة</small><b>${s.min_nights || 1} ليلة</b></div></div>
+            ${(s.amenities || []).length ? `<h3 class="section-title" style="margin-top:14px">✨ المرافق</h3><div class="chips wrap">${s.amenities.map(a => `<span class="chip">${esc(a)}</span>`).join('')}</div>` : ''}
+            ${s.description ? `<h3 class="section-title" style="margin-top:14px">📝 الوصف</h3><p style="white-space:pre-wrap;margin:0">${esc(s.description)}</p>` : ''}
+            ${s.rules ? `<h3 class="section-title" style="margin-top:14px">📌 قواعد العقار</h3><p style="white-space:pre-wrap;margin:0">${esc(s.rules)}</p>` : ''}</div>
+          <div class="card card-pad"><h3 class="section-title">📅 التوفر</h3>${calendar(busy)}</div></div>
+          <div class="card card-pad st-book"><div class="st-price" style="font-size:24px">${fmt(s.price_night)} درهم <small>/ الليلة</small></div>
+            ${Number(s.cleaning_fee) ? `<small class="muted">+ ${fmt(s.cleaning_fee)} درهم تنظيف</small>` : ''}
+            <form id="bk" class="form-grid" style="margin-top:12px" onsubmit="return false">
+              <div class="field"><label>الوصول *</label><input type="date" name="d1" required min="${today()}" value="${esc(q.get('d1') || '')}"></div>
+              <div class="field"><label>المغادرة *</label><input type="date" name="d2" required min="${addDays(today(), 1)}" value="${esc(q.get('d2') || '')}"></div>
+              <div class="field"><label>الضيوف</label><select name="g">${Array.from({ length: s.max_guests || 1 }, (_, i) => `<option ${i === 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></div>
+              <div class="field"><label>الاسم الكامل *</label><input name="name" required></div>
+              <div class="field"><label>الهاتف / واتساب *</label><input name="phone" type="tel" required dir="ltr"></div>
+              <div class="field full"><label>ملاحظة</label><textarea name="note" placeholder="ساعة الوصول، طلبات خاصة…"></textarea></div>
+            </form><div class="st-total" id="tot"></div>
+            <button class="btn gold" id="go" style="width:100%;margin-top:10px">📩 طلب الحجز</button>
+            <p class="muted" style="font-size:12.5px;margin:10px 0 0">💡 ما كتخلص حتى حاجة دابا. مكتب الوسيط 777 كيتواصل معاك باش تأدي المبلغ عند المكتب ويأكد الحجز مع صاحب العقار.</p></div></div>${how}`;
+      const calc = () => {
+        const v = Object.fromEntries(new FormData($('#bk')).entries()), n = nights(v.d1, v.d2);
+        if (n <= 0) { $('#tot').innerHTML = ''; return null; }
+        const tot = n * Number(s.price_night) + (Number(s.cleaning_fee) || 0), clash = busy.some(b => b.check_in < v.d2 && b.check_out > v.d1);
+        $('#tot').innerHTML = `<div>${fmt(s.price_night)} × ${n} ليلة <b>${fmt(n * s.price_night)}</b></div>${Number(s.cleaning_fee) ? `<div>التنظيف <b>${fmt(s.cleaning_fee)}</b></div>` : ''}<div class="st-sum">المجموع <b>${fmt(tot)} درهم</b></div>${n < (s.min_nights || 1) ? `<div class="st-warn">⚠️ أقل مدة ${s.min_nights} ليالي</div>` : ''}${clash ? '<div class="st-warn">⚠️ هاد التواريخ فيها حجز آخر</div>' : ''}`;
+        return { v, n, tot };
+      };
+      $$('#bk input, #bk select').forEach(el => el.addEventListener('input', calc)); calc();
+      $$('.st-gallery img').forEach(i => i.onclick = () => window.open(i.src, '_blank'));
+      $('#go').onclick = async () => {
+        if (!$('#bk').reportValidity()) return;
+        const c = calc(); if (!c) return;
+        const btn = $('#go'); btn.disabled = true; btn.textContent = '⏳ …';
+        try {
+          const r = await rpc('w777_book', { s: id, name: c.v.name, phone: c.v.phone, guests: +c.v.g, d1: c.v.d1, d2: c.v.d2, note: c.v.note || null, src: 'public' });
+          const msg = `السلام عليكم مكتب الوسيط 777، طلب حجز ${r.ref}:\n🏖️ ${s.title}\n📅 ${c.v.d1} ← ${c.v.d2} (${r.nights} ليلة)\n👥 ${c.v.g} ضيوف\n💰 ${r.total} درهم\n👤 ${c.v.name} — ${c.v.phone}`;
+          box.innerHTML = `<div class="card card-pad" style="text-align:center;padding:30px 16px"><div style="font-size:52px">✅</div><h2>تصيفط طلب الحجز ${esc(r.ref)}</h2>
+            <p>${esc(s.title)} · ${r.nights} ليلة · المجموع <b>${fmt(r.total)} درهم</b></p>
+            <p class="muted">باش يتأكد الحجز، صيفط الطلب لمكتب الوسيط 777 فواتساب. المكتب غادي يعطيك طريقة الأداء ويأكد مع صاحب العقار.</p>
+            <a class="btn gold wa" target="_blank" rel="noopener" href="https://wa.me/${OFFICE}?text=${encodeURIComponent(msg)}">💬 صيفط الطلب للمكتب فواتساب</a>
+            <div style="margin-top:14px"><a class="btn" href="stays.html">→ رجوع للعقارات</a></div></div>${how}`;
+        } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = '📩 طلب الحجز'; }
+      };
+    }
+    function routeP() {
+      const h = location.hash.replace(/^#/, ''); const [id, qs] = h.split('?');
+      window.scrollTo(0, 0);
+      if (id) detail(id, new URLSearchParams(qs || '')); else list();
+    }
+    async function start() {
+      if (!URL_ || !KEY) { box.innerHTML = '<div class="card card-pad">الخدمة غير متوفرة حاليا. تواصل مع مكتب الوسيط 777: 0777 777 959</div>'; return; }
+      try { ALL = await get(`w777_stays?select=${COLS}&status=eq.approved&order=created_at.desc`); if (!Array.isArray(ALL)) throw new Error((ALL && ALL.message) || 'خطأ'); }
+      catch (e) { box.innerHTML = `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+      window.addEventListener('hashchange', routeP); routeP();
+    }
+    start();
+  })();
+  </script>
+</body>
+</html>

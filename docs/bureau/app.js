@@ -610,6 +610,7 @@
     else if (a === 'learn') { nav = 'learn'; viewLearn(); }
     else if (a === 'guide') { nav = 'guide'; viewGuide(b); }
     else if (a === 'search') { nav = 'search'; await viewSearch(query); }
+    else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
@@ -635,7 +636,7 @@
     ['agencies', '🏢', 'الوكالات العقارية', '700 داخل · 77 خارج'], ['brokers', '🤝', 'الوسطاء', '777 وسيط'],
     ['contractors', '🏗️', 'شركات المقاولات', '777 شركة'], ['finishing', '🎨', 'شركات التشطيب', '777 شركة'],
     ['projects', '🚀', 'مشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات', 'معارض وصالونات'],
-    ['news', '📰', 'الأخبار', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
+    ['stays', '🏖️', 'الحجز', 'مفروش وعطل'], ['news', '📰', 'الأخبار', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
     ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'],
   ];
   function gdBanner() {
@@ -2616,7 +2617,7 @@
       }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -3426,6 +3427,361 @@
     };
   }
 
+
+
+  /* ============================================================
+     الحجز: شقق مفروشة وعقارات العطل (بحال Airbnb)
+     الزبون كيطلب ← مكتب الوسيط 777 كيستلم المبلغ ← كيأكد مع صاحب العقار
+     ← الزبون كيوصل ويكون راضي ← المكتب كيسلّم المبلغ لصاحب العقار
+     ============================================================ */
+  const STAY_KINDS = { apartment: '🏢 شقة مفروشة', studio: '🛏️ استوديو', villa: '🏡 فيلا', riad: '🕌 رياض', house: '🏠 دار', chalet: '🏔️ شاليه', room: '🚪 غرفة', other: '✨ أخرى' };
+  const STAY_AMEN = ['واي فاي', 'مكيف', 'تدفئة', 'مطبخ مجهز', 'غسالة', 'تلفاز', 'موقف سيارات', 'مسبح', 'حديقة', 'شرفة / تيراس', 'إطلالة على البحر', 'قرب الشاطئ', 'مصعد', 'أفرشة وفوط', 'مناسب للعائلات', 'شواء (باربكيو)'];
+  const BK_ST = { requested: ['🆕 طلب جديد', 'blue'], confirmed: ['✅ مؤكد — المبلغ عند المكتب', 'green'], checked_in: ['🧳 الزبون وصل', 'gold'],
+    completed: ['💚 مكتمل — تسلّم صاحب العقار', 'green'], cancelled: ['✖ ملغى', 'red'], refunded: ['↩ تم الإرجاع', 'gray'] };
+  const bkBadge = s => { const x = BK_ST[s] || [s, 'gray']; return `<span class="badge ${x[1]}">${x[0]}</span>`; };
+  const stayImg = path => path ? `${(window.W777_SYNC.account() || window.W777_SYNC.defaults()).url}/storage/v1/object/public/w777-stays/${path}` : '';
+  const nightsOf = (a, b) => a && b ? Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5) : 0;
+  const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+  const STAY_STEPS = ['اختار العقار والتواريخ وصيفط طلب الحجز.', 'كتأدي مبلغ الحجز لمكتب الوسيط 777 (ماشي لصاحب العقار).', 'المكتب كيتواصل مع صاحب العقار وكيأكد الحجز.', 'كتوصل وكتشوف العقار — إلا كنتي راضي…', '…المكتب كيسلّم المبلغ لصاحب العقار. وإلا ماشي راضي، المكتب كيتدخل.'];
+  const stepsBox = () => `<div class="card card-pad st-how"><b>🛡️ كيفاش كيخدم الحجز؟ (الأمان عبر مكتب الوسيط 777)</b>
+    <ol>${STAY_STEPS.map(x => `<li>${esc(x)}</li>`).join('')}</ol></div>`;
+  function stayCalendar(busy) {
+    const isBusy = d => busy.some(b => b.check_in <= d && d < b.check_out);
+    const t = today(); let html = '';
+    for (let m = 0; m < 2; m++) {
+      const first = new Date(t.slice(0, 7) + '-01T12:00:00'); first.setMonth(first.getMonth() + m);
+      const y = first.getFullYear(), mo = first.getMonth(), days = new Date(y, mo + 1, 0).getDate(), pad = (first.getDay() + 6) % 7;
+      let cells = '';
+      for (let i = 0; i < pad; i++) cells += '<i></i>';
+      for (let d = 1; d <= days; d++) {
+        const ds = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        cells += `<span class="${ds < t ? 'past' : isBusy(ds) ? 'busy' : 'free'}">${d}</span>`;
+      }
+      html += `<div class="st-month"><b>${esc(first.toLocaleDateString('ar-MA', { month: 'long', year: 'numeric' }))}</b>
+        <div class="st-days">${['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح'].map(x => `<em>${x}</em>`).join('')}${cells}</div></div>`;
+    }
+    return `<div class="st-cal">${html}</div><small class="muted">🟩 متوفر · 🟥 محجوز</small>`;
+  }
+  function stayCard(s, href) {
+    const ph = (s.photos || [])[0];
+    return `<a class="card st-card" href="${href || '#/stays/v/' + s.id}">
+      <div class="st-cover">${ph ? `<img src="${esc(stayImg(ph))}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
+        <span class="badge">${esc(STAY_KINDS[s.kind] || STAY_KINDS.other)}</span>${s.status && s.status !== 'approved' ? `<span class="st-st">${stBadge(s.status)}</span>` : ''}</div>
+      <div class="st-body"><b>${esc(s.title)}</b><small class="muted">📍 ${esc([s.district, s.city].filter(Boolean).join('، ') || '—')}</small>
+        <small class="muted">👥 ${s.max_guests} ضيوف · 🛏️ ${s.beds || 1} سرير · 🚿 ${s.baths || 1}</small>
+        <div class="st-price">${nm(s.price_night)} درهم <small>/ الليلة</small></div></div></a>`;
+  }
+  async function viewStays(parts, query) {
+    if (!await netGate('الحجز', '🏖️')) return;
+    const admin = S.role === 'admin';
+    const tabs = [['', '🏖️ تصفح واحجز'], ['mine', '🏠 عقاراتي وحجوزاتي'], ['new', '➕ زيد عقار للحجز']];
+    if (admin) tabs.push(['bookings', '📒 إدارة الحجوزات'], ['review', '🛡️ المراجعة']);
+    if (parts[1] === 'v') return viewStay(parts[2]);
+    const tab = pickTab(tabs, parts[1] || '', '');
+    const pub = location.href.split('#')[0].replace(/index\.html$/, '') + 'stays.html';
+    const head = secHead('🏖️', 'الحجز — شقق مفروشة وعقارات العطل', 'حجز بحال Airbnb، والأمان عبر مكتب الوسيط 777: المبلغ كيبقى عند المكتب حتى يوصل الزبون ويكون راضي.', tabs, tab, 'stays')
+      + `<div class="btn-row" style="margin:-4px 0 12px"><button class="btn sm" id="st-link">🔗 رابط الحجز للزبناء</button>
+         <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('🏖️ احجز شقة مفروشة ولا عقار للعطلة مع مكتب الوسيط 777 — الأداء آمن عبر المكتب:\n' + pub)}">${ic('wa', 15)} شارك الرابط</a></div>`;
+    const bindLink = () => { const b = $('#st-link'); if (b) b.onclick = async () => { try { await navigator.clipboard.writeText(pub); toast('تنسخ الرابط ✓'); } catch (e) { modal(`<h3>رابط الحجز</h3><input value="${esc(pub)}" style="width:100%" dir="ltr" readonly>`); } }; };
+    if (tab === 'new') { await stayForm(head, query.id); bindLink(); return; }
+    if (tab === 'bookings') { await viewBookingsAdmin(head); bindLink(); return; }
+    if (tab === 'mine') { await viewStaysMine(head); bindLink(); return; }
+    let rows;
+    try { rows = await rq(`/rest/v1/w777_stays?select=*&status=${tab === 'review' ? 'eq.pending' : 'eq.approved'}&order=created_at.desc&limit=300`); }
+    catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    if (tab === 'review') {
+      main().innerHTML = head + `<div class="dir-grid">${rows.map(s => `<div class="st-rev">${stayCard(s)}
+        <div class="btn-row" style="margin-top:8px"><button class="btn sm gold" data-ok="${s.id}">✅ نشر</button><button class="btn sm" data-no="${s.id}">✖ رفض</button>
+        ${s.owner_phone ? `<a class="btn sm" href="${telLink(s.owner_phone)}">${ic('phone', 15)}</a>` : ''}</div></div>`).join('') || emptyCard('🛡️', 'ما كاين حتى عقار فانتظار المراجعة', '')}</div>`;
+      const patch = async (id, body, ok) => { try { await rq(`/rest/v1/w777_stays?id=eq.${id}`, 'PATCH', body); toast(ok); route(); } catch (e) { toast('تعذر: ' + e.message, 4000); } };
+      $$('[data-ok]').forEach(b => b.onclick = () => patch(b.dataset.ok, { status: 'approved' }, 'تنشر ✓'));
+      $$('[data-no]').forEach(b => b.onclick = () => noteModal('سبب الرفض', '', n => patch(b.dataset.no, { status: 'rejected', admin_note: n }, 'ترفض')));
+      bindLink(); return;
+    }
+    const f = Object.assign({ city: '', kind: '', guests: '', d1: '', d2: '', pmax: null }, S.stf || {});
+    const cities = [...new Set(rows.map(s => s.city).filter(Boolean))].sort();
+    main().innerHTML = head + `
+      <div class="card card-pad st-search">
+        <form id="stf" class="form-grid" onsubmit="return false">
+          ${fSelect('city', 'المدينة', cities, f.city, { empty: 'كل المدن' })}
+          ${fInput('d1', 'الوصول', f.d1, { type: 'date', attrs: `min="${today()}"` })}
+          ${fInput('d2', 'المغادرة', f.d2, { type: 'date', attrs: `min="${today()}"` })}
+          ${fSelect('guests', 'الضيوف', ['1', '2', '3', '4', '5', '6', '8', '10'], f.guests, { empty: 'أي عدد' })}
+          ${fSelect('kind', 'النوع', Object.entries(STAY_KINDS).map(([v, l]) => ({ v, l })), f.kind, { empty: 'الكل' })}
+          ${fInput('pmax', 'الثمن الأقصى / الليلة', f.pmax, { money: true })}
+        </form><div class="muted" id="st-count" style="margin-top:8px"></div></div>
+      <div class="st-grid" id="st-grid"></div>
+      ${stepsBox()}`;
+    bindMoney(main()); bindLink();
+    const busyCache = {};
+    const draw = async () => {
+      const v = collect($('#stf')); Object.assign(f, { city: v.city, kind: v.kind, guests: v.guests, d1: v.d1, d2: v.d2, pmax: num(v.pmax) }); S.stf = f;
+      let res = rows.filter(s => (!f.city || s.city === f.city) && (!f.kind || s.kind === f.kind) && (!f.guests || s.max_guests >= +f.guests) && (!f.pmax || num(s.price_night) <= f.pmax));
+      if (f.d1 && f.d2 && f.d2 > f.d1) {
+        await Promise.all(res.map(async s => { if (!busyCache[s.id]) busyCache[s.id] = await rq('/rest/v1/rpc/w777_stay_busy', 'POST', { s: s.id }).catch(() => []); }));
+        res = res.filter(s => !busyCache[s.id].some(b => b.check_in < f.d2 && b.check_out > f.d1) && nightsOf(f.d1, f.d2) >= (s.min_nights || 1));
+      }
+      $('#st-count').textContent = `${res.length} عقار متوفر`;
+      $('#st-grid').innerHTML = res.map(s => stayCard(s, `#/stays/v/${s.id}${f.d1 && f.d2 ? `?d1=${f.d1}&d2=${f.d2}` : ''}`)).join('')
+        || emptyCard('🏖️', 'ما كاين حتى عقار بهاد الشروط', 'بدّل التواريخ ولا المدينة — ولا زيد العقار ديالك من «➕ زيد عقار للحجز».');
+    };
+    $$('#stf input, #stf select').forEach(el => el.addEventListener('change', draw));
+    draw();
+  }
+  async function viewStay(id) {
+    let s, busy = [];
+    try { s = (await rq(`/rest/v1/w777_stays?id=eq.${id}&select=*`))[0]; busy = await rq('/rest/v1/rpc/w777_stay_busy', 'POST', { s: id }).catch(() => []); } catch (e) { /* */ }
+    if (!s) { main().innerHTML = notFound(); return; }
+    const me = window.W777_SYNC.uid(), canEdit = S.role === 'admin' || s.owner === me;
+    const q = parseHash().query;
+    main().innerHTML = `
+      <div class="page-head"><a class="btn" href="#/stays">${ic('back', 18)} الحجز</a>${canEdit ? `<a class="btn" href="#/stays/new?id=${s.id}">${ic('edit', 16)} تعديل</a>` : ''}</div>
+      <div class="st-gallery n${Math.min((s.photos || []).length, 5)}">${(s.photos || []).map((p, i) => `<img src="${esc(stayImg(p))}" data-i="${i}" alt="">`).join('') || `<div class="card empty">${ic('image', 40)}<p>بلا صور</p></div>`}</div>
+      <div class="detail-grid" style="margin-top:16px">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card card-pad">
+            <div class="btn-row" style="gap:6px"><span class="badge gold">${esc(STAY_KINDS[s.kind] || STAY_KINDS.other)}</span>${s.status !== 'approved' ? stBadge(s.status) : ''}<span class="badge" dir="ltr">${refOf('ST', s.id)}</span></div>
+            <h1 style="margin:8px 0 4px;font-size:24px">${esc(s.title)}</h1>
+            <div class="muted">📍 ${esc([s.district, s.city].filter(Boolean).join('، ') || '—')} · 🏢 ${esc(s.owner_name || '')}</div>
+            <div class="kv" style="margin-top:12px"><div><small>الضيوف</small><b>👥 ${s.max_guests}</b></div><div><small>غرف النوم</small><b>${s.bedrooms || 1}</b></div><div><small>الأسرّة</small><b>${s.beds || 1}</b></div><div><small>الحمامات</small><b>${s.baths || 1}</b></div><div><small>أقل مدة</small><b>${s.min_nights || 1} ليلة</b></div></div>
+            ${(s.amenities || []).length ? `<h3 class="section-title" style="margin-top:14px">✨ المرافق</h3><div class="chips wrap">${s.amenities.map(a => `<span class="chip">${esc(a)}</span>`).join('')}</div>` : ''}
+            ${s.description ? `<h3 class="section-title" style="margin-top:14px">📝 الوصف</h3><p style="white-space:pre-wrap;margin:0">${esc(s.description)}</p>` : ''}
+            ${s.rules ? `<h3 class="section-title" style="margin-top:14px">📌 قواعد العقار</h3><p style="white-space:pre-wrap;margin:0">${esc(s.rules)}</p>` : ''}
+            ${canEdit && (s.address || s.owner_phone) ? `<div class="mod-note" style="margin-top:12px">🔒 خاص: ${esc(s.address || '')} ${s.owner_phone ? '· ' + esc(s.owner_phone) : ''}</div>` : ''}
+          </div>
+          <div class="card card-pad"><h3 class="section-title">📅 التوفر</h3>${stayCalendar(busy)}</div>
+        </div>
+        <div class="card card-pad st-book">
+          <div class="st-price" style="font-size:24px">${nm(s.price_night)} درهم <small>/ الليلة</small></div>
+          ${num(s.cleaning_fee) ? `<small class="muted">+ ${nm(s.cleaning_fee)} درهم تنظيف</small>` : ''}
+          <form id="bkf" class="form-grid" style="margin-top:12px" onsubmit="return false">
+            ${fInput('d1', 'الوصول', q.d1 || '', { type: 'date', req: true, attrs: `min="${today()}"` })}
+            ${fInput('d2', 'المغادرة', q.d2 || '', { type: 'date', req: true, attrs: `min="${addDays(today(), 1)}"` })}
+            ${fSelect('guests', 'الضيوف', Array.from({ length: s.max_guests || 1 }, (_, i) => String(i + 1)), (s.max_guests || 1) >= 2 ? '2' : '1', { noEmpty: true })}
+            ${fInput('name', 'سمية الزبون', '', { req: true })}
+            ${fInput('phone', 'هاتف الزبون (واتساب)', '', { type: 'tel', req: true })}
+            ${fText('note', 'ملاحظة (اختياري)', '', { ph: 'ساعة الوصول، طلبات خاصة…' })}
+          </form>
+          <div class="st-total" id="bk-total"></div>
+          <button class="btn gold" id="bk-go" style="width:100%;margin-top:10px">📩 طلب الحجز</button>
+          <p class="muted" style="font-size:12.5px;margin:10px 0 0">💡 ما كتخلص حتى حاجة دابا. المكتب غادي يتواصل معاك باش تأدي المبلغ عند مكتب الوسيط 777 ويأكد الحجز.</p>
+        </div>
+      </div>
+      ${stepsBox()}`;
+    const calc = () => {
+      const v = collect($('#bkf')); const n = nightsOf(v.d1, v.d2);
+      const box = $('#bk-total');
+      if (n <= 0) { box.innerHTML = ''; return null; }
+      const clash = busy.some(b => b.check_in < v.d2 && b.check_out > v.d1);
+      const tot = n * num(s.price_night) + (num(s.cleaning_fee) || 0);
+      box.innerHTML = `<div>${nm(s.price_night)} × ${n} ليلة <b>${nm(n * num(s.price_night))}</b></div>${num(s.cleaning_fee) ? `<div>التنظيف <b>${nm(s.cleaning_fee)}</b></div>` : ''}
+        <div class="st-sum">المجموع <b>${nm(tot)} درهم</b></div>${n < (s.min_nights || 1) ? `<div class="st-warn">⚠️ أقل مدة ${s.min_nights} ليالي</div>` : ''}${clash ? '<div class="st-warn">⚠️ هاد التواريخ فيها حجز آخر</div>' : ''}`;
+      return { v, n, tot };
+    };
+    $$('#bkf input, #bkf select').forEach(el => el.addEventListener('input', calc));
+    calc();
+    $$('.st-gallery img').forEach(img => img.onclick = () => modal(`<img src="${img.src}" style="width:100%;border-radius:12px">`));
+    $('#bk-go').onclick = async () => {
+      const f = $('#bkf'); if (!f.reportValidity()) return;
+      const c = calc(); if (!c) { toast('اختار التواريخ'); return; }
+      try {
+        const r = await rq('/rest/v1/rpc/w777_book', 'POST', { s: s.id, name: c.v.name, phone: c.v.phone, guests: +c.v.guests, d1: c.v.d1, d2: c.v.d2, note: c.v.note || null, src: 'app' });
+        const msg = `السلام عليكم مكتب الوسيط 777، طلب حجز ${r.ref}:\n🏖️ ${s.title} (${refOf('ST', s.id)})\n📅 ${c.v.d1} ← ${c.v.d2} (${r.nights} ليلة)\n👥 ${c.v.guests} ضيوف\n💰 ${fmtRaw(r.total)} درهم\n👤 ${c.v.name} — ${c.v.phone}`;
+        modal(`<div style="text-align:center"><div style="font-size:46px">✅</div><h3>تصيفط طلب الحجز ${esc(r.ref)}</h3>
+          <p>المجموع: <b>${nm(r.total)} درهم</b> (${r.nights} ليلة)</p><p class="muted">صيفط الطلب لمكتب الوسيط 777 فواتساب باش يأكد معاك ويعطيك طريقة الأداء.</p>
+          <a class="btn gold wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 16)} صيفط للمكتب</a></div>`);
+        busy.push({ check_in: c.v.d1, check_out: c.v.d2 });
+      } catch (e) { toast('تعذر: ' + e.message, 5000); }
+    };
+  }
+  async function stayForm(head, id) {
+    let s = { kind: 'apartment', city: S.settings.officeCity, min_nights: 1, max_guests: 4, bedrooms: 1, beds: 2, baths: 1, cleaning_fee: 0, amenities: [], photos: [], owner_phone: myAgencyPhone() };
+    if (id) { try { s = (await rq(`/rest/v1/w777_stays?id=eq.${id}&select=*`))[0] || s; } catch (e) { /* */ } }
+    const sid = s.id || (crypto.randomUUID ? crypto.randomUUID() : uid());
+    let photos = (s.photos || []).slice();
+    const lim = photoLimit();
+    main().innerHTML = head + `
+      <div class="card card-pad form">
+        <h3 class="section-title">${id ? '✏️ تعديل العقار' : '➕ عقار جديد للحجز'}</h3>
+        <form id="stf2" class="form-grid" onsubmit="return false">
+          ${fInput('title', 'العنوان', s.title, { req: true, cls: 'full', ph: 'مثلا: شقة مفروشة قرب البحر — 2 غرف' })}
+          ${fSelect('kind', 'النوع', Object.entries(STAY_KINDS).map(([v, l]) => ({ v, l })), s.kind, { noEmpty: true })}
+          ${fInput('city', 'المدينة', s.city, { req: true, list: 'dl-cities' })}
+          ${fInput('district', 'الحي / المنطقة', s.district)}
+          ${fInput('price_night', 'الثمن ديال الليلة (درهم)', s.price_night, { money: true, req: true })}
+          ${fInput('cleaning_fee', 'مصاريف التنظيف (درهم)', s.cleaning_fee, { money: true })}
+          ${fInput('min_nights', 'أقل عدد ديال الليالي', s.min_nights, { type: 'number' })}
+          ${fInput('max_guests', 'أقصى عدد ديال الضيوف', s.max_guests, { type: 'number', req: true })}
+          ${fInput('bedrooms', 'غرف النوم', s.bedrooms, { type: 'number' })}
+          ${fInput('beds', 'الأسرّة', s.beds, { type: 'number' })}
+          ${fInput('baths', 'الحمامات', s.baths, { type: 'number' })}
+          <div class="field full"><label>المرافق</label><div class="chips wrap">${STAY_AMEN.map(a => `<span class="chip ${(s.amenities || []).includes(a) ? 'on' : ''}" data-am="${esc(a)}">${esc(a)}</span>`).join('')}</div></div>
+          ${fText('description', 'الوصف', s.description, { ph: 'المساحة، الإطلالة، القرب من البحر والمرافق…' })}
+          ${fText('rules', 'قواعد العقار', s.rules, { ph: 'ساعة الدخول والخروج، ممنوع التدخين، الحيوانات…' })}
+          ${fInput('address', '🔒 العنوان الدقيق (كيشوفو غير المكتب)', s.address, { cls: 'full' })}
+          ${fInput('owner_phone', '🔒 هاتف صاحب العقار (كيشوفو غير المكتب)', s.owner_phone, { type: 'tel' })}
+          <div class="field full"><label>الصور ${lim === Infinity ? '' : `(حتى ${lim})`}</label>
+            <label class="dropzone">${ic('camera', 28)}<b>إضافة صور</b><small>أول صورة هي الغلاف</small><input type="file" id="st-ph" accept="image/*" multiple hidden></label>
+            <div class="st-thumbs" id="st-thumbs"></div></div>
+        </form>
+        <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
+        <p class="muted" style="font-size:13px">🛡️ العقار كيبان فالحجز من بعد موافقة مكتب الوسيط 777. أي تعديل كيرجعو للمراجعة.</p>
+        <div class="btn-row"><button class="btn gold" id="st-save">${ic('check', 18)} ${id ? 'حفظ' : 'إرسال للمراجعة'}</button></div>
+      </div>`;
+    bindMoney(main());
+    const amen = new Set(s.amenities || []);
+    $$('[data-am]').forEach(c => c.onclick = () => { const a = c.dataset.am; amen.has(a) ? amen.delete(a) : amen.add(a); c.classList.toggle('on'); });
+    const drawThumbs = () => {
+      $('#st-thumbs').innerHTML = photos.map((p, i) => `<div><img src="${esc(stayImg(p))}" alt=""><button type="button" data-rm="${i}">✕</button></div>`).join('');
+      $$('#st-thumbs [data-rm]').forEach(b => b.onclick = () => { photos.splice(+b.dataset.rm, 1); drawThumbs(); });
+    };
+    drawThumbs();
+    $('#st-ph').onchange = async e => {
+      let files = Array.from(e.target.files); e.target.value = '';
+      const room = lim - photos.length;
+      if (room <= 0) { toast(`الحد الأقصى ${PHOTO_MAX} صور`, 3000); return; }
+      if (files.length > room) { toast(`تزادو غير ${room} صور — الحد الأقصى ${PHOTO_MAX}`, 3000); files = files.slice(0, room); }
+      for (const f of files) {
+        try {
+          const big = await compressImage(f, 1600, 0.8);
+          const path = `${window.W777_SYNC.uid()}/${sid}/${uid()}.jpg`;
+          await window.W777_SYNC.request('/storage/v1/object/w777-stays/' + path, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: big.blob });
+          photos.push(path); drawThumbs();
+        } catch (er) { toast('تعذر رفع صورة: ' + er.message, 4000); }
+      }
+    };
+    $('#st-save').onclick = async () => {
+      const f = $('#stf2'); if (!f.reportValidity()) return;
+      const v = collect(f);
+      const body = { title: v.title, kind: v.kind, city: v.city || null, district: v.district || null, price_night: num(v.price_night), cleaning_fee: num(v.cleaning_fee) || 0,
+        min_nights: Math.max(1, num(v.min_nights) || 1), max_guests: Math.max(1, num(v.max_guests) || 1), bedrooms: num(v.bedrooms) || 0, beds: num(v.beds) || 1, baths: num(v.baths) || 1,
+        amenities: [...amen], description: v.description || null, rules: v.rules || null, address: v.address || null, owner_phone: v.owner_phone || null, photos };
+      try {
+        if (id) await rq(`/rest/v1/w777_stays?id=eq.${id}`, 'PATCH', body);
+        else await rq('/rest/v1/w777_stays', 'POST', Object.assign({ id: sid, owner_name: myAgencyName() }, body), 'return=minimal');
+        toast(S.role === 'admin' ? 'تم الحفظ ✓' : 'تصيفط للمراجعة ✓', 3000);
+        location.hash = '#/stays/mine';
+      } catch (e) { toast('تعذر: ' + e.message, 4000); }
+    };
+  }
+  async function viewStaysMine(head) {
+    const me = window.W777_SYNC.uid();
+    let mine = [], ob = [], made = [];
+    try {
+      [mine, ob, made] = await Promise.all([
+        rq(`/rest/v1/w777_stays?select=*&owner=eq.${me}&order=created_at.desc`),
+        rq('/rest/v1/rpc/w777_owner_bookings', 'POST', {}).catch(() => []),
+        rq(`/rest/v1/w777_bookings?select=id,stay_id,guest_name,guests,check_in,check_out,nights,total,status,w777_stays(title)&created_by=eq.${me}&order=created_at.desc&limit=100`).catch(() => []),
+      ]);
+    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    main().innerHTML = head + `
+      <h2 class="gd-part">🏠 العقارات ديالي للحجز (${mine.length})</h2>
+      <div class="st-grid">${mine.map(s => `<div>${stayCard(s)}${s.admin_note ? `<div class="mod-note">📝 ${esc(s.admin_note)}</div>` : ''}
+        <div class="btn-row" style="margin-top:6px"><a class="btn sm" href="#/stays/new?id=${s.id}">${ic('edit', 15)} تعديل</a>
+        ${s.status !== 'closed' ? `<button class="btn sm" data-close-st="${s.id}">⏸️ توقيف</button>` : ''}<button class="btn sm" data-del="${s.id}">${ic('trash', 15)}</button></div></div>`).join('')
+        || emptyCard('🏖️', 'مازال ما زدتي حتى عقار للحجز', '<a class="btn gold" href="#/stays/new">➕ زيد عقار</a>')}</div>
+      <h2 class="gd-part">📅 الحجوزات على العقارات ديالي</h2>
+      <div class="card">${ob.map(b => `<div class="list-row"><div class="grow"><b>${esc(b.title)}</b> ${bkBadge(b.status)}
+        <small class="muted">📅 ${esc(b.check_in)} ← ${esc(b.check_out)} · ${b.nights} ليلة · 👥 ${b.guests} · ${esc(b.guest_name || '')}</small>
+        <small class="muted">💰 المجموع ${nm(b.total)} درهم${b.payout_amount ? ` · نصيبك ${nm(b.payout_amount)} درهم${b.paid_out_at ? ' ✓ تسلّمتيه' : ''}` : ''}</small></div></div>`).join('')
+        || '<div class="empty">ما كاين حتى حجز دابا</div>'}</div>
+      <h2 class="gd-part">🧾 الحجوزات اللي درت للزبناء ديالي</h2>
+      <div class="card">${made.map(b => `<div class="list-row"><div class="grow"><b>${esc((b.w777_stays || {}).title || '')}</b> ${bkBadge(b.status)}
+        <small class="muted"><span dir="ltr">${refOf('BK', b.id)}</span> · 👤 ${esc(b.guest_name)} · 📅 ${esc(b.check_in)} ← ${esc(b.check_out)} · 💰 ${nm(b.total)} درهم</small></div></div>`).join('')
+        || '<div class="empty">ما درتي حتى حجز</div>'}</div>`;
+    $$('[data-close-st]').forEach(b => b.onclick = async () => { if (!await confirmBox('توقيف هاد العقار من الحجز؟', 'توقيف', false)) return; try { await rq(`/rest/v1/w777_stays?id=eq.${b.dataset.closeSt}`, 'PATCH', { status: 'closed' }); route(); } catch (e) { toast('تعذر: ' + e.message); } });
+    $$('[data-del]').forEach(b => b.onclick = async () => { if (!await confirmBox('حذف العقار نهائيا؟', 'حذف')) return; try { await rq(`/rest/v1/w777_stays?id=eq.${b.dataset.del}`, 'DELETE'); route(); } catch (e) { toast('تعذر: ' + e.message); } });
+  }
+  async function viewBookingsAdmin(head) {
+    let rows, stays;
+    try {
+      [rows, stays] = await Promise.all([
+        rq('/rest/v1/w777_bookings?select=*,w777_stays(title,owner,owner_name,owner_phone,city)&order=check_in.desc&limit=500'),
+        rq('/rest/v1/w777_stays?select=id,title,price_night,cleaning_fee,max_guests,status&order=title.asc'),
+      ]);
+    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    let dir = []; try { dir = await loadDir(); } catch (e) { /* */ }
+    const phoneOf = b => (b.w777_stays || {}).owner_phone || (dir.find(a => a.uid === (b.w777_stays || {}).owner) || {}).phone || '';
+    const held = rows.filter(b => ['confirmed', 'checked_in'].includes(b.status)).reduce((x, b) => x + (num(b.paid_amount) || 0), 0);
+    const comm = rows.filter(b => b.status === 'completed').reduce((x, b) => x + (num(b.commission) || 0), 0);
+    let fs = 'active';
+    main().innerHTML = head + `
+      <div class="card card-pad" style="margin-bottom:14px"><div class="kv">
+        <div><small>طلبات جديدة</small><b>${rows.filter(b => b.status === 'requested').length}</b></div>
+        <div><small>مؤكدة / الزبون وصل</small><b>${rows.filter(b => ['confirmed', 'checked_in'].includes(b.status)).length}</b></div>
+        <div><small>💰 المبالغ عند المكتب</small><b>${nm(held)} درهم</b></div>
+        <div><small>عمولة المكتب (مكتملة)</small><b>${nm(comm)} درهم</b></div></div>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="bk-add">➕ حجز يدوي</button></div></div>
+      <div class="chips" style="margin-bottom:12px">${[['active', 'الجارية'], ['requested', '🆕 جديدة'], ['confirmed', '✅ مؤكدة'], ['checked_in', '🧳 وصلو'], ['completed', '💚 مكتملة'], ['cancelled', '✖ ملغاة'], ['', 'الكل']].map(([k, l]) => `<span class="chip ${k === fs ? 'on' : ''}" data-fs="${k}">${l}</span>`).join('')}</div>
+      <div id="bk-list"></div>`;
+    const patch = async (id, body, ok) => { try { await rq(`/rest/v1/w777_bookings?id=eq.${id}`, 'PATCH', Object.assign({ updated_at: new Date().toISOString() }, body)); toast(ok); route(); } catch (e) { toast('تعذر: ' + e.message, 4000); } };
+    const draw = () => {
+      const list = rows.filter(b => fs === 'active' ? ['requested', 'confirmed', 'checked_in'].includes(b.status) : !fs || b.status === fs);
+      $('#bk-list').innerHTML = list.map(b => {
+        const st = b.w777_stays || {}, op = phoneOf(b), ref = refOf('BK', b.id);
+        const ownerMsg = `السلام عليكم ${st.owner_name || ''}، مكتب الوسيط 777: حجز ${ref} على «${st.title || ''}»\n📅 ${b.check_in} ← ${b.check_out} (${b.nights} ليلة)\n👥 ${b.guests} ضيوف\nالمبلغ عند المكتب، كيتسلم ليك من بعد وصول الزبون ورضاه.`;
+        return `<div class="card card-pad bk-row">
+          <div class="btn-row" style="justify-content:space-between">${bkBadge(b.status)}<span class="badge" dir="ltr">${ref}</span></div>
+          <b>🏖️ ${esc(st.title || '—')}</b> <small class="muted">${esc(st.city || '')} · 🏢 ${esc(st.owner_name || '')}</small>
+          <div class="muted">📅 <b>${esc(b.check_in)}</b> ← <b>${esc(b.check_out)}</b> · ${b.nights} ليلة · 👥 ${b.guests} · ${b.source === 'public' ? '🌐 صفحة الحجز' : '📱 التطبيق'}</div>
+          <div>👤 <b>${esc(b.guest_name)}</b> · <a href="${telLink(b.guest_phone)}" dir="ltr">${esc(b.guest_phone)}</a></div>
+          <div>💰 المجموع <b>${nm(b.total)}</b> درهم${b.paid_amount ? ` · توصل المكتب بـ <b>${nm(b.paid_amount)}</b>` : ''}${b.commission ? ` · العمولة ${nm(b.commission)}` : ''}${b.payout_amount ? ` · لصاحب العقار ${nm(b.payout_amount)}` : ''}</div>
+          ${b.note ? `<div class="muted">📝 ${esc(b.note)}</div>` : ''}${b.admin_note ? `<div class="mod-note">🛡️ ${esc(b.admin_note)}</div>` : ''}
+          <div class="btn-row" style="margin-top:8px">
+            <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(b.guest_phone)}?text=${encodeURIComponent('السلام عليكم ' + b.guest_name + '، مكتب الوسيط 777 بخصوص الحجز ' + ref)}">${ic('wa', 15)} الزبون</a>
+            ${op ? `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(op)}?text=${encodeURIComponent(ownerMsg)}">${ic('wa', 15)} صاحب العقار</a>` : ''}
+            ${b.status === 'requested' ? `<button class="btn sm gold" data-pay="${b.id}">💰 توصلت بالمبلغ</button>` : ''}
+            ${b.status === 'confirmed' ? `<button class="btn sm gold" data-in="${b.id}">🧳 الزبون وصل</button>` : ''}
+            ${b.status === 'checked_in' ? `<button class="btn sm gold" data-done="${b.id}">💚 راضي — سلّم المبلغ</button><button class="btn sm" data-refund="${b.id}">↩ ماشي راضي — إرجاع</button>` : ''}
+            ${['requested', 'confirmed'].includes(b.status) ? `<button class="btn sm" data-cancel="${b.id}">✖ إلغاء</button>` : ''}
+          </div></div>`;
+      }).join('') || emptyCard('📒', 'ما كاين حتى حجز', '');
+      const byId = id => rows.find(x => x.id === id);
+      $$('[data-pay]').forEach(x => x.onclick = () => {
+        const b = byId(x.dataset.pay);
+        modal(`<h3>💰 ${refOf('BK', b.id)} — توصل المكتب بالمبلغ</h3><form id="pm" class="form-grid">
+          ${fInput('paid', 'المبلغ اللي توصل بيه المكتب (درهم)', b.total, { money: true })}${fInput('comm', 'عمولة المكتب (درهم)', Math.round((num(b.total) || 0) * 0.1), { money: true, hint: 'افتراضيا 10% — بدّلها إلا بغيتي' })}
+          ${fText('note', 'ملاحظة', b.admin_note)}</form><div class="btn-row" style="margin-top:12px"><button class="btn gold" id="pm-ok">✅ تأكيد الحجز</button></div>`, (box, close) => {
+          bindMoney(box);
+          $('#pm-ok', box).onclick = () => { const v = collect($('#pm', box)); close(); patch(b.id, { status: 'confirmed', paid_amount: num(v.paid), commission: num(v.comm) || 0, paid_at: new Date().toISOString(), admin_note: v.note || null }, 'الحجز مؤكد ✓ — تواصل مع صاحب العقار'); };
+        });
+      });
+      $$('[data-in]').forEach(x => x.onclick = () => patch(x.dataset.in, { status: 'checked_in' }, 'تسجل الوصول ✓'));
+      $$('[data-done]').forEach(x => x.onclick = () => {
+        const b = byId(x.dataset.done), def = (num(b.paid_amount) || num(b.total) || 0) - (num(b.commission) || 0);
+        modal(`<h3>💚 تسليم المبلغ لصاحب العقار</h3><form id="po" class="form-grid">${fInput('payout', 'المبلغ اللي تسلّم لصاحب العقار (درهم)', def, { money: true })}</form>
+          <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="po-ok">✅ تم التسليم</button></div>`, (box, close) => {
+          bindMoney(box);
+          $('#po-ok', box).onclick = () => { const v = collect($('#po', box)); close(); patch(b.id, { status: 'completed', payout_amount: num(v.payout), paid_out_at: new Date().toISOString() }, 'تم ✓'); };
+        });
+      });
+      $$('[data-refund]').forEach(x => x.onclick = () => noteModal('سبب الإرجاع', '', n => patch(x.dataset.refund, { status: 'refunded', admin_note: n }, 'تسجل الإرجاع')));
+      $$('[data-cancel]').forEach(x => x.onclick = () => noteModal('سبب الإلغاء', '', n => patch(x.dataset.cancel, { status: 'cancelled', admin_note: n }, 'تلغى')));
+    };
+    $$('[data-fs]').forEach(c => c.onclick = () => { fs = c.dataset.fs; $$('[data-fs]').forEach(x => x.classList.toggle('on', x === c)); draw(); });
+    $('#bk-add').onclick = () => {
+      modal(`<h3>➕ حجز يدوي</h3><form id="ma" class="form-grid">
+        ${fSelect('stay', 'العقار', stays.map(s => ({ v: s.id, l: s.title + (s.status !== 'approved' ? ' (' + s.status + ')' : '') })), '', { req: true })}
+        ${fInput('d1', 'الوصول', '', { type: 'date', req: true })}${fInput('d2', 'المغادرة', '', { type: 'date', req: true })}
+        ${fInput('guests', 'الضيوف', 2, { type: 'number' })}${fInput('name', 'سمية الزبون', '', { req: true })}${fInput('phone', 'الهاتف', '', { type: 'tel', req: true })}
+        ${fInput('paid', 'المبلغ اللي توصل بيه المكتب (اختياري)', '', { money: true })}${fInput('comm', 'العمولة (اختياري)', '', { money: true })}</form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="ma-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+        bindMoney(box);
+        $('#ma-ok', box).onclick = async () => {
+          const fm = $('#ma', box); if (!fm.reportValidity()) return;
+          const v = collect(fm), s = stays.find(x => x.id === v.stay), n = nightsOf(v.d1, v.d2);
+          if (n <= 0) { toast('التواريخ غير صحيحة'); return; }
+          const paid = num(v.paid);
+          try {
+            await rq('/rest/v1/w777_bookings', 'POST', { stay_id: v.stay, guest_name: v.name, guest_phone: v.phone, guests: num(v.guests) || 1, check_in: v.d1, check_out: v.d2, nights: n,
+              total: n * num(s.price_night) + (num(s.cleaning_fee) || 0), status: paid ? 'confirmed' : 'requested', paid_amount: paid || null, paid_at: paid ? new Date().toISOString() : null, commission: num(v.comm) || null, source: 'office' }, 'return=minimal');
+            close(); toast('تزاد الحجز ✓'); route();
+          } catch (e) { toast('تعذر: ' + e.message, 4000); }
+        };
+      });
+    };
+    draw();
+  }
 
   /* ============================================================
      البحث: محرك بحث كامل بفلتر شامل
