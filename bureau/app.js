@@ -7,7 +7,7 @@
   const D = window.W777_DATA;
   // نسخة مدمجة (صفحة claude.ai): لا طباعة ولا تنزيل ملفات ولا اتصال خارجي
   const EMBED = !!window.W777_EMBED;
-  const LOGO = window.W777_LOGO || 'icons/logo.png?v=4';
+  const LOGO = window.W777_LOGO || 'icons/logo.png?v=5';
   const DB = window.W777_DB;
 
   /* ============================================================
@@ -2094,7 +2094,7 @@
     agPaintButton();
     return AG.cfg;
   }
-  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=3';
+  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=4';
   function agPaintButton() {
     const b = $('#agent-fab'); if (!b) return;
     b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
@@ -3197,7 +3197,7 @@
       toast('⏰ موعد: ' + body, 8000);
       try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* */ }
       if ('Notification' in window && Notification.permission === 'granted') {
-        const opt = { body, icon: 'icons/icon-192.png?v=3', badge: 'icons/icon-192.png?v=3', tag: key, data: { url: '#/appointments' }, requireInteraction: true };
+        const opt = { body, icon: 'icons/icon-192.png?v=4', badge: 'icons/icon-192.png?v=4', tag: key, data: { url: '#/appointments' }, requireInteraction: true };
         try {
           const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
           if (reg) await reg.showNotification('⏰ موعد ' + (APPT_TYPES[a.type] || ''), opt); else new Notification('⏰ موعد', opt);
