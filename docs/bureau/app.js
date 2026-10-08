@@ -559,7 +559,7 @@
         e.preventDefault(); input.focus(); input.select();
       }
     });
-    $('#btn-filter').onclick = () => openPropFilters();
+    $('#btn-filter').onclick = () => { location.hash = '#/search'; };
   }
 
   /* ============================================================
@@ -594,6 +594,7 @@
     else if (a === 'contracts') { nav = 'contracts'; viewContracts(); }
     else if (a === 'learn') { nav = 'learn'; viewLearn(); }
     else if (a === 'guide') { nav = 'guide'; viewGuide(b); }
+    else if (a === 'search') { nav = 'search'; await viewSearch(query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
@@ -645,7 +646,7 @@
     const h = new Date().getHours();
     const greet = h < 12 ? 'صباح الخير' : h < 18 ? 'مساء النور' : 'مساء الخير';
 
-    main().innerHTML = gdBanner() + `
+    main().innerHTML = gdBanner() + homeSearch() + `
       <div class="hero">
         <h2>${greet} 👋</h2>
         <p>${esc(S.role === 'agency' ? myAgencyName() : S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</p>
@@ -711,6 +712,7 @@
       <div class="prop-grid">${S.props.slice(0, 6).map(propCard).join('')}</div>`}
     `;
     hydrateThumbs(main());
+    bindHomeSearch();
     const seed = $('#seed');
     if (seed) seed.onclick = seedDemo;
   }
@@ -2595,7 +2597,7 @@
       }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -3403,6 +3405,227 @@
         $('#own-box').innerHTML = d ? `👤 <b>${esc(o.name || '—')}</b> ${o.phone ? `· <a href="${telLink(o.phone)}">${esc(o.phone)}</a>` : ''}${d.notes ? '<br>📝 ' + esc(d.notes) : ''}${d.address ? '<br>📍 ' + esc(d.address) : ''}` : 'ما لقيناش المعلومات';
       } catch (e) { $('#own-box').textContent = 'تعذر: ' + e.message; }
     };
+  }
+
+
+  /* ============================================================
+     البحث: محرك بحث كامل بفلتر شامل
+     (عقاراتي · عقارات الشبكة · الزبناء والطلبات · دليل الأعضاء)
+     ============================================================ */
+  const SF0 = () => ({ scope: 'mine', q: '', trx: '', cat: '', type: '', city: '', district: '', pmin: null, pmax: null, amin: null, amax: null,
+    beds: '', baths: '', status: 'active', feats: [], photos: false, below: false, nego: false, fav: false, zone: '', ag: '', kind: '', sv: '',
+    rstatus: 'open', follow: '', sort: 'new' });
+  const sfBlank = () => Object.assign(SF0(), { scope: (S.sf && S.sf.scope) || 'mine' });
+  const sfCount = f => ['q', 'trx', 'cat', 'type', 'city', 'district', 'pmin', 'pmax', 'amin', 'amax', 'beds', 'baths', 'zone', 'ag', 'kind', 'sv', 'follow']
+    .filter(k => f[k]).length + f.feats.length + ['photos', 'below', 'nego', 'fav'].filter(k => f[k]).length;
+  const prOf = p => num(p.priceMax) || num(p.priceMin);
+  const SORTS = { new: 'الأحدث', pasc: 'الثمن ↑', pdesc: 'الثمن ↓', aasc: 'المساحة ↑', adesc: 'المساحة ↓', old: 'الأقدم' };
+  function sfProps(list, f, net) {
+    const t = tokens(f.q || '');
+    const P = x => net ? netAsProp(x) : x;
+    list = list.filter(x => {
+      const p = P(x);
+      if (t.length && !hit(net ? norm([x.agency, p.ref, p.title, typeAr(p.type), trxAr(p.transaction), p.city, p.district, p.description, x.price].join(' ')) : propHay(p), t)) return false;
+      if (f.trx && p.transaction !== f.trx) return false;
+      if (f.cat && catOf(p.type) !== f.cat) return false;
+      if (f.type && p.type !== f.type) return false;
+      if (f.city && p.city !== f.city) return false;
+      if (f.district && p.district !== f.district) return false;
+      const pr = prOf(p);
+      if (f.pmin && !(pr && pr >= f.pmin)) return false;
+      if (f.pmax && !(pr && (num(p.priceMin) || pr) <= f.pmax)) return false;
+      const a = areaOf(p);
+      if (f.amin && !(a && a >= f.amin)) return false;
+      if (f.amax && !(a && a <= f.amax)) return false;
+      const sp = p.specs || {};
+      if (f.beds && !(num(sp.bedrooms) >= +f.beds)) return false;
+      if (f.baths && !(num(sp.bathrooms) >= +f.baths)) return false;
+      if (f.feats.length && !f.feats.every(ft => (p.features || []).includes(ft))) return false;
+      if (f.nego && !p.negotiable) return false;
+      if (f.below) { const m = marketCmp(p); if (!m || m.diff === undefined || m.diff > -5) return false; }
+      if (net) {
+        if (f.photos && !(x.photo_ids || []).length) return false;
+        if (f.ag && x.agency !== f.ag) return false;
+        if (f.zone && ((S.sfCountry || {})[x.owner] || 'المغرب') !== 'المغرب' !== (f.zone === 'out')) return false;
+      } else {
+        if (f.photos && !(p.media || []).some(m => m.kind === 'photo')) return false;
+        if (f.fav && !p.fav) return false;
+        if (f.status === 'active' && !['available', 'reserved', 'negotiation'].includes(p.status)) return false;
+        if (f.status && f.status !== 'active' && p.status !== f.status) return false;
+      }
+      return true;
+    });
+    const so = {
+      new: (a, b) => ((net ? b.updated_at : b.createdAt) || '').localeCompare((net ? a.updated_at : a.createdAt) || ''),
+      old: (a, b) => ((net ? a.updated_at : a.createdAt) || '').localeCompare((net ? b.updated_at : b.createdAt) || ''),
+      pasc: (a, b) => (prOf(P(a)) || Infinity) - (prOf(P(b)) || Infinity),
+      pdesc: (a, b) => (prOf(P(b)) || 0) - (prOf(P(a)) || 0),
+      aasc: (a, b) => (areaOf(P(a)) || Infinity) - (areaOf(P(b)) || Infinity),
+      adesc: (a, b) => (areaOf(P(b)) || 0) - (areaOf(P(a)) || 0),
+    };
+    return list.sort(so[f.sort] || so.new);
+  }
+  function sfReqs(f) {
+    let list = searchReqs(f.q || '');
+    if (f.trx) list = list.filter(r => r.transaction === f.trx);
+    if (f.city) list = list.filter(r => r.city === f.city);
+    if (f.district) list = list.filter(r => (r.districts || []).includes(f.district));
+    if (f.cat) list = list.filter(r => (r.types || []).some(t => catOf(t) === f.cat));
+    if (f.type) list = list.filter(r => (r.types || []).includes(f.type));
+    if (f.pmin) list = list.filter(r => num(r.budgetMax) >= f.pmin);
+    if (f.pmax) list = list.filter(r => (num(r.budgetMin) || num(r.budgetMax) || 0) <= f.pmax);
+    if (f.beds) list = list.filter(r => num(r.bedroomsMin) >= +f.beds);
+    if (f.rstatus === 'open') list = list.filter(openReq);
+    else if (f.rstatus) list = list.filter(r => r.status === f.rstatus);
+    if (f.follow === 'due') list = list.filter(r => r.followUp && r.followUp <= today());
+    if (f.follow === 'hot') list = list.filter(r => r.priority === 'high');
+    if (f.follow === 'match') list = list.filter(r => openReq(r) && matchesForReq(r).length);
+    const so = { new: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''), old: (a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''),
+      pasc: (a, b) => (num(a.budgetMax) || Infinity) - (num(b.budgetMax) || Infinity), pdesc: (a, b) => (num(b.budgetMax) || 0) - (num(a.budgetMax) || 0) };
+    return list.sort(so[f.sort] || so.new);
+  }
+  async function viewSearch(query) {
+    S.sf = Object.assign(SF0(), S.sf || {});
+    const f = S.sf;
+    // روابط من الرئيسية: #/search?q=…&trx=…&city=…&pmax=…
+    if (query && Object.keys(query).length) {
+      Object.assign(f, sfBlank());
+      ['scope', 'q', 'trx', 'city', 'cat', 'type'].forEach(k => { if (query[k]) f[k] = query[k]; });
+      if (query.pmax) f.pmax = num(query.pmax);
+      history.replaceState(null, '', '#/search');
+      if (window.innerWidth < 720) S.sfHide = true;   // فالهاتف: النتائج أولا، والفلتر بزر
+    }
+    const net = inNetwork();
+    if (!net && (f.scope === 'net' || f.scope === 'dir')) f.scope = 'mine';
+    const scopes = [['mine', '🏠 عقاراتي'], ...(net ? [['net', '🌍 عقارات الشبكة']] : []), ['reqs', '👥 الزبناء والطلبات'], ...(net ? [['dir', '📇 دليل الأعضاء']] : [])];
+    let netList = [], dir = [];
+    if (net && (f.scope === 'net' || f.scope === 'dir')) {
+      main().innerHTML = `<div class="card empty">جاري التحميل…</div>`;
+      try {
+        dir = await loadDir();
+        S.sfCountry = Object.fromEntries(dir.map(a => [a.uid, a.country || 'المغرب']));
+        if (f.scope === 'net') netList = await loadNetwork();
+      } catch (e) { toast('تعذر تحميل الشبكة: ' + e.message, 4000); }
+    }
+    const isP = f.scope === 'mine' || f.scope === 'net', isR = f.scope === 'reqs', isD = f.scope === 'dir';
+    const featPool = [...new Set([...(D.FEATURES.common || []), ...(f.cat ? D.FEATURES[f.cat] || [] : ['مصعد', 'مرآب / باركينغ', 'حديقة', 'مسبح', 'شرفة (تيراس)', 'سطح', 'مكيف', 'إقامة مغلقة', 'محفظة'])])];
+    const agencies = [...new Set(netList.map(x => x.agency).filter(Boolean))].sort();
+    const rangeF = (a, b, lbl, money) => fRange(a, b, lbl, f[a], f[b], { money, cls: 'full' });
+    const sel = (n, l, opts, empty) => fSelect(n, l, opts, f[n], { empty });
+    const filters = isD ? `
+        ${fInput('q', 'كلمة البحث', f.q, { ph: 'اسم، رمز، خدمة، هاتف…', cls: 'full' })}
+        ${sel('kind', 'النوع', Object.entries(KINDS).map(([v, k]) => ({ v, l: k.ic + ' ' + k.ar })), 'الكل')}
+        ${sel('zone', 'المنطقة', [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }], 'الكل')}
+        ${fSelect('city', 'المدينة', [...new Set(dir.map(a => a.city).filter(Boolean))].sort(), f.city, { empty: 'كل المدن' })}
+        ${fInput('sv', 'الخدمة', f.sv, { ph: 'بيع، زليج، بناء، ترميم…' })}` : `
+        ${fInput('q', 'كلمة البحث', f.q, { ph: isR ? 'اسم الزبون، الهاتف، المرجع، الحي…' : 'المرجع، الحي، النوع، المالك، الهاتف، الوصف…', cls: 'full' })}
+        ${sel('trx', 'نوع العملية', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), 'الكل')}
+        ${sel('cat', 'فئة العقار', Object.entries(D.CATEGORIES).map(([k, c]) => ({ v: k, l: c.ar })), 'كل الفئات')}
+        ${fSelect('type', 'نوع العقار', [], f.type, { groups: typeGroups(), empty: 'كل الأنواع' })}
+        ${fSelect('city', 'المدينة', [], f.city, { groups: cityGroups(), empty: 'كل المدن' })}
+        ${fSelect('district', 'الحي', districtsOf(f.city), f.district, { empty: 'كل الأحياء' })}
+        ${rangeF('pmin', 'pmax', isR ? 'الميزانية (درهم)' : 'الثمن (درهم)', true)}
+        ${isP ? rangeF('amin', 'amax', 'المساحة (م²)') : ''}
+        ${sel('beds', 'غرف النوم (على الأقل)', ['1', '2', '3', '4', '5', '6'], 'لا يهم')}
+        ${isP ? sel('baths', 'الحمامات (على الأقل)', ['1', '2', '3', '4'], 'لا يهم') : ''}
+        ${f.scope === 'mine' ? fSelect('status', 'الحالة', [{ v: 'active', l: 'المعروضة (متاح، محجوز، تفاوض)' }, ...D.STATUSES.map(s => ({ v: s.id, l: s.ar }))], f.status, { empty: 'كل الحالات' }) : ''}
+        ${f.scope === 'net' ? sel('zone', 'المنطقة', [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }], 'الكل') : ''}
+        ${f.scope === 'net' ? fSelect('ag', 'الوكالة / العضو', agencies, f.ag, { empty: 'الكل' }) : ''}
+        ${isR ? fSelect('rstatus', 'حالة الطلب', [{ v: 'open', l: 'المفتوحة' }, ...D.REQUEST_STATUSES.map(s => ({ v: s.id, l: s.ar }))], f.rstatus, { empty: 'الكل' }) : ''}
+        ${isR ? sel('follow', 'تصفية خاصة', [{ v: 'due', l: '⏰ المتابعة اليوم / متأخرة' }, { v: 'hot', l: '🔥 الزبناء المستعجلين' }, { v: 'match', l: '🎯 عندهم عقارات مطابقة' }], 'بدون') : ''}
+        ${isP ? `<div class="field full"><label>المميزات</label><div class="chips wrap sf-feats">${featPool.map(ft => `<span class="chip ${f.feats.includes(ft) ? 'on' : ''}" data-ft="${esc(ft)}">${esc(ft)}</span>`).join('')}</div></div>
+        <div class="field full"><label>خيارات</label><div class="chips wrap">
+          <span class="chip ${f.photos ? 'on' : ''}" data-opt="photos">📷 بالصور فقط</span>
+          <span class="chip ${f.below ? 'on' : ''}" data-opt="below">▼ تحت ثمن السوق</span>
+          <span class="chip ${f.nego ? 'on' : ''}" data-opt="nego">🤝 قابل للتفاوض</span>
+          ${f.scope === 'mine' ? `<span class="chip ${f.fav ? 'on' : ''}" data-opt="fav">★ المفضلة</span>` : ''}</div></div>` : ''}
+        ${isD ? '' : fSelect('sort', 'الترتيب', Object.entries(SORTS).filter(([k]) => isP || !k.startsWith('a')).map(([v, l]) => ({ v, l })), f.sort, { noEmpty: true })}`;
+    main().innerHTML = `
+      <div class="page-head"><div><h1>🔎 البحث</h1><div class="sub">بحث شامل بفلتر كامل — النتائج كتبان فالحين</div></div>
+        <button class="btn" id="sf-toggle">${ic('filter', 18)} الفلتر <span class="badge gold" id="sf-n">${sfCount(f) || ''}</span></button></div>
+      <div class="chips" style="margin-bottom:12px">${scopes.map(([k, l]) => `<span class="chip ${f.scope === k ? 'on' : ''}" data-scope="${k}">${l}</span>`).join('')}</div>
+      <div class="card card-pad sf-card ${S.sfHide ? 'hidden' : ''}" id="sf-card">
+        <form id="sf" class="form-grid" onsubmit="return false">${filters}</form>
+        <div class="btn-row" style="justify-content:space-between;margin-top:12px">
+          <button class="btn" id="sf-reset">✕ مسح الفلتر</button>
+          <span class="muted" id="sf-count"></span>
+        </div>
+      </div>
+      <div class="sf-sum" id="sf-sum"></div>
+      <div id="sf-res"></div>`;
+    bindMoney(main());
+    const form = $('#sf');
+    const read = () => {
+      const v = collect(form);
+      ['q', 'trx', 'cat', 'type', 'city', 'district', 'beds', 'baths', 'status', 'zone', 'ag', 'kind', 'sv', 'rstatus', 'follow', 'sort'].forEach(k => { if (k in v) f[k] = v[k] || ''; });
+      ['pmin', 'pmax', 'amin', 'amax'].forEach(k => { if (k in v) f[k] = num(v[k]); });
+    };
+    const draw = () => {
+      const out = $('#sf-res');
+      let n = 0, html = '';
+      if (f.scope === 'mine') {
+        const r = sfProps(S.props.slice(), f, false); n = r.length;
+        html = r.length ? `<div class="prop-grid">${r.slice(0, 200).map(propCard).join('')}</div>` : '';
+      } else if (f.scope === 'net') {
+        const r = sfProps(netList.slice(), f, true); n = r.length;
+        html = r.length ? `<div class="prop-grid">${r.slice(0, 200).map(netCard).join('')}</div>` : '';
+      } else if (isR) {
+        const r = sfReqs(f); n = r.length;
+        html = r.length ? `<div class="card">${r.slice(0, 200).map(reqCard).join('')}</div>` : '';
+      } else {
+        const t = tokens(f.q || '');
+        const r = dir.filter(a => a.active && (isNamed(a) || a.phone) && (!f.kind || kindOf(a) === f.kind) && (!f.zone || isAbroad(a) === (f.zone === 'out'))
+          && (!f.city || a.city === f.city) && (!f.sv || norm(a.services || '').includes(norm(f.sv)))
+          && (!t.length || hit(norm([a.code, a.name, a.city, a.country, a.services, a.about, a.phone].join(' ')), t)));
+        n = r.length;
+        html = r.length ? `<div class="dir-grid">${r.slice(0, 200).map(a => `<div class="card dir-card"><div class="dir-top"><div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>
+          <div class="grow"><b>${esc(a.name)}</b><small class="muted">${KINDS[kindOf(a)].ic} ${esc(KINDS[kindOf(a)].one)} · <span dir="ltr">${esc(a.code)}</span>${a.city ? ' · 📍 ' + esc(a.city) : ''}${isAbroad(a) ? ' · 🌍 ' + esc(a.country) : ''}</small></div></div>
+          ${splitList(a.services).length ? `<div class="chips wrap">${splitList(a.services).map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
+          <div class="btn-row">${a.phone ? `<a class="btn sm" href="${telLink(a.phone)}">${ic('phone', 15)} ${esc(a.phone)}</a><a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}">${ic('wa', 15)} واتساب</a>` : ''}</div></div>`).join('')}</div>` : '';
+      }
+      out.innerHTML = html || `<div class="card empty"><div class="big">🔎</div><h3>ما كاين حتى نتيجة</h3><p>بدّل الفلتر ولا مسح شي خانات.</p></div>`;
+      $('#sf-count').textContent = `${n} نتيجة`;
+      $('#sf-sum').innerHTML = `<b>${n}</b> نتيجة${sfCount(f) ? ` · ${sfCount(f)} فلتر` : ''}`;
+      $('#sf-n').textContent = sfCount(f) || '';
+      hydrateThumbs(out); if (f.scope === 'net') hydrateNet(out);
+    };
+    const redraw = debounce(() => { read(); draw(); }, 150);
+    $$('input', form).forEach(el => el.addEventListener('input', redraw));
+    $$('select', form).forEach(el => el.addEventListener('change', () => {
+      read();
+      if (el.name === 'city') { f.district = ''; const d = $('[name=district]', form); if (d) d.innerHTML = `<option value="">كل الأحياء</option>` + districtsOf(f.city).map(x => `<option>${esc(x)}</option>`).join(''); }
+      if (el.name === 'cat') { viewSearch(); return; }   // المميزات كتبدل حسب الفئة
+      draw();
+    }));
+    $$('[data-ft]').forEach(c => c.onclick = () => { const v = c.dataset.ft; f.feats = f.feats.includes(v) ? f.feats.filter(x => x !== v) : [...f.feats, v]; c.classList.toggle('on'); draw(); });
+    $$('[data-opt]').forEach(c => c.onclick = () => { f[c.dataset.opt] = !f[c.dataset.opt]; c.classList.toggle('on'); draw(); });
+    $$('[data-scope]').forEach(c => c.onclick = () => { read(); f.scope = c.dataset.scope; viewSearch(); });
+    $('#sf-reset').onclick = () => { S.sf = sfBlank(); viewSearch(); };
+    $('#sf-toggle').onclick = () => { S.sfHide = !S.sfHide; $('#sf-card').classList.toggle('hidden', S.sfHide); };
+    draw();
+  }
+  // البحث فالرئيسية (لفوق): كلمة + العملية + المدينة + الميزانية ← صفحة البحث
+  function homeSearch() {
+    return `<div class="card hs-card">
+      <div class="hs-title">🔎 البحث <small>قلّب فالعقارات، الزبناء${inNetwork() ? '، الشبكة والدليل' : ''}</small></div>
+      <form id="hs" class="hs-form" onsubmit="return false">
+        <input name="q" placeholder="شنو كتقلب؟ (مرجع، حي، نوع، زبون، هاتف…)" autocomplete="off">
+        <select name="trx"><option value="">كل العمليات</option>${D.TRANSACTIONS.map(t => `<option value="${t.id}">${esc(t.ar)}</option>`).join('')}</select>
+        <select name="city"><option value="">كل المدن</option>${cityGroups().map(g => `<optgroup label="${esc(g.label)}">${g.items.map(c => `<option value="${esc(c.v)}">${esc(c.v)}</option>`).join('')}</optgroup>`).join('')}</select>
+        <input name="pmax" inputmode="numeric" placeholder="الثمن الأقصى (درهم)">
+        <button class="btn gold" id="hs-go">${ic('search', 18)} بحث</button>
+        <a class="btn" href="#/search">${ic('filter', 18)} فلتر كامل</a>
+      </form></div>`;
+  }
+  function bindHomeSearch() {
+    const fm = $('#hs'); if (!fm) return;
+    const go = () => {
+      const v = Object.fromEntries(new FormData(fm).entries());
+      const qs = new URLSearchParams(Object.entries(v).filter(([, x]) => String(x).trim()).map(([k, x]) => [k, k === 'pmax' ? String(x).replace(/[^\d]/g, '') : x]));
+      location.hash = '#/search' + (qs.toString() ? '?' + qs : '?scope=mine');
+    };
+    $('#hs-go').onclick = go;
+    $('[name=q]', fm).addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
   }
 
   /* ============================================================
