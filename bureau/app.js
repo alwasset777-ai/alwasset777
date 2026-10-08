@@ -18,6 +18,9 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const today = () => new Date().toISOString().slice(0, 10);
+  // الصور: 5 صور لكل عقار لجميع المشتركين — المدير بلا حد
+  const PHOTO_MAX = 5;
+  const photoLimit = () => S.role === 'admin' ? Infinity : PHOTO_MAX;
   const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
   const fmtRaw = n => num(n) === null ? '' : new Intl.NumberFormat('fr-FR').format(Number(n)).replace(/[\u202f\u00a0]/g, ' ');
   // عزل الأرقام حتى لا تنقلب مجموعات الأرقام داخل النص العربي
@@ -952,7 +955,7 @@
           <h3 class="section-title"><span class="num">8</span> الصور، الفيديو والمستندات</h3>
           <div class="form-grid">
             <div class="full">
-              <label class="dropzone" data-kind="photo">${ic('camera', 30)}<b>إضافة صور</b><small>من الكاميرا أو المعرض — تُضغط تلقائيا</small>
+              <label class="dropzone" data-kind="photo">${ic('camera', 30)}<b>إضافة صور</b><small>من الكاميرا أو المعرض — تُضغط تلقائيا${S.role === 'admin' ? '' : ` · الحد الأقصى ${PHOTO_MAX} صور`}</small>
                 <input type="file" accept="image/*" multiple hidden></label>
             </div>
             <div><label class="dropzone" data-kind="video">${ic('video', 28)}<b>إضافة فيديو</b><small>جولة داخل العقار</small>
@@ -1063,6 +1066,11 @@
       } else if (cv) { p.cover = cv.dataset.cover; renderMedia(); }
     });
     const handleFiles = async (files, kind) => {
+      if (kind === 'photo') {
+        const room = photoLimit() - media.filter(m => m.kind === 'photo').length;
+        if (room <= 0) { toast(`الحد الأقصى ${PHOTO_MAX} صور لكل عقار`, 3500); return; }
+        if (files.length > room) { toast(`تزادو غير ${room} صور — الحد الأقصى ${PHOTO_MAX} صور لكل عقار`, 3500); files = files.slice(0, room); }
+      }
       const prog = $('#up-prog'); prog.classList.remove('hidden');
       const bar = prog.firstElementChild;
       let done = 0;
@@ -1953,7 +1961,7 @@
       const d = it.data || {}, pa = it.w777_partners || {};
       if (!(await DB.get('properties', id))) {
         const media = [];
-        for (const path of it.photos || []) {
+        for (const path of (it.photos || []).slice(0, photoLimit())) {
           try {
             const res = await Sy.request('/storage/v1/object/authenticated/w777-partner/' + path);
             const blob = await res.blob();
@@ -3257,7 +3265,7 @@
         description: hideDigits(p.description), createdAt: p.createdAt,
       };
       const row = { owner: me, id: p.id, agency, phone, city: p.city || null, type: p.type || null, trx: p.transaction || null,
-        price: num(p.priceMax) || num(p.priceMin) || null, photo_ids: ordered.slice(0, 15).map(m => m.id), data, deleted: false };
+        price: num(p.priceMax) || num(p.priceMin) || null, photo_ids: ordered.slice(0, S.role === 'admin' ? 30 : PHOTO_MAX).map(m => m.id), data, deleted: false };
       const h = h32(JSON.stringify(row));
       next[p.id] = h;
       if (known[p.id] !== h) rows.push(Object.assign(row, { updated_at: new Date().toISOString() }));
@@ -4361,7 +4369,8 @@
         props.forEach(p => {
           let type = typeOf.get(p.typeFrom) || p.type;
           if (picked && pname && type === 'other') type = guessType(pname);
-          const fs = withVideos ? p.files : p.files.filter(f => !isVideoFile(f));
+          let fs = withVideos ? p.files : p.files.filter(f => !isVideoFile(f));
+          let nPh = 0; fs = fs.filter(f => isVideoFile(f) || ++nPh <= photoLimit());
           if (!fs.length) return;
           if (p.leafIsCategory && looseMode === 'each') fs.forEach(f => jobs.push({ ...p, type, label: f.name.replace(/\.[^.]+$/, ''), files: [f], key: p.key + '/' + f.name }));
           else jobs.push({ ...p, type, label: pname || p.label, files: fs });
