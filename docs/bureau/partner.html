@@ -87,7 +87,7 @@
             <div class="field"><label>الطابق</label><input name="floor"></div>
             <div class="field full"><label>الوصف</label><textarea name="description" rows="4" placeholder="معلومات إضافية: الحالة، المميزات، الوثائق…"></textarea></div>
           </div>
-          <div class="field" style="margin-top:12px"><label>الصور (حتى 15)</label>
+          <div class="field" style="margin-top:12px"><label>الصور (حتى 5)</label>
             <label class="btn">📷 اختيار صور<input type="file" id="ph" accept="image/*" multiple hidden></label>
             <div class="pt-thumbs" id="thumbs"></div></div>
           <hr style="border:0;border-top:1px dashed var(--line);margin:16px 0">
@@ -100,7 +100,7 @@
         <div class="card card-pad pt-list" id="mine" style="margin-top:16px"></div>`;
       const f = document.getElementById('f');
       document.getElementById('ph').onchange = async e => {
-        const files = Array.from(e.target.files).slice(0, 15 - photos.length);
+        const files = Array.from(e.target.files).slice(0, 5 - photos.length);
         e.target.value = '';
         for (const file of files) {
           try { const big = await compress(file, 1280, 0.75); if (big) photos.push({ blob: big, url: URL.createObjectURL(big) }); } catch (err) { /* صورة غير مقروءة */ }
