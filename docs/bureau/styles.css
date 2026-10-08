@@ -641,3 +641,46 @@ a.chip { text-decoration: none; }
 .law-disc { font-size: 12.5px; margin: 12px 0 0; padding-top: 10px; border-top: 1px dashed var(--line); }
 .sidenav .nav-group { font-size: 12px; font-weight: 800; color: var(--gold-ink); padding: 4px 14px 2px; }
 .sidenav a .em { width: 20px; text-align: center; font-size: 16px; }
+
+/* ---------- دليل استعمال التطبيق ---------- */
+.gd-banner { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 14px; border-radius: 16px; background: linear-gradient(135deg, rgba(201,162,74,.18), rgba(200,16,46,.10)); border: 1px solid rgba(201,162,74,.45); }
+.gd-banner .big { font-size: 30px; }
+.gd-banner small { display: block; color: var(--muted); }
+.gd-hero { display: flex; gap: 18px; align-items: center; padding: 22px; border-radius: 20px; margin-bottom: 18px; color: #fff; background: radial-gradient(ellipse at 85% 0%, #4a0d19, transparent 60%), linear-gradient(150deg, #000, #1c1c1c 60%, #3a0b14); }
+.gd-hero h1 { margin: 4px 0 6px; font-size: 24px; }
+.gd-hero p { margin: 0 0 12px; color: rgba(255,255,255,.8); line-height: 1.7; }
+.gd-hero small { color: rgba(255,255,255,.7); }
+.gd-k { color: #e6c77e; font-weight: 800; font-size: 13px; }
+.gd-phone { width: 150px; border-radius: 18px; border: 4px solid #111; box-shadow: 0 10px 30px rgba(0,0,0,.5); transform: rotate(-3deg); flex: none; }
+@media (max-width: 640px) { .gd-phone { display: none; } }
+.gd-bar { height: 8px; border-radius: 99px; background: rgba(127,127,127,.25); overflow: hidden; margin: 4px 0; }
+.gd-bar span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold), #e6c77e); }
+.gd-part { font-size: 18px; margin: 22px 0 10px; }
+.gd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.gd-card { overflow: hidden; text-decoration: none; color: inherit; display: flex; flex-direction: column; transition: transform .15s; }
+.gd-card:hover { transform: translateY(-2px); }
+.gd-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; object-position: top; display: block; border-bottom: 1px solid var(--line); }
+.gd-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 3px; }
+.gd-body b { font-size: 14px; line-height: 1.4; }
+.gd-body small { color: var(--muted); font-size: 12px; }
+.gd-n { align-self: flex-start; font-weight: 900; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--brand); color: #fff; }
+.gd-card.done .gd-n { background: var(--green); }
+.gd-card.done img { opacity: .7; }
+.gd-lesson { display: grid; gap: 16px; align-items: start; }
+@media (min-width: 900px) { .gd-lesson { grid-template-columns: auto 1fr; } }
+.gd-shots { display: flex; gap: 10px; justify-content: center; }
+.gd-shots img { width: 220px; max-width: 46vw; border-radius: 22px; border: 5px solid #111; box-shadow: 0 10px 28px rgba(0,0,0,.3); cursor: zoom-in; }
+.gd-shots.n1 img { width: 260px; max-width: 70vw; }
+.gd-text h1 { font-size: 22px; margin: 4px 0 2px; }
+.gd-tag { color: var(--gold-ink); font-weight: 800; margin-bottom: 10px; }
+.gd-steps { list-style: none; counter-reset: g; padding: 0; margin: 0; }
+.gd-steps li { counter-increment: g; position: relative; padding-inline-start: 38px; margin-bottom: 12px; line-height: 1.75; }
+.gd-steps li::before { content: counter(g); position: absolute; inset-inline-start: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--red, #c8102e); color: #fff; font-weight: 800; font-size: 13px; display: grid; place-items: center; }
+.gd-tip { background: rgba(201,162,74,.12); border: 1px solid rgba(201,162,74,.4); border-radius: 12px; padding: 10px 12px; }
+.gd-tip p { margin: 4px 0 0; }
+.gd-nav { justify-content: space-between; margin-top: 16px; }
+.gd-hero .grow { min-width: 0; }
+.gd-hero h1 { overflow-wrap: anywhere; }
+@media (max-width: 640px) { .gd-hero { padding: 18px; } .gd-hero h1 { font-size: 20px; } }
+.gd-card img { object-position: 50% 22%; }
+.gd-hero .btn { white-space: normal; max-width: 100%; text-align: center; }

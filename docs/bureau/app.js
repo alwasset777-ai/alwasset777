@@ -593,6 +593,7 @@
     else if (a === 'ownership') { nav = 'ownership'; viewOwnership(); }
     else if (a === 'contracts') { nav = 'contracts'; viewContracts(); }
     else if (a === 'learn') { nav = 'learn'; viewLearn(); }
+    else if (a === 'guide') { nav = 'guide'; viewGuide(b); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
@@ -621,6 +622,13 @@
     ['news', '📰', 'الأخبار', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
     ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'],
   ];
+  function gdBanner() {
+    const L = gdLessons(), d = gdDone();
+    if (!L.length || d.size >= Math.min(5, L.length)) return '';
+    try { if (localStorage.getItem('w777_guide_hide') === '1') return ''; } catch (e) { /* */ }
+    return `<div class="gd-banner"><span class="big">🎓</span><div class="grow"><b>جديد فالتطبيق؟</b><small>تعلّم استعمالو فـ ${L.length} درس قصير بالصور، خطوة بخطوة.</small></div>
+      <a class="btn gold sm" href="#/guide">ابدأ الدليل</a><button class="btn sm" onclick="try{localStorage.setItem('w777_guide_hide','1')}catch(e){};this.parentElement.remove()">✕</button></div>`;
+  }
   async function viewHome() {
     const avail = S.props.filter(p => p.status === 'available');
     const open = S.reqs.filter(openReq);
@@ -637,7 +645,7 @@
     const h = new Date().getHours();
     const greet = h < 12 ? 'صباح الخير' : h < 18 ? 'مساء النور' : 'مساء الخير';
 
-    main().innerHTML = `
+    main().innerHTML = gdBanner() + `
       <div class="hero">
         <h2>${greet} 👋</h2>
         <p>${esc(S.role === 'agency' ? myAgencyName() : S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</p>
@@ -647,6 +655,7 @@
           <a class="btn" href="#/matching">${ic('target', 18)} المطابقة</a>
           <a class="btn" href="#/appointments">${ic('calendar', 18)} المواعيد${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</a>
           <a class="btn" href="#/estimate">📊 مقارنة الثمن</a>
+          <a class="btn" href="#/guide">🎓 تعلم استعمال التطبيق</a>
         </div>
         <div class="hub-title">✦ شبكة الوسيط 777</div>
         <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}"><span class="hi">${i}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
@@ -2586,7 +2595,7 @@
       }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -3395,6 +3404,80 @@
       } catch (e) { $('#own-box').textContent = 'تعذر: ' + e.message; }
     };
   }
+
+  /* ============================================================
+     دليل استعمال التطبيق: دروس خطوة بخطوة بالصور + «جرّب دابا»
+     ============================================================ */
+  const GD_KEY = 'w777_guide_done';
+  const gdDone = () => { try { return new Set(JSON.parse(localStorage.getItem(GD_KEY) || '[]')); } catch (e) { return new Set(); } };
+  const gdSave = set => { try { localStorage.setItem(GD_KEY, JSON.stringify([...set])); } catch (e) { /* */ } };
+  function gdLessons() {
+    const G = window.W777_GUIDE || { parts: [], lessons: [] };
+    // جزء «لوحة المدير» كيبان غير للمدير
+    return G.lessons.map((l, i) => Object.assign({ n: i + 1 }, l)).filter(l => l.p !== 3 || S.role === 'admin');
+  }
+  function viewGuide(n) {
+    const G = window.W777_GUIDE;
+    if (!G) { main().innerHTML = `<div class="card empty">الدليل غير متوفر</div>`; return; }
+    const L = gdLessons(), done = gdDone();
+    const cur = n ? L.find(l => l.n === +n) : null;
+    if (cur) return viewGuideLesson(cur, L, done);
+    const pct = Math.round(L.filter(l => done.has(l.n)).length * 100 / (L.length || 1));
+    const next = L.find(l => !done.has(l.n));
+    main().innerHTML = `
+      <div class="gd-hero">
+        <div class="grow">
+          <div class="gd-k">🎓 دليل الاستعمال</div>
+          <h1>تعلّم استعمال تطبيق الوسيط 777</h1>
+          <p>${L.length} درسا قصيرا بالصور، خطوة بخطوة — من أول دخول حتى شبكة الوسيط 777. كل درس فيه زر «جرّب دابا» يفتح لك الصفحة مباشرة.</p>
+          <div class="gd-bar"><span style="width:${pct}%"></span></div>
+          <small>${pct}% · ${L.filter(l => done.has(l.n)).length} / ${L.length} درس</small>
+          <div class="btn-row" style="margin-top:12px">${next ? `<a class="btn gold" href="#/guide/${next.n}">▶ ${done.size ? 'كمّل' : 'ابدأ'}: ${esc(next.t)}</a>` : '<span class="badge green">🏆 كمّلتي كل الدروس — مبروك!</span>'}
+            ${done.size ? '<button class="btn" id="gd-reset">↺ إعادة من الأول</button>' : ''}</div>
+        </div>
+        <img class="gd-phone" src="guide/b01b-hub.webp" alt="" loading="lazy">
+      </div>
+      ${G.parts.map((P, pi) => {
+        const ls = L.filter(l => l.p === pi);
+        if (!ls.length) return '';
+        return `<h2 class="gd-part">${P.ic} ${esc(P.a)}: ${esc(P.t)}</h2>
+          <div class="gd-grid">${ls.map(l => `<a class="card gd-card ${done.has(l.n) ? 'done' : ''}" href="#/guide/${l.n}">
+            <img src="guide/${l.img[0]}.webp" alt="" loading="lazy">
+            <div class="gd-body"><span class="gd-n">${done.has(l.n) ? '✓' : String(l.n).padStart(2, '0')}</span><b>${esc(l.t)}</b><small>${esc(l.tag)}</small></div></a>`).join('')}</div>`;
+      }).join('')}`;
+    const r = $('#gd-reset'); if (r) r.onclick = async () => { if (await confirmBox('إعادة الدليل من الأول؟', 'إعادة', false)) { gdSave(new Set()); viewGuide(); } };
+  }
+  function viewGuideLesson(l, L, done) {
+    const i = L.indexOf(l), prev = L[i - 1], next = L[i + 1];
+    const P = window.W777_GUIDE.parts[l.p];
+    main().innerHTML = `
+      <div class="page-head"><a class="btn" href="#/guide">${ic('back', 18)} الدليل</a><span class="badge gold">${i + 1} / ${L.length}</span></div>
+      <div class="gd-bar" style="margin:-4px 0 14px"><span style="width:${Math.round((i + 1) * 100 / L.length)}%"></span></div>
+      <div class="gd-lesson">
+        <div class="gd-shots n${l.img.length}">${l.img.map(x => `<img src="guide/${x}.webp" alt="" data-zoom="${x}">`).join('')}</div>
+        <div class="card card-pad gd-text">
+          <div class="gd-k">${P.ic} ${esc(P.t)} · الدرس ${l.n}</div>
+          <h1>${esc(l.t)}</h1>
+          <div class="gd-tag">✦ ${esc(l.tag)}</div>
+          <ol class="gd-steps">${l.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+          <div class="gd-tip"><b>💡 نصيحة</b><p>${esc(l.tip)}</p></div>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn gold" id="gd-try">${ic('target', 18)} جرّب دابا</button>
+            <button class="btn ${done.has(l.n) ? '' : 'primary'}" id="gd-ok">${done.has(l.n) ? '✓ مفهوم' : '✓ فهمت'}</button>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row gd-nav">
+        ${prev ? `<a class="btn" href="#/guide/${prev.n}">→ ${esc(prev.t)}</a>` : '<span></span>'}
+        ${next ? `<a class="btn primary" href="#/guide/${next.n}" id="gd-next">${esc(next.t)} ←</a>` : `<a class="btn primary" href="#/guide">🏆 النهاية</a>`}
+      </div>`;
+    const mark = () => { done.add(l.n); gdSave(done); };
+    $('#gd-ok').onclick = () => { mark(); location.hash = next ? '#/guide/' + next.n : '#/guide'; };
+    const nx = $('#gd-next'); if (nx) nx.addEventListener('click', mark);
+    $('#gd-try').onclick = () => { mark(); if (l.go === 'agent') { location.hash = '#/'; setTimeout(() => { if (!AG.open) agOpen(); }, 300); } else location.hash = l.go; };
+    $$('[data-zoom]').forEach(im => im.onclick = () => modal(`<img src="guide/${im.dataset.zoom}.webp" style="width:100%;max-width:420px;display:block;margin:auto;border-radius:16px">`));
+  }
+
   /* ============================================================
      شبكة 777: الوكالات (700 داخل المغرب + 77 خارج المغرب)، الوسطاء،
      شركات المقاولات، شركات التشطيب — 777 حساب لكل خانة، بنفس الطريقة
