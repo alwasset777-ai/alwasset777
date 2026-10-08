@@ -1,6 +1,6 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v33';
-const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'manifest.webmanifest',
+const CACHE = 'w777-bureau-v34';
+const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'manifest.webmanifest',
   'icons/logo.png?v=3', 'icons/icon-192.png?v=2', 'icons/icon-512.png?v=2', 'icons/apple-touch-icon.png?v=2'];
 
 self.addEventListener('install', e => {
