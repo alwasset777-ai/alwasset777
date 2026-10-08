@@ -574,8 +574,23 @@
     return { parts, query };
   }
   let leaveGuard = null;
+  // زر «رجوع» للصفحة السابقة فكل الصفحات (كيخدم حتى فالتطبيق المثبت بلا زر المتصفح)
+  const NAV = { stack: [], back: false };
+  function navTrack() {
+    const h = location.hash && location.hash !== '#' ? location.hash : '#/';
+    if (NAV.back) NAV.back = false;
+    else if (NAV.stack[NAV.stack.length - 1] !== h) NAV.stack.push(h);
+    if (NAV.stack.length > 60) NAV.stack.shift();
+    const b = $('#btn-back'); if (b) b.classList.toggle('hidden', h === '#/');
+  }
+  function goBack() {
+    if (AG.open) { agClose(); return; }
+    if (NAV.stack.length > 1) { NAV.stack.pop(); NAV.back = true; location.hash = NAV.stack[NAV.stack.length - 1]; }
+    else location.hash = '#/';
+  }
   async function route() {
     if (leaveGuard) { const g = leaveGuard; leaveGuard = null; await g(); }
+    navTrack();
     const { parts, query } = parseHash();
     const [a, b, c] = parts;
     let nav = 'home';
@@ -2196,17 +2211,20 @@
     try { rec.start(); agRec = rec; mic.classList.add('on'); ta.value = ''; ta.placeholder = '🎤 …'; }
     catch (e) { toast('🎤 ' + e.message); }
   }
-  function agClose() {
+  // الإغلاق من الزر: كنرجعو خطوة فالتاريخ (باش زر الرجوع ديال الهاتف حتى هو يسد المساعد)
+  function agClose() { if (history.state && history.state.ag) history.back(); else agHide(); }
+  function agHide() {
     agHush();
     if (agRec) { try { agRec.abort(); } catch (e) { /* */ } agRec = null; } AG.open = false; const p = $('#agent-panel'); if (p) p.remove(); }
   function agOpen() {
     AG.open = true;
+    if (!(history.state && history.state.ag)) { try { history.pushState({ ag: 1 }, ''); } catch (e) { /* */ } }
     const t = agT(), L = AG_LANGS.find(x => x.id === agLang()) || AG_LANGS[0];
     const p = document.createElement('div');
     p.id = 'agent-panel'; p.className = 'agent-panel'; p.dir = L.dir;
     p.style.setProperty('--ag-photo', `url("${agPhoto().replace(/"/g, '%22')}")`);
     p.innerHTML = `
-      <div class="ag-head"><img id="agent-head-img" src="${agPhoto()}" alt="">
+       <div class="ag-head"><button class="ag-x ag-back" id="ag-back" title="رجوع للصفحة السابقة" aria-label="رجوع">${L.dir === 'rtl' ? '→' : '←'}</button><img id="agent-head-img" src="${agPhoto()}" alt="">
         <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>${agAI() ? 'AI' : '🆓 ' + esc(lx().limited.split(':')[0].split('：')[0])}</small></div>
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
         ${agTTS() ? `<button class="ag-x" id="ag-voice" title="🔊">${agVoiceOn() ? '🔊' : '🔇'}</button>` : ''}<button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
@@ -2218,8 +2236,9 @@
       <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
     document.body.appendChild(p);
     $('#ag-close').onclick = agClose;
+    $('#ag-back').onclick = agClose;
     $('#ag-new').onclick = () => { AG.history = []; AG.view = []; agRender(); };
-    $('#ag-lang').onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } agClose(); agOpen(); };
+    $('#ag-lang').onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } agHide(); agOpen(); };
     const ta = $('#ag-text');
     ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
     $('#ag-form').onsubmit = e => { e.preventDefault(); agUnlockTTS(); const v = ta.value.trim(); if (v && !AG.busy) { ta.value = ''; agSend(v); } };
@@ -2243,7 +2262,7 @@
       + (!AG.view.length && agAI() ? `<div class="ag-sugg">${t.s.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
       + (AG.busy ? `<div class="ag-msg bot"><img src="${agPhoto()}" alt=""><div class="ag-dots">${esc(t.think)}<span>.</span><span>.</span><span>.</span></div></div>` : '');
     $$('.ag-sugg button', body).forEach(b => b.onclick = () => agSend(b.textContent));
-    $$('a.ag-card, a.ag-more', body).forEach(a => a.addEventListener('click', () => { if (window.innerWidth < 960) agClose(); }));
+    $$('a.ag-card, a.ag-more', body).forEach(a => a.addEventListener('click', () => { if (window.innerWidth < 960) agHide(); }));
     const acts = $('#ag-acts');
     if (acts) {
       acts.classList.toggle('hidden', agAI());
@@ -2659,7 +2678,7 @@
       await save({ ai_enabled: !agAI() });
     };
     const ls = $('#ag-lang-set');
-    if (ls) ls.onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } if (AG.open) { agClose(); agOpen(); } toast('تم ✓'); };
+    if (ls) ls.onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } if (AG.open) { agHide(); agOpen(); } toast('تم ✓'); };
     const rpc = (fn, body) => Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const setKey = async (n, v) => { const r = await rpc('w777_set_secret', { n, v }); if (!r.ok) throw new Error((await r.text()).slice(0, 120)); return r.json(); };
     Object.entries(AG_KEYS).forEach(([id, k]) => {
@@ -4995,6 +5014,9 @@
     setupAgent();
     setupSyncUi();
     window.addEventListener('hashchange', route);
+    if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }
+    window.addEventListener('popstate', () => { if (AG.open && !(history.state && history.state.ag)) agHide(); });
+    const bb = $('#btn-back'); if (bb) bb.onclick = goBack;
     await route();
     DB.persist();
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
