@@ -46,7 +46,7 @@
   }
   // حسابات الشبكة بلا @: «agence001»/«1» ← وكالة، «wasit001»/«W001» ← وسيط،
   // «btp001»/«B001» ← مقاولة، «finition001»/«F001» ← تشطيب (…@alwasset777.ma)
-  const PREFIX = { agence: 'agence', agency: 'agence', ag: 'agence', a: 'agence', '': 'agence', wasit: 'wasit', w: 'wasit', btp: 'btp', b: 'btp', finition: 'finition', f: 'finition' };
+  const PREFIX = { agence: 'agence', agency: 'agence', ag: 'agence', a: 'agence', '': 'agence', wasit: 'wasit', w: 'wasit', btp: 'btp', b: 'btp', finition: 'finition', f: 'finition', invest: 'invest', i: 'invest', notaire: 'notaire', n: 'notaire' };
   function normEmail(e) {
     e = String(e || '').trim().toLowerCase();
     if (e.includes('@')) return e;

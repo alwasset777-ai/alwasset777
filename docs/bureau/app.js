@@ -7,7 +7,7 @@
   const D = window.W777_DATA;
   // نسخة مدمجة (صفحة claude.ai): لا طباعة ولا تنزيل ملفات ولا اتصال خارجي
   const EMBED = !!window.W777_EMBED;
-  const LOGO = window.W777_LOGO || 'icons/logo.png?v=6';
+  const LOGO = window.W777_LOGO || 'icons/logo.png?v=7';
   const DB = window.W777_DB;
 
   /* ============================================================
@@ -618,6 +618,9 @@
     else if (a === 'brokers') { nav = a; await viewNetKind('broker', parts, query); }
     else if (a === 'contractors') { nav = a; await viewNetKind('contractor', parts, query); }
     else if (a === 'finishing') { nav = a; await viewNetKind('finishing', parts, query); }
+    else if (a === 'investors') { nav = a; await viewNetKind('investor', parts, query); }
+    else if (a === 'notaries') { nav = a; await viewNetKind('notary', parts, query); }
+    else if (a === 'terms') { nav = b === 'groups' ? 'groups' : 'terms'; await viewTerms(b); }
     else if (a === 'projects') { nav = a; await viewProjects(parts, query); }
     else if (a === 'events') { nav = a; await viewEvents(parts); }
     else if (a === 'news') { nav = a; await viewNews(parts); }
@@ -637,7 +640,8 @@
     ['contractors', '🏗️', 'شركات المقاولات', '777 شركة'], ['finishing', '🎨', 'شركات التشطيب', '777 شركة'],
     ['projects', '🚀', 'مشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات', 'معارض وصالونات'],
     ['stays', '🏖️', 'الحجز', 'مفروش وعطل'], ['news', '📰', 'الأخبار', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
-    ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'],
+    ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
+    ['terms', '📜', 'قانون التطبيق', 'شروط الاشتراك'],
   ];
   function gdBanner() {
     const L = gdLessons(), d = gdDone();
@@ -676,6 +680,7 @@
         </div>
         <div class="hub-title">✦ شبكة الوسيط 777</div>
         <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}"><span class="hi">${i}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
+        ${inNetwork() ? groupsCard(false) : ''}
       </div>
       <div class="stats">
         <div class="card stat"><div class="ic">${ic('building')}</div><div class="v">${avail.length}</div><div class="l">عقار متاح (من ${S.props.length})</div></div>
@@ -729,6 +734,7 @@
     `;
     hydrateThumbs(main());
     bindHomeSearch();
+    if (inNetwork() && !$('.grp-strip')) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (h && g && !$('.grp-strip', h)) h.insertAdjacentHTML('beforeend', g); }).catch(() => {});
     const seed = $('#seed');
     if (seed) seed.onclick = seedDemo;
   }
@@ -1293,6 +1299,7 @@
               ${p.broker.notes ? `<div class="muted" style="font-size:13px;margin-top:6px">${esc(p.broker.notes)}</div>` : ''}` : ''}
           </div>
           ${p.gps ? `<a class="card card-pad no-print" style="text-decoration:none;display:flex;gap:10px;align-items:center" target="_blank" rel="noopener" href="${esc(mapUrl(p.gps))}">${ic('map', 22)}<b>فتح الموقع على الخريطة</b></a>` : ''}
+          <div class="no-print" id="nt-near"></div>
           <div class="card no-print">
             <div class="pair-head"><b>${ic('target', 18)} طلبات مطابقة</b><span class="badge ${matches.length ? 'green' : ''}">${matches.length}</span></div>
             ${matches.length ? matches.slice(0, 8).map(x => `
@@ -1313,6 +1320,7 @@
         </div>
       </div>`;
     hydrateThumbs(main());
+    notaryBox($('#nt-near'), { ref: p.ref, title: p.title || typeAr(p.type), city: p.city, district: p.district, gps: p.gps });
     $$('[data-lb]').forEach(el => el.onclick = () => lightbox(visual, Number(el.dataset.lb)));
     $$('[data-doc]').forEach(el => el.onclick = async e => {
       e.preventDefault();
@@ -2106,13 +2114,13 @@
     AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد الوسيط 777', photo: null };
     if (!Sy || !Sy.isOn()) return AG.cfg;
     try {
-      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,ai_enabled,updated_at')).json())[0];
+      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,ai_enabled,wa_group,tg_group,updated_at')).json())[0];
       if (r) { AG.cfg = r; try { localStorage.setItem('w777_agent_cfg', JSON.stringify(r)); } catch (e) { /* */ } }
     } catch (e) { /* بدون إنترنت */ }
     agPaintButton();
     return AG.cfg;
   }
-  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=5';
+  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=6';
   function agPaintButton() {
     const b = $('#agent-fab'); if (!b) return;
     b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
@@ -2617,7 +2625,7 @@
       }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -3219,7 +3227,7 @@
       toast('⏰ موعد: ' + body, 8000);
       try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* */ }
       if ('Notification' in window && Notification.permission === 'granted') {
-        const opt = { body, icon: 'icons/icon-192.png?v=5', badge: 'icons/icon-192.png?v=5', tag: key, data: { url: '#/appointments' }, requireInteraction: true };
+        const opt = { body, icon: 'icons/icon-192.png?v=6', badge: 'icons/icon-192.png?v=6', tag: key, data: { url: '#/appointments' }, requireInteraction: true };
         try {
           const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
           if (reg) await reg.showNotification('⏰ موعد ' + (APPT_TYPES[a.type] || ''), opt); else new Notification('⏰ موعد', opt);
@@ -3255,7 +3263,7 @@
     try {
       const admin = await (await Sy.request('/rest/v1/rpc/w777_is_admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
       let ag = null;
-      if (!admin) ag = (await (await Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,services,about`)).json())[0] || null;
+      if (!admin) ag = (await (await Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,sub_until`)).json())[0] || null;
       // «agency» = عضو فالشبكة (وكالة، وسيط، مقاولة ولا تشطيب) — النوع فـ S.kind
       S.role = admin === true ? 'admin' : ag ? 'agency' : 'solo';
       S.kind = admin === true ? 'admin' : ag ? ag.kind || 'agency' : null;
@@ -3409,9 +3417,11 @@
             ${S.role === 'admin' ? `<button class="btn sm" id="own" style="margin-top:10px">${ic('key', 15)} معلومات المالك (المدير فقط)</button><div id="own-box" class="muted" style="margin-top:8px"></div>` : ''}
             <p class="muted" style="font-size:12.5px;margin-bottom:0">معلومات المالك كتبقى خاصة بالوكالة. تواصل معاها باش تتعاونو 🤝</p>
           </div>
+          <div id="nt-near"></div>
         </div>
       </div>`;
     hydrateNet(main());
+    notaryBox($('#nt-near'), { ref: p.ref, title: p.title || typeAr(p.type), city: p.city, district: p.district });
     const me = $('#mkt-edit'); if (me) me.onclick = () => editMarketRef(p.city, p.district, p.type, () => viewNetProp(owner, id));
     $$('.net-gallery img').forEach(img => img.onclick = async () => {
       const urls = await Promise.all((x.photo_ids || []).map(ph => netImg(x.owner, ph, false)));
@@ -4090,6 +4100,10 @@
       sv: ['بناء فيلات وعمارات', 'أشغال كبرى', 'تجزئة وتهيئة', 'ترميم', 'هندسة مدنية', 'طرق وقنوات', 'بناء مفتاح فاليد'] },
     finishing: { ar: 'شركات التشطيب', one: 'شركة تشطيب', ic: '🎨', route: 'finishing', def: /^تشطيب \d+$/,
       sv: ['صباغة', 'زليج ورخام', 'جبس وPlaco', 'نجارة', 'ألومنيوم', 'كهرباء', 'ترصيص', 'تكييف', 'ديكور داخلي', 'مطابخ'] },
+    investor: { ar: 'المستثمرون', one: 'مستثمر', ic: '💼', route: 'investors', def: /^مستثمر \d+$/,
+      sv: ['سكني', 'تجاري', 'سياحي / فندقي', 'أراضي وتجزئات', 'فلاحي', 'صناعي / مستودعات', 'مكاتب', 'ترميم وإعادة البيع'] },
+    notary: { ar: 'الموثقون', one: 'موثق', ic: '🖋️', route: 'notaries', def: /^موثق \d+$/,
+      sv: ['عقود البيع', 'الوعد بالبيع', 'عقود الكراء', 'البيع فـ طور الإنجاز', 'الشركات والشراكات', 'الهبة والإراثة', 'التحفيظ العقاري', 'الرهون', 'الاستشارة العقارية'] },
   };
   const kindOf = a => (a && a.kind) || 'agency';
   const isNamed = a => !!a.name && !KINDS[kindOf(a)].def.test(a.name);
@@ -4117,7 +4131,7 @@
   }
   async function loadDir(force) {
     if (!force && S.dir && Date.now() - S.dirAt < 300000) return S.dir;
-    S.dir = await fetchAll('/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,services,about&order=code.asc');
+    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at${S.role === 'admin' ? ',sub_until' : ''}&order=code.asc`);
     S.dirAt = Date.now();
     return S.dir;
   }
@@ -4127,7 +4141,7 @@
     if (EMBED || !Sy || !Sy.isOn()) {
       main().innerHTML = `<div class="page-head"><h1>${icon} ${esc(title)}</h1></div>
         <div class="card empty"><div class="big">${icon}</div><h3>دخل بالحساب ديالك أولا</h3>
-        <p>كل مشترك كيدخل من «الإعدادات» ← «المزامنة السحابية» بالرمز ديالو<br>(وكالة <b dir="ltr">agence001</b> · وسيط <b dir="ltr">W001</b> · مقاولة <b dir="ltr">B001</b> · تشطيب <b dir="ltr">F001</b>) وكلمة السر.</p>
+        <p>كل مشترك كيدخل من «الإعدادات» ← «المزامنة السحابية» بالرمز ديالو<br>(وكالة <b dir="ltr">agence001</b> · وسيط <b dir="ltr">W001</b> · مقاولة <b dir="ltr">B001</b> · تشطيب <b dir="ltr">F001</b> · مستثمر <b dir="ltr">I001</b> · موثق <b dir="ltr">N001</b>) وكلمة السر.</p>
         <a class="btn gold" href="#/settings">${ic('lock', 18)} الدخول</a></div>`;
       return false;
     }
@@ -4138,6 +4152,7 @@
         <p>تواصل مع مكتب الوسيط 777: <a href="${telLink(W777_OFFICE)}" dir="ltr">${W777_OFFICE}</a></p></div>`;
       return false;
     }
+    if (S.role === 'agency' && S.agency && !S.agency.terms_at) { termsGate(); return false; }
     return true;
   }
   function secHead(icon, title, sub, tabs, cur, base) {
@@ -4153,14 +4168,20 @@
     if (kind === 'agency' && parts[1] === 'p') return viewNetProp(parts[2], decodeURIComponent(parts[3] || ''));
     const tabs = [];
     if (kind === 'agency') tabs.push(['', '🏘️ عقارات الشبكة']);
+    if (kind === 'investor') tabs.push(['', '💼 فرص الاستثمار']);
+    if (kind === 'notary') tabs.push(S.role === 'admin' ? ['all', '📋 كل الطلبات'] : S.kind === 'notary' ? ['inbox', '📥 الطلبات الواردة'] : ['sent', '📤 طلباتي']);
     tabs.push(['dir', '📇 الدليل']);
     if (S.role === 'admin') tabs.push(['manage', '🔑 الإدارة (777)']);
     else if (S.kind === kind) tabs.push(['me', K.ic + ' حسابي']);
-    const tab = pickTab(tabs, parts[1] || '', kind === 'agency' ? '' : 'dir');
-    const head = secHead(K.ic, K.ar, '', tabs, tab, K.route);
+    const tab = pickTab(tabs, parts[1] || '', kind === 'agency' || kind === 'investor' ? '' : kind === 'notary' && S.kind === 'notary' ? 'inbox' : 'dir');
+    const sub = kind === 'investor' ? 'المستثمرون كيحطّو الميزانية ديالهم (تمويل، شراكة، شراء ولا كراء طويل) وكيزيدو العقارات ديالهم فـ «العقارات».'
+      : kind === 'notary' ? 'كل موثق كيتقترح أوتوماتيكيا مع العقارات القريبة ليه، وكيوصلو الاستشارات وطلبات توثيق العقود مباشرة.' : '';
+    const head = secHead(K.ic, K.ar, sub, tabs, tab, K.route);
     if (tab === 'manage') return viewAgManage(kind, head, query);
     if (tab === 'me') return viewAgMe(kind, head);
     if (tab === 'dir') return viewDir(kind, head, query);
+    if (tab === 'all' || tab === 'inbox' || tab === 'sent') return viewNotaryReqs(head, tab);
+    if (kind === 'investor') return viewInvest(head, query);
     return viewNetProps(head, query);
   }
 
@@ -4225,28 +4246,44 @@
         <form id="df" class="form-grid" style="margin-top:12px">
           ${fInput('q', 'بحث', '', { ph: 'اسم، مدينة، خدمة، هاتف…' })}
           ${kind === 'agency' ? fSelect('zone', 'المنطقة', [{ v: '', l: 'الكل' }, { v: 'ma', l: '🇲🇦 داخل المغرب (700)' }, { v: 'out', l: '🌍 خارج المغرب (77)' }], query.zone || '', { noEmpty: true }) : ''}
-          ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], '', { noEmpty: true })}
-          ${fSelect('sv', 'الخدمة', [{ v: '', l: 'الكل' }, ...K.sv.map(c => ({ v: c, l: c }))], '', { noEmpty: true })}
+          ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], cities.includes(query.city) ? query.city : '', { noEmpty: true })}
+          ${fSelect('sv', kind === 'investor' ? 'القطاع' : kind === 'notary' ? 'الاختصاص' : 'الخدمة', [{ v: '', l: 'الكل' }, ...K.sv.map(c => ({ v: c, l: c }))], '', { noEmpty: true })}
+          ${kind === 'investor' ? fSelect('mode', 'نوع الاستثمار', [{ v: '', l: 'الكل' }, ...Object.values(INV_MODES).map(m => ({ v: m[0], l: m[0] }))], '', { noEmpty: true }) : ''}
         </form>
+        ${kind === 'notary' ? `<div class="btn-row" style="margin-top:10px"><button class="btn sm" id="d-near">${ic('gps', 15)} الأقرب ليا</button><span class="muted" id="d-pos" style="font-size:12.5px"></span></div>` : ''}
       </div>
       <div class="dir-grid" id="dgrid"></div>`;
+    let myPos = null;
     const draw = () => {
       const v = collect($('#df'));
       const t = tokens(v.q || '');
-      const res = listed.filter(a => (!v.zone || isAbroad(a) === (v.zone === 'out')) && (!v.city || a.city === v.city)
-        && (!v.sv || norm(a.services || '').includes(norm(v.sv)))
-        && (!t.length || hit(norm([a.code, a.name, a.city, a.country, a.services, a.about, a.phone].join(' ')), t)));
+      let res = listed.filter(a => (!v.zone || isAbroad(a) === (v.zone === 'out')) && (!v.city || a.city === v.city)
+        && (!v.sv || norm(a.services || '').includes(norm(v.sv))) && (!v.mode || norm(a.invest_modes || '').includes(norm(v.mode)))
+        && (!t.length || hit(norm([a.code, a.name, a.city, a.district, a.country, a.services, a.invest_modes, a.about, a.phone].join(' ')), t)));
+      const kmOf = a => { const g = myPos && parseGps(a.gps); return g ? kmBetween(myPos, g) : null; };
+      if (myPos) res = res.map(a => [a, kmOf(a)]).sort((x, y) => (x[1] == null ? 1e9 : x[1]) - (y[1] == null ? 1e9 : y[1])).map(x => x[0]);
       $('#dgrid').innerHTML = res.map(a => {
         const msg = `السلام عليكم ${a.name}، شفت الحساب ديالكم فدليل ${K.ar} ديال الوسيط 777.`;
         return `<div class="card dir-card">
           <div class="dir-top"><div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>
             <div class="grow"><b>${esc(a.name)}</b><small class="muted"><span dir="ltr">${esc(a.code)}</span>${a.city ? ' · 📍 ' + esc(a.city) : ''}${isAbroad(a) ? ' · 🌍 ' + esc(a.country) : ''}</small></div></div>
           ${splitList(a.services).length ? `<div class="chips wrap">${splitList(a.services).map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
+          ${kind === 'investor' && (a.budget || a.invest_modes) ? `<div class="iv-mini">${a.budget ? `💰 حتى ${nm(a.budget)} درهم` : ''}${a.invest_modes ? `<span>${esc(a.invest_modes)}</span>` : ''}</div>` : ''}
+          ${kind === 'notary' && (a.district || kmOf(a) != null) ? `<div class="iv-mini">📍 ${esc([a.district, a.city].filter(Boolean).join('، '))}${kmOf(a) != null ? ` · <b>${kmTxt(kmOf(a))}</b>` : ''}</div>` : ''}
           ${a.about ? `<p class="dir-about">${esc(a.about)}</p>` : ''}
+          ${kind === 'notary' && S.kind !== 'notary' ? `<div class="btn-row"><button class="btn sm" data-ask="${a.uid}" data-k="consult">💬 استشارة</button><button class="btn sm gold" data-ask="${a.uid}" data-k="contract">📝 توثيق عقد</button></div>` : ''}
           <div class="btn-row">${a.phone ? `<a class="btn sm" href="${telLink(a.phone)}">${ic('phone', 15)} ${esc(a.phone)}</a>
             <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} واتساب</a>` : '<span class="muted">التواصل عبر مكتب الوسيط 777</span>'}</div>
         </div>`;
       }).join('') || `<div class="card empty" style="grid-column:1/-1"><div class="big">${K.ic}</div><h3>مازال حتى ${esc(K.one)} ما كمّل المعلومات ديالو</h3><p>كل عضو كيبان هنا ملي كيكمّل «حسابي» (الاسم، الهاتف، المدينة، الخدمات).</p></div>`;
+      bindNtAsk($('#dgrid'), null);
+    };
+    const nb = $('#d-near');
+    if (nb) nb.onclick = () => {
+      if (!navigator.geolocation) return toast('تحديد الموقع غير مدعوم');
+      $('#d-pos').textContent = 'جاري تحديد الموقع…';
+      navigator.geolocation.getCurrentPosition(pos => { myPos = [pos.coords.latitude, pos.coords.longitude]; $('#d-pos').textContent = '📍 مرتبين من الأقرب'; draw(); },
+        () => { $('#d-pos').textContent = 'تعذر تحديد الموقع'; }, { enableHighAccuracy: true, timeout: 15000 });
     };
     $$('#df input, #df select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
     $('#df').onsubmit = e => e.preventDefault();
@@ -4263,16 +4300,31 @@
           ${fInput('name', 'الاسم', ag.name, { req: true })}
           ${fInput('phone', 'الهاتف / واتساب', ag.phone, { type: 'tel' })}
           ${fInput('city', 'المدينة', ag.city, { list: 'dl-cities' })}
+          ${kind === 'notary' ? fInput('district', 'الحي / العنوان ديال المكتب', ag.district, { ph: 'مثال: حمرية، شارع…' }) : ''}
+          ${kind === 'notary' ? `<div class="field"><label>الموقع (GPS) — باش تتقترح مع أقرب عقار</label><div class="range"><input name="gps" value="${esc(ag.gps || '')}" placeholder="33.89,-5.55" dir="ltr">
+            <button type="button" class="btn sm" id="me-gps">${ic('gps', 16)} موقعي الآن</button></div></div>` : ''}
+          ${kind === 'investor' ? fInput('budget', 'الميزانية القصوى (درهم)', ag.budget, { money: true }) : ''}
+          ${kind === 'investor' ? `<div class="field full"><label>نوع الاستثمار</label><div class="chips wrap" id="mode-pick">${Object.values(INV_MODES).map(m => `<label class="chip"><input type="checkbox" data-mode value="${esc(m[0])}" ${splitList(ag.invest_modes).includes(m[0]) ? 'checked' : ''}> ${esc(m[0])}</label>`).join('')}</div></div>` : ''}
           ${abroad ? fInput('country', 'الدولة', ag.country === 'خارج المغرب' ? '' : ag.country, { ph: 'فرنسا، إسبانيا، بلجيكا، الإمارات…' }) : ''}
           <div class="field"><label>الرمز</label><input value="${esc(ag.code || '')}" disabled dir="ltr"></div>
-          ${fInput('services', 'الخدمات (فرّق بالفاصلة)', ag.services, { cls: 'full', ph: K.sv.slice(0, 4).join('، ') })}
+          ${fInput('services', kind === 'investor' ? 'القطاعات اللي كتهمك (فرّق بالفاصلة)' : kind === 'notary' ? 'الاختصاصات (فرّق بالفاصلة)' : 'الخدمات (فرّق بالفاصلة)', ag.services, { cls: 'full', ph: K.sv.slice(0, 4).join('، ') })}
           <div class="field full"><div class="chips wrap" id="sv-pick">${K.sv.map(s => `<button type="button" class="chip" data-sv="${esc(s)}">+ ${esc(s)}</button>`).join('')}</div></div>
           ${fText('about', 'تعريف قصير', ag.about, { ph: 'شكون نتوما، شحال من عام فالميدان، المناطق اللي خدامين فيها…' })}
           <div class="field" style="justify-content:flex-end"><button class="btn gold">${ic('check', 18)} حفظ</button></div>
         </form>
         <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
-        <p class="muted" style="font-size:13px">✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.</p>
-      </div>`;
+        <p class="muted" style="font-size:13px">✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.${kind === 'notary' ? '<br>✔️ الموقع (GPS) والحي كيخليوك تتقترح أوتوماتيكيا مع العقارات القريبة ليك.' : ''}${kind === 'investor' ? '<br>✔️ زيد عروض الاستثمار ديالك فـ «💼 فرص الاستثمار» باش يتواصلو معاك أصحاب المشاريع.' : ''}</p>
+      </div>
+      <div class="card card-pad" style="margin-top:14px"><div class="kv"><div><small>📜 القانون</small><b>${ag.terms_at ? '✅ موافق ' + dAr(ag.terms_at) : '⏳ مازال'}</b></div><div><small>💳 الاشتراك</small><b style="font-size:13.5px">${esc((subInfo(ag) || {}).txt || '')}</b></div></div>
+        <div class="btn-row" style="margin-top:10px"><a class="btn sm" href="#/terms">⚖️ قانون التطبيق</a><a class="btn sm" href="#/terms/groups">👥 مجموعات المشتركين</a></div></div>`;
+    bindMoney(main());
+    const gb = $('#me-gps');
+    if (gb) gb.onclick = () => {
+      if (!navigator.geolocation) return toast('تحديد الموقع غير مدعوم');
+      toast('جاري تحديد الموقع…');
+      navigator.geolocation.getCurrentPosition(pos => { $('#agme [name=gps]').value = pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6); toast('تم تحديد الموقع ✓'); },
+        () => toast('تعذر تحديد الموقع'), { enableHighAccuracy: true, timeout: 15000 });
+    };
     $$('#sv-pick [data-sv]').forEach(b => b.onclick = () => {
       const inp = $('#agme [name=services]'), cur = splitList(inp.value);
       if (!cur.includes(b.dataset.sv)) inp.value = [...cur, b.dataset.sv].join('، ');
@@ -4281,6 +4333,11 @@
       e.preventDefault();
       const v = collect(e.target);
       const body = { name: v.name, phone: v.phone || null, city: v.city || null, services: splitList(v.services).join('، ') || null, about: v.about || null };
+      if (kind === 'notary') {
+        if (v.gps && !parseGps(v.gps)) return toast('الموقع خاصو يكون بحال 33.89,-5.55 ولا رابط Google Maps', 4000);
+        body.district = v.district || null; body.gps = parseGps(v.gps) ? parseGps(v.gps).join(',') : null;
+      }
+      if (kind === 'investor') { body.budget = v.budget || null; body.invest_modes = $$('#mode-pick [data-mode]:checked').map(c => c.value).join('، ') || null; }
       if (abroad) body.country = (v.country || '').trim() || 'خارج المغرب';
       try {
         await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', body);
@@ -4307,13 +4364,19 @@
     const appUrl = location.href.split('#')[0];
     const shares = kind === 'agency' || kind === 'broker';
     const credMsg = a => `السلام عليكم ${a.name}،\nمرحبا بكم فشبكة ${K.ar} ديال الوسيط 777 ${K.ic}\nالتطبيق: ${appUrl}\nالإعدادات ← المزامنة السحابية:\nالرمز: ${loginOf(a)}\nكلمة السر: ${pw[a.uid] || ''}\n` +
-      (shares ? 'من بعد كمّلو «حسابي» وزيدو العقارات ديالكم، غادي يبانو لجميع الأعضاء (بلا معلومات المالك).' : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.');
+      (shares ? 'من بعد كمّلو «حسابي» وزيدو العقارات ديالكم، غادي يبانو لجميع الأعضاء (بلا معلومات المالك).'
+        : kind === 'investor' ? 'من بعد كمّلو «حسابي» (الميزانية ونوع الاستثمار) وزيدو عروضكم فـ «فرص الاستثمار».'
+          : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
+            : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.') +
+      `\n📜 قانون التطبيق (199 درهم فالعام من بعد 3 أشهر مجانية): ${appUrl}#/terms` +
+      (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '');
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
         <div class="kv"><div><small>الحسابات</small><b>${ags.length}</b></div><div><small>مفعلة</small><b>${ags.filter(a => a.active).length}</b></div>
           <div><small>كمّلو المعلومات</small><b>${ags.filter(isNamed).length}</b></div>
           ${kind === 'agency' ? `<div><small>🇲🇦 / 🌍</small><b>${ags.filter(a => !isAbroad(a)).length} / ${ags.filter(isAbroad).length}</b></div>` : ''}
-          <div><small>اللي زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div></div>
+          <div><small>اللي زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div>
+          <div><small>📜 وافقو على القانون</small><b>${ags.filter(a => a.terms_at).length}</b></div></div>
         <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف، مدينة…' })}
           ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
             ...(kind === 'agency' ? [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }] : [])], '', { noEmpty: true })}</div>
@@ -4326,6 +4389,7 @@
         (f !== 'named' || isNamed(a)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active) && (f !== 'ma' || !isAbroad(a)) && (f !== 'out' || isAbroad(a)));
       $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
         <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${isAbroad(a) ? `<span class="badge blue">🌍 ${esc(a.country)}</span>` : ''} ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
+          ${a.terms_at ? `<span class="badge ${subInfo(a).ok ? (subInfo(a).trial ? 'blue' : 'green') : 'red'}" title="${esc(subInfo(a).txt)}">${subInfo(a).ok ? (subInfo(a).trial ? '🎁 مجاني' : '💳 خالص') : '⏳ 199 مستحق'}</span>` : ''}
           <small class="muted">${esc(a.phone || 'بلا هاتف')}${a.city ? ' · ' + esc(a.city) : ''} · <span dir="ltr">${esc(loginOf(a))}</span> / <span dir="ltr" class="pw" data-pw="${a.uid}">••••••</span></small></div>
         <div class="btn-row">
           <button class="btn sm" data-show="${a.uid}">${ic('eye', 15)}</button>
@@ -4344,11 +4408,17 @@
         const a = ags.find(x => x.uid === b.dataset.edit);
         modal(`<h3>${K.ic} <span dir="ltr">${esc(a.code)}</span></h3><form id="age" class="form-grid">${fInput('name', 'الاسم', a.name, { req: true })}${fInput('phone', 'الهاتف', a.phone, { type: 'tel' })}
           ${fInput('city', 'المدينة', a.city)}${fInput('country', 'الدولة', a.country || 'المغرب', { hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (77 وكالة خارج المغرب)' : '' })}
-          ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}</form>
+          ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}
+          ${fInput('sub_until', 'الاشتراك (199 درهم) خالص حتى', a.sub_until, { type: 'date', hint: a.terms_at ? 'وافق على القانون: ' + dAr(a.terms_at) : 'مازال ما وافقش على القانون' })}
+          <div class="field" style="justify-content:flex-end"><button type="button" class="btn sm" id="age-year">💳 +1 عام</button></div></form>
           <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="age-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+          $('#age-year', box).onclick = () => {
+            const i = $('[name=sub_until]', box), cur = i.value && new Date(i.value) > new Date() ? new Date(i.value) : new Date();
+            cur.setFullYear(cur.getFullYear() + 1); i.value = cur.toISOString().slice(0, 10);
+          };
           $('#age-ok', box).onclick = async () => {
             const v = collect($('#age', box));
-            const body = { name: v.name || a.name, phone: v.phone || null, city: v.city || null, country: (v.country || '').trim() || 'المغرب', services: splitList(v.services).join('، ') || null };
+            const body = { name: v.name || a.name, phone: v.phone || null, city: v.city || null, country: (v.country || '').trim() || 'المغرب', services: splitList(v.services).join('، ') || null, sub_until: v.sub_until || null };
             try {
               await rq(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, 'PATCH', body);
               Object.assign(a, body); S.dir = null; close(); draw(); toast('تم ✓');
@@ -4360,6 +4430,352 @@
     $('[name=agq]').addEventListener('input', () => { shown = 60; draw(); });
     $('[name=agf]').addEventListener('change', () => { shown = 60; draw(); });
     draw();
+  }
+
+  /* ============================================================
+     المستثمرون (I001–I777): الميزانية + عروض التمويل والشراكة
+     الموثقون (N001–N777): كيتقترحو مع أقرب عقار + الاستشارات وتوثيق العقود
+     ============================================================ */
+  const INV_MODES = { finance: ['💰 تمويل', 'كيموّل مشروع ولا عقار مقابل عائد'], partner: ['🤝 شراكة', 'كيدخل شريك بنسبة فالمشروع'],
+    buy: ['🏷️ شراء', 'كيشري عقارات للاستثمار'], rent: ['🔑 كراء طويل', 'كيكري عقارات ولا محلات للاستثمار'] };
+  const INV_SECTORS = ['سكني', 'تجاري', 'سياحي / فندقي', 'أراضي وتجزئات', 'فلاحي', 'صناعي / مستودعات', 'مكاتب', 'ترميم وإعادة البيع'];
+  const NT_ST = { new: ['🆕 جديد', 'blue'], accepted: ['✅ مقبول', 'green'], done: ['🏁 تمّ', 'green'], declined: ['✖ معتذر', 'red'], cancelled: ['🔒 ملغى', 'gray'] };
+  const ntBadge = s => { const x = NT_ST[s] || [s, 'gray']; return `<span class="badge ${x[1]}">${x[0]}</span>`; };
+  const NT_CONTRACTS = ['عقد بيع', 'وعد بالبيع', 'عقد كراء', 'عقد شراكة', 'بيع فـ طور الإنجاز (VEFA)', 'هبة', 'قسمة / إراثة', 'توكيل', 'رهن / رفع اليد', 'أخرى'];
+  const parseGps = g => { const m = String(g || '').match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/); return m ? [+m[1], +m[2]] : null; };
+  function kmBetween(a, b) {
+    const r = x => x * Math.PI / 180, dLa = r(b[0] - a[0]), dLo = r(b[1] - a[1]);
+    const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLo / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.sqrt(h));
+  }
+  const kmTxt = km => km == null ? '' : km < 1 ? Math.round(km * 1000) + ' م' : (km < 10 ? km.toFixed(1) : Math.round(km)) + ' كلم';
+  // أقرب الموثقين: بالـ GPS إلا كان، وإلا نفس الحي ثم نفس المدينة
+  function nearNotaries(dir, at) {
+    const pos = parseGps(at.gps), city = norm(at.city || ''), dist = norm(at.district || '');
+    return dir.filter(a => kindOf(a) === 'notary' && a.active && (isNamed(a) || a.phone)).map(a => {
+      const g = parseGps(a.gps), km = pos && g ? kmBetween(pos, g) : null;
+      const sameCity = !!city && norm(a.city || '') === city, sameDist = sameCity && !!dist && norm(a.district || '') === dist;
+      return { a, km, sameCity, score: km != null ? km : sameDist ? 500 : sameCity ? 1000 : 1e9 };
+    }).filter(x => (x.km != null && x.km <= 80) || x.sameCity).sort((x, y) => x.score - y.score);
+  }
+  const ntRow = x => `<div class="list-row nt-row"><div class="dir-av">🖋️</div>
+      <div class="grow"><b>${esc(x.a.name)}</b><small class="muted">📍 ${esc([x.a.district, x.a.city].filter(Boolean).join('، ') || '—')}${x.km != null ? ' · <b>' + kmTxt(x.km) + '</b>' : ''}</small></div>
+      <div class="btn-row"><button class="btn sm" data-ask="${x.a.uid}" data-k="consult">💬 استشارة</button><button class="btn sm gold" data-ask="${x.a.uid}" data-k="contract">📝 توثيق عقد</button></div></div>`;
+  const bindNtAsk = (root, at) => $$('[data-ask]', root).forEach(b => b.onclick = () => notaryAsk(b.dataset.ask, b.dataset.k, at));
+  // كارطة «موثقين قراب» فصفحة العقار
+  async function notaryBox(el, at) {
+    const Sy = window.W777_SYNC;
+    if (!el || EMBED || !Sy || !Sy.isOn()) return;
+    try {
+      await refreshRole();
+      if (!inNetwork() || S.kind === 'notary') return;
+      const near = nearNotaries(await loadDir(), at).slice(0, 3);
+      el.innerHTML = `<div class="card card-pad nt-box">
+        <div class="pair-head"><b>🖋️ موثقين قراب من العقار</b><a class="btn sm" href="#/notaries/dir${at.city ? '?city=' + encodeURIComponent(at.city) : ''}">الكل</a></div>
+        ${near.length ? near.map(ntRow).join('') : `<p class="muted" style="margin:6px 0 0;font-size:13px">مازال ما كاين موثق مسجل ${at.city ? 'فـ ' + esc(at.city) : 'قريب'} — تقدر تختار من <a href="#/notaries/dir">دليل الموثقين</a> ولا تتواصل مع مكتب الوسيط 777.</p>`}
+      </div>`;
+      bindNtAsk(el, at);
+    } catch (e) { /* اختياري */ }
+  }
+  function notaryAsk(uid, kind, at) {
+    const n = (S.dir || []).find(a => a.uid === uid) || {};
+    const prop = at && (at.ref || at.title) ? [at.ref, at.title, at.city].filter(Boolean).join(' · ') : '';
+    modal(`<h3>🖋️ طلب للموثق — ${esc(n.name || '')}</h3>
+      <form id="nq" class="form-grid">
+        ${fSelect('kind', 'نوع الطلب', [{ v: 'consult', l: '💬 استشارة عقارية' }, { v: 'contract', l: '📝 توثيق عقد' }], kind || 'consult', { noEmpty: true })}
+        ${fSelect('contract', 'نوع العقد', NT_CONTRACTS, '', { empty: '— اختياري —' })}
+        ${fInput('sender_name', 'الاسم', myAgencyName(), { req: true })}
+        ${fInput('sender_phone', 'الهاتف / واتساب', myAgencyPhone(), { type: 'tel', req: true })}
+        ${prop ? `<div class="field full"><label>العقار</label><input value="${esc(prop)}" disabled></div>` : ''}
+        ${fText('message', 'الطلب بالتفصيل', '', { ph: 'مثال: بغيت نوثق عقد بيع شقة فـ … الأطراف، الثمن التقريبي، الوثائق اللي عندي (رسم عقاري، شهادة الملكية…)' })}
+      </form>
+      <p class="muted" style="font-size:12.5px">🔒 الطلب كيوصل للموثق، ومكتب الوسيط 777 كيبقى على علم بيه (قانون التطبيق). الجواب كيبان ليك فـ «الموثقون ← طلباتي».</p>
+      <div class="btn-row" style="margin-top:10px"><button class="btn gold" id="nq-ok">${ic('check', 16)} إرسال الطلب</button></div>`, (box, close) => {
+      const sync = () => { $('[name=contract]', box).closest('.field').style.display = $('[name=kind]', box).value === 'contract' ? '' : 'none'; };
+      $('[name=kind]', box).onchange = sync; sync();
+      $('#nq-ok', box).onclick = async () => {
+        const v = collect($('#nq', box));
+        if (!v.sender_name || !v.sender_phone || !v.message) return toast('كمّل الاسم، الهاتف والطلب');
+        const btn = $('#nq-ok', box); btn.disabled = true;
+        try {
+          await rq('/rest/v1/w777_notary_req', 'POST', { notary: uid, kind: v.kind, contract: v.kind === 'contract' ? v.contract || null : null,
+            sender_name: v.sender_name, sender_phone: v.sender_phone, message: v.message,
+            prop_ref: (at && at.ref) || null, prop_title: (at && at.title) || null, prop_city: (at && at.city) || null }, 'return=minimal');
+          close(); toast('تصيفط الطلب للموثق ✓', 3000);
+        } catch (e) { btn.disabled = false; toast('تعذر: ' + e.message, 4000); }
+      };
+    });
+  }
+  // صندوق الطلبات: الموثق (الواردة) · المرسل (طلباتي) · المدير (الكل)
+  async function viewNotaryReqs(head, mode) {
+    const me = window.W777_SYNC.uid();
+    let rows, dir = [];
+    const f = mode === 'inbox' ? `&notary=eq.${me}` : mode === 'sent' ? `&sender=eq.${me}` : '';
+    try { rows = await rq(`/rest/v1/w777_notary_req?select=*&order=created_at.desc&limit=500${f}`); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    try { dir = await loadDir(); } catch (e) { /* */ }
+    const ag = u => dir.find(a => a.uid === u) || {};
+    const cnt = s => rows.filter(r => r.status === s).length;
+    const card = r => {
+      const n = ag(r.notary);
+      const who = mode === 'sent' ? `🖋️ الموثق: <b>${esc(n.name || '—')}</b>`
+        : mode === 'all' ? `👤 <b>${esc(r.sender_name || ag(r.sender).name || '—')}</b> ← 🖋️ <b>${esc(n.name || '—')}</b>`
+          : `👤 من: <b>${esc(r.sender_name || ag(r.sender).name || '—')}</b> <span class="muted" dir="ltr">${esc(ag(r.sender).code || '')}</span>`;
+      return `<div class="card card-pad nt-req ${r.status === 'new' ? 'is-new' : ''}">
+        <div class="btn-row" style="gap:6px"><span class="badge ${r.kind === 'contract' ? 'gold' : 'blue'}">${r.kind === 'contract' ? '📝 توثيق عقد' : '💬 استشارة'}</span>
+          ${r.contract ? `<span class="badge">${esc(r.contract)}</span>` : ''}${ntBadge(r.status)}<span class="badge" dir="ltr">${refOf('NT', r.id)}</span>
+          <small class="muted grow" style="text-align:left">${dAr(r.created_at)}</small></div>
+        <div class="muted" style="font-size:13px;margin:8px 0">${who}${r.prop_ref || r.prop_title ? `<br>🏠 ${esc([r.prop_ref, r.prop_title, r.prop_city].filter(Boolean).join(' · '))}` : ''}</div>
+        <p style="white-space:pre-wrap;margin:0">${esc(r.message)}</p>
+        ${r.reply ? `<div class="nt-reply"><b>🖋️ جواب الموثق</b><p>${esc(r.reply)}</p></div>` : ''}
+        <div class="btn-row" style="margin-top:10px">
+          ${mode !== 'sent' && r.sender_phone ? `<a class="btn sm" href="${telLink(r.sender_phone)}">${ic('phone', 15)} ${esc(r.sender_phone)}</a>
+            <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(r.sender_phone)}?text=${encodeURIComponent(`السلام عليكم ${r.sender_name || ''}، بخصوص الطلب ${refOf('NT', r.id)} (الوسيط 777)…`)}">${ic('wa', 15)}</a>` : ''}
+          ${mode === 'sent' && n.phone && ['accepted', 'done'].includes(r.status) ? `<a class="btn sm" href="${telLink(n.phone)}">${ic('phone', 15)} ${esc(n.phone)}</a>` : ''}
+          ${mode !== 'sent' && r.status !== 'cancelled' ? `<button class="btn sm gold" data-reply="${r.id}">✍️ جاوب / بدّل الحالة</button>` : ''}
+          ${mode === 'sent' && r.status === 'new' ? `<button class="btn sm danger" data-cancel="${r.id}">إلغاء الطلب</button>` : ''}
+        </div></div>`;
+    };
+    main().innerHTML = head + (rows.length ? `
+      <div class="card card-pad" style="margin-bottom:14px"><div class="kv"><div><small>المجموع</small><b>${rows.length}</b></div><div><small>🆕 جديد</small><b>${cnt('new')}</b></div>
+        <div><small>✅ مقبول</small><b>${cnt('accepted')}</b></div><div><small>🏁 تمّ</small><b>${cnt('done')}</b></div></div></div>
+      <div class="nt-list">${rows.map(card).join('')}</div>`
+      : emptyCard('🖋️', mode === 'inbox' ? 'مازال ما وصلك حتى طلب' : mode === 'sent' ? 'مازال ما صيفطتي حتى طلب' : 'ما كاين حتى طلب',
+        mode === 'inbox' ? 'كمّل «حسابي» (المدينة، الحي والموقع GPS) باش تتقترح أوتوماتيكيا مع العقارات القريبة ليك.'
+          : 'من «📇 الدليل» ولا من صفحة أي عقار، اختار موثق وصيفط ليه استشارة ولا طلب توثيق عقد.'));
+    $$('[data-cancel]').forEach(b => b.onclick = async () => {
+      if (!(await confirmBox('إلغاء هاد الطلب؟', 'إلغاء'))) return;
+      try { await rq(`/rest/v1/w777_notary_req?id=eq.${b.dataset.cancel}`, 'PATCH', { status: 'cancelled' }, 'return=minimal'); toast('تلغى ✓'); viewNotaryReqs(head, mode); } catch (e) { toast('تعذر: ' + e.message); }
+    });
+    $$('[data-reply]').forEach(b => b.onclick = () => {
+      const r = rows.find(x => x.id === b.dataset.reply);
+      modal(`<h3>✍️ الجواب على ${refOf('NT', r.id)}</h3><form id="nr" class="form-grid">
+          ${fSelect('status', 'الحالة', ['new', 'accepted', 'done', 'declined'].map(v => ({ v, l: NT_ST[v][0] })), r.status === 'new' ? 'accepted' : r.status, { noEmpty: true })}
+          ${fText('reply', 'الجواب (كيشوفو صاحب الطلب)', r.reply, { ph: 'مثال: مرحبا، الوثائق المطلوبة هي… الموعد ممكن نهار… الأتعاب التقريبية…' })}</form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="nr-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+        $('#nr-ok', box).onclick = async () => {
+          const v = collect($('#nr', box));
+          try { await rq(`/rest/v1/w777_notary_req?id=eq.${r.id}`, 'PATCH', { status: v.status, reply: v.reply || null }, 'return=minimal'); close(); toast('تم ✓'); viewNotaryReqs(head, mode); } catch (e) { toast('تعذر: ' + e.message); }
+        };
+      });
+    });
+  }
+
+  // فرص الاستثمار: المستثمر كيحط الميزانية (تمويل، شراكة، شراء، كراء طويل) — كتبان لجميع أعضاء الشبكة
+  async function viewInvest(head, query) {
+    let rows;
+    try { rows = await rq('/rest/v1/w777_invest?select=*&order=created_at.desc&limit=1000'); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    const me = window.W777_SYNC.uid(), admin = S.role === 'admin';
+    const canPost = admin || S.kind === 'investor';
+    const open = rows.filter(r => r.status === 'open');
+    const total = open.reduce((s, r) => s + (num(r.budget_max) || num(r.budget_min) || 0), 0);
+    main().innerHTML = head + `
+      <div class="card card-pad iv-intro" style="margin-bottom:14px">
+        <div class="kv"><div><small>عروض مفتوحة</small><b>${open.length}</b></div><div><small>مجموع الميزانيات</small><b>${total ? esc(millions(total) || fmt(total)) : '—'}</b></div>
+          ${Object.entries(INV_MODES).map(([k, m]) => `<div><small>${m[0]}</small><b>${open.filter(r => r.mode === k).length}</b></div>`).join('')}</div>
+        <p class="muted" style="font-size:13px;margin:10px 0">💼 المستثمرون كيحطّو هنا الميزانية ديالهم. عندك مشروع ولا عقار مناسب؟ تواصل معاهم مباشرة ولا عبر مكتب الوسيط 777.</p>
+        <form id="ivf" class="form-grid">
+          ${fInput('q', 'بحث', '', { ph: 'مدينة، قطاع، اسم…' })}
+          ${fSelect('mode', 'نوع الاستثمار', [{ v: '', l: 'الكل' }, ...Object.entries(INV_MODES).map(([v, m]) => ({ v, l: m[0] }))], query.mode || '', { noEmpty: true })}
+          ${fInput('amt', 'قيمة المشروع / العقار ديالي (درهم)', '', { money: true })}
+          ${fSelect('st', 'الحالة', [{ v: 'open', l: 'المفتوحة' }, { v: '', l: 'الكل' }], 'open', { noEmpty: true })}
+        </form>
+        <div class="btn-row" style="margin-top:10px"><span class="muted grow" id="ivc"></span>
+          <a class="btn" href="#/projects">🚀 المشاريع اللي كتقلب على تمويل</a>
+          ${canPost ? `<button class="btn gold" id="iv-new">${ic('plus', 16)} عرض استثمار</button>` : ''}</div>
+      </div>
+      <div class="iv-grid" id="ivg"></div>`;
+    bindMoney(main());
+    const card = r => {
+      const mine = r.owner === me || admin, m = INV_MODES[r.mode] || INV_MODES.partner;
+      const msg = `السلام عليكم ${r.owner_name || ''}، شفت عرض الاستثمار «${r.title}» (${refOf('INV', r.id)}) فتطبيق الوسيط 777، وعندي مشروع/عقار مناسب.`;
+      const bud = r.budget_min && r.budget_max ? `<small>من</small> ${nm(r.budget_min)} <small>إلى</small> ${nm(r.budget_max)} <small>درهم</small>`
+        : r.budget_min || r.budget_max ? `<small>${r.budget_min ? 'ابتداء من' : 'حتى'}</small> ${nm(r.budget_min || r.budget_max)} <small>درهم</small>` : '<small class="muted">الميزانية حسب المشروع</small>';
+      return `<div class="card iv-card ${r.status === 'closed' ? 'is-closed' : ''}">
+        <div class="btn-row" style="gap:6px"><span class="badge gold">${m[0]}</span>${r.status === 'closed' ? '<span class="badge gray">🔒 مغلق</span>' : ''}<span class="badge" dir="ltr">${refOf('INV', r.id)}</span></div>
+        <h3>${esc(r.title)}</h3>
+        <div class="iv-budget">${bud}</div>
+        <div class="iv-meta">${[r.sectors && '🏷️ ' + esc(r.sectors), r.cities && '📍 ' + esc(r.cities), r.share && '📊 ' + esc(r.share), r.duration && '⏱️ ' + esc(r.duration)].filter(Boolean).join('<br>')}</div>
+        ${r.description ? `<p class="dir-about">${esc(r.description)}</p>` : ''}
+        <div class="btn-row"><small class="muted grow">💼 ${esc(r.owner_name || 'مستثمر')} · ${dAr(r.created_at)}</small>
+          <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(r.phone || W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} ${r.phone ? 'تواصل' : 'عبر المكتب'}</a>
+          ${mine ? `<button class="btn sm" data-ive="${r.id}">${ic('edit', 15)}</button><button class="btn sm" data-ivc="${r.id}">${r.status === 'open' ? '🔒' : '🔓'}</button><button class="btn sm danger" data-ivd="${r.id}">${ic('trash', 15)}</button>` : ''}</div>
+      </div>`;
+    };
+    const draw = () => {
+      const v = collect($('#ivf')), t = tokens(v.q || '');
+      const res = rows.filter(r => (!v.st || r.status === v.st) && (!v.mode || r.mode === v.mode)
+        && (!v.amt || ((!r.budget_min || num(r.budget_min) <= v.amt) && (!r.budget_max || num(r.budget_max) >= v.amt * 0.5)))
+        && (!t.length || hit(norm([r.title, r.sectors, r.cities, r.owner_name, r.description, r.share].join(' ')), t)));
+      $('#ivc').textContent = `${res.length} عرض`;
+      $('#ivg').innerHTML = res.map(card).join('') || emptyCard('💼', 'ما كاين حتى عرض استثمار مطابق', canPost ? 'زيد أول عرض ديالك: الميزانية، نوع الاستثمار والقطاعات اللي كتهمك.' : 'المستثمرون (I001–I777) كيزيدو العروض ديالهم هنا.');
+      $$('[data-ive]').forEach(b => b.onclick = () => ivForm(rows.find(r => r.id === b.dataset.ive)));
+      $$('[data-ivc]').forEach(b => b.onclick = async () => {
+        const r = rows.find(x => x.id === b.dataset.ivc), st = r.status === 'open' ? 'closed' : 'open';
+        try { await rq(`/rest/v1/w777_invest?id=eq.${r.id}`, 'PATCH', { status: st }, 'return=minimal'); r.status = st; draw(); } catch (e) { toast('تعذر: ' + e.message); }
+      });
+      $$('[data-ivd]').forEach(b => b.onclick = async () => {
+        if (!(await confirmBox('حذف هاد العرض نهائيا؟', 'حذف'))) return;
+        try { await rq(`/rest/v1/w777_invest?id=eq.${b.dataset.ivd}`, 'DELETE', null, 'return=minimal'); rows = rows.filter(r => r.id !== b.dataset.ivd); draw(); } catch (e) { toast('تعذر: ' + e.message); }
+      });
+    };
+    const ivForm = r => {
+      const x = r || { mode: 'partner', phone: myAgencyPhone(), cities: (S.agency && S.agency.city) || '' };
+      modal(`<h3>💼 ${r ? 'تعديل' : 'عرض'} استثمار</h3><form id="ivx" class="form-grid">
+          ${fInput('title', 'العنوان', x.title, { req: true, cls: 'full', ph: 'مثال: كنقلب على مشروع سكني فمكناس للشراكة' })}
+          ${fSelect('mode', 'نوع الاستثمار', Object.entries(INV_MODES).map(([v, m]) => ({ v, l: m[0] + ' — ' + m[1] })), x.mode, { noEmpty: true })}
+          ${fInput('budget_min', 'الميزانية من (درهم)', x.budget_min, { money: true })}${fInput('budget_max', 'إلى (درهم)', x.budget_max, { money: true })}
+          ${fInput('sectors', 'القطاعات', x.sectors, { ph: INV_SECTORS.slice(0, 3).join('، ') })}${fInput('cities', 'المدن', x.cities, { ph: 'مكناس، فاس، الرباط…' })}
+          <div class="field full"><div class="chips wrap" id="iv-sec">${INV_SECTORS.map(s => `<button type="button" class="chip" data-s="${esc(s)}">+ ${esc(s)}</button>`).join('')}</div></div>
+          ${fInput('share', 'النسبة / العائد المنتظر', x.share, { ph: 'مثال: 30% من الأرباح، 8% فالعام…' })}${fInput('duration', 'المدة', x.duration, { ph: 'مثال: 24 شهر' })}
+          ${fInput('phone', 'الهاتف / واتساب (فارغ = عبر المكتب)', x.phone, { type: 'tel' })}
+          ${fText('description', 'التفاصيل', x.description, { ph: 'الشروط، نوع المشاريع اللي كتهمك، الضمانات…' })}</form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="ivx-ok">${ic('check', 16)} ${r ? 'حفظ' : 'نشر العرض'}</button></div>`, (box, close) => {
+        bindMoney(box);
+        $$('#iv-sec [data-s]', box).forEach(b => b.onclick = () => { const i = $('[name=sectors]', box), cur = splitList(i.value); if (!cur.includes(b.dataset.s)) i.value = [...cur, b.dataset.s].join('، '); });
+        $('#ivx-ok', box).onclick = async () => {
+          const v = collect($('#ivx', box));
+          if (!v.title) return toast('العنوان ضروري');
+          const body = { title: v.title, mode: v.mode, budget_min: v.budget_min, budget_max: v.budget_max, sectors: splitList(v.sectors).join('، ') || null, cities: splitList(v.cities).join('، ') || null,
+            share: v.share || null, duration: v.duration || null, phone: v.phone || null, description: v.description || null, owner_name: r ? r.owner_name : myAgencyName() };
+          try {
+            if (r) { await rq(`/rest/v1/w777_invest?id=eq.${r.id}`, 'PATCH', body, 'return=minimal'); Object.assign(r, body); }
+            else rows.unshift((await rq('/rest/v1/w777_invest', 'POST', body, 'return=representation'))[0]);
+            close(); draw(); toast('تم ✓');
+          } catch (e) { toast('تعذر: ' + e.message, 4000); }
+        };
+      });
+    };
+    const nb = $('#iv-new'); if (nb) nb.onclick = () => ivForm(null);
+    $$('#ivf input, #ivf select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
+    $('#ivf').onsubmit = e => e.preventDefault();
+    draw();
+  }
+
+  /* ============================================================
+     قانون التطبيق وشروط الاشتراك + مجموعات المشتركين (واتساب وتيليغرام)
+     ============================================================ */
+  const TERMS_V = '2026-10';
+  const TERMS_MAIN = [
+    ['📣', 'الإبلاغ عن العمليات', 'كل عملية (بيع، كراء، شراكة، تمويل، توثيق…) تمّت بين طرفين عن طريق التطبيق، ولا بسبب معلومة منشورة فيه، خاص المشترك يبلّغ بيها مكتب الوسيط 777 فور إتمامها.'],
+    ['🔑', 'غياب المشترك المكلّف بالعقار', 'فحالة عدم ظهور المشترك المكلّف بالعقار (ما كيجاوبش ولا غايب)، يجوز لمكتب الوسيط 777 الولوج لمعلومات صاحب العقار والتواصل معه لإتمام العملية، مع حفظ عمولة المشترك المكلّف كاملة.'],
+    ['💳', 'الاشتراك', 'كيوفّر مكتب الوسيط 777 هاد الخدمة مقابل 199 درهم فالعام، كتخلص من بعد 3 أشهر مجانية كتبدا من نهار الموافقة على هاد القانون.'],
+    ['⚠️', 'حدود المسؤولية', 'لا يتحمل مكتب الوسيط 777 أي مسؤولية فحالة تمّ التعاقد بدون علمه ولا بدون الرجوع إليه.'],
+  ];
+  const TERMS_MORE = [
+    ['صحة المعلومات', 'المشترك مسؤول على صحة المعلومات والصور اللي كينشر (5 صور لكل عقار)، وعلى حصوله على موافقة صاحب العقار.'],
+    ['السرية', 'معلومات المالك والزبناء كتبقى خاصة بالمشترك اللي زادها، وما كتبانش لباقي الأعضاء. يُمنع استعمال معلومات الشبكة خارج إطار التعاون المهني.'],
+    ['التعاون والعمولة', 'العمولة كتتقسم بين الأطراف حسب الاتفاق المسبق بيناتهم، ومكتب الوسيط 777 كيبقى مرجع فحالة الخلاف (خانة «النزاعات»).'],
+    ['حسن السلوك', 'يُمنع نشر عقارات وهمية، أثمنة مضللة، ولا أي محتوى مخالف للقانون. يحق لمكتب الوسيط 777 إيقاف أي حساب مخالف.'],
+    ['الحساب', 'الرمز وكلمة السر شخصيين. المشترك مسؤول على كل استعمال للحساب ديالو.'],
+    ['القبول', 'استعمال التطبيق والدخول للشبكة كيعني الموافقة الكاملة على هاد القانون وعلى أي تعديل كيتنشر فهاد الصفحة.'],
+  ];
+  function subInfo(a) {
+    if (!a) return null;
+    const paid = a.sub_until ? new Date(a.sub_until + 'T23:59:59') : null, now = new Date();
+    if (paid && paid >= now) return { ok: true, txt: `✅ الاشتراك خالص حتى ${dAr(a.sub_until)}` };
+    if (!a.terms_at) return { ok: true, trial: true, txt: '🎁 3 أشهر مجانية كتبدا من نهار الموافقة على القانون' };
+    const end = new Date(a.terms_at); end.setMonth(end.getMonth() + 3);
+    if (end >= now) return { ok: true, trial: true, txt: `🎁 الفترة المجانية حتى ${dAr(end.toISOString())} — من بعد 199 درهم فالعام` };
+    return { ok: false, txt: `⏳ الاشتراك السنوي (199 درهم) مستحق — تواصل مع مكتب الوسيط 777` };
+  }
+  const groupLinks = () => { const c = AG.cfg || {}; return { wa: c.wa_group || '', tg: c.tg_group || '' }; };
+  function groupsCard(full) {
+    const g = groupLinks();
+    const btns = `${g.wa ? `<a class="btn wa" target="_blank" rel="noopener" href="${esc(g.wa)}">${ic('wa', 18)} مجموعة واتساب</a>` : ''}
+      ${g.tg ? `<a class="btn tg" target="_blank" rel="noopener" href="${esc(g.tg)}">✈️ مجموعة تيليغرام</a>` : ''}`;
+    if (!full) return g.wa || g.tg ? `<div class="grp-strip"><b>👥 مجموعات المشتركين</b><div class="btn-row">${btns}</div></div>` : '';
+    return `<div class="card card-pad grp-card" id="grp">
+      <h3 class="section-title">👥 مجموعات المشتركين</h3>
+      <p class="muted" style="margin-top:0">مجموعة لكل مشتركي التطبيق: الوكالات، الوسطاء، المقاولات، التشطيب، المستثمرون والموثقون — للأخبار، الفرص والتعاون المباشر.</p>
+      <div class="btn-row">${btns || '<span class="muted">⏳ الروابط غادي يحطّهم مكتب الوسيط 777 قريبا.</span>'}</div>
+      ${S.role === 'admin' ? `<form id="grpf" class="form-grid" style="margin-top:14px">
+          ${fInput('wa_group', 'رابط مجموعة / مجتمع واتساب', g.wa, { ph: 'https://chat.whatsapp.com/…', cls: 'full' })}
+          ${fInput('tg_group', 'رابط مجموعة تيليغرام', g.tg, { ph: 'https://t.me/+…', cls: 'full' })}
+          <div class="field"><button class="btn gold">${ic('check', 16)} حفظ الروابط</button></div></form>
+        <p class="muted" style="font-size:12.5px;margin-bottom:0">💡 مجموعة واتساب فيها حد 1024 عضو — مع 4662 حساب استعمل «مجتمع واتساب» (Community) ولا قناة. تيليغرام كيقبل حتى 200 000 عضو.<br>الروابط كتزاد أوتوماتيكيا فرسالة «صيفط الدخول» لكل مشترك جديد.</p>` : ''}
+    </div>`;
+  }
+  async function viewTerms(sub) {
+    const Sy = window.W777_SYNC, on = !EMBED && Sy && Sy.isOn();
+    if (on) { await refreshRole(); await agLoadCfg(); }
+    const ag = S.role === 'agency' ? S.agency : null, si = subInfo(ag);
+    main().innerHTML = `
+      <div class="page-head"><h1>⚖️ قانون التطبيق وشروط الاشتراك</h1>${on ? roleBadge() : ''}</div>
+      <div class="card tr-hero">
+        <img src="${LOGO}" alt="" class="tr-logo">
+        <div><b>مجموعة الوسيط 777 — AL WASSET 777 GROUPE</b><small>القانون الداخلي لمشتركي التطبيق · النسخة ${TERMS_V}</small></div>
+      </div>
+      <div class="tr-grid">${TERMS_MAIN.map(([i, t, d], k) => `<div class="card card-pad tr-art"><span class="tr-n">${k + 1}</span><div class="tr-ic">${i}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></div>`).join('')}</div>
+      <div class="card card-pad" style="margin-top:14px">
+        <h3 class="section-title">📋 بنود تكميلية</h3>
+        <ol class="tr-more">${TERMS_MORE.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ol>
+      </div>
+      <div class="card card-pad tr-me" style="margin-top:14px">
+        ${ag ? `<h3 class="section-title">🪪 الحساب ديالي</h3>
+          <div class="kv"><div><small>الرمز</small><b dir="ltr">${esc(ag.code || '')}</b></div><div><small>القانون</small><b>${ag.terms_at ? '✅ موافق ' + dAr(ag.terms_at) : '⏳ مازال'}</b></div><div><small>الاشتراك</small><b style="font-size:13.5px">${esc(si.txt)}</b></div></div>
+          ${ag.terms_at ? '' : `<button class="btn gold" id="tr-ok" style="margin-top:12px">✅ قريت القانون ووافقت عليه</button>`}`
+          : S.role === 'admin' ? '<p class="muted" style="margin:0">👑 المدير: الموافقة ديال كل مشترك والاشتراك كيبانو فـ «الإدارة» ديال كل خانة.</p>'
+            : '<p class="muted" style="margin:0">دخل بالحساب ديالك (الإعدادات ← المزامنة السحابية) باش توافق على القانون وتشوف حالة الاشتراك.</p>'}
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn" id="tr-report">📣 بلّغ عن عملية</button>
+          <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/212777777959">${ic('wa', 16)} مكتب الوسيط 777</a>
+          <a class="btn" href="${telLink(W777_OFFICE)}" dir="ltr">${ic('phone', 16)} ${W777_OFFICE}</a>
+        </div>
+      </div>
+      ${groupsCard(true)}`;
+    const ok = $('#tr-ok'); if (ok) ok.onclick = () => acceptTerms(() => viewTerms(sub));
+    $('#tr-report').onclick = reportDeal;
+    const gf = $('#grpf');
+    if (gf) gf.onsubmit = async e => {
+      e.preventDefault();
+      const v = collect(gf), okUrl = u => !u || /^https:\/\/(chat\.whatsapp\.com|whatsapp\.com|wa\.me|t\.me|telegram\.me)\//i.test(u);
+      if (!okUrl(v.wa_group) || !okUrl(v.tg_group)) return toast('الرابط خاصو يبدا بـ https://chat.whatsapp.com/ ولا https://t.me/', 4000);
+      try {
+        await rq('/rest/v1/w777_agent_config?id=eq.1', 'PATCH', { wa_group: v.wa_group || null, tg_group: v.tg_group || null, updated_at: new Date().toISOString() }, 'return=minimal');
+        AG.cfg = Object.assign({}, AG.cfg, { wa_group: v.wa_group || null, tg_group: v.tg_group || null });
+        try { localStorage.setItem('w777_agent_cfg', JSON.stringify(AG.cfg)); } catch (er) { /* */ }
+        toast('تحفظو الروابط ✓'); viewTerms(sub);
+      } catch (er) { toast('تعذر: ' + er.message); }
+    };
+    if (sub === 'groups') setTimeout(() => { const g = $('#grp'); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+  }
+  async function acceptTerms(after) {
+    try {
+      await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', { terms_at: new Date().toISOString() }, 'return=minimal');
+      await refreshRole(true);
+      toast('مرحبا بك فشبكة الوسيط 777 ✓ — 3 أشهر مجانية بدات اليوم', 3500);
+      if (after) after();
+    } catch (e) { toast('تعذر: ' + e.message, 4000); }
+  }
+  // قبل الدخول للشبكة: الموافقة على القانون (مرة وحدة)
+  function termsGate() {
+    main().innerHTML = `<div class="card card-pad tr-gate">
+      <div class="tr-hero" style="box-shadow:none;border:0;padding:0;margin-bottom:12px"><img src="${LOGO}" alt="" class="tr-logo"><div><b>قبل ما تدخل لشبكة الوسيط 777</b><small>قرا البنود الأساسية ووافق عليها مرة وحدة</small></div></div>
+      <ol class="tr-more">${TERMS_MAIN.map(([i, t, d]) => `<li><b>${i} ${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ol>
+      <label class="toggle-line" style="margin:12px 0"><input type="checkbox" id="tg-chk"> قريت <a href="#/terms">قانون التطبيق كامل</a> ووافقت عليه</label>
+      <div class="btn-row"><button class="btn gold" id="tg-ok" disabled>✅ موافق — دخول للشبكة</button></div></div>`;
+    $('#tg-chk').onchange = e => { $('#tg-ok').disabled = !e.target.checked; };
+    $('#tg-ok').onclick = () => acceptTerms(() => route());
+  }
+  function reportDeal() {
+    const me = S.agency || {};
+    modal(`<h3>📣 التبليغ عن عملية</h3><form id="rd" class="form-grid">
+        ${fSelect('type', 'نوع العملية', ['بيع', 'كراء', 'كراء موسمي', 'شراكة / تمويل', 'توثيق عقد', 'أشغال (مقاولة / تشطيب)', 'أخرى'], 'بيع', { noEmpty: true })}
+        ${fInput('ref', 'مرجع العقار', '', { ph: 'W777-0012' })}
+        ${fInput('parties', 'الأطراف', '', { cls: 'full', ph: 'مثال: الوكالة 012 (البائع) ↔ الوسيط W045 (المشتري)' })}
+        ${fInput('amount', 'المبلغ (درهم)', '', { money: true })}${fInput('commission', 'العمولة (درهم)', '', { money: true })}
+        ${fInput('date', 'التاريخ', today(), { type: 'date' })}
+        ${fText('note', 'ملاحظات', '')}</form>
+      <div class="btn-row" style="margin-top:12px"><button class="btn wa" id="rd-ok">${ic('wa', 16)} صيفط للمكتب</button></div>`, (box, close) => {
+      bindMoney(box);
+      $('#rd-ok', box).onclick = () => {
+        const v = collect($('#rd', box));
+        const t = ['📣 تبليغ عن عملية — الوسيط 777', `المشترك: ${myAgencyName()}${me.code ? ' (' + me.code + ')' : ''}`, `العملية: ${v.type}`, v.ref && `العقار: ${v.ref}`, v.parties && `الأطراف: ${v.parties}`,
+          v.amount && `المبلغ: ${fmt(v.amount)} درهم`, v.commission && `العمولة: ${fmt(v.commission)} درهم`, `التاريخ: ${v.date}`, v.note && `ملاحظات: ${v.note}`].filter(Boolean).join('\n');
+        window.open('https://wa.me/212777777959?text=' + encodeURIComponent(t), '_blank', 'noopener');
+        close();
+      };
+    });
   }
 
   /* ---------- حالات المراجعة المشتركة ---------- */
@@ -5228,7 +5644,7 @@
     const el = document.createElement('div');
     el.className = 'lock';
     let code = '';
-    el.innerHTML = `<div class="logo-pill" style="height:64px;padding:10px 16px"><img src="${LOGO}" alt="الوسيط 777"></div><h2 style="margin:0">${esc(title)}</h2>
+    el.innerHTML = `<div class="logo-pill" style="height:84px"><img src="${LOGO}" alt="الوسيط 777"></div><h2 style="margin:0">${esc(title)}</h2>
       <div class="dots">${'<span></span>'.repeat(4)}</div>
       <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map(k => k === '' ? '<span></span>' : `<button data-k="${k}">${k}</button>`).join('')}</div>`;
     const dots = () => $$('.dots span', el).forEach((d, i) => d.classList.toggle('on', i < code.length));
