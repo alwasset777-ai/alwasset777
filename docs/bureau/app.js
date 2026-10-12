@@ -643,6 +643,9 @@
     ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
     ['terms', '📜', 'قانون التطبيق', 'شروط الاشتراك'],
   ];
+  // لون الهالة ديال كل أيقونة 3D
+  const HUB_C = { agencies: '#4aa3ff', brokers: '#ffb02e', contractors: '#ffcc4d', finishing: '#ff7aa8', projects: '#ff5a5f', events: '#e84393', stays: '#20c997',
+    news: '#a0aec0', donations: '#ffc83d', disputes: '#b39ddb', investors: '#f4a62a', notaries: '#3d8bfd', terms: '#e6c77e' };
   function gdBanner() {
     const L = gdLessons(), d = gdDone();
     if (!L.length || d.size >= Math.min(5, L.length)) return '';
@@ -679,7 +682,7 @@
           <a class="btn" href="#/guide">🎓 تعلم استعمال التطبيق</a>
         </div>
         <div class="hub-title">✦ شبكة الوسيط 777</div>
-        <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}"><span class="hi">${i}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
+        <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}" style="--c:${HUB_C[r] || '#e6c77e'}"><span class="hi"><img src="icons/hub/${r}.webp?v=1" alt="" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('${i}'))"></span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
       <div class="stats">
