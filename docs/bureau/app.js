@@ -4795,6 +4795,45 @@
      ============================================================ */
   const PJ_CATS = ['مشروع سكني', 'مشروع تجاري', 'مشروع سياحي / فندقي', 'تجزئة وأراضي', 'مشروع فلاحي', 'مشروع صناعي / مستودعات', 'ترميم وإعادة تأهيل', 'أخرى'];
   const PJ_FUND = ['شراكة (حصة فالأرباح)', 'مساهمة فرأس المال', 'قرض / تمويل', 'بيع على التصميم (VEFA)', 'مستثمر واحد', 'أخرى'];
+  /* ---------- ملفات المشاريع: صور (5)، PDF (5)، فيديو (2) — تخزين خاص، كيشوفوها غير أعضاء الشبكة ---------- */
+  const PJ_LIM = { photo: 5, pdf: 5, video: 2 };
+  const PJ_T = { photo: ['📷', 'صور'], pdf: ['📄', 'PDF'], video: ['🎬', 'فيديو'] };
+  const pjLim = t => S.role === 'admin' ? Infinity : PJ_LIM[t];
+  const fsz = n => !n ? '' : n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  const uuid4 = () => crypto.randomUUID ? crypto.randomUUID() : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+  const pjUrls = new Map();
+  // روابط مؤقتة (ساعة) للملفات — كتطلب دفعة وحدة
+  async function pjSign(paths) {
+    const now = Date.now(), need = [...new Set(paths)].filter(p => { const c = pjUrls.get(p); return !c || now - c.at > 45 * 60000; });
+    if (need.length) {
+      const res = await rq('/storage/v1/object/sign/w777-projects', 'POST', { expiresIn: 3600, paths: need });
+      const base = (window.W777_SYNC.account() || window.W777_SYNC.defaults()).url + '/storage/v1';
+      (res || []).forEach(x => { if (x && x.signedURL) pjUrls.set(x.path, { u: base + x.signedURL, at: now }); });
+    }
+    return Object.fromEntries(paths.map(p => [p, (pjUrls.get(p) || {}).u || '']));
+  }
+  async function pjUpload(sid, file, t) {
+    let body = file, type = file.type || '', ext = (String(file.name).split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);
+    if (t === 'photo') { body = (await compressImage(file, 1920, 0.82)).blob; type = 'image/jpeg'; ext = 'jpg'; }
+    else if (t === 'pdf') { type = 'application/pdf'; ext = 'pdf'; }
+    else if (!/^video\//.test(type)) type = ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4';
+    if (body.size > 50 * 1048576) throw new Error(`«${file.name}» كبير بزاف (${fsz(body.size)}) — الحد الأقصى 50 MB`);
+    const path = `${window.W777_SYNC.uid()}/${sid}/${uid()}.${ext || 'bin'}`;
+    await window.W777_SYNC.request('/storage/v1/object/w777-projects/' + path, { method: 'POST', headers: { 'Content-Type': type }, body });
+    return { p: path, n: String(file.name || '').slice(0, 120), t, s: body.size };
+  }
+  async function pjFilesModal(r) {
+    const files = r.files || [];
+    let urls;
+    try { urls = await pjSign(files.map(f => f.p)); } catch (e) { toast('تعذر فتح الملفات: ' + e.message, 4000); return; }
+    const of = t => files.filter(f => f.t === t);
+    modal(`<div class="pair-head"><h3 style="margin:0">📎 ${esc(r.title)}</h3><button class="btn sm" data-close>✕</button></div>
+      ${of('photo').length ? `<div class="pj-gal">${of('photo').map(f => `<a href="${esc(urls[f.p])}" target="_blank" rel="noopener"><img src="${esc(urls[f.p])}" alt="${esc(f.n)}" loading="lazy"></a>`).join('')}</div>` : ''}
+      ${of('video').map(f => `<video class="pj-vid" src="${esc(urls[f.p])}" controls playsinline preload="metadata"></video>`).join('')}
+      ${of('pdf').length ? `<div class="pj-docs">${of('pdf').map(f => `<a class="pj-doc" target="_blank" rel="noopener" href="${esc(urls[f.p])}"><span class="pj-doc-ic">PDF</span><b>${esc(f.n || 'ملف PDF')}</b><small>${fsz(f.s)}</small></a>`).join('')}</div>` : ''}
+      ${files.length ? '' : '<p class="muted">ما كاين حتى ملف</p>'}`);
+  }
+  const pjCount = r => { const f = r.files || []; return ['photo', 'pdf', 'video'].map(t => [t, f.filter(x => x.t === t).length]).filter(x => x[1]); };
   async function viewProjects(parts, query) {
     if (!await netGate('المشاريع', '🚀')) return;
     const admin = S.role === 'admin', me = window.W777_SYNC.uid();
@@ -4814,13 +4853,16 @@
         const owner = r.owner === me;
         const msg = `السلام عليكم، شفت المشروع «${r.title}» (${refOf('PJ', r.id)}) فتطبيق الوسيط 777 وبغيت نعرف أكثر.`;
         const contact = r.phone || W777_OFFICE;
+        const cover = (r.files || []).find(f => f.t === 'photo'), cnt = pjCount(r);
         return `<div class="card card-pad pj-card">
+          ${cover ? `<button type="button" class="pj-cover" data-files="${r.id}"><img data-pjimg="${esc(cover.p)}" alt="">${cnt.length ? `<span>${cnt.map(([t, n]) => PJ_T[t][0] + ' ' + n).join(' · ')}</span>` : ''}</button>` : ''}
           <div class="btn-row" style="justify-content:space-between"><span class="badge gold">${esc(r.category || 'مشروع')}</span><span class="badge" dir="ltr">${refOf('PJ', r.id)}</span></div>
           <h3>${esc(r.title)}</h3>
           <div class="muted">📍 ${esc([r.city, r.country].filter(Boolean).join('، ') || '—')} · 👤 ${esc(r.owner_name || '—')}</div>
           ${num(r.amount) ? `<div class="pj-amt">💰 ${nm(r.amount)} درهم ${millions(r.amount) ? `<small>(${esc(millions(r.amount))})</small>` : ''}</div>` : ''}
           ${r.contribution ? `<div><span class="chip">🤝 ${esc(r.contribution)}</span></div>` : ''}
           ${r.description ? `<p class="dir-about">${esc(r.description)}</p>` : ''}
+          ${cnt.length ? `<button type="button" class="pj-files-btn" data-files="${r.id}">📎 الملفات: ${cnt.map(([t, n]) => `${PJ_T[t][0]} ${n} ${PJ_T[t][1]}`).join(' · ')}</button>` : ''}
           ${tab !== '' ? `<div>${stBadge(r.status)}</div>` : ''}
           ${r.admin_note && (owner || admin) ? `<div class="mod-note">📝 ${esc(r.admin_note)}</div>` : ''}
           <div class="btn-row">
@@ -4832,13 +4874,18 @@
           </div></div>`;
       }).join('') || (tab === 'mine' ? emptyCard('📁', 'مازال ما نشرتي حتى مشروع', '<a class="btn gold" href="#/projects/new">➕ نشر مشروع</a>')
         : tab === 'review' ? emptyCard('🛡️', 'ما كاين حتى مشروع فانتظار المراجعة', '') : emptyCard('🚀', 'مازال ما كاين حتى مشروع منشور', 'كن الأول! <a class="btn gold" href="#/projects/new">➕ نشر مشروع</a>'))}</div>`;
+    $$('[data-files]').forEach(b => b.onclick = () => pjFilesModal(rows.find(r => r.id === b.dataset.files)));
+    const covers = $$('[data-pjimg]');
+    if (covers.length) pjSign(covers.map(i => i.dataset.pjimg)).then(u => covers.forEach(i => { i.src = u[i.dataset.pjimg]; })).catch(() => {});
     const patch = async (id, body, ok) => { try { await rq(`/rest/v1/w777_projects?id=eq.${id}`, 'PATCH', body); toast(ok); route(); } catch (e) { toast('تعذر: ' + e.message, 4000); } };
     $$('[data-ok]').forEach(b => b.onclick = () => patch(b.dataset.ok, { status: 'approved' }, 'تنشر ✓'));
     $$('[data-no]').forEach(b => b.onclick = () => noteModal('سبب الرفض', '', n => patch(b.dataset.no, { status: 'rejected', admin_note: n }, 'ترفض')));
     $$('[data-close-pj]').forEach(b => b.onclick = async () => { if (await confirmBox('إغلاق هاد المشروع؟', 'إغلاق', false)) patch(b.dataset.closePj, { status: 'closed' }, 'تسد ✓'); });
     $$('[data-del]').forEach(b => b.onclick = async () => {
       if (!await confirmBox('حذف المشروع نهائيا؟', 'حذف')) return;
-      try { await rq(`/rest/v1/w777_projects?id=eq.${b.dataset.del}`, 'DELETE'); toast('تحذف'); route(); } catch (e) { toast('تعذر: ' + e.message); }
+      const r = rows.find(x => x.id === b.dataset.del), paths = ((r && r.files) || []).map(f => f.p);
+      try { await rq(`/rest/v1/w777_projects?id=eq.${b.dataset.del}`, 'DELETE'); toast('تحذف'); route(); } catch (e) { toast('تعذر: ' + e.message); return; }
+      if (paths.length) rq('/storage/v1/object/w777-projects', 'DELETE', { prefixes: paths }).catch(() => {});
     });
   }
   async function pjForm(head, id) {
@@ -4858,17 +4905,59 @@
           ${fText('description', 'وصف المشروع', r.description, { ph: 'الأرض، المساحة، الرخص، مدة الإنجاز، المردودية المتوقعة، الضمانات…' })}
         </form>
         <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
+        <div class="pj-up">
+          <b>📎 صور، ملفات PDF وفيديو</b>
+          <small class="muted">${S.role === 'admin' ? 'المدير: بلا حد' : 'حتى 5 صور، 5 ملفات PDF و 2 فيديو'} · كل ملف حتى 50 MB · التصاميم، الرخص، دراسة الجدوى، صور الأرض، فيديو الورش…</small>
+          <div class="btn-row">
+            <label class="btn">📷 صور<input type="file" accept="image/*" multiple hidden data-up="photo"></label>
+            <label class="btn">📄 PDF<input type="file" accept="application/pdf,.pdf" multiple hidden data-up="pdf"></label>
+            <label class="btn">🎬 فيديو<input type="file" accept="video/*" multiple hidden data-up="video"></label>
+          </div>
+          <div class="pj-files" id="pj-files"></div>
+        </div>
         <p class="muted" style="font-size:13px">🛡️ المشروع كيمشي لمكتب الوسيط 777 للمراجعة، ومن بعد الموافقة كيبان لجميع المشتركين. أي تعديل كيرجعو للمراجعة.</p>
         <div class="btn-row"><button class="btn gold" id="pj-save">${ic('check', 18)} ${id ? 'حفظ وإعادة الإرسال' : 'إرسال للمراجعة'}</button></div>
       </div>`;
+    const sid = id || uuid4(), files = (r.files || []).slice(), removed = [];
+    let busy = 0;
+    const drawFiles = async () => {
+      const el = $('#pj-files'); if (!el) return;
+      el.innerHTML = files.map((f, i) => `<div class="pj-file ${f.up ? 'up' : ''}">
+          ${f.t === 'photo' && !f.up ? `<img data-pjimg="${esc(f.p)}" alt="">` : `<span class="pj-file-ic">${f.up ? '⏳' : f.t === 'pdf' ? 'PDF' : '🎬'}</span>`}
+          <div class="grow"><b>${esc(f.n || '')}</b><small class="muted">${f.up ? 'جاري الرفع…' : PJ_T[f.t][1] + ' · ' + fsz(f.s)}</small></div>
+          ${f.up ? '' : `<button type="button" class="btn sm" data-rmf="${i}">✕</button>`}</div>`).join('')
+        || '<p class="muted" style="margin:6px 0 0;font-size:13px">مازال ما زدتي حتى ملف — المشاريع اللي فيها صور وتصاميم كتجذب المموّلين أكثر.</p>';
+      $$('[data-rmf]', el).forEach(b => b.onclick = () => { const [x] = files.splice(+b.dataset.rmf, 1); if (x && x.p) removed.push(x.p); drawFiles(); });
+      const imgs = $$('[data-pjimg]', el);
+      if (imgs.length) { try { const u = await pjSign(imgs.map(i => i.dataset.pjimg)); imgs.forEach(i => { i.src = u[i.dataset.pjimg]; }); } catch (e) { /* */ } }
+    };
+    drawFiles();
+    $$('[data-up]').forEach(inp => inp.onchange = async e => {
+      const t = inp.dataset.up;
+      let list = Array.from(e.target.files); e.target.value = '';
+      if (t === 'pdf') list = list.filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+      const room = pjLim(t) - files.filter(f => f.t === t).length;
+      if (room <= 0) return toast(`الحد الأقصى: ${PJ_LIM[t]} ${PJ_T[t][1]}`, 3000);
+      if (list.length > room) { toast(`تزادو غير ${room} — الحد الأقصى ${PJ_LIM[t]} ${PJ_T[t][1]}`, 3000); list = list.slice(0, room); }
+      for (const file of list) {
+        const ph = { t, n: file.name, up: true };
+        files.push(ph); busy++; drawFiles();
+        try { Object.assign(ph, await pjUpload(sid, file, t)); delete ph.up; }
+        catch (er) { files.splice(files.indexOf(ph), 1); toast('تعذر رفع الملف: ' + er.message, 4500); }
+        busy--; drawFiles();
+      }
+    });
     $('#pj-save').onclick = async () => {
       const f = $('#pjf');
       if (!f.reportValidity()) return;
+      if (busy) return toast('تسنّى حتى يكمل رفع الملفات ⏳', 3000);
       const v = collect(f);
-      const body = { title: v.title, category: v.category, city: v.city || null, country: v.country || 'المغرب', amount: num(v.amount), contribution: v.contribution, phone: v.phone || null, description: v.description || null, owner_name: myAgencyName() };
+      const body = { title: v.title, category: v.category, city: v.city || null, country: v.country || 'المغرب', amount: num(v.amount), contribution: v.contribution, phone: v.phone || null, description: v.description || null, owner_name: myAgencyName(),
+        files: files.filter(x => x.p).map(({ p, n, t, s: sz }) => ({ p, n, t, s: sz })) };
       try {
         if (id) await rq(`/rest/v1/w777_projects?id=eq.${id}`, 'PATCH', body);
-        else await rq('/rest/v1/w777_projects', 'POST', body, 'return=minimal');
+        else await rq('/rest/v1/w777_projects', 'POST', Object.assign({ id: sid }, body), 'return=minimal');
+        if (removed.length) rq('/storage/v1/object/w777-projects', 'DELETE', { prefixes: removed }).catch(() => {});
         toast('تصيفط للمراجعة ✓', 3000);
         location.hash = '#/projects/mine';
       } catch (e) { toast('تعذر: ' + e.message, 4000); }
