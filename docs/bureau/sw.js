@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v42';
+const CACHE = 'w777-bureau-v43';
 const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'manifest.webmanifest',
   'icons/logo.png?v=7', 'icons/icon-192.png?v=6', 'icons/icon-512.png?v=6', 'icons/apple-touch-icon.png?v=6'];
 
