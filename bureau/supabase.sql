@@ -460,3 +460,101 @@ create policy w777_stays_ins on storage.objects for insert to authenticated
 drop policy if exists w777_stays_del on storage.objects;
 create policy w777_stays_del on storage.objects for delete to authenticated
   using (bucket_id = 'w777-stays' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+-- ============================================================
+-- المستثمرين (I001–I777) · الموثقين (N001–N777) · قانون التطبيق · مجموعات المشتركين
+-- ============================================================
+alter table public.w777_agencies drop constraint if exists w777_agencies_kind_chk;
+alter table public.w777_agencies add constraint w777_agencies_kind_chk check (kind in ('agency', 'broker', 'contractor', 'finishing', 'investor', 'notary'));
+alter table public.w777_agencies add column if not exists district text;
+alter table public.w777_agencies add column if not exists gps text;            -- «lat,lng» (الموثقين: باش يتقترحو مع أقرب عقار)
+alter table public.w777_agencies add column if not exists budget numeric;      -- المستثمر: الميزانية
+alter table public.w777_agencies add column if not exists invest_modes text;   -- المستثمر: تمويل، شراكة، شراء…
+alter table public.w777_agencies add column if not exists terms_at timestamptz; -- تاريخ الموافقة على قانون التطبيق
+alter table public.w777_agencies add column if not exists sub_until date;      -- الاشتراك (199 درهم/عام) خالص حتى — كيبدلو غير المدير
+-- العضو ما يقدرش يبدل الحالة/الرمز/النوع/الاشتراك، والموافقة على القانون كتتسجل مرة وحدة بتاريخ السيرفر
+create or replace function public.w777_ag_guard() returns trigger language plpgsql security definer set search_path=public as
+$$ begin if not w777_is_admin() then
+  new.active := old.active; new.code := old.code; new.email := old.email; new.uid := old.uid; new.kind := old.kind; new.sub_until := old.sub_until;
+  new.terms_at := case when old.terms_at is null and new.terms_at is not null then now() else old.terms_at end;
+end if; return new; end $$;
+
+-- روابط مجموعات المشتركين (واتساب وتيليغرام) — كيبدلهم غير المدير
+alter table public.w777_agent_config add column if not exists wa_group text;
+alter table public.w777_agent_config add column if not exists tg_group text;
+
+-- عروض المستثمرين: ميزانية تمويلية، تشاركية، شراء ولا كراء — كتبان لجميع أعضاء الشبكة
+create table if not exists public.w777_invest (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  owner_name text, title text not null,
+  mode text not null default 'partner' check (mode in ('finance', 'partner', 'buy', 'rent')),
+  sectors text, cities text, budget_min numeric, budget_max numeric, share text, duration text, description text, phone text,
+  status text not null default 'open' check (status in ('open', 'closed')),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+alter table public.w777_invest enable row level security;
+drop policy if exists w777_inv_sel on public.w777_invest;
+create policy w777_inv_sel on public.w777_invest for select to authenticated using (w777_can_use());
+drop policy if exists w777_inv_ins on public.w777_invest;
+create policy w777_inv_ins on public.w777_invest for insert to authenticated with check (owner = auth.uid() and w777_my_kind() in ('investor', 'admin'));
+drop policy if exists w777_inv_upd on public.w777_invest;
+create policy w777_inv_upd on public.w777_invest for update to authenticated using (owner = auth.uid() or w777_is_admin()) with check (owner = auth.uid() or w777_is_admin());
+drop policy if exists w777_inv_del on public.w777_invest;
+create policy w777_inv_del on public.w777_invest for delete to authenticated using (owner = auth.uid() or w777_is_admin());
+create or replace function public.w777_inv_guard() returns trigger language plpgsql security definer set search_path=public as
+$$ begin new.updated_at := now(); if not w777_is_admin() then new.owner := old.owner; new.created_at := old.created_at; end if; return new; end $$;
+drop trigger if exists w777_inv_guard on public.w777_invest;
+create trigger w777_inv_guard before update on public.w777_invest for each row execute function public.w777_inv_guard();
+
+-- طلبات الموثقين: استشارة عقارية ولا توثيق عقد — كيشوفها المرسل، الموثق، والمدير (حماية العمولة)
+create table if not exists public.w777_notary_req (
+  id uuid primary key default gen_random_uuid(),
+  notary uuid not null references public.w777_agencies(uid) on delete cascade,
+  sender uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  sender_name text, sender_phone text,
+  kind text not null default 'consult' check (kind in ('consult', 'contract')),
+  contract text, prop_ref text, prop_title text, prop_city text, message text not null,
+  status text not null default 'new' check (status in ('new', 'accepted', 'done', 'declined', 'cancelled')),
+  reply text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create index if not exists w777_nr_notary on public.w777_notary_req(notary, created_at desc);
+create index if not exists w777_nr_sender on public.w777_notary_req(sender, created_at desc);
+alter table public.w777_notary_req enable row level security;
+drop policy if exists w777_nr_sel on public.w777_notary_req;
+create policy w777_nr_sel on public.w777_notary_req for select to authenticated using (sender = auth.uid() or notary = auth.uid() or w777_is_admin());
+drop policy if exists w777_nr_ins on public.w777_notary_req;
+create policy w777_nr_ins on public.w777_notary_req for insert to authenticated with check (
+  sender = auth.uid() and w777_can_use() and exists (select 1 from w777_agencies a where a.uid = notary and a.kind = 'notary' and a.active));
+drop policy if exists w777_nr_upd on public.w777_notary_req;
+create policy w777_nr_upd on public.w777_notary_req for update to authenticated using (sender = auth.uid() or notary = auth.uid() or w777_is_admin())
+  with check (sender = auth.uid() or notary = auth.uid() or w777_is_admin());
+drop policy if exists w777_nr_del on public.w777_notary_req;
+create policy w777_nr_del on public.w777_notary_req for delete to authenticated using (w777_is_admin());
+create or replace function public.w777_nr_guard() returns trigger language plpgsql security definer set search_path=public as $$
+declare st text := new.status;
+begin
+  new.updated_at := now();
+  if w777_is_admin() then return new; end if;
+  new.notary := old.notary; new.sender := old.sender; new.created_at := old.created_at;
+  if auth.uid() = old.notary then
+    -- الموثق: كيجاوب وكيبدل الحالة فقط
+    new.kind := old.kind; new.contract := old.contract; new.message := old.message; new.sender_name := old.sender_name; new.sender_phone := old.sender_phone;
+    new.prop_ref := old.prop_ref; new.prop_title := old.prop_title; new.prop_city := old.prop_city;
+    if new.status not in ('new', 'accepted', 'done', 'declined') or old.status = 'cancelled' then new.status := old.status; end if;
+  else
+    -- المرسل: يقدر يلغي غير الطلب اللي مازال جديد
+    new := old;
+    if st = 'cancelled' and old.status = 'new' then new.status := 'cancelled'; new.updated_at := now(); end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists w777_nr_guard on public.w777_notary_req;
+create trigger w777_nr_guard before update on public.w777_notary_req for each row execute function public.w777_nr_guard();
+-- محاولات بزاف: 30 طلب فاليوم لكل عضو
+create or replace function public.w777_nr_new() returns trigger language plpgsql security definer set search_path=public as $$
+begin
+  new.status := 'new'; new.reply := null; new.sender := auth.uid();
+  if (select count(*) from w777_notary_req where sender = auth.uid() and created_at > now() - interval '1 day') >= 30 then
+    raise exception 'بزاف ديال الطلبات اليوم، تواصل مع مكتب الوسيط 777'; end if;
+  return new;
+end $$;
+drop trigger if exists w777_nr_new on public.w777_notary_req;
+create trigger w777_nr_new before insert on public.w777_notary_req for each row execute function public.w777_nr_new();

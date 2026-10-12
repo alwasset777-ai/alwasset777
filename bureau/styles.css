@@ -448,9 +448,9 @@ html, body { overflow-x: clip; }
 #btn-sync[data-state="error"]::after { background: var(--red); }
 @keyframes pulse { 50% { opacity: .3; } }
 /* الشعار */
-.logo-pill { height: 54px; padding: 5px 10px; background: #fff; border-radius: 12px; display: flex; align-items: center; box-shadow: inset 0 -2px 0 rgba(0,0,0,.08); }
+.logo-pill { height: 54px; padding: 0; background: #0b0b0b; border-radius: 12px; display: flex; align-items: center; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 4px 14px rgba(0,0,0,.35); }
 .logo-pill img { height: 100%; width: auto; display: block; }
-@media (max-width: 640px) { .logo-pill { height: 46px; padding: 4px 7px; } }
+@media (max-width: 640px) { .logo-pill { height: 46px; } }
 
 /* ---------- المواعيد ---------- */
 .appt-list { display: flex; flex-direction: column; gap: 10px; }
@@ -748,3 +748,46 @@ a.chip { text-decoration: none; }
 .st-gallery.n3 { grid-template-columns: 2fr 1fr; }
 .st-gallery.n4 img:last-child { grid-column: span 2; }
 @media (max-width: 640px) { .st-gallery.n2, .st-gallery.n3 { grid-template-columns: 1fr 1fr; grid-auto-rows: 140px; } .st-gallery.n2 img:first-child { grid-row: auto; } }
+
+/* ===== المستثمرون · الموثقون · قانون التطبيق · المجموعات ===== */
+.btn.tg { background: #229ed9; border-color: #229ed9; color: #fff; }
+.grp-strip { position: relative; z-index: 1; margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 10px 12px; }
+.grp-strip .btn-row { margin-top: 0; }
+.grp-card { margin-top: 14px; border-top: 3px solid #25d366; }
+.iv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.iv-card { padding: 16px; display: flex; flex-direction: column; gap: 10px; border-top: 3px solid var(--gold); }
+.iv-card.is-closed { opacity: .6; }
+.iv-card h3 { margin: 0; font-size: 16.5px; line-height: 1.5; }
+.iv-budget { font-size: 20px; font-weight: 800; color: var(--gold); }
+.iv-budget small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.iv-meta { font-size: 13px; color: var(--muted); line-height: 1.9; }
+.iv-mini { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; color: var(--ink); background: var(--surface-2); border-radius: 10px; padding: 7px 10px; }
+.iv-mini span { color: var(--muted); }
+#mode-pick .chip { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.nt-box { border-top: 3px solid #6b4bd8; }
+.nt-row { padding: 10px 0 !important; flex-wrap: wrap; gap: 10px; }
+.nt-row .btn-row { margin: 0; }
+.nt-list { display: grid; gap: 12px; }
+.nt-req.is-new { border-inline-start: 4px solid var(--gold); }
+.nt-reply { margin-top: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.nt-reply p { white-space: pre-wrap; margin: 4px 0 0; }
+.tr-hero { display: flex; align-items: center; gap: 14px; padding: 14px; margin-bottom: 14px; }
+.tr-hero b { display: block; font-size: 15.5px; }
+.tr-hero small { color: var(--muted); font-size: 12.5px; }
+.tr-logo { height: 64px; width: auto; border-radius: 12px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+@media (max-width: 640px) { .tr-logo { height: 48px; } }
+.tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tr-art { position: relative; border-top: 3px solid var(--gold); }
+.tr-art h3 { margin: 6px 0 8px; font-size: 16px; }
+.tr-art p { margin: 0; color: var(--ink); line-height: 1.85; font-size: 14px; }
+.tr-ic { font-size: 30px; }
+.tr-n { position: absolute; top: 12px; left: 14px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--gold); color: #fff; font-weight: 800; font-size: 13px; }
+.tr-more { margin: 0; padding-inline-start: 22px; line-height: 1.9; font-size: 14px; }
+.tr-more li { margin-bottom: 6px; }
+.tr-gate { max-width: 720px; margin: 0 auto; border-top: 3px solid var(--gold); }
+.nt-row .grow { flex: 1 1 180px; min-width: 0; }
+.nt-row .grow b, .nt-row .grow small { white-space: normal; overflow: visible; text-overflow: clip; display: block; }
+.nt-row > .btn-row { flex: 1 1 100%; justify-content: flex-end; }
+@media (min-width: 900px) { .nt-row > .btn-row { flex: 0 0 auto; } }
