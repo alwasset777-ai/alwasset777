@@ -558,3 +558,40 @@ begin
 end $$;
 drop trigger if exists w777_nr_new on public.w777_notary_req;
 create trigger w777_nr_new before insert on public.w777_notary_req for each row execute function public.w777_nr_new();
+
+-- ============================================================
+-- ملفات المشاريع: صور (5)، PDF (5)، فيديو (2) — تخزين خاص (w777-projects)
+-- المسار: uid/project_id/file — كيشوفها صاحب المشروع، المدير، وجميع الأعضاء من بعد النشر
+-- ============================================================
+alter table public.w777_projects add column if not exists files jsonb not null default '[]'::jsonb;
+create or replace function public.w777_pj_files() returns trigger language plpgsql security definer set search_path=public as $$
+begin
+  if jsonb_typeof(new.files) <> 'array' then new.files := '[]'::jsonb; end if;
+  if not w777_is_admin() then
+    if (select count(*) from jsonb_array_elements(new.files) e where e->>'t' = 'photo') > 5
+       or (select count(*) from jsonb_array_elements(new.files) e where e->>'t' = 'pdf') > 5
+       or (select count(*) from jsonb_array_elements(new.files) e where e->>'t' = 'video') > 2 then
+      raise exception 'الحد الأقصى: 5 صور، 5 ملفات PDF و 2 فيديو';
+    end if;
+    if exists (select 1 from jsonb_array_elements(new.files) e where split_part(e->>'p', '/', 1) <> new.owner::text) then
+      raise exception 'ملف غير مسموح';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists w777_pj_files on public.w777_projects;
+create trigger w777_pj_files before insert or update on public.w777_projects for each row execute function public.w777_pj_files();
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('w777-projects', 'w777-projects', false, 52428800, array['image/jpeg','image/png','image/webp','application/pdf','video/mp4','video/quicktime','video/webm','video/3gpp'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+drop policy if exists w777_pj_ins on storage.objects;
+create policy w777_pj_ins on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-projects' and (storage.foldername(name))[1] = auth.uid()::text and public.w777_can_use());
+drop policy if exists w777_pj_sel on storage.objects;
+create policy w777_pj_sel on storage.objects for select to authenticated using (
+  bucket_id = 'w777-projects' and public.w777_can_use() and (
+    (storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()
+    or exists (select 1 from public.w777_projects p where p.id::text = (storage.foldername(objects.name))[2] and p.status in ('approved', 'closed'))));
+drop policy if exists w777_pj_del on storage.objects;
+create policy w777_pj_del on storage.objects for delete to authenticated
+  using (bucket_id = 'w777-projects' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));

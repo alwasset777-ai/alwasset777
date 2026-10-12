@@ -791,3 +791,28 @@ a.chip { text-decoration: none; }
 .nt-row .grow b, .nt-row .grow small { white-space: normal; overflow: visible; text-overflow: clip; display: block; }
 .nt-row > .btn-row { flex: 1 1 100%; justify-content: flex-end; }
 @media (min-width: 900px) { .nt-row > .btn-row { flex: 0 0 auto; } }
+
+/* ===== ملفات المشاريع ===== */
+.pj-cover { position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--surface-2); cursor: pointer; margin-bottom: 4px; }
+.pj-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pj-cover span { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,.65); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+.pj-files-btn { align-self: flex-start; background: var(--surface-2); border: 1px dashed var(--line); color: var(--ink); border-radius: 10px; padding: 7px 12px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.pj-files-btn:hover { border-color: var(--gold); }
+.pj-up { margin: 14px 0; padding: 14px; border: 1px dashed var(--line); border-radius: 14px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
+.pj-up small { font-size: 12.5px; line-height: 1.7; }
+.pj-up .btn-row { margin: 0; }
+.pj-files { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.pj-up { min-width: 0; }
+.pj-file { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.pj-file.up { opacity: .7; }
+.pj-file img, .pj-file-ic { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0; display: grid; place-items: center; background: var(--surface-2); font-weight: 800; font-size: 12px; color: var(--gold); }
+.pj-file .grow { min-width: 0; }
+.pj-file b { display: block; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pj-gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 12px 0; }
+.pj-gal img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; display: block; }
+.pj-vid { width: 100%; max-height: 60vh; border-radius: 12px; background: #000; margin: 6px 0; }
+.pj-docs { display: grid; gap: 8px; margin-top: 10px; }
+.pj-doc { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--ink); background: var(--surface-2); }
+.pj-doc b { flex: 1; min-width: 0; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pj-doc small { color: var(--muted); }
+.pj-doc-ic { background: #c8102e; color: #fff; font-weight: 800; font-size: 11px; padding: 6px 7px; border-radius: 7px; }
