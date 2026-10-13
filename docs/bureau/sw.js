@@ -1,7 +1,7 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v44';
+const CACHE = 'w777-bureau-v45';
 const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'manifest.webmanifest',
-  'icons/logo.png?v=7', 'icons/icon-192.png?v=6', 'icons/icon-512.png?v=6', 'icons/apple-touch-icon.png?v=6',
+  'icons/logo.png?v=8', 'icons/icon-192.png?v=7', 'icons/icon-512.png?v=7', 'icons/apple-touch-icon.png?v=7',
   ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'terms'].map(n => `icons/hub/${n}.webp?v=1`)];
 
 self.addEventListener('install', e => {
