@@ -5865,8 +5865,102 @@
     } catch (e) { /* */ }
   }
 
+  /* ============================================================
+     اللغات — ترجمة تلقائية للواجهة عبر Google Translate
+     ============================================================ */
+  const LANGS = [
+    ['ar', 'العربية', '🇲🇦'], ['fr', 'Français', '🇫🇷'], ['en', 'English', '🇬🇧'],
+    ['es', 'Español', '🇪🇸'], ['it', 'Italiano', '🇮🇹'], ['de', 'Deutsch', '🇩🇪'],
+    ['nl', 'Nederlands', '🇳🇱'], ['pt-PT', 'Português', '🇵🇹'], ['da', 'Dansk', '🇩🇰'],
+    ['ru', 'Русский', '🇷🇺'], ['zh-CN', '中文', '🇨🇳'], ['ko', '한국어', '🇰🇷'],
+    ['hi', 'हिन्दी', '🇮🇳'], ['ur', 'اردو', '🇵🇰'], ['pa-Arab', 'پنجابی · Pakistan', '🇵🇰'],
+    ['fa', 'فارسی', '🇮🇷'], ['iw', 'עברית', '🇮🇱'],
+    ['ber-Latn', 'Tacelḥit · Soussi', 'ⵣ'], ['ber', 'ⵜⴰⵛⵍⵃⵉⵜ · Tifinagh', 'ⵣ']
+  ];
+  const RTL_LANGS = ['ar', 'ur', 'pa-Arab', 'fa', 'iw'];
+  const LANG_SHORT = { 'pt-PT': 'PT', 'zh-CN': 'ZH', 'pa-Arab': 'PA', iw: 'HE', 'ber-Latn': 'ⵣ', ber: 'ⵣ' };
+  function curLang() {
+    const m = document.cookie.match(/(?:^|;\s*)googtrans=\/[^/;]*\/([^;]+)/);
+    const c = m ? decodeURIComponent(m[1]) : 'ar';
+    return LANGS.some(l => l[0] === c) ? c : 'ar';
+  }
+  function setLangCookie(code) {
+    const host = location.hostname, exp = code === 'ar' ? '; expires=Thu, 01 Jan 1970 00:00:00 GMT' : '; max-age=31536000';
+    const v = code === 'ar' ? '' : `/ar/${code}`;
+    document.cookie = `googtrans=${v}; path=/${exp}`;
+    if (host.includes('.')) document.cookie = `googtrans=${v}; path=/; domain=.${host}${exp}`;
+  }
+  function paintLang(code) {
+    const el = $('#lang-code');
+    if (el) el.textContent = LANG_SHORT[code] || code.slice(0, 2).toUpperCase();
+    document.documentElement.dir = RTL_LANGS.includes(code) ? 'rtl' : 'ltr';
+    document.documentElement.classList.toggle('tr-on', code !== 'ar');
+  }
+  let gtLoading = null;
+  function loadGT() {
+    if (gtLoading) return gtLoading;
+    gtLoading = new Promise((res, rej) => {
+      window.w777InitTranslate = () => {
+        try {
+          new window.google.translate.TranslateElement({ pageLanguage: 'ar', autoDisplay: false }, 'gt-el');
+          res();
+        } catch (e) { rej(e); }
+      };
+      const sc = document.createElement('script');
+      sc.src = 'https://translate.google.com/translate_a/element.js?cb=w777InitTranslate';
+      sc.async = true;
+      sc.onerror = () => { gtLoading = null; rej(new Error('gt')); };
+      document.head.appendChild(sc);
+    });
+    return gtLoading;
+  }
+  // تغيير اللغة عبر قائمة Google المخفية (بدون إعادة تحميل الصفحة)
+  function gtCombo(code, tries = 40) {
+    const sel = document.querySelector('#gt-el select.goog-te-combo');
+    if (sel && sel.options.length > 1) {
+      sel.value = code;
+      sel.dispatchEvent(new Event('change'));
+      return;
+    }
+    if (tries > 0) setTimeout(() => gtCombo(code, tries - 1), 250);
+  }
+  function setLang(code) {
+    const prev = curLang();
+    if (code === prev) return;
+    setLangCookie(code);
+    try { localStorage.setItem('w777_lang', code); } catch (e) { /* */ }
+    if (code === 'ar') { location.reload(); return; }
+    paintLang(code);
+    if (!navigator.onLine) { toast('🌐 الترجمة تحتاج الاتصال بالإنترنت'); return; }
+    loadGT().then(() => gtCombo(code)).catch(() => toast('⚠️ تعذر تحميل خدمة الترجمة، حاول لاحقا'));
+  }
+  function langPicker() {
+    const cur = curLang();
+    modal(`<div class="notranslate" translate="no">
+      <h3 class="lang-h">🌐 اللغة · Langue · Language</h3>
+      <div class="lang-grid">${LANGS.map(([c, n, f]) => `<button class="lang-opt${c === cur ? ' on' : ''}" data-lang="${c}"><span class="lf">${f}</span><span class="ln" dir="auto">${esc(n)}</span></button>`).join('')}</div>
+      <p class="lang-note">الترجمة تلقائية عبر Google · Traduction automatique par Google</p>
+      <div class="btn-row" style="justify-content:flex-end"><button class="btn" data-close>✕</button></div></div>`,
+    (m, close) => {
+      m.classList.add('lang-modal');
+      m.addEventListener('click', e => {
+        const b = e.target.closest('[data-lang]');
+        if (!b) return;
+        close(); setLang(b.dataset.lang);
+      });
+    });
+  }
+  function setupLang() {
+    const b = $('#btn-lang');
+    if (b) b.onclick = langPicker;
+    const code = curLang();
+    paintLang(code);
+    if (code !== 'ar') loadGT().catch(() => { /* بدون إنترنت: تبقى الواجهة بالعربية */ });
+  }
+
   async function start() {
     applyTheme();
+    setupLang();
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
     await lockScreen();
     await loadAll();
