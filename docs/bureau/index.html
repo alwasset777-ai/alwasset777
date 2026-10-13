@@ -24,10 +24,14 @@
       <button class="icon-btn back-btn hidden" id="btn-back" aria-label="رجوع" title="رجوع للصفحة السابقة">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="hide-sm">رجوع</span>
       </button>
-      <a class="logo" href="#/">
+      <a class="logo notranslate" href="#/" translate="no">
         <div class="logo-pill"><img src="icons/logo.png?v=8" alt="الوسيط 777"></div>
         <div class="logo-text hide-sm"><small>قاعدة بيانات المكتب</small></div>
       </a>
+      <button class="lang-btn notranslate" id="btn-lang" translate="no" aria-label="Langue · Language · اللغة" title="Langue · Language · اللغة">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M2.8 12h18.4"/><path d="M12 2.8c2.6 2.6 3.9 5.6 3.9 9.2s-1.3 6.6-3.9 9.2c-2.6-2.6-3.9-5.6-3.9-9.2S9.4 5.4 12 2.8z"/></svg>
+        <b id="lang-code">AR</b>
+      </button>
       <div class="search-wrap">
         <div class="search-box">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -122,5 +126,6 @@
   <script src="sync.js"></script>
   <script src="guide-data.js"></script>
   <script src="app.js"></script>
+  <div id="gt-el" hidden></div>
 </body>
 </html>
