@@ -878,3 +878,9 @@ html[dir="ltr"] .back-btn svg { transform: scaleX(-1); }
 /* البطاقات اللي بعيدة على الشاشة ما كتترسمش حتى كتقرب ليها */
 .prop-grid > .prop-card, #mlist > .card, #rlist > * { content-visibility: auto; contain-intrinsic-size: auto 320px; }
 #rlist > * { contain-intrinsic-size: auto 90px; }
+/* صور عقار مازال ما ترفعاتش من الجهاز اللي تزادت فيه */
+.prop-cover.no-cloud::after {
+  content: '☁️ الصور مازال فالجهاز اللي تزاد منو العقار — حلّ التطبيق فيه باش يرفعها';
+  position: absolute; inset: auto 12px 50% 12px; transform: translateY(50%); text-align: center;
+  font-size: 13px; font-weight: 700; color: var(--muted); line-height: 1.6; padding: 0 8px;
+}
