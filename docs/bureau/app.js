@@ -16,6 +16,8 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // روابط جاية من قاعدة البيانات (أخبار، مناسبات، مجموعات): غير http/https — ماشي javascript: ولا data:
+  const safeUrl = u => /^https?:\/\//i.test(String(u || '').trim()) ? esc(String(u).trim()) : '#';
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const today = () => new Date().toISOString().slice(0, 10);
   // الصور: 5 صور لكل عقار لجميع المشتركين — المدير بلا حد
@@ -190,7 +192,12 @@
     const meta = owner && owner.media.find(m => m.id === id);
     rec = rec || { id, owner: owner ? owner.id : '', kind: meta ? meta.kind : 'photo', name: meta ? meta.name : id, mime: blob.type, size: blob.size, blob: null, thumb: null };
     if (thumb && blob.size < 400 * 1024) rec.thumb = blob; else rec.blob = blob;
-    if (owner) await DB.put('files', rec);
+    if (owner) {
+      await DB.put('files', rec);
+      // جا من السحابة = راه مرفوع: ما نعاودوش نرفعوه، ويتنشر مع العقار فالشبكة
+      const up = await DB.getMeta('sync_uploaded', {});
+      if (!up[id]) { up[id] = 1; await DB.setMeta('sync_uploaded', up); }
+    }
     return blob;
   }
   function hydrateThumbs(root = document) {
@@ -3266,9 +3273,10 @@
     if (!force && S.roleFor === u && S.roleAt && Date.now() - S.roleAt < 3600000) return 0;
     const before = S.role;
     try {
-      const admin = await (await Sy.request('/rest/v1/rpc/w777_is_admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
-      let ag = null;
-      if (!admin) ag = (await (await Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,sub_until`)).json())[0] || null;
+      const [admin, rows] = await Promise.all([
+        Sy.request('/rest/v1/rpc/w777_is_admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()),
+        Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,sub_until`).then(r => r.json())]);
+      const ag = admin === true ? null : (rows && rows[0]) || null;
       // «agency» = عضو فالشبكة (وكالة، وسيط، مقاولة ولا تشطيب) — النوع فـ S.kind
       S.role = admin === true ? 'admin' : ag ? 'agency' : 'solo';
       S.kind = admin === true ? 'admin' : ag ? ag.kind || 'agency' : null;
@@ -3292,6 +3300,9 @@
     const me = Sy.uid();
     const props = await DB.all('properties');
     const up = await DB.getMeta('sync_uploaded', {});
+    // صورة ماشي فهاد الجهاز = جات من السحابة (رفعها جهاز آخر) ← كتتنشر حتى هي.
+    // بلا هادشي، كل جهاز كان كيمسح صور الأجهزة الأخرى من الشبكة.
+    const local = new Set((await DB.fileIndex()).map(f => f.id));
     const prev = await DB.getMeta('shared_hash', {});
     const prevOwner = await DB.getMeta('shared_owner', null);
     const known = prevOwner === me ? prev : {};
@@ -3299,7 +3310,7 @@
     const rows = [], next = {};
     for (const p of props) {
       if (p.status !== 'available' || p.partner || String(p.id).startsWith('pt-')) continue;
-      const photos = (p.media || []).filter(m => m.kind === 'photo' && up[m.id]);
+      const photos = (p.media || []).filter(m => m.kind === 'photo' && (up[m.id] || !local.has(m.id)));
       const cv = p.cover && photos.find(m => m.id === p.cover);
       const ordered = cv ? [cv, ...photos.filter(m => m !== cv)] : photos;
       const data = {
@@ -3350,7 +3361,9 @@
   async function netImg(owner, id, thumb) {
     const k = owner + '/' + id + (thumb ? '.t' : '');
     if (netUrl.has(k)) return netUrl.get(k);
-    const pr = window.W777_SYNC.fetchPath(owner, id, thumb).then(b => b ? URL.createObjectURL(b) : null);
+    const Sy = window.W777_SYNC;
+    const pr = (Sy.netPhotoUrl ? Sy.netPhotoUrl(owner, id, thumb) : Sy.fetchPath(owner, id, thumb).then(b => b ? URL.createObjectURL(b) : null))
+      .then(u => { if (!u) netUrl.delete(k); return u; });
     netUrl.set(k, pr);
     return pr;
   }
@@ -4127,13 +4140,24 @@
     const t = await res.text();
     return t ? JSON.parse(t) : null;
   }
+  // كل الصفوف: الصفحة الأولى كتعطي العدد الكلي، والباقي كيتجاب فنفس الوقت (بدل وحدة من بعد وحدة)
   async function fetchAll(path) {
-    const out = [];
-    for (let off = 0; ; off += 1000) {
-      const rows = await (await window.W777_SYNC.request(path, { headers: { Range: `${off}-${off + 999}` } })).json();
-      out.push(...rows);
-      if (rows.length < 1000) break;
+    const Sy = window.W777_SYNC;
+    const first = await Sy.request(path, { headers: { Range: '0-999', Prefer: 'count=exact' } });
+    const out = await first.json();
+    const total = parseInt(((first.headers.get('Content-Range') || '').split('/')[1]) || '0', 10);
+    if (out.length < 1000) return out;
+    if (!(total > 1000)) {
+      // العدد ما وصلش: نكملو صفحة بصفحة
+      for (let off = 1000; ; off += 1000) {
+        const rows = await (await Sy.request(path, { headers: { Range: `${off}-${off + 999}` } })).json();
+        out.push(...rows);
+        if (rows.length < 1000) return out;
+      }
     }
+    const pages = [];
+    for (let off = 1000; off < total; off += 1000) pages.push(Sy.request(path, { headers: { Range: `${off}-${off + 999}` } }).then(r => r.json()));
+    (await Promise.all(pages)).forEach(rows => out.push(...rows));
     return out;
   }
   async function loadDir(force) {
@@ -4689,8 +4713,8 @@
   const groupLinks = () => { const c = AG.cfg || {}; return { wa: c.wa_group || '', tg: c.tg_group || '' }; };
   function groupsCard(full) {
     const g = groupLinks();
-    const btns = `${g.wa ? `<a class="btn wa" target="_blank" rel="noopener" href="${esc(g.wa)}">${ic('wa', 18)} مجموعة واتساب</a>` : ''}
-      ${g.tg ? `<a class="btn tg" target="_blank" rel="noopener" href="${esc(g.tg)}">✈️ مجموعة تيليغرام</a>` : ''}`;
+    const btns = `${g.wa ? `<a class="btn wa" target="_blank" rel="noopener" href="${safeUrl(g.wa)}">${ic('wa', 18)} مجموعة واتساب</a>` : ''}
+      ${g.tg ? `<a class="btn tg" target="_blank" rel="noopener" href="${safeUrl(g.tg)}">✈️ مجموعة تيليغرام</a>` : ''}`;
     if (!full) return g.wa || g.tg ? `<div class="grp-strip"><b>👥 مجموعات المشتركين</b><div class="btn-row">${btns}</div></div>` : '';
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -5001,7 +5025,7 @@
             <h3>${esc(e.title)}</h3>
             <div class="muted">📍 ${esc([e.venue, e.city].filter(Boolean).join('، ') || '—')}${e.ends && e.ends !== e.starts ? ` · 🗓️ ${esc(dAr(e.starts))} ← ${esc(dAr(e.ends))}` : ''}</div>
             ${e.description ? `<p class="dir-about">${esc(e.description)}</p>` : ''}
-            <div class="btn-row">${e.url ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(e.url)}">🔗 التفاصيل</a>` : ''}
+            <div class="btn-row">${e.url ? `<a class="btn sm" target="_blank" rel="noopener" href="${safeUrl(e.url)}">🔗 التفاصيل</a>` : ''}
               ${admin ? `<button class="btn sm" data-ev="${e.id}">${ic('edit', 15)}</button><button class="btn sm" data-evdel="${e.id}">${ic('trash', 15)}</button>` : ''}</div>
           </div></div>`;
       }).join('') || emptyCard('🎪', tab === 'past' ? 'ما كاين حتى مناسبة فاتت' : 'ما كاين حتى مناسبة قادمة دابا', '')}</div>`;
@@ -5055,7 +5079,7 @@
       const t = tokens($('[name=nq]').value || '');
       const res = rows.filter(r => !t.length || hit(norm([r.title, r.summary, r.source].join(' ')), t));
       $('#ncnt').textContent = `${res.length} خبر`;
-      $('#nlist').innerHTML = res.map(r => `<a class="list-row news-row" target="_blank" rel="noopener" href="${esc(r.url)}" dir="auto">
+      $('#nlist').innerHTML = res.map(r => `<a class="list-row news-row" target="_blank" rel="noopener" href="${safeUrl(r.url)}" dir="auto">
         <div class="grow"><b>${esc(r.title)}</b>${r.summary ? `<p class="muted" style="margin:4px 0 0">${esc(r.summary)}</p>` : ''}
         <small class="muted">📰 ${esc(r.source || '')}${r.published ? ' · ' + esc(dAr(r.published)) : ''}</small></div><span class="muted">↗</span></a>`).join('')
         || '<div class="empty">الأخبار كتجمع… رجع من بعد شوية ولا ورك «تحديث دابا».</div>';
