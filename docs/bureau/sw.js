@@ -1,11 +1,11 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v54';
+const CACHE = 'w777-bureau-v55';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
 const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'manifest.webmanifest', ...FONTS,
   'icons/logo.png?v=9', 'icons/icon-192.png?v=8', 'icons/icon-512.png?v=8', 'icons/apple-touch-icon.png?v=8', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
-  ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=5`)];
+  ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=6`)];
 
 self.addEventListener('install', e => {
   // cache:'reload' — النسخة الجديدة من الخادم، ماشي من ذاكرة المتصفح
