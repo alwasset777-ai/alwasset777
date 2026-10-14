@@ -68,7 +68,7 @@
     if (d.access_token) { takeSession(url, key, d); await firstSyncPrep(); setStatus('idle'); syncNow(); return { confirmed: true }; }
     return { confirmed: false };
   }
-  function signOut() { st = null; save(); setStatus('off'); }
+  function signOut() { st = null; save(); setStatus('off'); signed = {}; try { localStorage.removeItem(SIGN_LS); } catch (e) { /* */ } }
   async function refreshToken() {
     const d = await authCall(st.url, st.key, '/auth/v1/token?grant_type=refresh_token', { refresh_token: st.refresh });
     takeSession(st.url, st.key, d);
@@ -230,8 +230,10 @@
   async function uploadFiles() {
     const up = await DB.getMeta('sync_uploaded', {});
     const owners = [...(await DB.all('properties')), ...(await DB.all('requests'))];
+    // غير الملفات اللي كاينة فهاد الجهاز (بلا ما نقلبو على آلاف الصور اللي جات من السحابة)
+    const local = new Set((await DB.fileIndex()).map(f => f.id));
     const todo = [];
-    owners.forEach(p => (p.media || []).forEach(m => { if (!up[m.id]) todo.push(m.id); }));
+    owners.forEach(p => (p.media || []).forEach(m => { if (!up[m.id] && local.has(m.id)) todo.push(m.id); }));
     let failed = 0;
     // دفعات قصيرة: لا يتجاوز الرفع ~40 ثانية في كل دورة، حتى تُسحب وتُرفع البيانات بينها
     const t0 = Date.now();
@@ -267,6 +269,52 @@
     } catch (e) { return null; }
   }
 
+  /* روابط موقّعة (7 أيام) لصور عقارات الشبكة: طلب واحد لعشرات الصور، والمتصفح
+     كيحمّلهم مباشرة ويحتفظ بهم فالذاكرة — أسرع بزاف من تحميل كل صورة بوحدها */
+  const SIGN_LS = 'w777_signed', SIGN_TTL = 7 * 86400;
+  let signed = {};
+  try { signed = JSON.parse(localStorage.getItem(SIGN_LS) || '{}') || {}; } catch (e) { signed = {}; }
+  let signQ = new Map(), signT = null;
+  function saveSigned() {
+    const now = Date.now();
+    const keys = Object.keys(signed);
+    keys.forEach(k => { if (signed[k].e < now) delete signed[k]; });
+    if (Object.keys(signed).length > 4000) signed = {};
+    try { localStorage.setItem(SIGN_LS, JSON.stringify(signed)); } catch (e) { signed = {}; try { localStorage.removeItem(SIGN_LS); } catch (x) { /* */ } }
+  }
+  function signedUrl(path) {
+    const c = signed[path];
+    if (c && c.e > Date.now() + 3600000) return Promise.resolve(c.u);
+    if (!st || !navigator.onLine) return Promise.resolve(null);
+    if (signQ.has(path)) return signQ.get(path).p;
+    let res; const p = new Promise(r => { res = r; });
+    signQ.set(path, { p, res });
+    if (!signT) signT = setTimeout(flushSign, 25);
+    return p;
+  }
+  async function flushSign() {
+    signT = null;
+    const batch = signQ; signQ = new Map();
+    const paths = [...batch.keys()];
+    for (let i = 0; i < paths.length; i += 100) {
+      const part = paths.slice(i, i + 100);
+      let out = [];
+      try {
+        const r = await api(`/storage/v1/object/sign/${BUCKET}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: SIGN_TTL, paths: part }) });
+        if (r.ok) out = await r.json();
+      } catch (e) { out = []; }
+      const got = {};
+      (Array.isArray(out) ? out : []).forEach(x => { if (x && x.signedURL && !x.error) got[x.path] = st.url + '/storage/v1' + x.signedURL; });
+      part.forEach(pth => { const u = got[pth] || null; if (u) signed[pth] = { u, e: Date.now() + SIGN_TTL * 1000 }; batch.get(pth).res(u); });
+    }
+    saveSigned();
+  }
+  /* رابط صورة عقار مشترك (المصغرة إن وُجدت) */
+  async function netPhotoUrl(owner, id, thumb) {
+    const full = signedUrl(owner + '/' + id);
+    if (thumb) { const t = await signedUrl(owner + '/' + id + '.t'); if (t) return t; }
+    return full;
+  }
   /* صورة عقار مشترك من حساب آخر (شبكة الوكالات) */
   async function fetchPath(owner, id, thumb) {
     if (!st || !navigator.onLine) return null;
@@ -325,7 +373,7 @@
     isOn: () => !!st,
     account: () => st && { email: st.email, url: st.url },
     defaults,
-    signIn, signUp, signOut, syncNow, schedule, fetchFile, fetchPath, normEmail,
+    signIn, signUp, signOut, syncNow, schedule, fetchFile, fetchPath, netPhotoUrl, normEmail,
     status: () => status,
     lastSync: () => DB.getMeta('sync_last', null),
     pending: async () => Object.keys(await DB.getMeta('sync_dirty', {})).length,
