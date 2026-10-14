@@ -691,7 +691,7 @@
           <a class="btn" href="#/guide">🎓 تعلم استعمال التطبيق</a>
         </div>
         <div class="hub-title">✦ شبكة الوسيط 777</div>
-        <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}" style="--c:${HUB_C[r] || '#e6c77e'}"><span class="hi"><img src="icons/hub/${r}.webp?v=5" alt="" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('${i}'))"></span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
+        <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}" style="--c:${HUB_C[r] || '#e6c77e'}"><span class="hi"><img src="icons/hub/${r}.webp?v=6" alt="" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('${i}'))"></span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
       <div class="stats">
