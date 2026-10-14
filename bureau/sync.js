@@ -206,7 +206,7 @@
   }
 
   /* نسخة مصغرة للسحابة (المساحة المجانية 1 جيغا) — الأصل يبقى كما هو على الجهاز */
-  const CLOUD_MAX = 1024, CLOUD_Q = 0.55, CLOUD_MIN_BYTES = 160 * 1024;
+  const CLOUD_MAX = 1280, CLOUD_Q = 0.72, CLOUD_MIN_BYTES = 220 * 1024;
   async function cloudImage(blob) {
     if (!blob || !/^image\/(jpeg|png|webp|heic|heif)/i.test(blob.type || '') || blob.size <= CLOUD_MIN_BYTES) return blob;
     try {
@@ -227,48 +227,74 @@
     } catch (e) { return blob; }
   }
 
+  // ترتيب الرفع: الصور أولا (العقارات الجديدة قبل القديمة)، من بعد المستندات، والفيديوهات فالأخير.
+  // ملف فشل كيتعاود من بعد مدة (ما كيبقاش يوقف الطابور)، وملف أكبر من الحد كيبقى فالجهاز.
+  const UP_MAX = 48 * 1048576, UP_PAR = 3, UP_BUDGET = 40000;
   async function uploadFiles() {
     const up = await DB.getMeta('sync_uploaded', {});
+    const fail = await DB.getMeta('sync_fail', {});
+    const skip = await DB.getMeta('sync_skip', {});
     const owners = [...(await DB.all('properties')), ...(await DB.all('requests'))];
     // غير الملفات اللي كاينة فهاد الجهاز (بلا ما نقلبو على آلاف الصور اللي جات من السحابة)
     const local = new Set((await DB.fileIndex()).map(f => f.id));
+    const now = Date.now();
     const todo = [];
-    owners.forEach(p => (p.media || []).forEach(m => { if (!up[m.id] && local.has(m.id)) todo.push(m.id); }));
-    let failed = 0;
-    // دفعات قصيرة: لا يتجاوز الرفع ~40 ثانية في كل دورة، حتى تُسحب وتُرفع البيانات بينها
+    owners.forEach(o => (o.media || []).forEach(m => {
+      if (up[m.id] || skip[m.id] || !local.has(m.id)) return;
+      const f = fail[m.id];
+      if (f && now - f.at < Math.min(6, f.n) * 10 * 60000) return;
+      const rank = m.kind === 'photo' ? 0 : m.kind === 'video' ? 2 : 1;
+      todo.push({ id: m.id, rank, t: o.createdAt || '', size: m.size || 0 });
+    }));
+    todo.sort((a, b) => a.rank - b.rank || (a.rank === 2 ? a.size - b.size : b.t.localeCompare(a.t)));
+    if (!todo.length) return { failed: 0, more: 0, big: Object.keys(skip).length };
+    let failed = 0, done = 0, i = 0;
     const t0 = Date.now();
-    for (let i = 0; i < todo.length; i++) {
-      if (Date.now() - t0 > 40000) return { failed, more: todo.length - i };
-      const rec = await DB.get('files', todo[i]);
-      if (!rec || !rec.blob) continue;
-      setStatus('syncing', `رفع الملفات ${i + 1}/${todo.length}`);
+    const put = (path, blob, type) => api(`/storage/v1/object/${BUCKET}/${path}`, {
+      method: 'POST', headers: { 'Content-Type': type || blob.type || 'application/octet-stream', 'x-upsert': 'true', 'cache-control': '31536000' }, body: blob,
+    }).then(ok);
+    async function one(item) {
+      const rec = await DB.get('files', item.id);
+      if (!rec || !rec.blob) return;
       try {
-        const put = (path, blob) => api(`/storage/v1/object/${BUCKET}/${path}`, {
-          method: 'POST', headers: { 'Content-Type': blob.type || rec.mime || 'application/octet-stream', 'x-upsert': 'true', 'cache-control': '31536000' }, body: blob,
-        }).then(ok);
-        await put(st.uid + '/' + rec.id, await cloudImage(rec.blob));
+        const body = await cloudImage(rec.blob);
+        if (body.size > UP_MAX) { skip[rec.id] = { size: body.size, at: Date.now() }; return; }
+        await put(st.uid + '/' + rec.id, body, body.type || rec.mime);
         // مصغرة ما تصغراتش (HEIC ما تقراش) = نسخة من الأصل: ما نرفعوهاش، كنقراو الأصل بلاصتها
-        if (rec.thumb && rec.thumb !== rec.blob && rec.thumb.size < 300 * 1024) await put(st.uid + '/' + rec.id + '.t', rec.thumb);
-        up[rec.id] = 1;
-        await DB.setMeta('sync_uploaded', up);
-      } catch (e) { failed++; }
+        if (rec.thumb && rec.thumb !== rec.blob && rec.thumb.size < 300 * 1024) await put(st.uid + '/' + rec.id + '.t', rec.thumb, 'image/jpeg');
+        up[rec.id] = 1; delete fail[rec.id];
+      } catch (e) {
+        failed++;
+        const m = String(e && e.message || e);
+        if (/too large|exceeded|413|maximum allowed size/i.test(m)) skip[rec.id] = { size: rec.blob.size, at: Date.now() };
+        else fail[rec.id] = { n: ((fail[rec.id] && fail[rec.id].n) || 0) + 1, at: Date.now() };
+      }
+      done++;
+      setStatus('syncing', `رفع الصور والملفات ${done}/${todo.length}`);
     }
-    return { failed, more: 0 };
+    async function worker() {
+      while (i < todo.length && Date.now() - t0 < UP_BUDGET) {
+        await one(todo[i++]);
+        // كنحفظو التقدم بانتظام (إلا تسد التطبيق ما يضيعش اللي ترفع)
+        if (done % 5 === 0) await DB.setMeta('sync_uploaded', up);
+      }
+    }
+    await Promise.all(Array.from({ length: UP_PAR }, worker));
+    await DB.setMeta('sync_uploaded', up);
+    await DB.setMeta('sync_fail', fail);
+    await DB.setMeta('sync_skip', skip);
+    return { failed, more: todo.length - i, big: Object.keys(skip).length };
   }
-
-  /* تنزيل ملف غير موجود على هذا الجهاز */
+  /* تنزيل ملف غير موجود على هذا الجهاز (رابط موقّع: طلب واحد لعدة ملفات، والملف الناقص كيبان بلا ما نطلبوه) */
   async function fetchFile(id, thumb) {
     if (!st || !navigator.onLine) return null;
-    const get = async path => {
-      const res = await api(`/storage/v1/object/authenticated/${BUCKET}/${path}`);
-      return res.ok ? res.blob() : null;
-    };
     try {
-      if (thumb) { const t = await get(st.uid + '/' + id + '.t'); if (t) return t; }
-      return await get(st.uid + '/' + id);
+      const u = await netPhotoUrl(st.uid, id, thumb);
+      if (!u) return null;
+      const res = await fetch(u);
+      return res.ok ? res.blob() : null;
     } catch (e) { return null; }
   }
-
   /* روابط موقّعة (7 أيام) لصور عقارات الشبكة: طلب واحد لعشرات الصور، والمتصفح
      كيحمّلهم مباشرة ويحتفظ بهم فالذاكرة — أسرع بزاف من تحميل كل صورة بوحدها */
   const SIGN_LS = 'w777_signed', SIGN_TTL = 7 * 86400;
@@ -341,10 +367,11 @@
         let changed = await pull();
         for (const h of pullHooks) { try { const n = await h(); if (n) changed += n; } catch (e) { console.warn('pull hook', e); } }
         await push();
-        const { failed, more } = await uploadFiles();
+        const { failed, more, big } = await uploadFiles();
         await DB.setMeta('sync_last', new Date().toISOString());
         if (more) { again = true; setStatus('syncing', `بقي ${more} ملف للرفع…`); }
-        else setStatus(failed ? 'warn' : 'ok', failed ? `تعذر رفع ${failed} ملف (ربما حجمه كبير جدا)` : 'تمت المزامنة');
+        else if (failed) setStatus('warn', `تعذر رفع ${failed} ملف — غادي نعاودو المحاولة أوتوماتيكيا`);
+        else setStatus('ok', big ? `تمت المزامنة · ${big} فيديو كبير بزاف (أكثر من 48 MB) بقى غير فهاد الجهاز` : 'تمت المزامنة');
         if (changed) changeCbs.forEach(f => f(changed));
       } catch (e) {
         const m = String(e && e.message || e);
