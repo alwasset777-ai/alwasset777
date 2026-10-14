@@ -595,3 +595,9 @@ create policy w777_pj_sel on storage.objects for select to authenticated using (
 drop policy if exists w777_pj_del on storage.objects;
 create policy w777_pj_del on storage.objects for delete to authenticated
   using (bucket_id = 'w777-projects' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+
+-- ============================================================
+-- الجمعيات السكنية (J001–J777) — دخول: jamia001…jamia777
+-- ============================================================
+alter table public.w777_agencies drop constraint if exists w777_agencies_kind_chk;
+alter table public.w777_agencies add constraint w777_agencies_kind_chk check (kind in ('agency', 'broker', 'contractor', 'finishing', 'investor', 'notary', 'association'));
