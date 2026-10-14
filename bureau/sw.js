@@ -1,33 +1,52 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v53';
-const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'manifest.webmanifest',
+const CACHE = 'w777-bureau-v54';
+// صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
+const IMG = 'w777-img-v1', IMG_MAX = 1500;
+const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
+const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'manifest.webmanifest', ...FONTS,
   'icons/logo.png?v=9', 'icons/icon-192.png?v=8', 'icons/icon-512.png?v=8', 'icons/apple-touch-icon.png?v=8', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
   ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=5`)];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache:'reload' — النسخة الجديدة من الخادم، ماشي من ذاكرة المتصفح
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
+let trimN = 0;
+async function trimImg(c) {
+  const keys = await c.keys();
+  for (let i = 0; i < keys.length - IMG_MAX; i++) await c.delete(keys[i]);
+}
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // الخطوط: من الذاكرة أولا
-  if (url.host.includes('fonts.googleapis.com') || url.host.includes('fonts.gstatic.com')) {
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
-      const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res;
-    }).catch(() => hit)));
+  // صور الشبكة: من الذاكرة مباشرة (المفتاح بلا التوقيع اللي كيتبدل)
+  if (url.pathname.includes('/storage/v1/object/sign/')) {
+    const key = url.origin + url.pathname;
+    e.respondWith(caches.open(IMG).then(async c => {
+      const hit = await c.match(key);
+      if (hit) return hit;
+      const res = await fetch(req.url, { mode: 'cors', credentials: 'omit' });
+      if (res.ok) { await c.put(key, res.clone()); if (++trimN % 40 === 0) e.waitUntil(trimImg(c)); }
+      return res;
+    }).catch(() => fetch(req)));
     return;
   }
   if (url.origin !== location.origin) return;
-  // ملفات التطبيق: الشبكة أولا (للتحديثات) ثم الذاكرة عند انقطاع الإنترنت
-  // no-cache: يتحقق دائما من وجود نسخة جديدة بدل النسخة المحفوظة في المتصفح
-  e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
-    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-    return res;
-  }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('index.html'))));
+  // ملفات التطبيق: من الذاكرة فورا (فتح سريع)، والتحديث كيتجاب فالخلفية للمرة الجاية.
+  // كل نشر جديد كيبدل CACHE ← كيتثبت Service Worker جديد والصفحة كتتجدد مرة وحدة.
+  const nav = req.mode === 'navigate';
+  e.respondWith(caches.match(req, { ignoreSearch: nav }).then(hit => {
+    const net = fetch(req, { cache: 'no-cache' }).then(res => {
+      if (res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      return res;
+    });
+    if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
+    return net.catch(() => caches.match(nav ? './' : 'index.html'));
+  }));
 });
 
 // الضغط على تنبيه موعد ⏰: فتح التطبيق على صفحة المواعيد

@@ -601,3 +601,39 @@ create policy w777_pj_del on storage.objects for delete to authenticated
 -- ============================================================
 alter table public.w777_agencies drop constraint if exists w777_agencies_kind_chk;
 alter table public.w777_agencies add constraint w777_agencies_kind_chk check (kind in ('agency', 'broker', 'contractor', 'finishing', 'investor', 'notary', 'association'));
+
+-- ============================================================
+-- تقوية الأمان (فحص أكتوبر 2026)
+-- ============================================================
+-- 1) التخزين: غير الصور/الفيديو/المستندات، وبحد أقصى للحجم (منع رفع صفحات HTML ولا ملفات ضخمة)
+update storage.buckets set file_size_limit = 52428800,
+  allowed_mime_types = array['image/*', 'video/*', 'audio/*', 'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain', 'application/octet-stream']
+  where id = 'w777-media';
+update storage.buckets set file_size_limit = 10485760, allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+  where id = 'w777-stays';
+-- صاحب عقار الحجز كيشوف ويحذف صورو (الحذف كيحتاج القراءة)
+drop policy if exists w777_stays_own_sel on storage.objects;
+create policy w777_stays_own_sel on storage.objects for select to authenticated
+  using (bucket_id = 'w777-stays' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+
+-- 2) عقارات الشبكة: اسم وهاتف الوكالة كيتاخدو من الحساب (ما يقدرش عضو ينتحل اسم مكتب آخر)
+create or replace function public.w777_sh_guard() returns trigger language plpgsql security definer set search_path=public as
+$$ declare a record; begin
+  if w777_is_admin() then return new; end if;
+  select name, phone into a from w777_agencies where uid = auth.uid();
+  new.owner := auth.uid(); new.agency := a.name; new.phone := a.phone;
+  if cardinality(new.photo_ids) > 10 then new.photo_ids := new.photo_ids[1:10]; end if;
+  return new; end $$;
+drop trigger if exists w777_sh_guard on public.w777_shared_props;
+create trigger w777_sh_guard before insert or update on public.w777_shared_props for each row execute function public.w777_sh_guard();
+
+-- 3) الزائر بلا حساب: ما عندو حتى صلاحية على الجداول (غير صفحة الحجز العمومية والدوال ديالها)
+do $$ declare t text; begin
+  for t in select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+           where n.nspname = 'public' and c.relkind = 'r' and c.relname like 'w777\_%' and c.relname <> 'w777_stays' loop
+    execute format('revoke all on table public.%I from anon', t);
+  end loop; end $$;
+revoke execute on function public.w777_admin_record(uuid, text), public.w777_has_secret(text), public.w777_owner_bookings() from anon, public;
+grant execute on function public.w777_admin_record(uuid, text), public.w777_has_secret(text), public.w777_owner_bookings() to authenticated;
