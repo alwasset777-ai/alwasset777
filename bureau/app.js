@@ -17,6 +17,28 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // روابط جاية من قاعدة البيانات (أخبار، مناسبات، مجموعات): غير http/https — ماشي javascript: ولا data:
+  // القوائم الطويلة: أول دفعة كتبان فورا، والباقي كيتزاد ملي كتنزل (بدل مئات البطاقات دفعة وحدة)
+  function lazyFill(box, items, render, after, first = 24, step = 24) {
+    if (!box) return;
+    let i = 0, io = null;
+    const sentinel = document.createElement('div');
+    sentinel.className = 'lazy-more';
+    box.appendChild(sentinel);
+    const add = n => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = items.slice(i, i + n).map(render).join('');
+      i = Math.min(items.length, i + n);
+      while (tmp.firstChild) box.insertBefore(tmp.firstChild, sentinel);
+      if (after) after();
+      if (i >= items.length) { if (io) io.disconnect(); sentinel.remove(); }
+    };
+    add(first);
+    if (i >= items.length) return;
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting) && box.isConnected) add(step); }, { rootMargin: '900px 0px' });
+      io.observe(sentinel);
+    } else add(items.length);
+  }
   const safeUrl = u => /^https?:\/\//i.test(String(u || '').trim()) ? esc(String(u).trim()) : '#';
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const today = () => new Date().toISOString().slice(0, 10);
@@ -24,7 +46,9 @@
   const PHOTO_MAX = 5;
   const photoLimit = () => S.role === 'admin' ? Infinity : PHOTO_MAX;
   const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
-  const fmtRaw = n => num(n) === null ? '' : new Intl.NumberFormat('fr-FR').format(Number(n)).replace(/[\u202f\u00a0]/g, ' ');
+  // مُنسّق واحد للأرقام (إنشاء Intl.NumberFormat فكل مرة كان كيبطّء التطبيق بزاف)
+  const NF = new Intl.NumberFormat('fr-FR');
+  const fmtRaw = n => num(n) === null ? '' : NF.format(Number(n)).replace(/[\u202f\u00a0]/g, ' ');
   // عزل الأرقام حتى لا تنقلب مجموعات الأرقام داخل النص العربي
   const fmt = n => num(n) === null ? '' : '\u2066' + fmtRaw(n) + '\u2069';
   const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
@@ -150,6 +174,7 @@
     ]);
     S.appts = appts;
     S.props = props.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    dropMatches();
     S.reqs = reqs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     S.custom = custom || {};
     S.settings = Object.assign({ officeName: 'مكتب الوسيط 777 للخدمات العقارية', officePhone: '0777777959', officeCity: 'مكناس' }, settings || {});
@@ -407,8 +432,18 @@
      المطابقة الذكية بين الطلب والعقار
      ============================================================ */
   const areaOf = p => num(p.areaTotal) || num(p.areaBuilt) || num(p.areaUseful) || (p.specs && num(p.specs.hectares) ? p.specs.hectares * 10000 : null);
+  // نتيجة المطابقة محفوظة حسب (العقار، الطلب، آخر تعديل) — كتتحسب مرة وحدة بدل فكل صفحة
+  const MATCH_CACHE = new Map();
   function matchScore(p, r) {
     if (!p || !r) return null;
+    const key = p.id + '|' + (p.updatedAt || '') + '|' + p.status + '|' + r.id + '|' + (r.updatedAt || '');
+    if (MATCH_CACHE.has(key)) return MATCH_CACHE.get(key);
+    if (MATCH_CACHE.size > 400000) MATCH_CACHE.clear();
+    const res = matchScoreRaw(p, r);
+    MATCH_CACHE.set(key, res);
+    return res;
+  }
+  function matchScoreRaw(p, r) {
     if (['sold', 'rented', 'withdrawn'].includes(p.status)) return null;
     const reasons = [];
     let score = 0;
@@ -478,8 +513,46 @@
   }
   const MIN_SCORE = 50;
   const openReq = r => !['done', 'cancelled'].includes(r.status);
+  // قائمة الاقتراحات ديال كل طلب محفوظة حتى يتبدل شي عقار ولا الطلب نفسه
+  const MATCH_LIST = new Map();
+  let PROPS_BY_CITY = null;
+  const dropMatches = () => { MATCH_LIST.clear(); PROPS_BY_CITY = null; };
+  // العقارات مجموعة حسب المدينة: الطلب كيتقارن غير مع عقارات مدينتو (المدينة شرط أساسي)
+  function propsForCity(city) {
+    if (!city) return S.props;
+    if (!PROPS_BY_CITY) { PROPS_BY_CITY = new Map(); S.props.forEach(p => { const k = p.city || ''; if (!PROPS_BY_CITY.has(k)) PROPS_BY_CITY.set(k, []); PROPS_BY_CITY.get(k).push(p); }); }
+    return PROPS_BY_CITY.get(city) || [];
+  }
+  const reqKey = r => r.id + '|' + (r.updatedAt || '');
+  const matchesCold = () => S.reqs.some(r => openReq(r) && !MATCH_LIST.has(reqKey(r)));
+  // حساب الاقتراحات فالخلفية بدفعات صغيرة باش الواجهة ما تتجمدش
+  let warming = null;
+  function warmMatches() {
+    if (warming) return warming;
+    const todo = S.reqs.filter(r => openReq(r) && !MATCH_LIST.has(reqKey(r)));
+    warming = new Promise(res => {
+      let i = 0;
+      const step = () => {
+        const t0 = performance.now();
+        while (i < todo.length && performance.now() - t0 < 25) matchesForReq(todo[i++]);
+        if (i < todo.length) setTimeout(step, 0); else { warming = null; res(); }
+      };
+      setTimeout(step, 0);
+    });
+    return warming;
+  }
+  // أي حفظ ولا حذف ديال عقار كيمسح الاقتراحات المحفوظة
+  const _saveRec = DB.saveRec.bind(DB), _delRec = DB.delRec.bind(DB);
+  DB.saveRec = (st, o) => { if (st === 'properties') dropMatches(); return _saveRec(st, o); };
+  DB.delRec = (st, id) => { if (st === 'properties') dropMatches(); return _delRec(st, id); };
   function matchesForReq(r) {
-    return S.props.map(p => ({ p, m: matchScore(p, r) })).filter(x => x.m && x.m.score >= MIN_SCORE).sort((a, b) => b.m.score - a.m.score);
+    const k = reqKey(r);
+    let v = MATCH_LIST.get(k);
+    if (!v) {
+      v = propsForCity(r.city).map(p => ({ p, m: matchScore(p, r) })).filter(x => x.m && x.m.score >= MIN_SCORE).sort((a, b) => b.m.score - a.m.score);
+      MATCH_LIST.set(k, v);
+    }
+    return v;
   }
   function matchesForProp(p) {
     return S.reqs.filter(openReq).map(r => ({ r, m: matchScore(p, r) })).filter(x => x.m && x.m.score >= MIN_SCORE).sort((a, b) => b.m.score - a.m.score);
@@ -665,9 +738,15 @@
   async function viewHome() {
     const avail = S.props.filter(p => p.status === 'available');
     const open = S.reqs.filter(openReq);
+    // أول فتح: الصفحة كتبان فورا، والفرص كتتحسب فالخلفية ومن بعد كتتعرض
+    const cold = matchesCold();
+    if (cold) warmMatches().then(async () => {
+      if ((location.hash || '#/') !== '#/' || document.querySelector('.modal-bg')) return;
+      const y = window.scrollY; await viewHome(); window.scrollTo(0, y);
+    });
     let strong = 0;
     const opps = [];
-    open.forEach(r => matchesForReq(r).forEach(x => { if (x.m.score >= 75) { strong++; opps.push({ r, p: x.p, s: x.m.score }); } }));
+    if (!cold) open.forEach(r => matchesForReq(r).forEach(x => { if (x.m.score >= 75) { strong++; opps.push({ r, p: x.p, s: x.m.score }); } }));
     opps.sort((a, b) => b.s - a.s);
     const follow = open.filter(r => r.followUp && r.followUp <= today()).sort((a, b) => a.followUp.localeCompare(b.followUp));
     const byType = {};
@@ -697,7 +776,7 @@
       <div class="stats">
         <div class="card stat"><div class="ic">${ic('building')}</div><div class="v">${avail.length}</div><div class="l">عقار متاح (من ${S.props.length})</div></div>
         <div class="card stat"><div class="ic">${ic('users')}</div><div class="v">${open.length}</div><div class="l">طلب مفتوح</div></div>
-        <div class="card stat"><div class="ic">${ic('target')}</div><div class="v">${strong}</div><div class="l">مطابقة قوية (+75%)</div></div>
+        <div class="card stat"><div class="ic">${ic('target')}</div><div class="v">${cold ? '…' : strong}</div><div class="l">مطابقة قوية (+75%)</div></div>
         <div class="card stat"><div class="ic">${ic('handshake')}</div><div class="v" style="font-size:20px">${saleValue ? esc(millions(saleValue) || fmt(saleValue)) : '—'}</div><div class="l">قيمة العقارات المعروضة للبيع</div></div>
       </div>
       ${!S.props.length && !S.reqs.length ? `
@@ -717,7 +796,7 @@
               ${scoreRing(o.s)}
               <div class="grow"><b>${esc(o.r.client && o.r.client.name)} ← ${esc(o.p.title || typeAr(o.p.type))}</b>
               <small class="muted">${esc(o.p.ref)} · ${esc(priceText(o.p))} · ${esc(o.p.district || o.p.city || '')}</small></div>
-            </a>`).join('') : `<div class="empty" style="padding:26px">لا توجد مطابقات قوية حاليا</div>`}
+            </a>`).join('') : `<div class="empty" style="padding:26px">${cold ? '⏳ جاري حساب أحسن الفرص…' : 'لا توجد مطابقات قوية حاليا'}</div>`}
         </div>
         <div style="display:flex;flex-direction:column;gap:16px">
           <div class="card">
@@ -841,11 +920,11 @@
         <div class="chips">${[['new', 'الأحدث'], ['pasc', 'السعر ↑'], ['pdesc', 'السعر ↓'], ['adesc', 'المساحة ↓'], ['aasc', 'المساحة ↑'], ['old', 'الأقدم']].map(([k, l]) => `<span class="chip ${f.sort === k ? 'on' : ''}" data-sort="${k}">${l}</span>`).join('')}
           ${nf ? `<span class="chip" data-clear style="color:var(--red)">✕ مسح الفلاتر</span>` : ''}</div>
       </div>
-      ${list.length ? `<div class="prop-grid">${list.map(propCard).join('')}</div>` :
+      ${list.length ? `<div class="prop-grid" id="plist"></div>` :
         `<div class="card empty"><div class="big">🔎</div><h3>لا توجد عقارات مطابقة</h3><p>غيّر كلمات البحث أو الفلاتر، أو أضف عقارا جديدا.</p>
         <a class="btn primary" href="#/property/new">${ic('plus', 18)} إضافة عقار</a></div>`}
     `;
-    hydrateThumbs(main());
+    lazyFill($('#plist'), list, propCard, () => hydrateThumbs($('#plist')));
     const rerender = () => viewProps(parseHash().query);
     $$('[data-trx]').forEach(el => el.onclick = () => { f.trx = el.dataset.trx; rerender(); });
     $$('[data-st]').forEach(el => el.onclick = () => { f.status = el.dataset.st; rerender(); });
@@ -1429,9 +1508,10 @@
         <div class="chips">${chips.map(c => `<span class="chip ${f.status === c.v ? 'on' : ''}" data-st="${c.v}">${esc(c.l)}</span>`).join('')}</div>
         <div class="chips">${[{ v: '', l: 'كل العمليات' }, ...D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar }))].map(c => `<span class="chip ${f.trx === c.v ? 'on' : ''}" data-trx="${c.v}">${esc(c.l)}</span>`).join('')}</div>
       </div>
-      ${list.length ? `<div class="card" style="overflow:hidden">${list.map(reqCard).join('')}</div>` :
+      ${list.length ? `<div class="card" style="overflow:hidden" id="rlist"></div>` :
         `<div class="card empty"><div class="big">🧾</div><h3>لا توجد طلبات</h3><p>سجّل طلب زبون ليقترح عليك التطبيق العقارات المناسبة تلقائيا.</p>
         <a class="btn primary" href="#/request/new">${ic('plus', 18)} إضافة طلب</a></div>`}`;
+    lazyFill($('#rlist'), list, reqCard, null, 40, 40);
     $$('[data-st]').forEach(el => el.onclick = () => { f.status = el.dataset.st; viewReqs(query); });
     $$('[data-trx]').forEach(el => el.onclick = () => { f.trx = el.dataset.trx; viewReqs(query); });
   }
@@ -1653,10 +1733,10 @@
       </div></div>`;
   }
   function bindProposalButtons(root, rerender) {
-    $$('[data-prop-state]', root).forEach(el => el.addEventListener('click', async () => {
+    $$('[data-prop-state]', root).forEach(el => el.dataset.bound || (el.dataset.bound = 1, el.addEventListener('click', async () => {
       await markProposal(el.dataset.r, el.dataset.p, el.dataset.propState);
       if (el.tagName === 'A') setTimeout(rerender, 400); else rerender();
-    }));
+    })));
   }
 
   async function viewReq(id) {
@@ -1756,7 +1836,8 @@
         <div class="muted" style="font-size:13.5px;margin-bottom:8px">كيف تُحسب النسبة؟ نوع العملية والمدينة شرطان أساسيان، ثم: نوع العقار 25٪ · المدينة 20٪ · الميزانية 20٪ · الحي 15٪ · المساحة 10٪ · غرف النوم 5٪ · المميزات 5٪</div>
         <div class="chips">${[50, 60, 70, 80, 90].map(v => `<a class="chip ${v === min ? 'on' : ''}" href="#/matching?min=${v}" style="text-decoration:none">+${v}%</a>`).join('')}</div>
       </div>
-      ${rows.length ? rows.map(({ r, ms }) => `
+      ${rows.length ? '<div id="mlist"></div>' : `<div class="card empty"><div class="big">🎯</div><h3>لا توجد طلبات مفتوحة</h3><p>أضف طلبات الزبناء ليقترح عليك التطبيق العقارات المناسبة.</p><a class="btn primary" href="#/request/new">${ic('plus', 18)} إضافة طلب</a></div>`}`;
+    const pairCard = ({ r, ms }) => `
         <div class="card" style="margin-bottom:16px;overflow:hidden">
           <div class="pair-head">
             <a href="#/request/${r.id}" style="text-decoration:none;display:flex;gap:10px;align-items:center">
@@ -1766,9 +1847,8 @@
             <span class="badge ${ms.length ? 'green' : ''}">${ms.length} عقار</span>
           </div>
           <div style="padding:12px" class="match-list">${ms.length ? ms.slice(0, 4).map(x => matchCard(x.p, x.m, r)).join('') + (ms.length > 4 ? `<a class="btn block" href="#/request/${r.id}">عرض الكل (${ms.length})</a>` : '') : '<div class="muted" style="padding:6px">لا يوجد عقار بهذه النسبة</div>'}</div>
-        </div>`).join('') : `<div class="card empty"><div class="big">🎯</div><h3>لا توجد طلبات مفتوحة</h3><p>أضف طلبات الزبناء ليقترح عليك التطبيق العقارات المناسبة.</p><a class="btn primary" href="#/request/new">${ic('plus', 18)} إضافة طلب</a></div>`}`;
-    hydrateThumbs(main());
-    bindProposalButtons(main(), () => viewMatching(query));
+        </div>`;
+    lazyFill($('#mlist'), rows, pairCard, () => { hydrateThumbs($('#mlist')); bindProposalButtons($('#mlist'), () => viewMatching(query)); }, 8, 8);
   }
 
   /* ============================================================
@@ -5622,7 +5702,7 @@
           };
           obj.ref = await DB.nextRef('W777', maxRef(S.props));
           await DB.saveRec('properties', obj);
-          S.props.push(obj);
+          S.props.push(obj); dropMatches();
           made++;
         }
         await loadAll();
