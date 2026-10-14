@@ -620,6 +620,7 @@
     else if (a === 'finishing') { nav = a; await viewNetKind('finishing', parts, query); }
     else if (a === 'investors') { nav = a; await viewNetKind('investor', parts, query); }
     else if (a === 'notaries') { nav = a; await viewNetKind('notary', parts, query); }
+    else if (a === 'associations') { nav = a; await viewNetKind('association', parts, query); }
     else if (a === 'terms') { nav = b === 'groups' ? 'groups' : 'terms'; await viewTerms(b); }
     else if (a === 'projects') { nav = a; await viewProjects(parts, query); }
     else if (a === 'events') { nav = a; await viewEvents(parts); }
@@ -641,11 +642,12 @@
     ['projects', '🚀', 'مشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات', 'معارض وصالونات'],
     ['stays', '🏖️', 'الحجز', 'مفروش وعطل'], ['news', '📰', 'الأخبار', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
     ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
+    ['associations', '🏘️', 'الجمعيات السكنية', '777 جمعية'],
     ['terms', '📜', 'قانون التطبيق', 'شروط الاشتراك'],
   ];
   // لون الهالة ديال كل أيقونة 3D
   const HUB_C = { agencies: '#4aa3ff', brokers: '#ffb02e', contractors: '#ffcc4d', finishing: '#ff7aa8', projects: '#ff5a5f', events: '#e84393', stays: '#20c997',
-    news: '#a0aec0', donations: '#ffc83d', disputes: '#b39ddb', investors: '#f4a62a', notaries: '#3d8bfd', terms: '#e6c77e' };
+    news: '#a0aec0', donations: '#ffc83d', disputes: '#b39ddb', investors: '#f4a62a', notaries: '#3d8bfd', associations: '#34d399', terms: '#e6c77e' };
   function gdBanner() {
     const L = gdLessons(), d = gdDone();
     if (!L.length || d.size >= Math.min(5, L.length)) return '';
@@ -2628,7 +2630,7 @@
       }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -4107,6 +4109,8 @@
       sv: ['سكني', 'تجاري', 'سياحي / فندقي', 'أراضي وتجزئات', 'فلاحي', 'صناعي / مستودعات', 'مكاتب', 'ترميم وإعادة البيع'] },
     notary: { ar: 'الموثقون', one: 'موثق', ic: '🖋️', route: 'notaries', def: /^موثق \d+$/,
       sv: ['عقود البيع', 'الوعد بالبيع', 'عقود الكراء', 'البيع فـ طور الإنجاز', 'الشركات والشراكات', 'الهبة والإراثة', 'التحفيظ العقاري', 'الرهون', 'الاستشارة العقارية'] },
+    association: { ar: 'الجمعيات السكنية', one: 'جمعية سكنية', ic: '🏘️', route: 'associations', def: /^جمعية \d+$/,
+      sv: ['السكن الاقتصادي', 'ودادية سكنية', 'تعاونية سكنية', 'تجزئات سكنية', 'شراء أراضي جماعية', 'بناء جماعي', 'تسوية الوضعية العقارية', 'مرافقة الأعضاء'] },
   };
   const kindOf = a => (a && a.kind) || 'agency';
   const isNamed = a => !!a.name && !KINDS[kindOf(a)].def.test(a.name);
@@ -4178,7 +4182,8 @@
     else if (S.kind === kind) tabs.push(['me', K.ic + ' حسابي']);
     const tab = pickTab(tabs, parts[1] || '', kind === 'agency' || kind === 'investor' ? '' : kind === 'notary' && S.kind === 'notary' ? 'inbox' : 'dir');
     const sub = kind === 'investor' ? 'المستثمرون كيحطّو الميزانية ديالهم (تمويل، شراكة، شراء ولا كراء طويل) وكيزيدو العقارات ديالهم فـ «العقارات».'
-      : kind === 'notary' ? 'كل موثق كيتقترح أوتوماتيكيا مع العقارات القريبة ليه، وكيوصلو الاستشارات وطلبات توثيق العقود مباشرة.' : '';
+      : kind === 'notary' ? 'كل موثق كيتقترح أوتوماتيكيا مع العقارات القريبة ليه، وكيوصلو الاستشارات وطلبات توثيق العقود مباشرة.'
+        : kind === 'association' ? 'الجمعيات والوداديات والتعاونيات السكنية: كتلقاو هنا الأراضي، المقاولين، الموثقين والتمويل لمشاريع السكن ديال أعضائكم.' : '';
     const head = secHead(K.ic, K.ar, sub, tabs, tab, K.route);
     if (tab === 'manage') return viewAgManage(kind, head, query);
     if (tab === 'me') return viewAgMe(kind, head);
