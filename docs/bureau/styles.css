@@ -872,3 +872,9 @@ a.chip { text-decoration: none; }
 html.tr-on body { top: 0 !important; position: static !important; }
 .goog-text-highlight, .VIpgJd-yAWNEb-VIpgJd-fmcmS-sn54Q { background: none !important; box-shadow: none !important; }
 html[dir="ltr"] .back-btn svg { transform: scaleX(-1); }
+
+/* ---------- السرعة: القوائم الطويلة ---------- */
+.lazy-more { grid-column: 1 / -1; height: 1px; }
+/* البطاقات اللي بعيدة على الشاشة ما كتترسمش حتى كتقرب ليها */
+.prop-grid > .prop-card, #mlist > .card, #rlist > * { content-visibility: auto; contain-intrinsic-size: auto 320px; }
+#rlist > * { contain-intrinsic-size: auto 90px; }
