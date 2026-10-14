@@ -206,13 +206,17 @@
     return url;
   }
   // الملف من الجهاز، أو من السحابة إن لم يكن محفوظا هنا (ثم يُحفظ محليا)
+  const MISSING = new Map();
   async function getBlob(id, thumb) {
     let rec = await DB.get('files', id);
     if (rec && ((thumb && rec.thumb) || rec.blob)) return (thumb && rec.thumb) || rec.blob;
     const Sy = window.W777_SYNC;
     if (!Sy || !Sy.isOn()) return null;
+    // ملف ماشي فالسحابة: ما نعاودوش نطلبوه فكل صفحة (كنعاودو المحاولة من بعد 10 دقايق)
+    const miss = MISSING.get(id);
+    if (miss && Date.now() - miss < 600000) return null;
     const blob = await Sy.fetchFile(id, thumb);
-    if (!blob) return null;
+    if (!blob) { MISSING.set(id, Date.now()); return null; }
     const owner = [...S.props, ...S.reqs].find(p => (p.media || []).some(m => m.id === id));
     const meta = owner && owner.media.find(m => m.id === id);
     rec = rec || { id, owner: owner ? owner.id : '', kind: meta ? meta.kind : 'photo', name: meta ? meta.name : id, mime: blob.type, size: blob.size, blob: null, thumb: null };
@@ -231,6 +235,7 @@
       el.removeAttribute('data-thumb');
       const url = await fileUrl(id, true);
       if (url) { el.src = url; el.classList.remove('hidden'); }
+      else if (window.W777_SYNC && window.W777_SYNC.isOn() && navigator.onLine && el.parentElement && el.parentElement.classList.contains('prop-cover')) el.parentElement.classList.add('no-cloud');
     });
     $$('[data-full]', root).forEach(async el => {
       const id = el.dataset.full;
