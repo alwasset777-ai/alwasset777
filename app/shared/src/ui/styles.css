@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/600.css";
+
+/* Les composants partagés vivent dans shared/src : Tailwind doit les scanner. */
+@source "../";
+
+@theme {
+  --color-brand-50: #fff1f2;
+  --color-brand-100: #ffe0e3;
+  --color-brand-500: #e11d2e;
+  --color-brand-600: #c8102e;
+  --color-brand-700: #a50d26;
+  --color-ink: #111111;
+  --color-muted: #5f6368;
+  --color-line: #e7e7e9;
+  --color-canvas: #f7f7f8;
+  --font-sans: "Cairo", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+/* Chiffres toujours latins et alignés, y compris en arabe. */
+.num { font-variant-numeric: tabular-nums; font-family: "Inter", var(--font-sans); direction: ltr; unicode-bidi: isolate; }

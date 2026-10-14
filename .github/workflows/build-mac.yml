@@ -1,0 +1,72 @@
+# Construit l'application macOS (.dmg Apple Silicon + Intel) sur un Mac de
+# GitHub et la publie dans une « Release » téléchargeable.
+name: Build macOS app
+
+on:
+  push:
+    branches: [claude/al-wasset-real-estate-app-j47nuw, main]
+    paths: ['app/**', '.github/workflows/build-mac.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-mac-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier (types + tests)
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Construire le .dmg
+        run: npm run build:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Version
+        id: v
+        run: echo "version=$(node -p "require('./desktop/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlWasset777-${{ steps.v.outputs.version }}-mac
+          path: app/desktop/release/*.dmg
+          if-no-files-found: error
+
+      - name: Publier la version téléchargeable
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.v.outputs.version }}-mac
+          name: Al Wasset 777 — v${{ steps.v.outputs.version }} (macOS)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          files: app/desktop/release/*.dmg
+          body: |
+            Application de bureau Al Wasset 777 pour macOS.
+
+            - Mac Apple Silicon (M1, M2, M3, M4) : fichier `…-arm64.dmg`
+            - Mac Intel : fichier `…-x64.dmg`
+
+            Installation : ouvrir le .dmg, glisser « Al Wasset 777 » dans Applications.
+            Premier lancement (application non signée par Apple) : Réglages Système →
+            Confidentialité et sécurité → « Ouvrir quand même ».

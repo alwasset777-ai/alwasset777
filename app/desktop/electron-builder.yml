@@ -1,0 +1,48 @@
+# Configuration de packaging — `npm run build:mac` (à lancer sur un Mac).
+appId: ma.alwasset777.app
+productName: Al Wasset 777
+copyright: © Al Wasset 777
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+extraResources:
+  # Application mobile servie aux téléphones sur le réseau local.
+  - from: ../mobile/dist
+    to: mobile
+asarUnpack:
+  - "**/*.node"
+# Le module SQLCipher est livré précompilé en N-API (darwin arm64/x64 inclus) :
+# compatible avec toutes les versions d'Electron, aucune recompilation nécessaire.
+npmRebuild: false
+afterPack: scripts/after-pack.cjs
+mac:
+  category: public.app-category.business
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  # Sans certificat Apple, l'application est signée « ad hoc » (voir
+  # scripts/after-pack.cjs) : indispensable pour qu'elle démarre sur les Mac
+  # Apple Silicon. Le runtime renforcé n'est activé qu'avec un vrai certificat.
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Sans certificat Developer ID : identity null → .dmg non signé
+  # (ouverture par clic droit → Ouvrir). Avec certificat : supprimer cette
+  # ligne et définir CSC_LINK / CSC_KEY_PASSWORD, puis APPLE_ID,
+  # APPLE_APP_SPECIFIC_PASSWORD et APPLE_TEAM_ID pour la notarisation.
+  identity: null
+  notarize: false
+  extendInfo:
+    NSLocalNetworkUsageDescription: "Al Wasset 777 partage les données de l'agence avec vos téléphones et ordinateurs sur le réseau local."
+    NSBonjourServices:
+      - _alwasset._tcp
+dmg:
+  title: Al Wasset 777
+  artifactName: AlWasset777-${version}-${arch}.dmg
+linux:
+  target: dir
