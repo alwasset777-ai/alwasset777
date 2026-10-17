@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://alwasset777-ai.github.io/alwasset777/sitemap.xml
