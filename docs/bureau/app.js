@@ -2761,7 +2761,27 @@
             <button class="btn gold sm" data-key-save="${id}">حفظ</button>
             <button class="btn sm" data-key-del="${id}">مسح</button></div>
           <div class="muted" style="font-size:12.5px;margin-top:6px">من <a href="${url}" target="_blank" rel="noopener">${host}</a> (${how})</div></div>`;
-  const AG_KEYS = { gemini: { n: 'gemini_api_key', re: /^AIza[\w-]{30,}$/, bad: 'مفتاح Gemini كيبدا بـ AIza' }, anthropic: { n: 'anthropic_api_key', re: /^sk-ant-[\w-]{20,}$/, bad: 'مفتاح Claude كيبدا بـ sk-ant-' } };
+  // كنقبلو المفتاح حتى إلا تنسخ معاه فراغات ولا كلام زايد، وكنجربوه مع Google قبل الحفظ
+  const AG_KEYS = {
+    gemini: { n: 'gemini_api_key', find: /AIza[\w-]{30,}/, bad: 'هادشي ماشي مفتاح Gemini — خاصو يبدا بـ AIza (حرف i كبير، ماشي l)', test: testGemini },
+    anthropic: { n: 'anthropic_api_key', find: /sk-ant-[\w-]{20,}/, bad: 'هادشي ماشي مفتاح Claude — خاصو يبدا بـ sk-ant-' } };
+  function pickKey(k, raw) {
+    const v = String(raw || '').replace(/[\s"'«»]+/g, '');
+    const m = v.match(k.find);
+    if (m) return m[0];
+    // صيغة جديدة ممكن تبدل: مقبولة إلا كانت طويلة وبلا رموز غريبة (والتجربة كتأكد)
+    return k.test && /^[\w.-]{30,200}$/.test(v) ? v : '';
+  }
+  async function testGemini(key) {
+    let r;
+    try { r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', { headers: { 'x-goog-api-key': key } }); }
+    catch (e) { return 'skip'; } // بلا إنترنت: كنسجلوه وصافي
+    if (r.ok) return 'ok';
+    const j = await r.json().catch(() => ({}));
+    const m = JSON.stringify(j);
+    if (/API_KEY_INVALID|API key not valid|invalid api key/i.test(m)) throw new Error('Google قال: المفتاح ماشي صحيح — عاود نسخو كامل من aistudio.google.com');
+    return 'skip'; // مثلا البلاد ولا الحصة: السيرفر ديالنا كيخدم من بلاصة أخرى، كنسجلوه
+  }
   function bindAgentCard() {
     const Sy = window.W777_SYNC;
     const save = async patch => {
@@ -2792,12 +2812,16 @@
       rpc('w777_has_secret', { n: k.n }).then(r => r.ok ? r.json() : null)
         .then(ok => { st.textContent = ok === true ? '— 🟢 محفوظ' : ok === false ? '— ⚪ ما كاينش' : ''; }).catch(() => { st.textContent = ''; });
       $(`[data-key-save="${id}"]`).onclick = async () => {
-        const inp = $('#ag-key-' + id), v = inp.value.trim();
-        if (!k.re.test(v)) return toast(k.bad, 3500);
+        const inp = $('#ag-key-' + id), v = pickKey(k, inp.value);
+        if (!v) return toast(k.bad, 4500);
+        const btn = $(`[data-key-save="${id}"]`);
         try {
+          btn.disabled = true; st.textContent = '— ⏳ كنجربو المفتاح…';
+          if (k.test) await k.test(v);
           await setKey(k.n, v); inp.value = ''; st.textContent = '— 🟢 محفوظ';
           if (!agAI() && await confirmBox('المفتاح تسجل ✓ نشعلو الوكيل الذكي دابا؟', 'شعل', false)) await save({ ai_enabled: true }); else toast('المفتاح تسجل ✓');
-        } catch (er) { toast('تعذر: ' + er.message, 4000); }
+        } catch (er) { st.textContent = '— ⚪ ما كاينش'; toast('تعذر: ' + er.message, 6000); }
+        finally { btn.disabled = false; }
       };
       $(`[data-key-del="${id}"]`).onclick = async () => {
         if (!(await confirmBox('نمسحو هاد المفتاح؟', 'مسح', true))) return;
