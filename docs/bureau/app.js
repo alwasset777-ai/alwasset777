@@ -28,7 +28,9 @@
       const tmp = document.createElement('div');
       tmp.innerHTML = items.slice(i, i + n).map(render).join('');
       i = Math.min(items.length, i + n);
+      const added = [...tmp.children], later = i > n;
       while (tmp.firstChild) box.insertBefore(tmp.firstChild, sentinel);
+      if (later) lvWatch(added);
       if (after) after();
       if (i >= items.length) { if (io) io.disconnect(); sentinel.remove(); }
     };
@@ -716,6 +718,7 @@
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
     if (a !== 'properties') $('#q').value = '';
+    lvPage();
   }
 
   /* ============================================================
@@ -764,7 +767,7 @@
 
     main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + `
       <div class="hero">
-        <h2>${greet} 👋</h2>
+        <h2>${greet} <span class="lv-wave">👋</span></h2>
         <p>${esc(S.role === 'agency' ? myAgencyName() : S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</p>
         <div class="btn-row">
           <a class="btn gold" href="#/property/new">${ic('plus', 18)} إضافة عقار</a>
@@ -6293,6 +6296,48 @@
   /* ============================================================
      تأثير 3D فكل ضغطة: العنصر كيتميّل نحو بلاصة الصبع وكيغطس شوية، ومن بعد كيرجع بنابض
      ============================================================ */
+  /* ---------- واجهة حية: العناصر كتطلع وحدة بوحدة ملي كتبان، والأرقام كتعدّ ---------- */
+  const LV_BOX = '.home-main, .stats, .grid-2, .prop-grid, .dir-grid, .doc-grid, .doc-list, .st-grid, .own-list, .mm-grid, .match-list, .feat-grid, .tr-grid, .nt-list, .law-grid, .iv-grid, .gd-grid, .ev-list, .appt-list, .ag-stats, .detail-grid';
+  const LV_OK = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && 'IntersectionObserver' in window;
+  let lvIO = null, lvN = 0, lvTick = 0;
+  function lvCount(el) {
+    const t = el.textContent.trim();
+    if (!/^\d{1,6}$/.test(t) || +t < 2) return;
+    const to = +t, t0 = performance.now(), dur = Math.min(1100, 500 + to * 12);
+    const step = now => { const k = Math.min(1, (now - t0) / dur); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1 && el.isConnected) requestAnimationFrame(step); else el.textContent = t; };
+    el.textContent = '0'; requestAnimationFrame(step);
+  }
+  function lvWatch(els) {
+    if (!LV_OK) return;
+    if (!lvIO) lvIO = new IntersectionObserver(es => {
+      const now = performance.now(); if (now - lvTick > 160) lvN = 0; lvTick = now;
+      es.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left).forEach(e => {
+        const el = e.target; lvIO.unobserve(el);
+        el.style.setProperty('--lv-i', Math.min(lvN++, 10));
+        el.classList.remove('lv-wait'); el.classList.add('lv-rv');
+        const done = ev => { if (ev.target !== el) return; el.removeEventListener('animationend', done); el.classList.remove('lv-rv'); el.style.removeProperty('--lv-i'); };
+        el.addEventListener('animationend', done);
+        $$('.stat .v, .ag-stats b', el).concat(el.matches('.stat') ? $$('.v', el) : []).forEach(lvCount);
+      });
+    }, { rootMargin: '0px 0px -6% 0px' });
+    els.forEach(el => { if (el.nodeType === 1 && !el.matches(LV_BOX + ', .home-wrap, .lazy-more, script, style')) { el.classList.add('lv-wait'); lvIO.observe(el); } });
+  }
+  function lvPage() {
+    if (!LV_OK) return;
+    const m = main(); if (!m) return;
+    if (lvIO) { lvIO.disconnect(); lvIO = null; }
+    const els = [...m.children];
+    $$(LV_BOX, m).forEach(b => els.push(...b.children));
+    lvWatch(els);
+    $$('.hub-tile', m).forEach((t, i) => { t.style.setProperty('--lv-i', i); t.classList.add('lv-pop'); });
+  }
+  function setupMotion() {
+    const top = $('.topbar');
+    if (top) { const on = () => top.classList.toggle('lv-scrolled', window.scrollY > 8); window.addEventListener('scroll', on, { passive: true }); on(); }
+    if (!LV_OK) return;
+    // الصور كتبان بنعومة ملي كتكمل التحميل
+    document.addEventListener('load', e => { const t = e.target; if (t.tagName === 'IMG' && t.closest('#main')) t.classList.add('lv-imgin'); }, true);
+  }
   const P3D_SEL = 'button, .btn, a.card, .card.stat, .list-row, .chip, .hub-tile, .sidenav a, .bottomnav a, .icon-btn, .lang-btn, .lang-opt,'
     + ' .prop-card, .dir-card, .gd-card, .st-card, .pr-item, .fl-item, .mm-tile, .ag-card, .doc-grid > *, .gallery > div, .net-gallery img, .match-thumb, .tr-more li, .sr-item, .search-results a';
   function setupPress3D() {
@@ -6331,7 +6376,7 @@
 
   async function start() {
     applyTheme();
-    setupPress3D();
+    setupPress3D(); setupMotion();
     setupLang();
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
     await lockScreen();
