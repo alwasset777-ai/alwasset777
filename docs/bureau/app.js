@@ -762,7 +762,7 @@
     const h = new Date().getHours();
     const greet = h < 12 ? 'صباح الخير' : h < 18 ? 'مساء النور' : 'مساء الخير';
 
-    main().innerHTML = gdBanner() + homeSearch() + `
+    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + `
       <div class="hero">
         <h2>${greet} 👋</h2>
         <p>${esc(S.role === 'agency' ? myAgencyName() : S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</p>
@@ -827,9 +827,10 @@
       </div>
       <h3 style="margin:22px 0 12px">آخر العقارات المضافة</h3>
       <div class="prop-grid">${S.props.slice(0, 6).map(propCard).join('')}</div>`}
-    `;
+    </div></div>`;
     hydrateThumbs(main());
     bindHomeSearch();
+    if (!EMBED && window.W777_SYNC && window.W777_SYNC.isOn()) homeNetwork();
     if (inNetwork() && !$('.grp-strip')) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (h && g && !$('.grp-strip', h)) h.insertAdjacentHTML('beforeend', g); }).catch(() => {});
     const seed = $('#seed');
     if (seed) seed.onclick = seedDemo;
@@ -3393,7 +3394,7 @@
     try {
       const [admin, rows] = await Promise.all([
         Sy.request('/rest/v1/rpc/w777_is_admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()),
-        Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,sub_until`).then(r => r.json())]);
+        Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,sub_until,photo,logo,id_doc,id_doc_at,id_ok`).then(r => r.json())]);
       const ag = admin === true ? null : (rows && rows[0]) || null;
       // «agency» = عضو فالشبكة (وكالة، وسيط، مقاولة ولا تشطيب) — النوع فـ S.kind
       S.role = admin === true ? 'admin' : ag ? 'agency' : 'solo';
@@ -4280,7 +4281,7 @@
   }
   async function loadDir(force) {
     if (!force && S.dir && Date.now() - S.dirAt < 300000) return S.dir;
-    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at${S.role === 'admin' ? ',sub_until' : ''}&order=code.asc`);
+    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,id_doc,id_doc_at' : ''}&order=code.asc`);
     S.dirAt = Date.now();
     return S.dir;
   }
@@ -4302,6 +4303,7 @@
       return false;
     }
     if (S.role === 'agency' && S.agency && !S.agency.terms_at) { termsGate(); return false; }
+    if (S.role === 'agency' && idRequired(S.agency)) { idGate(); return false; }
     return true;
   }
   function secHead(icon, title, sub, tabs, cur, base) {
@@ -4415,8 +4417,8 @@
       $('#dgrid').innerHTML = res.map(a => {
         const msg = `السلام عليكم ${a.name}، شفت الحساب ديالكم فدليل ${K.ar} ديال الوسيط 777.`;
         return `<div class="card dir-card">
-          <div class="dir-top"><div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>
-            <div class="grow"><b>${esc(a.name)}</b><small class="muted"><span dir="ltr">${esc(a.code)}</span>${a.city ? ' · 📍 ' + esc(a.city) : ''}${isAbroad(a) ? ' · 🌍 ' + esc(a.country) : ''}</small></div></div>
+          <div class="dir-top">${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy">` : `<div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>`}
+            <div class="grow"><b>${esc(a.name)}</b>${a.id_ok ? ' <span class="badge green" title="هوية مؤكدة من مكتب الوسيط 777">🪪✔</span>' : ''}<small class="muted"><span dir="ltr">${esc(a.code)}</span>${a.city ? ' · 📍 ' + esc(a.city) : ''}${isAbroad(a) ? ' · 🌍 ' + esc(a.country) : ''}</small></div></div>
           ${splitList(a.services).length ? `<div class="chips wrap">${splitList(a.services).map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
           ${kind === 'investor' && (a.budget || a.invest_modes) ? `<div class="iv-mini">${a.budget ? `💰 حتى ${nm(a.budget)} درهم` : ''}${a.invest_modes ? `<span>${esc(a.invest_modes)}</span>` : ''}</div>` : ''}
           ${kind === 'notary' && (a.district || kmOf(a) != null) ? `<div class="iv-mini">📍 ${esc([a.district, a.city].filter(Boolean).join('، '))}${kmOf(a) != null ? ` · <b>${kmTxt(kmOf(a))}</b>` : ''}</div>` : ''}
@@ -4465,9 +4467,11 @@
         <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
         <p class="muted" style="font-size:13px">✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.${kind === 'notary' ? '<br>✔️ الموقع (GPS) والحي كيخليوك تتقترح أوتوماتيكيا مع العقارات القريبة ليك.' : ''}${kind === 'investor' ? '<br>✔️ زيد عروض الاستثمار ديالك فـ «💼 فرص الاستثمار» باش يتواصلو معاك أصحاب المشاريع.' : ''}</p>
       </div>
+      ${memberMediaCard()}
       <div class="card card-pad" style="margin-top:14px"><div class="kv"><div><small>📜 القانون</small><b>${ag.terms_at ? '✅ موافق ' + dAr(ag.terms_at) : '⏳ مازال'}</b></div><div><small>💳 الاشتراك</small><b style="font-size:13.5px">${esc((subInfo(ag) || {}).txt || '')}</b></div></div>
         <div class="btn-row" style="margin-top:10px"><a class="btn sm" href="#/terms">⚖️ قانون التطبيق</a><a class="btn sm" href="#/terms/groups">👥 مجموعات المشتركين</a></div></div>`;
     bindMoney(main());
+    bindMemberMedia(main(), () => viewAgMe(kind, head));
     const gb = $('#me-gps');
     if (gb) gb.onclick = () => {
       if (!navigator.geolocation) return toast('تحديد الموقع غير مدعوم');
@@ -4540,14 +4544,22 @@
       $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
         <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${isAbroad(a) ? `<span class="badge blue">🌍 ${esc(a.country)}</span>` : ''} ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
           ${a.terms_at ? `<span class="badge ${subInfo(a).ok ? (subInfo(a).trial ? 'blue' : 'green') : 'red'}" title="${esc(subInfo(a).txt)}">${subInfo(a).ok ? (subInfo(a).trial ? '🎁 مجاني' : '💳 خالص') : '⏳ 199 مستحق'}</span>` : ''}
+          ${isNamed(a) || a.id_doc ? (a.id_doc ? `<span class="badge ${a.id_ok ? 'green' : 'amber'}">🪪 ${a.id_ok ? 'مؤكدة' : 'كتسنى التأكيد'}</span>` : `<span class="badge ${idRequired(a) ? 'red' : ''}">🪪 ما كايناش</span>`) : ''}
           <small class="muted">${esc(a.phone || 'بلا هاتف')}${a.city ? ' · ' + esc(a.city) : ''} · <span dir="ltr">${esc(loginOf(a))}</span> / <span dir="ltr" class="pw" data-pw="${a.uid}">••••••</span></small></div>
         <div class="btn-row">
+          ${a.id_doc ? `<button class="btn sm" data-idv="${a.uid}">🪪 عرض</button>${a.id_ok ? '' : `<button class="btn sm gold" data-idok="${a.uid}">✔ تأكيد</button>`}` : ''}
           <button class="btn sm" data-show="${a.uid}">${ic('eye', 15)}</button>
           <button class="btn sm" data-edit="${a.uid}">${ic('edit', 15)}</button>
           <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${a.phone ? waPhone(a.phone) : ''}?text=${encodeURIComponent(credMsg(a))}">${ic('wa', 15)} صيفط الدخول</a>
           <button class="btn sm" data-tog="${a.uid}">${a.active ? 'إيقاف' : 'تفعيل'}</button>
         </div></div>`).join('') + (res.length > shown ? `<div style="padding:12px;text-align:center"><button class="btn" id="agmore">عرض المزيد (${res.length - shown})</button></div>` : '') || '<div class="empty">ما كاين والو</div>';
       const more = $('#agmore'); if (more) more.onclick = () => { shown += 100; draw(); };
+      $$('[data-idv]').forEach(b => b.onclick = () => { const a = ags.find(x => x.uid === b.dataset.idv); if (a) openIdDoc(a.id_doc); });
+      $$('[data-idok]').forEach(b => b.onclick = async () => {
+        const a = ags.find(x => x.uid === b.dataset.idok); if (!a) return;
+        try { await rq(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, 'PATCH', { id_ok: true }); a.id_ok = true; S.dir = null; toast('تأكدات الهوية ✓'); draw(); }
+        catch (er) { toast('تعذر: ' + er.message, 4000); }
+      });
       $$('[data-show]').forEach(b => b.onclick = () => { const s = $(`[data-pw="${b.dataset.show}"]`); s.textContent = s.textContent.startsWith('•') ? pw[b.dataset.show] || '?' : '••••••'; });
       $$('[data-tog]').forEach(b => b.onclick = async () => {
         const a = ags.find(x => x.uid === b.dataset.tog);
@@ -4809,6 +4821,7 @@
     ['📣', 'الإبلاغ عن العمليات', 'كل عملية (بيع، كراء، شراكة، تمويل، توثيق…) تمّت بين طرفين عن طريق التطبيق، ولا بسبب معلومة منشورة فيه، خاص المشترك يبلّغ بيها مكتب الوسيط 777 فور إتمامها.'],
     ['🔑', 'غياب المشترك المكلّف بالعقار', 'فحالة عدم ظهور المشترك المكلّف بالعقار (ما كيجاوبش ولا غايب)، يجوز لمكتب الوسيط 777 الولوج لمعلومات صاحب العقار والتواصل معه لإتمام العملية، مع حفظ عمولة المشترك المكلّف كاملة.'],
     ['💳', 'الاشتراك', 'كيوفّر مكتب الوسيط 777 هاد الخدمة مقابل 199 درهم فالعام، كتخلص من بعد 3 أشهر مجانية كتبدا من نهار الموافقة على هاد القانون.'],
+    ['🪪', 'التعريف بالهوية', 'الإدلاء بصورة البطاقة الوطنية، أو جواز السفر بالنسبة للمشتركين من دول أخرى، وذلك لضمان المصداقية والشفافية والنزاهة. كتولي إجبارية من بعد انتهاء الأشهر الثلاثة المجانية، والصورة كيشوفها غير مكتب الوسيط 777 (ما كتبانش للمشتركين).'],
     ['⚠️', 'حدود المسؤولية', 'لا يتحمل مكتب الوسيط 777 أي مسؤولية فحالة تمّ التعاقد بدون علمه ولا بدون الرجوع إليه.'],
   ];
   const TERMS_MORE = [
@@ -4827,6 +4840,154 @@
     const end = new Date(a.terms_at); end.setMonth(end.getMonth() + 3);
     if (end >= now) return { ok: true, trial: true, txt: `🎁 الفترة المجانية حتى ${dAr(end.toISOString())} — من بعد 199 درهم فالعام` };
     return { ok: false, txt: `⏳ الاشتراك السنوي (199 درهم) مستحق — تواصل مع مكتب الوسيط 777` };
+  }
+  /* ---------- صورة المشترك، الشعار، والبطاقة الوطنية / جواز السفر ---------- */
+  const brandUrl = p => {
+    if (!p) return '';
+    const a = window.W777_SYNC && window.W777_SYNC.account();
+    return a && a.url ? `${a.url}/storage/v1/object/public/w777-brand/${String(p).split('/').map(encodeURIComponent).join('/')}` : '';
+  };
+  const freeEnd = a => { if (!a || !a.terms_at) return null; const d = new Date(a.terms_at); d.setMonth(d.getMonth() + 3); return d; };
+  // البطاقة كتولي إجبارية من بعد الفترة المجانية (3 أشهر من الموافقة على القانون)
+  const idRequired = a => !!a && !a.id_doc && !!freeEnd(a) && freeEnd(a) < new Date();
+  const idLabel = a => isAbroad(a) ? 'جواز السفر (ولا البطاقة الوطنية)' : 'البطاقة الوطنية';
+  async function brandBlob(file, max, keepAlpha) {
+    if (keepAlpha && /png|webp/i.test(file.type || '')) {
+      try {
+        const bmp = await decodeImage(file);
+        const bw = bmp.naturalWidth || bmp.width, bh = bmp.naturalHeight || bmp.height, k = Math.min(1, max / Math.max(bw, bh));
+        const c = document.createElement('canvas'); c.width = Math.round(bw * k); c.height = Math.round(bh * k);
+        c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+        if (bmp.close) bmp.close();
+        const b = await new Promise(r => c.toBlob(r, 'image/png'));
+        if (b) return b;
+      } catch (e) { /* كنكملو بـ JPEG */ }
+    }
+    return (await compressImage(file, max, 0.85)).blob;
+  }
+  // رفع ملف للدوسي ديال المشترك ← المسار (uid/…)
+  async function uploadMine(bucket, name, blob) {
+    const Sy = window.W777_SYNC, uid = Sy.uid();
+    const ext = blob.type === 'application/pdf' ? 'pdf' : blob.type === 'image/png' ? 'png' : 'jpg';
+    const path = `${uid}/${name}-${Date.now().toString(36)}.${ext}`;
+    await Sy.request(`/storage/v1/object/${bucket}/${path}`, { method: 'POST', headers: { 'Content-Type': blob.type || 'image/jpeg', 'x-upsert': 'true' }, body: blob });
+    return path;
+  }
+  function dropFile(bucket, path) {
+    if (!path) return;
+    window.W777_SYNC.request(`/storage/v1/object/${bucket}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: [path] }) }).catch(() => {});
+  }
+  async function openIdDoc(path) {
+    try {
+      const r = await (await window.W777_SYNC.request(`/storage/v1/object/sign/w777-ids/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 600 }) })).json();
+      if (!r.signedURL) throw new Error('—');
+      window.open(window.W777_SYNC.account().url + '/storage/v1' + r.signedURL, '_blank', 'noopener');
+    } catch (e) { toast('تعذر فتح الملف: ' + e.message, 4000); }
+  }
+  // حفظ ملف فالحساب: الصورة / الشعار / البطاقة
+  async function saveMemberFile(field, file) {
+    const ag = S.agency || {};
+    const isId = field === 'id_doc';
+    if (isId && file.type !== 'application/pdf' && !/^image\//.test(file.type || 'image/')) throw new Error('غير صورة ولا PDF');
+    const blob = isId ? (file.type === 'application/pdf' ? file : (await compressImage(file, 1800, 0.85)).blob)
+      : await brandBlob(file, field === 'logo' ? 600 : 900, field === 'logo');
+    if (blob.size > (isId ? 8 : 3) * 1048576) throw new Error('الملف كبير بزاف');
+    const bucket = isId ? 'w777-ids' : 'w777-brand';
+    const path = await uploadMine(bucket, field === 'id_doc' ? 'id' : field, blob);
+    await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', { [field]: path });
+    if (ag[field] && ag[field] !== path) dropFile(bucket, ag[field]);
+    await refreshRole(true);
+    S.dir = null;
+  }
+  function memberMediaCard() {
+    const ag = S.agency || {};
+    const end = freeEnd(ag), req = idRequired(ag);
+    const idSt = ag.id_doc ? (ag.id_ok ? '<span class="badge green">✅ مؤكدة من المكتب</span>' : '<span class="badge amber">🕓 كتسنى التأكيد</span>') : '<span class="badge red">❌ ما كايناش</span>';
+    const tile = (field, title, hint, img, ph) => `<div class="mm-tile">
+        <div class="mm-img">${img ? `<img src="${esc(img)}" alt="">` : `<span>${ph}</span>`}</div>
+        <b>${title}</b><small class="muted">${hint}</small>
+        <div class="btn-row"><label class="btn sm gold">${ic('camera', 15)} ${img ? 'بدّل' : 'تحميل'}<input type="file" accept="image/*" data-mm="${field}" hidden></label>
+          ${img ? `<button class="btn sm" data-mm-del="${field}">مسح</button>` : ''}</div></div>`;
+    return `<div class="card card-pad" style="margin-top:14px" id="mm-card">
+      <h3 class="section-title">🖼️ الصورة، الشعار والهوية</h3>
+      <div class="mm-grid">
+        ${tile('photo', 'صورتك ولا صورة المكتب', 'كتبان فالدليل لجميع المشتركين', brandUrl(ag.photo), '🧑‍💼')}
+        ${tile('logo', 'الشعار (Logo)', 'كيبان فشريط الشركاء فالصفحة الرئيسية', brandUrl(ag.logo), '🏷️')}
+        <div class="mm-tile${req ? ' mm-req' : ''}">
+          <div class="mm-img"><span>🪪</span></div>
+          <b>${esc(idLabel(ag))}</b>${idSt}
+          <small class="muted">${req ? '⚠️ إجبارية دابا: انتهات الفترة المجانية' : end ? `إجبارية من بعد ${dAr(end.toISOString())} (نهاية الفترة المجانية)` : 'إجبارية من بعد الأشهر الثلاثة المجانية'}</small>
+          <div class="btn-row"><label class="btn sm gold">${ic('upload', 15)} ${ag.id_doc ? 'بدّل' : 'تحميل'}<input type="file" accept="image/*,application/pdf" data-mm="id_doc" hidden></label>
+            ${ag.id_doc ? `<button class="btn sm" data-mm-view>${ic('eye', 15)} عرض</button>` : ''}</div></div>
+      </div>
+      <p class="muted" style="font-size:12.5px;margin:10px 0 0">🔒 ${esc(idLabel(ag))} كتشوفها غير إدارة مكتب الوسيط 777، ما كتبانش للمشتركين — لضمان المصداقية والشفافية والنزاهة.</p></div>`;
+  }
+  function bindMemberMedia(root, after) {
+    $$('[data-mm]', root).forEach(inp => inp.onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      const lbl = inp.closest('label'); if (lbl) lbl.classList.add('loading');
+      try { toast('جاري التحميل…'); await saveMemberFile(inp.dataset.mm, f); toast('تم ✓'); after(); }
+      catch (er) { toast('تعذر: ' + er.message, 4500); if (lbl) lbl.classList.remove('loading'); }
+    });
+    $$('[data-mm-del]', root).forEach(b => b.onclick = async () => {
+      const field = b.dataset.mmDel, old = (S.agency || {})[field];
+      if (!(await confirmBox('نمسحو هاد الصورة؟', 'مسح', true))) return;
+      try { await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', { [field]: null }); dropFile('w777-brand', old); await refreshRole(true); S.dir = null; toast('تمسحات ✓'); after(); }
+      catch (er) { toast('تعذر: ' + er.message, 4000); }
+    });
+    const v = $('[data-mm-view]', root); if (v) v.onclick = () => openIdDoc((S.agency || {}).id_doc);
+  }
+  // من بعد الفترة المجانية: الدخول للشبكة كيتطلب صورة البطاقة / جواز السفر
+  function idGate() {
+    const ag = S.agency || {};
+    main().innerHTML = `<div class="card card-pad tr-gate">
+      <div class="tr-hero" style="box-shadow:none;border:0;padding:0;margin-bottom:12px"><img src="${LOGO}" alt="" class="tr-logo"><div><b>🪪 ${esc(idLabel(ag))} — خطوة وحدة باقية</b><small>انتهات الفترة المجانية (3 أشهر)</small></div></div>
+      <p>حسب قانون التطبيق، خاص كل مشترك يدلي بصورة ${esc(idLabel(ag))} باش يكمّل يستافد من شبكة الوسيط 777، وذلك لضمان <b>المصداقية والشفافية والنزاهة</b>.</p>
+      <p class="muted" style="font-size:13px">🔒 الصورة كيشوفها غير مكتب الوسيط 777. صورة واضحة للوجهين (ولا PDF).</p>
+      <div class="btn-row"><label class="btn gold">${ic('upload', 18)} تحميل ${esc(idLabel(ag))}<input type="file" accept="image/*,application/pdf" id="idg-f" hidden></label><a class="btn" href="#/terms">⚖️ قانون التطبيق</a></div></div>`;
+    $('#idg-f').onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      try { toast('جاري التحميل…'); await saveMemberFile('id_doc', f); toast('شكرا ✓ البطاقة توصلات'); route(); }
+      catch (er) { toast('تعذر: ' + er.message, 4500); }
+    };
+  }
+  /* ---------- الصفحة الرئيسية: أعلام دول المشتركين + شريط شعارات الشركاء ---------- */
+  const COUNTRY_ISO = { 'المغرب': 'MA', 'فرنسا': 'FR', 'بلجيكا': 'BE', 'إسبانيا': 'ES', 'اسبانيا': 'ES', 'إيطاليا': 'IT', 'ايطاليا': 'IT', 'هولندا': 'NL', 'ألمانيا': 'DE', 'المانيا': 'DE',
+    'سويسرا': 'CH', 'كندا': 'CA', 'الولايات المتحدة': 'US', 'أمريكا': 'US', 'امريكا': 'US', 'بريطانيا': 'GB', 'المملكة المتحدة': 'GB', 'انجلترا': 'GB', 'إنجلترا': 'GB',
+    'الإمارات': 'AE', 'الامارات': 'AE', 'السعودية': 'SA', 'قطر': 'QA', 'الكويت': 'KW', 'البحرين': 'BH', 'عمان': 'OM', 'سلطنة عمان': 'OM', 'مصر': 'EG', 'تونس': 'TN', 'الجزائر': 'DZ',
+    'موريتانيا': 'MR', 'ليبيا': 'LY', 'تركيا': 'TR', 'السويد': 'SE', 'النرويج': 'NO', 'الدنمارك': 'DK', 'البرتغال': 'PT', 'لوكسمبورغ': 'LU', 'النمسا': 'AT', 'إيرلندا': 'IE', 'ايرلندا': 'IE',
+    'روسيا': 'RU', 'الصين': 'CN', 'اليابان': 'JP', 'كوريا': 'KR', 'الهند': 'IN', 'باكستان': 'PK', 'السنغال': 'SN', 'كوت ديفوار': 'CI', 'مالي': 'ML', 'الأردن': 'JO', 'لبنان': 'LB', 'أستراليا': 'AU',
+    'france': 'FR', 'belgique': 'BE', 'espagne': 'ES', 'italie': 'IT', 'pays-bas': 'NL', 'allemagne': 'DE', 'suisse': 'CH', 'canada': 'CA', 'usa': 'US', 'maroc': 'MA', 'uk': 'GB' };
+  const flagOf = name => {
+    const iso = COUNTRY_ISO[String(name || '').trim()] || COUNTRY_ISO[String(name || '').trim().toLowerCase()];
+    return iso ? String.fromCodePoint(...[...iso].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '🏳️';
+  };
+  async function homeNetwork() {
+    let dir;
+    try { await refreshRole(); if (!inNetwork()) return; dir = await loadDir(); } catch (e) { return; }
+    if ((location.hash || '#/') !== '#/' && location.hash !== '#') return;
+    const live = dir.filter(a => a.active);
+    // الأعلام: كل دولة فيها مشترك
+    const cnt = {};
+    live.forEach(a => { const c = (a.country || 'المغرب').trim(); if (c && c !== 'خارج المغرب') cnt[c] = (cnt[c] || 0) + 1; });
+    const fl = $('#home-flags');
+    const items = Object.entries(cnt).sort((x, y) => y[1] - x[1]);
+    if (fl && items.length) {
+      const one = items.map(([c, n]) => `<span class="fl-item" title="${esc(c)} — ${n}"><span class="fl-emoji">${flagOf(c)}</span>${esc(c)}<small>${n}</small></span>`).join('');
+      fl.innerHTML = `<b class="fl-title">🌍 دول المشتركين</b><div class="fl-view"><div class="fl-track${items.length > 3 ? ' moving' : ''}">${one}${items.length > 3 ? one : ''}</div></div>`;
+      fl.classList.remove('hidden');
+    }
+    // شريط الشركاء: الشعارات (ولا الصور) ديال المشتركين
+    const rail = $('#home-rail');
+    if (!rail) return;
+    const withLogo = live.filter(a => a.logo || a.photo).sort((x, y) => (y.logo ? 1 : 0) - (x.logo ? 1 : 0));
+    const tiles = [`<a class="pr-item pr-office" href="#/terms" title="مجموعة الوسيط 777"><img src="${LOGO}" alt=""></a>`,
+      ...withLogo.map(a => `<a class="pr-item" href="#/${(KINDS[kindOf(a)] || KINDS.agency).route}/dir" title="${esc(a.name)}"><img src="${esc(brandUrl(a.logo || a.photo))}" alt="" loading="lazy"></a>`)];
+    const myKind = S.kind && KINDS[S.kind];
+    const plus = myKind && !(S.agency || {}).logo ? `<a class="pr-item pr-add" href="#/${myKind.route}/me" title="زيد الشعار ديالك">＋<small>شعارك</small></a>` : '';
+    const moving = tiles.length > 6;
+    rail.innerHTML = `<div class="pr-title">الشركاء</div><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? tiles.join('') : ''}</div></div>${plus}`;
+    rail.classList.remove('hidden');
   }
   const groupLinks = () => { const c = AG.cfg || {}; return { wa: c.wa_group || '', tg: c.tg_group || '' }; };
   function groupsCard(full) {
