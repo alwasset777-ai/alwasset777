@@ -927,3 +927,16 @@ label.loading { opacity: .55; pointer-events: none; }
 .pr-add small { font-size: 8.5px; font-weight: 700; }
 @media (min-width: 900px) { .p-rail { flex-basis: 84px; width: 84px; } .pr-item { width: 62px; height: 62px; } }
 @media (max-width: 480px) { .p-rail { flex-basis: 50px; width: 50px; top: 84px; } .pr-item { width: 38px; height: 38px; } .home-wrap { gap: 8px; } .pr-title { font-size: 9.5px; } }
+
+/* ---------- تأثير 3D فكل ضغطة ---------- */
+.p3d {
+  transform: var(--p3b, translateZ(0)) perspective(650px) rotateX(var(--p3x, 0deg)) rotateY(var(--p3y, 0deg)) translateZ(-12px) scale(.97) !important;
+  transition: transform .09s ease-out, box-shadow .09s ease-out, filter .09s !important;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, .16), 0 1px 2px rgba(0, 0, 0, .12) !important;
+  filter: brightness(.97);
+  will-change: transform;
+}
+.p3d-up { transition: transform .42s cubic-bezier(.25, 1.7, .45, 1), box-shadow .42s ease, filter .3s !important; }
+.hub-tile.p3d { box-shadow: none !important; }
+.hub-tile.p3d .hi { transform: perspective(520px) rotateX(0deg) scale(.95); }
+@media (prefers-reduced-motion: reduce) { .p3d, .p3d-up { transform: none !important; transition: none !important; } }
