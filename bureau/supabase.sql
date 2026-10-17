@@ -637,3 +637,55 @@ do $$ declare t text; begin
   end loop; end $$;
 revoke execute on function public.w777_admin_record(uuid, text), public.w777_has_secret(text), public.w777_owner_bookings() from anon, public;
 grant execute on function public.w777_admin_record(uuid, text), public.w777_has_secret(text), public.w777_owner_bookings() to authenticated;
+
+-- ============================================================
+-- صورة المشترك/المكتب + الشعار + البطاقة الوطنية (أو جواز السفر)
+-- ============================================================
+alter table public.w777_agencies add column if not exists photo text;      -- مسار فـ w777-brand (عمومي)
+alter table public.w777_agencies add column if not exists logo text;       -- مسار فـ w777-brand (عمومي)
+alter table public.w777_agencies add column if not exists id_doc text;     -- مسار فـ w777-ids (خاص: المشترك والمدير فقط)
+alter table public.w777_agencies add column if not exists id_doc_at timestamptz;
+alter table public.w777_agencies add column if not exists id_ok boolean not null default false; -- المدير كيأكد الهوية
+create or replace function public.w777_ag_guard() returns trigger language plpgsql security definer set search_path=public as
+$$ begin if not w777_is_admin() then
+  new.active := old.active; new.code := old.code; new.email := old.email; new.uid := old.uid; new.kind := old.kind; new.sub_until := old.sub_until;
+  new.terms_at := case when old.terms_at is null and new.terms_at is not null then now() else old.terms_at end;
+  -- الملفات غير من الدوسي ديال المشترك نفسه
+  if new.photo is not null and split_part(new.photo, '/', 1) <> old.uid::text then new.photo := old.photo; end if;
+  if new.logo is not null and split_part(new.logo, '/', 1) <> old.uid::text then new.logo := old.logo; end if;
+  if new.id_doc is not null and split_part(new.id_doc, '/', 1) <> old.uid::text then new.id_doc := old.id_doc; end if;
+  -- بطاقة جديدة = خاصها تأكيد جديد من المدير
+  if new.id_doc is distinct from old.id_doc then new.id_ok := false; new.id_doc_at := case when new.id_doc is null then null else now() end;
+  else new.id_ok := old.id_ok; new.id_doc_at := old.id_doc_at; end if;
+end if; return new; end $$;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('w777-brand', 'w777-brand', true, 3145728, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('w777-ids', 'w777-ids', false, 8388608, array['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+drop policy if exists w777_brand_ins on storage.objects;
+create policy w777_brand_ins on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-brand' and (storage.foldername(name))[1] = auth.uid()::text and public.w777_can_use());
+drop policy if exists w777_brand_sel on storage.objects;
+create policy w777_brand_sel on storage.objects for select to authenticated
+  using (bucket_id = 'w777-brand' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+drop policy if exists w777_brand_upd on storage.objects;
+create policy w777_brand_upd on storage.objects for update to authenticated
+  using (bucket_id = 'w777-brand' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists w777_brand_del on storage.objects;
+create policy w777_brand_del on storage.objects for delete to authenticated
+  using (bucket_id = 'w777-brand' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+drop policy if exists w777_ids_ins on storage.objects;
+create policy w777_ids_ins on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-ids' and (storage.foldername(name))[1] = auth.uid()::text and public.w777_can_use());
+drop policy if exists w777_ids_sel on storage.objects;
+create policy w777_ids_sel on storage.objects for select to authenticated
+  using (bucket_id = 'w777-ids' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+drop policy if exists w777_ids_upd on storage.objects;
+create policy w777_ids_upd on storage.objects for update to authenticated
+  using (bucket_id = 'w777-ids' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists w777_ids_del on storage.objects;
+create policy w777_ids_del on storage.objects for delete to authenticated
+  using (bucket_id = 'w777-ids' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
