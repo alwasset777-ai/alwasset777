@@ -884,3 +884,46 @@ html[dir="ltr"] .back-btn svg { transform: scaleX(-1); }
   position: absolute; inset: auto 12px 50% 12px; transform: translateY(50%); text-align: center;
   font-size: 13px; font-weight: 700; color: var(--muted); line-height: 1.6; padding: 0 8px;
 }
+
+/* ---------- صورة/شعار/هوية المشترك ---------- */
+.mm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.mm-tile { border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; background: var(--surface-2); }
+.mm-tile.mm-req { border-color: var(--red); box-shadow: 0 0 0 2px rgba(214, 69, 69, .15); }
+.mm-img { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface); border: 3px solid var(--gold); font-size: 38px; }
+.mm-img img { width: 100%; height: 100%; object-fit: cover; }
+.mm-tile small { font-size: 12px; line-height: 1.5; }
+label.loading { opacity: .55; pointer-events: none; }
+.dir-av.dir-img { object-fit: cover; padding: 0; border: 2px solid var(--gold); background: #fff; }
+
+/* ---------- الرئيسية: أعلام دول المشتركين (أفقي) ---------- */
+.flag-band { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 8px 12px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 10px rgba(0, 0, 0, .05); overflow: hidden; }
+.fl-title { white-space: nowrap; font-size: 13px; }
+.fl-view { overflow: hidden; flex: 1; min-width: 0; mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.fl-track { display: flex; gap: 8px; width: max-content; }
+.fl-track.moving { animation: flmove 28s linear infinite; }
+.flag-band:hover .fl-track.moving { animation-play-state: paused; }
+@keyframes flmove { to { transform: translateX(50%); } }
+.fl-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.fl-emoji { font-size: 20px; line-height: 1; }
+.fl-item small { color: var(--muted); font-weight: 600; }
+
+/* ---------- الرئيسية: شريط عمودي لشعارات الشركاء (على اليمين) ---------- */
+.home-wrap { display: flex; gap: 12px; align-items: flex-start; }
+.home-main { flex: 1; min-width: 0; }
+.p-rail { position: sticky; top: 92px; flex: 0 0 60px; width: 60px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 10px 0; border-radius: 30px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0, 0, 0, .06); }
+.pr-title { font-size: 10.5px; font-weight: 800; color: var(--muted); writing-mode: horizontal-tb; }
+.pr-view { overflow: hidden; max-height: min(62vh, 520px); mask-image: linear-gradient(180deg, transparent, #000 6%, #000 94%, transparent); }
+.pr-track { display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 4px 0; }
+.pr-track.moving { animation: prmove calc(var(--n) * 2.6s) linear infinite; }
+.p-rail:hover .pr-track.moving { animation-play-state: paused; }
+@keyframes prmove { to { transform: translateY(-50%); } }
+.pr-item { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #fff; border: 2px solid var(--line); flex-shrink: 0; text-decoration: none; }
+.pr-item img { width: 100%; height: 100%; object-fit: contain; }
+.pr-office { border-color: var(--gold); background: #0b0b0b; }
+.pr-office img { object-fit: cover; }
+.pr-add { border-style: dashed; border-color: var(--gold); color: var(--gold); font-size: 20px; font-weight: 800; line-height: 1; display: flex; flex-direction: column; justify-content: center; }
+.pr-add small { font-size: 8.5px; font-weight: 700; }
+@media (min-width: 900px) { .p-rail { flex-basis: 84px; width: 84px; } .pr-item { width: 62px; height: 62px; } }
+@media (max-width: 480px) { .p-rail { flex-basis: 50px; width: 50px; top: 84px; } .pr-item { width: 38px; height: 38px; } .home-wrap { gap: 8px; } .pr-title { font-size: 9.5px; } }
