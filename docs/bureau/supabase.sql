@@ -689,3 +689,13 @@ create policy w777_ids_upd on storage.objects for update to authenticated
 drop policy if exists w777_ids_del on storage.objects;
 create policy w777_ids_del on storage.objects for delete to authenticated
   using (bucket_id = 'w777-ids' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+
+-- ============================================================
+-- المدير يقدر يحمّل الصورة / الشعار فـ دوسي أي مشترك (نافذة تعديل المشترك)
+-- ============================================================
+drop policy if exists w777_brand_ins on storage.objects;
+create policy w777_brand_ins on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-brand' and (((storage.foldername(name))[1] = auth.uid()::text and public.w777_can_use()) or public.w777_is_admin()));
+drop policy if exists w777_brand_upd on storage.objects;
+create policy w777_brand_upd on storage.objects for update to authenticated
+  using (bucket_id = 'w777-brand' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
