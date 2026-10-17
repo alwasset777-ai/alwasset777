@@ -2966,8 +2966,17 @@
     { f: '25-acte-donation', ar: 'عقد هبة عقار — نموذج المحرر الرسمي', fr: 'Acte de donation', law: '39.08', ic: '🎁', g: 'deed', docx: 1 },
     { f: '26-acte-echange', ar: 'عقد مبادلة عقارين — نموذج المحرر الرسمي', fr: "Acte d'échange", law: 'ق.ل.ع + 39.08', ic: '🔁', g: 'deed', docx: 1 },
     { f: '27-acte-hypotheque', ar: 'عقد رهن رسمي على عقار محفظ', fr: "Acte d'hypothèque", law: '39.08', ic: '🏦', g: 'deed', docx: 1 },
+    { f: '28-bail-habitation-pro', ar: 'عقد كراء محل للسكنى أو للاستعمال المهني (نموذج قابل للتعبئة)', fr: 'Bail habitation / usage professionnel', law: 'القانون 67.12', ic: '🏠', g: 'rent' },
+    { f: '29-bail-commercial-artisanal', ar: 'عقد كراء محل تجاري أو صناعي أو حرفي (نموذج قابل للتعبئة)', fr: 'Bail commercial, industriel ou artisanal', law: 'القانون 49.16', ic: '🏪', g: 'rent' },
+    { f: '30-contrat-partenariat', ar: 'عقد شراكة لإنجاز مشروع مشترك واستغلاله', fr: 'Contrat de partenariat', law: 'ق.ل.ع', ic: '🤝', g: 'other' },
+    { f: '31-demande-compteur-electricite', ar: 'طلب تركيب عداد الكهرباء لعقار', fr: 'Demande de compteur électrique', law: '', ic: '⚡', g: 'admin' },
+    { f: '32-engagement-hebergement', ar: 'التزام بالإيواء والسكن دون مقابل', fr: "Engagement d'hébergement gratuit", law: '', ic: '🏡', g: 'admin' },
+    { f: '33-engagement', ar: 'التزام (نموذج عام مصادق عليه)', fr: 'Engagement sur l’honneur', law: '', ic: '✍️', g: 'admin' },
+    { f: '34-demande-administrative', ar: 'طلب / رسالة إلى إدارة (نموذج عام)', fr: 'Lettre de demande', law: '', ic: '✉️', g: 'admin' },
+    { f: '35-declaration-sans-emploi', ar: 'تصريح بالشرف بعدم مزاولة أي عمل', fr: 'Déclaration sur l’honneur de non-emploi', law: '', ic: '📄', g: 'admin' },
+    { f: '36-conge-paternite', ar: 'طلب الاستفادة من رخصة الأبوة', fr: 'Demande de congé de paternité', law: '', ic: '👶', g: 'admin' },
   ];
-  const CT_GROUPS = [['deed', '⚖️ نماذج المحررات الرسمية — قابلة للتعديل (Word)'], ['base', '📘 الدليل الأساسي (01–08)'], ['rent', '🏠 الكراء'], ['sale', '🔑 البيع والشراء'], ['agency', '🤝 الوكالة والوساطة'], ['other', '🧱 أخرى']];
+  const CT_GROUPS = [['deed', '⚖️ نماذج المحررات الرسمية — قابلة للتعديل (Word)'], ['base', '📘 الدليل الأساسي (01–08)'], ['rent', '🏠 الكراء'], ['sale', '🔑 البيع والشراء'], ['agency', '🤝 الوكالة والوساطة'], ['admin', '🗂️ طلبات والتزامات إدارية'], ['other', '🧱 أخرى']];
   const MODULES = [
     { m: 'M1', ar: 'القانون العقاري وعقود البيع', d: '3 أيام · 21 ساعة', parts: ['الإطار القانوني للعقارات فالمغرب', 'عقد البيع: المراحل والالتزامات', 'حقوق الرهن والضمانات', 'الملكية المشتركة', 'قانون الكراء السكني والتجاري', 'المسؤولية والأخطاء المهنية'] },
     { m: 'M2', ar: 'التعمير والتشخيص التقني للعقارات', d: 'يومان · 14 ساعة', parts: ['أنظمة التعمير والتخطيط العمراني', 'رخص البناء والتجزئة وتغيير الاستعمال', 'الشهادات والمستندات الإدارية للعقار', 'التشخيص التقني الإلزامي', 'قراءة مخططات البناء والتدقيق التقني'] },
