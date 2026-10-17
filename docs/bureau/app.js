@@ -4542,6 +4542,7 @@
       const res = ags.filter(a => (!q || norm([a.code, a.name, a.phone, a.city, a.country].join(' ')).includes(q)) &&
         (f !== 'named' || isNamed(a)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active) && (f !== 'ma' || !isAbroad(a)) && (f !== 'out' || isAbroad(a)));
       $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
+        ${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy" style="width:40px;height:40px">` : ''}
         <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${isAbroad(a) ? `<span class="badge blue">🌍 ${esc(a.country)}</span>` : ''} ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
           ${a.terms_at ? `<span class="badge ${subInfo(a).ok ? (subInfo(a).trial ? 'blue' : 'green') : 'red'}" title="${esc(subInfo(a).txt)}">${subInfo(a).ok ? (subInfo(a).trial ? '🎁 مجاني' : '💳 خالص') : '⏳ 199 مستحق'}</span>` : ''}
           ${isNamed(a) || a.id_doc ? (a.id_doc ? `<span class="badge ${a.id_ok ? 'green' : 'amber'}">🪪 ${a.id_ok ? 'مؤكدة' : 'كتسنى التأكيد'}</span>` : `<span class="badge ${idRequired(a) ? 'red' : ''}">🪪 ما كايناش</span>`) : ''}
@@ -4573,7 +4574,9 @@
           ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}
           ${fInput('sub_until', 'الاشتراك (199 درهم) خالص حتى', a.sub_until, { type: 'date', hint: a.terms_at ? 'وافق على القانون: ' + dAr(a.terms_at) : 'مازال ما وافقش على القانون' })}
           <div class="field" style="justify-content:flex-end"><button type="button" class="btn sm" id="age-year">💳 +1 عام</button></div></form>
+          <h4 style="margin:16px 0 8px">🖼️ الصورة والشعار</h4><div class="mm-grid" id="age-mm">${admMediaHtml(a)}</div>
           <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="age-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
+          bindAdmMedia(box, a, draw);
           $('#age-year', box).onclick = () => {
             const i = $('[name=sub_until]', box), cur = i.value && new Date(i.value) > new Date() ? new Date(i.value) : new Date();
             cur.setFullYear(cur.getFullYear() + 1); i.value = cur.toISOString().slice(0, 10);
@@ -4866,8 +4869,8 @@
     return (await compressImage(file, max, 0.85)).blob;
   }
   // رفع ملف للدوسي ديال المشترك ← المسار (uid/…)
-  async function uploadMine(bucket, name, blob) {
-    const Sy = window.W777_SYNC, uid = Sy.uid();
+  async function uploadMine(bucket, name, blob, owner) {
+    const Sy = window.W777_SYNC, uid = owner || Sy.uid();
     const ext = blob.type === 'application/pdf' ? 'pdf' : blob.type === 'image/png' ? 'png' : 'jpg';
     const path = `${uid}/${name}-${Date.now().toString(36)}.${ext}`;
     await Sy.request(`/storage/v1/object/${bucket}/${path}`, { method: 'POST', headers: { 'Content-Type': blob.type || 'image/jpeg', 'x-upsert': 'true' }, body: blob });
@@ -4885,19 +4888,40 @@
     } catch (e) { toast('تعذر فتح الملف: ' + e.message, 4000); }
   }
   // حفظ ملف فالحساب: الصورة / الشعار / البطاقة
-  async function saveMemberFile(field, file) {
-    const ag = S.agency || {};
+  // target: مشترك آخر (المدير كيحمّل الصورة ولا الشعار ديالو)
+  async function saveMemberFile(field, file, target) {
+    const ag = target || S.agency || {}, uid = target ? target.uid : window.W777_SYNC.uid();
     const isId = field === 'id_doc';
     if (isId && file.type !== 'application/pdf' && !/^image\//.test(file.type || 'image/')) throw new Error('غير صورة ولا PDF');
     const blob = isId ? (file.type === 'application/pdf' ? file : (await compressImage(file, 1800, 0.85)).blob)
       : await brandBlob(file, field === 'logo' ? 600 : 900, field === 'logo');
     if (blob.size > (isId ? 8 : 3) * 1048576) throw new Error('الملف كبير بزاف');
     const bucket = isId ? 'w777-ids' : 'w777-brand';
-    const path = await uploadMine(bucket, field === 'id_doc' ? 'id' : field, blob);
-    await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', { [field]: path });
+    const path = await uploadMine(bucket, field === 'id_doc' ? 'id' : field, blob, uid);
+    await rq(`/rest/v1/w777_agencies?uid=eq.${uid}`, 'PATCH', { [field]: path });
     if (ag[field] && ag[field] !== path) dropFile(bucket, ag[field]);
-    await refreshRole(true);
+    if (target) target[field] = path; else await refreshRole(true);
     S.dir = null;
+  }
+  // خانات الصورة + الشعار فـ نافذة تعديل المشترك (المدير)
+  const admMediaHtml = a => ['photo', 'logo'].map(f => { const u = brandUrl(a[f]); return `<div class="mm-tile">
+      <div class="mm-img">${u ? `<img src="${esc(u)}" alt="">` : `<span>${f === 'logo' ? '🏷️' : '🧑‍💼'}</span>`}</div>
+      <b>${f === 'logo' ? 'الشعار (Logo)' : 'الصورة / صورة المكتب'}</b>
+      <div class="btn-row"><label class="btn sm gold">${ic('camera', 15)} ${u ? 'بدّل' : 'تحميل'}<input type="file" accept="image/*" data-am="${f}" hidden></label>
+        ${u ? `<button type="button" class="btn sm" data-am-del="${f}">مسح</button>` : ''}</div></div>`; }).join('');
+  function bindAdmMedia(box, a, after) {
+    const redraw = () => { $('#age-mm', box).innerHTML = admMediaHtml(a); bindAdmMedia(box, a, after); after(); };
+    $$('[data-am]', box).forEach(inp => inp.onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      const lbl = inp.closest('label'); if (lbl) lbl.classList.add('loading');
+      try { toast('جاري التحميل…'); await saveMemberFile(inp.dataset.am, f, a); toast('تم ✓'); redraw(); }
+      catch (er) { toast('تعذر: ' + er.message, 4500); if (lbl) lbl.classList.remove('loading'); }
+    });
+    $$('[data-am-del]', box).forEach(b => b.onclick = async () => {
+      const field = b.dataset.amDel, old = a[field];
+      try { await rq(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, 'PATCH', { [field]: null }); dropFile('w777-brand', old); a[field] = null; S.dir = null; toast('تمسحات ✓'); redraw(); }
+      catch (er) { toast('تعذر: ' + er.message, 4000); }
+    });
   }
   function memberMediaCard() {
     const ag = S.agency || {};
