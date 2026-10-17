@@ -6266,8 +6266,48 @@
     if (code !== 'ar') loadGT().catch(() => { /* بدون إنترنت: تبقى الواجهة بالعربية */ });
   }
 
+  /* ============================================================
+     تأثير 3D فكل ضغطة: العنصر كيتميّل نحو بلاصة الصبع وكيغطس شوية، ومن بعد كيرجع بنابض
+     ============================================================ */
+  const P3D_SEL = 'button, .btn, a.card, .card.stat, .list-row, .chip, .hub-tile, .sidenav a, .bottomnav a, .icon-btn, .lang-btn, .lang-opt,'
+    + ' .prop-card, .dir-card, .gd-card, .st-card, .pr-item, .fl-item, .mm-tile, .ag-card, .doc-grid > *, .gallery > div, .net-gallery img, .match-thumb, .tr-more li, .sr-item, .search-results a';
+  function setupPress3D() {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let cur = null;
+    const release = () => {
+      const el = cur; cur = null;
+      if (!el) return;
+      el.classList.remove('p3d'); el.classList.add('p3d-up');
+      setTimeout(() => { el.classList.remove('p3d-up'); el.style.removeProperty('--p3b'); }, 420);
+    };
+    document.addEventListener('pointerdown', e => {
+      if (e.button > 0) return;
+      const el = e.target.closest(P3D_SEL);
+      if (!el || el.disabled || el.closest('.no-3d')) return;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const x = Math.max(-.5, Math.min(.5, (e.clientX - r.left) / r.width - .5));
+      const y = Math.max(-.5, Math.min(.5, (e.clientY - r.top) / r.height - .5));
+      // العناصر الكبيرة كتميّل أقل من الأزرار الصغيرة
+      const amp = Math.max(3, Math.min(16, 1400 / Math.max(r.width, r.height, 60)));
+      const base = getComputedStyle(el).transform;
+      if (base && base !== 'none' && !el.classList.contains('p3d-up')) el.style.setProperty('--p3b', base);
+      el.style.setProperty('--p3x', (-y * amp).toFixed(2) + 'deg');
+      el.style.setProperty('--p3y', (x * amp).toFixed(2) + 'deg');
+      el.style.setProperty('--p3gx', Math.round((x + .5) * 100) + '%');
+      el.style.setProperty('--p3gy', Math.round((y + .5) * 100) + '%');
+      el.classList.remove('p3d-up'); el.classList.add('p3d');
+      cur = el;
+      if (navigator.vibrate && e.pointerType === 'touch') { try { navigator.vibrate(6); } catch (er) { /* */ } }
+    }, { passive: true });
+    ['pointerup', 'pointercancel', 'dragstart'].forEach(t => document.addEventListener(t, release, { passive: true }));
+    window.addEventListener('blur', release);
+    document.addEventListener('scroll', release, { passive: true, capture: true });
+  }
+
   async function start() {
     applyTheme();
+    setupPress3D();
     setupLang();
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
     await lockScreen();
