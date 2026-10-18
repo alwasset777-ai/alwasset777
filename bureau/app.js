@@ -699,6 +699,7 @@
     else if (a === 'search') { nav = 'search'; await viewSearch(query); }
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
+    else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
     else if (a === 'agencies') { nav = 'agencies'; await viewNetKind('agency', parts, query); }
@@ -775,6 +776,7 @@
           <a class="btn" href="#/matching">${ic('target', 18)} المطابقة</a>
           <a class="btn" href="#/appointments">${ic('calendar', 18)} المواعيد${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</a>
           <a class="btn" href="#/estimate">📊 مقارنة الثمن</a>
+          <a class="btn" href="#/loan">🏦 حاسبة القرض</a>
           <a class="btn" href="#/guide">🎓 تعلم استعمال التطبيق</a>
         </div>
         <div class="hub-title">✦ شبكة الوسيط 777</div>
@@ -1341,6 +1343,9 @@
         <div class="btn-row">
           <button class="btn" id="p-fav">${ic('star', 18)} ${p.fav ? 'في المفضلة' : 'مفضلة'}</button>
           <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
+          <button class="btn gold" id="p-pres">📺 عرض للزبون</button>
+          <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
+          ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 القرض</a>` : ''}
           ${EMBED ? '' : `<button class="btn" onclick="window.print()">${ic('print', 18)} طباعة / PDF</button>`}
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
         </div>
@@ -1435,6 +1440,8 @@
     if (cd) cd.onclick = () => navigator.clipboard.writeText(p.description).then(() => toast('تم نسخ الوصف ✓'));
     $('#p-fav').onclick = async () => { p.fav = !p.fav; await DB.saveRec('properties', p); toast(p.fav ? 'أضيف للمفضلة ★' : 'أزيل من المفضلة'); viewProp(id); };
     $('#p-share').onclick = () => shareProperty(p);
+    $('#p-pres').onclick = () => presentProp(p);
+    $('#p-poster').onclick = () => posterModal(p);
     $('#p-del').onclick = async () => {
       if (!(await confirmBox('حذف العقار ' + p.ref + ' وكل صوره وملفاته نهائيا؟', 'حذف نهائي'))) return;
       await DB.delRec('properties', p.id);
@@ -1472,7 +1479,7 @@
         const files = [];
         for (const m of photos) {
           const blob = await getBlob(m.id, false);
-          if (blob) files.push(new File([blob], (p.ref || 'photo') + '-' + (files.length + 1) + '.jpg', { type: blob.type || 'image/jpeg' }));
+          if (blob) { const wm = await watermark(blob); files.push(new File([wm], (p.ref || 'photo') + '-' + (files.length + 1) + '.jpg', { type: wm.type || 'image/jpeg' })); }
         }
         if (navigator.canShare({ files })) { await navigator.share({ files, text, title: p.title }); return; }
       }
@@ -1880,6 +1887,7 @@
             ${fInput('officeName', 'اسم المكتب', S.settings.officeName)}
             ${fInput('officePhone', 'هاتف المكتب (يظهر في الإعلانات)', S.settings.officePhone, { type: 'tel' })}
             ${fSelect('officeCity', 'المدينة الافتراضية', [], S.settings.officeCity, { groups: cityGroups() })}
+            <div class="field full"><label class="chk"><input type="checkbox" name="watermark" ${S.settings.watermark !== false ? 'checked' : ''}> 💧 علامة مائية (الشعار + الهاتف) على الصور اللي كتشاركها</label></div>
             <div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">${ic('check', 18)} حفظ</button></div>
           </form>
         </div>
@@ -6296,6 +6304,278 @@
   /* ============================================================
      تأثير 3D فكل ضغطة: العنصر كيتميّل نحو بلاصة الصبع وكيغطس شوية، ومن بعد كيرجع بنابض
      ============================================================ */
+  /* ============================================================
+     أدوات الوكيل: حاسبة القرض، العرض للزبون، العلامة المائية، الملصق الإعلاني
+     ============================================================ */
+  const SCRIPTS = {};
+  const loadScript = src => SCRIPTS[src] || (SCRIPTS[src] = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = src; s.onload = res;
+    s.onerror = () => { delete SCRIPTS[src]; rej(new Error('تعذر تحميل الأداة — تأكد من الإنترنت')); };
+    document.head.appendChild(s);
+  }));
+  const loadCss = href => { if (!$(`link[href="${href}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); } };
+  const offName = () => myAgencyName() || S.settings.officeName;
+  const offPhone = () => myAgencyPhone() || S.settings.officePhone || '';
+  // أهم المواصفات (المساحة + الغرف…) لنص قصير
+  function propSpecs(p, max = 4) {
+    const s = p.specs || {}, out = [];
+    const a = areaOf(p); if (a) out.push(['📐', fmtRaw(a) + ' م²']);
+    [['bedrooms', '🛏️', 'غرف'], ['rooms', '🚪', 'غرف'], ['salons', '🛋️', 'صالون'], ['bathrooms', '🛁', 'حمام'], ['floor', '🏢', 'الطابق'], ['levels', '🏠', '']].forEach(([k, e, l]) => {
+      if (out.length >= max || s[k] == null || s[k] === '') return;
+      if (k === 'rooms' && s.bedrooms) return;
+      out.push([e, k === 'floor' ? 'الطابق ' + s[k] : s[k] + (l ? ' ' + l : '')]);
+    });
+    return out.slice(0, max);
+  }
+
+  /* ---------- 🏦 حاسبة القرض البنكي ---------- */
+  function loanCalc(v) {
+    const price = num(v.price) || 0, downPct = num(v.down) == null ? 20 : num(v.down), years = num(v.years) || 20;
+    const rate = num(v.rate) == null ? 4.5 : num(v.rate), ins = num(v.ins) == null ? 0.3 : num(v.ins);
+    const principal = Math.max(0, price * (1 - downPct / 100));
+    const n = years * 12, r = rate / 100 / 12;
+    const pay = !principal ? 0 : r ? principal * r / (1 - Math.pow(1 + r, -n)) : principal / n;
+    const insM = principal * ins / 100 / 12;
+    const yearly = [];
+    let bal = principal;
+    for (let y = 1; y <= years; y++) {
+      let ip = 0, pp = 0;
+      for (let m = 0; m < 12; m++) { const i = bal * r; ip += i; pp += pay - i; bal = Math.max(0, bal - (pay - i)); }
+      yearly.push({ y, ip, pp, bal });
+    }
+    return { price, downPct, down: price - principal, principal, n, years, rate, pay, insM, monthly: pay + insM, interest: pay * n - principal, insTot: insM * n, income: (pay + insM) / 0.4, yearly };
+  }
+  function donut(parts) {
+    const tot = parts.reduce((s, x) => s + x[1], 0) || 1;
+    let a0 = -Math.PI / 2;
+    const arcs = parts.map(([, v, c]) => {
+      const a1 = a0 + v / tot * Math.PI * 2, big = a1 - a0 > Math.PI ? 1 : 0;
+      const p = (a, rr) => [60 + rr * Math.cos(a), 60 + rr * Math.sin(a)].map(x => x.toFixed(2)).join(' ');
+      const d = v >= tot ? `M60 6 A54 54 0 1 1 59.99 6 L59.99 26 A34 34 0 1 0 60 26 Z` : `M${p(a0, 54)} A54 54 0 ${big} 1 ${p(a1, 54)} L${p(a1, 34)} A34 34 0 ${big} 0 ${p(a0, 34)} Z`;
+      a0 = a1; return v ? `<path d="${d}" fill="${c}"><animate attributeName="opacity" from="0" to="1" dur=".6s"/></path>` : '';
+    });
+    return `<svg viewBox="0 0 120 120" width="150" height="150" class="ln-donut">${arcs.join('')}</svg>`;
+  }
+  function viewLoan(query) {
+    const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };
+    main().innerHTML = `
+      <div class="page-head"><div><h1>🏦 حاسبة القرض البنكي</h1><div class="sub">القسط الشهري، الفوائد، والدخل اللازم باش البنك يوافق</div></div></div>
+      <div class="detail-grid">
+        <div class="card card-pad form"><form id="lf" class="form-grid" onsubmit="return false">
+          ${fInput('price', 'ثمن العقار (درهم)', pre.price, { money: true, cls: 'full' })}
+          ${fInput('down', 'التسبيق (%)', pre.down, { type: 'number', hint: 'عادة 10% حتى 30%' })}
+          ${fSelect('years', 'مدة القرض', [5, 7, 10, 12, 15, 20, 25, 30].map(y => ({ v: y, l: y + ' عام' })), pre.years, { noEmpty: true })}
+          ${fInput('rate', 'نسبة الفائدة السنوية (%)', pre.rate, { type: 'number', hint: 'الأبناك فالمغرب: تقريبا 4% حتى 6%' })}
+          ${fInput('ins', 'التأمين على الحياة (% فالعام)', pre.ins, { type: 'number' })}
+        </form>
+        <p class="muted" style="font-size:12px;margin:12px 0 0">⚠️ حساب تقريبي للتوجيه فقط — العرض النهائي كيعطيه البنك.</p></div>
+        <div id="lres"></div>
+      </div>
+      <div class="card" id="ltab" style="margin-top:16px"></div>`;
+    bindMoney(main());
+    const form = $('#lf');
+    const draw = () => {
+      const L = loanCalc(collect(form));
+      if (!L.price) { $('#lres').innerHTML = `<div class="card empty"><div class="big">🏦</div><h3>دخل ثمن العقار</h3><p>غادي نحسبو القسط الشهري مباشرة.</p></div>`; $('#ltab').innerHTML = ''; return; }
+      const M = n => fmt(Math.round(n));
+      $('#lres').innerHTML = `<div class="card card-pad ln-card">
+        <div class="ln-top"><div><small>القسط الشهري</small><b class="ln-big">${M(L.monthly)} <span>درهم</span></b><small class="muted">منها ${M(L.insM)} د تأمين · لمدة ${L.years} عام</small></div>
+          ${donut([['المبلغ', L.principal, 'var(--gold)'], ['الفوائد', L.interest, '#e9c46a'], ['التأمين', L.insTot, '#8a8a8a']])}</div>
+        <div class="ln-leg"><span><i style="background:var(--gold)"></i> المبلغ المقترض</span><span><i style="background:#e9c46a"></i> الفوائد</span><span><i style="background:#8a8a8a"></i> التأمين</span></div>
+        <div class="kv" style="margin-top:14px">
+          <div><small>التسبيق (${L.downPct}%)</small><b>${M(L.down)} د</b></div>
+          <div><small>مبلغ القرض</small><b>${M(L.principal)} د</b></div>
+          <div><small>مجموع الفوائد</small><b>${M(L.interest)} د</b></div>
+          <div><small>التكلفة الإجمالية للقرض</small><b>${M(L.principal + L.interest + L.insTot)} د</b></div>
+          <div><small>الدخل الشهري اللازم (القسط ≤ 40%)</small><b style="color:var(--green)">${M(L.income)} د</b></div>
+          <div><small>مصاريف التسجيل والموثق (تقريبا)</small><b>${M(L.price * 0.075)} د</b></div>
+        </div>
+        <div class="btn-row" style="margin-top:14px"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`🏦 محاكاة قرض — ${offName()}\nثمن العقار: ${fmtRaw(L.price)} د\nالتسبيق: ${fmtRaw(Math.round(L.down))} د (${L.downPct}%)\nمبلغ القرض: ${fmtRaw(Math.round(L.principal))} د\nالمدة: ${L.years} عام · الفائدة ${L.rate}%\n➡️ القسط الشهري: ${fmtRaw(Math.round(L.monthly))} د\nالدخل اللازم: ${fmtRaw(Math.round(L.income))} د/شهر\n📞 ${offPhone()}`)}">${ic('wa', 16)} صيفط للزبون</a></div></div>`;
+      $('#ltab').innerHTML = `<div class="pair-head"><b>📅 جدول السداد عام بعام</b></div><div class="ln-rows">${L.yearly.map(x => `<div class="list-row"><b style="width:64px">العام ${x.y}</b>
+        <div class="grow"><div class="ln-bar"><i style="width:${(x.pp / (x.pp + x.ip) * 100).toFixed(1)}%"></i></div><small class="muted">رأس المال ${M(x.pp)} · الفوائد ${M(x.ip)}</small></div><small>الباقي <b>${M(x.bal)}</b></small></div>`).join('')}</div>`;
+    };
+    $$('input, select', form).forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', debounce(draw, 120)));
+    draw();
+  }
+
+  /* ---------- 💧 العلامة المائية ---------- */
+  let LOGO_IMG = null;
+  const logoImg = () => LOGO_IMG || (LOGO_IMG = new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = LOGO; }));
+  async function watermark(blob, force) {
+    if (!force && S.settings.watermark === false) return blob;
+    try {
+      await fontsReady();
+      const bmp = await decodeImage(blob);
+      const w = bmp.naturalWidth || bmp.width, h = bmp.naturalHeight || bmp.height;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); x.drawImage(bmp, 0, 0, w, h); if (bmp.close) bmp.close();
+      const u = Math.min(w, h);
+      // كتابة شفافة فالوسط
+      x.save(); x.translate(w / 2, h / 2); x.rotate(-Math.PI / 9); x.globalAlpha = .16; x.fillStyle = '#fff';
+      x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = Math.max(1, u * .003);
+      x.font = `900 ${Math.round(u * .11)}px Tajawal, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+      x.strokeText('الوسيط 777', 0, 0); x.fillText('الوسيط 777', 0, 0); x.restore();
+      // الشعار + الهاتف فالركن
+      const lg = await logoImg(), m = Math.round(u * .03);
+      if (lg) { const lw = Math.round(u * .2), lh = Math.round(lw * lg.height / lg.width); x.globalAlpha = .92; x.drawImage(lg, m, h - lh - m, lw, lh); x.globalAlpha = 1;
+        const ph = offPhone(); if (ph) { x.font = `800 ${Math.round(u * .035)}px Tajawal, sans-serif`; x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = u * .01; x.textBaseline = 'bottom'; x.direction = 'ltr'; x.fillText('☎ ' + ph, m + lw + m * .6, h - m * 1.2); } }
+      return await new Promise(r => c.toBlob(b => r(b || blob), 'image/jpeg', .9));
+    } catch (e) { return blob; }
+  }
+  const fontsReady = () => (document.fonts && document.fonts.load ? Promise.all(['400 20px Tajawal', '700 20px Tajawal', '800 20px Tajawal', '900 20px Tajawal'].map(f => document.fonts.load(f, 'الوسيط 777'))).catch(() => {}) : Promise.resolve());
+
+  /* ---------- 📺 العرض للزبون (شاشة كاملة) ---------- */
+  async function presentProp(p) {
+    const photos = (p.media || []).filter(m => m.kind === 'photo');
+    const cv = coverOf(p); if (cv) { photos.splice(photos.indexOf(cv), 1); photos.unshift(cv); }
+    const specs = propSpecs(p, 5);
+    const el = document.createElement('div');
+    el.className = 'pres';
+    el.innerHTML = `<div class="pres-slides">${photos.length ? photos.map((m, i) => `<div class="pres-slide${i ? '' : ' on'}"><img data-pid="${m.id}" alt=""></div>`).join('') : `<div class="pres-slide on pres-empty"><img src="${LOGO}" alt=""></div>`}</div>
+      <div class="pres-shade"></div>
+      <div class="pres-top"><img src="${LOGO}" alt="" class="pres-logo"><span class="pres-trx">${esc(trxShort(p.transaction) || trxAr(p.transaction))}</span>
+        <span class="grow"></span><span class="pres-count"></span><button class="pres-x" aria-label="إغلاق">✕</button></div>
+      <div class="pres-info">
+        <div class="pres-price">${esc(priceText(p))}</div>
+        <h2>${esc(p.title || typeAr(p.type))}</h2>
+        <div class="pres-loc">📍 ${esc([p.district, p.city].filter(Boolean).join('، '))}</div>
+        <div class="pres-specs">${specs.map(([e, t]) => `<span>${e} ${esc(t)}</span>`).join('')}</div>
+        ${(p.features || []).length ? `<div class="pres-feat">${p.features.slice(0, 8).map(f => `<span>✓ ${esc(f)}</span>`).join('')}</div>` : ''}
+        <div class="pres-office">${esc(offName())} · <span dir="ltr">${esc(offPhone())}</span></div>
+      </div>
+      <button class="pres-nav prev" aria-label="السابق">‹</button><button class="pres-nav next" aria-label="التالي">›</button>
+      <div class="pres-dots">${photos.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>`;
+    document.body.appendChild(el);
+    try { if (el.requestFullscreen) await el.requestFullscreen(); } catch (e) { /* */ }
+    $$('[data-pid]', el).forEach(async (img, i) => { const u = await fileUrl(img.dataset.pid, false) || await fileUrl(img.dataset.pid, true); if (u) img.src = u; });
+    const slides = $$('.pres-slide', el), dots = $$('.pres-dots i', el);
+    let cur = 0, timer = null;
+    const show = i => {
+      cur = (i + slides.length) % slides.length;
+      slides.forEach((s, k) => s.classList.toggle('on', k === cur)); dots.forEach((d, k) => d.classList.toggle('on', k === cur));
+      $('.pres-count', el).textContent = slides.length > 1 ? `${cur + 1} / ${slides.length}` : '';
+    };
+    const play = () => { clearInterval(timer); if (slides.length > 1) timer = setInterval(() => show(cur + 1), 6000); };
+    const close = () => { clearInterval(timer); document.removeEventListener('keydown', key); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); el.remove(); };
+    const key = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') { show(cur + 1); play(); } else if (e.key === 'ArrowRight') { show(cur - 1); play(); } };
+    document.addEventListener('keydown', key);
+    document.addEventListener('fullscreenchange', function fc() { if (!document.fullscreenElement && el.isConnected && el.dataset.fs) close(); if (document.fullscreenElement === el) el.dataset.fs = 1; if (!el.isConnected) document.removeEventListener('fullscreenchange', fc); });
+    $('.pres-x', el).onclick = close;
+    $('.pres-nav.next', el).onclick = () => { show(cur + 1); play(); };
+    $('.pres-nav.prev', el).onclick = () => { show(cur - 1); play(); };
+    let sx = null;
+    el.addEventListener('pointerdown', e => { sx = e.clientX; });
+    el.addEventListener('pointerup', e => { if (sx == null) return; const d = e.clientX - sx; sx = null; if (Math.abs(d) > 50) { show(cur + (d < 0 ? 1 : -1)); play(); } });
+    el.addEventListener('click', e => { if (e.target.closest('.pres-info')) el.classList.toggle('pres-min'); });
+    show(0); play();
+  }
+
+  /* ---------- 🖼️ الملصق الإعلاني + QR ---------- */
+  const POSTER_FMT = { post: [1080, 1350, '📱 منشور 4:5'], square: [1080, 1080, '⬛ مربع'], story: [1080, 1920, '📲 ستوري'] };
+  function wrapText(x, text, maxW, maxLines) {
+    const words = String(text || '').split(/\s+/), lines = [];
+    let line = '';
+    words.forEach(w => { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; });
+    if (line) lines.push(line);
+    if (lines.length > maxLines) { lines.length = maxLines; lines[maxLines - 1] += '…'; }
+    return lines;
+  }
+  function rrect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
+  async function imgOf(id) { const b = await getBlob(id, false) || await getBlob(id, true); if (!b) return null; try { return await decodeImage(b); } catch (e) { return null; } }
+  function drawCover(x, im, a, b, w, h) {
+    const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, k = Math.max(w / iw, h / ih);
+    const sw = w / k, sh = h / k; x.drawImage(im, (iw - sw) / 2, (ih - sh) / 2, sw, sh, a, b, w, h);
+  }
+  async function posterCanvas(p, kind) {
+    const [W, H] = POSTER_FMT[kind] || POSTER_FMT.post;
+    await fontsReady();
+    await loadScript('vendor/qrcode.js');
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.fillStyle = '#0b0b0b'; x.fillRect(0, 0, W, H);
+    const photos = (p.media || []).filter(m => m.kind === 'photo'); const cv = coverOf(p);
+    if (cv) { photos.splice(photos.indexOf(cv), 1); photos.unshift(cv); }
+    const ims = (await Promise.all(photos.slice(0, 3).map(m => imgOf(m.id)))).filter(Boolean);
+    const foot = 210, PH = Math.round(H * (kind === 'story' ? .52 : kind === 'square' ? .5 : .55));
+    if (ims[0]) drawCover(x, ims[0], 0, 0, W, PH);
+    else { const g = x.createLinearGradient(0, 0, W, PH); g.addColorStop(0, '#2a0a10'); g.addColorStop(1, '#111'); x.fillStyle = g; x.fillRect(0, 0, W, PH); const lg = await logoImg(); if (lg) x.drawImage(lg, W / 2 - 220, PH / 2 - 220 * lg.height / lg.width, 440, 440 * lg.height / lg.width); }
+    // صور صغيرة
+    if (ims.length > 1 && kind !== 'square') ims.slice(1).forEach((im, i) => {
+      const tw = 250, th = 170, tx = 40, ty = PH - (th + 24) * (ims.length - 1 - i) - 10 - th / 2;
+      x.save(); rrect(x, tx - 6, ty - 6, tw + 12, th + 12, 22); x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 24; x.fill(); x.restore();
+      x.save(); rrect(x, tx, ty, tw, th, 16); x.clip(); drawCover(x, im, tx, ty, tw, th); x.restore();
+    });
+    const g = x.createLinearGradient(0, PH * .55, 0, PH); g.addColorStop(0, 'rgba(11,11,11,0)'); g.addColorStop(1, 'rgba(11,11,11,1)'); x.fillStyle = g; x.fillRect(0, PH * .55, W, PH * .45 + 2);
+    // الشعار + نوع العملية
+    const lg = await logoImg();
+    if (lg) { const lw = 230, lh = lw * lg.height / lg.width; x.save(); x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 20; x.drawImage(lg, 40, 40, lw, lh); x.restore(); }
+    x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+    const trx = trxShort(p.transaction) || trxAr(p.transaction);
+    x.font = '900 46px Tajawal, sans-serif'; const tw = x.measureText(trx).width + 64;
+    const rg = x.createLinearGradient(W - 40 - tw, 0, W - 40, 0); rg.addColorStop(0, '#c8102e'); rg.addColorStop(1, '#e63946');
+    x.save(); x.shadowColor = 'rgba(200,16,46,.6)'; x.shadowBlur = 30; rrect(x, W - 40 - tw, 44, tw, 84, 42); x.fillStyle = rg; x.fill(); x.restore();
+    x.fillStyle = '#fff'; x.fillText(trx, W - 72, 102);
+    // الثمن والعنوان
+    let y = PH + (kind === 'square' ? 30 : 60);
+    x.font = '900 82px Tajawal, sans-serif'; x.fillStyle = '#f3d27a';
+    x.fillText(priceText(p), W - 60, y); y += 30; // الأرقام معزولة (\u2066…\u2069) باش ما تتقلبش
+    if (p.negotiable) { x.font = '700 30px Tajawal, sans-serif'; x.fillStyle = '#bbb'; x.fillText('قابل للتفاوض', W - 60, y + 14); y += 20; }
+    x.font = '800 52px Tajawal, sans-serif'; x.fillStyle = '#fff';
+    wrapText(x, p.title || typeAr(p.type), W - 120, kind === 'square' ? 1 : 2).forEach(l => { y += 66; x.fillText(l, W - 60, y); });
+    x.font = '500 36px Tajawal, sans-serif'; x.fillStyle = '#c9c9c9'; y += 58;
+    x.fillText('📍 ' + [p.district, p.city].filter(Boolean).join('، '), W - 60, y);
+    // المواصفات
+    const sp = propSpecs(p, 4); y += 40;
+    if (sp.length && y + 80 < H - foot) {
+      x.font = '700 32px Tajawal, sans-serif'; let cx = W - 60;
+      sp.forEach(([e, t]) => { const s = e + ' ' + t, w = x.measureText(s).width + 44; if (cx - w < 40) return;
+        rrect(x, cx - w, y, w, 64, 32); x.fillStyle = 'rgba(255,255,255,.1)'; x.fill(); x.strokeStyle = 'rgba(243,210,122,.45)'; x.lineWidth = 2; x.stroke();
+        x.fillStyle = '#fff'; x.fillText(s, cx - 22, y + 43); cx -= w + 16; });
+    }
+    // الأسفل: المكتب + الهاتف + QR
+    const fy = H - foot, fg = x.createLinearGradient(0, fy, W, H); fg.addColorStop(0, '#8f0b21'); fg.addColorStop(1, '#c8102e');
+    x.fillStyle = fg; x.fillRect(0, fy, W, foot);
+    x.fillStyle = 'rgba(243,210,122,.9)'; x.fillRect(0, fy, W, 5);
+    const qrUrl = `https://wa.me/${waPhone(offPhone())}?text=${encodeURIComponent('مهتم بالعقار ' + (p.ref || ''))}`;
+    const q = window.qrcode(0, 'M'); q.addData(qrUrl); q.make();
+    const qn = q.getModuleCount(), qs = 160, cell = qs / qn, qx = 40, qy = fy + (foot - qs) / 2;
+    x.fillStyle = '#fff'; rrect(x, qx - 10, qy - 10, qs + 20, qs + 20, 14); x.fill(); x.fillStyle = '#111';
+    for (let r = 0; r < qn; r++) for (let k = 0; k < qn; k++) if (q.isDark(r, k)) x.fillRect(qx + k * cell, qy + r * cell, Math.ceil(cell), Math.ceil(cell));
+    x.fillStyle = '#fff'; x.font = '800 40px Tajawal, sans-serif';
+    x.fillText(wrapText(x, offName(), W - 330, 1)[0], W - 50, fy + 70);
+    x.font = '900 58px Tajawal, sans-serif'; x.direction = 'ltr'; x.textAlign = 'right';
+    x.fillText('☎ ' + offPhone(), W - 50, fy + 140);
+    x.direction = 'rtl'; x.font = '500 26px Tajawal, sans-serif'; x.fillStyle = 'rgba(255,255,255,.85)';
+    x.fillText('امسح الرمز للتواصل عبر واتساب · المرجع ' + (p.ref || ''), W - 50, fy + 185);
+    return c;
+  }
+  async function posterModal(p) {
+    let kind = 'post', blob = null;
+    modal(`<h3>🖼️ ملصق إعلاني جاهز</h3>
+      <div class="seg" id="pf">${Object.entries(POSTER_FMT).map(([k, v]) => `<label><input type="radio" name="pf" value="${k}" ${k === kind ? 'checked' : ''}><span>${v[2]}</span></label>`).join('')}</div>
+      <div class="poster-prev"><div class="poster-load">⏳ جاري التصميم…</div><img alt=""></div>
+      <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="pp-share">${ic('share', 16)} مشاركة</button><a class="btn" id="pp-dl" download="${esc((p.ref || 'w777') + '.jpg')}">${ic('download', 16)} تحميل</a><button class="btn" data-close>إغلاق</button></div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">جاهز لفيسبوك، إنستغرام، تيكتوك وستاتو واتساب. الرمز QR كيحل محادثة واتساب مع المكتب.</p>`, async box => {
+      const img = $('.poster-prev img', box), ld = $('.poster-load', box);
+      const render = async () => {
+        ld.classList.remove('hidden'); img.style.opacity = .3;
+        try {
+          const c = await posterCanvas(p, kind);
+          blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .92));
+          const u = URL.createObjectURL(blob); img.src = u; $('#pp-dl', box).href = u;
+        } catch (e) { toast('تعذر: ' + e.message, 4000); }
+        ld.classList.add('hidden'); img.style.opacity = 1;
+      };
+      $$('[name=pf]', box).forEach(r => r.onchange = () => { kind = r.value; render(); });
+      $('#pp-share', box).onclick = async () => {
+        if (!blob) return;
+        const f = new File([blob], (p.ref || 'w777') + '.jpg', { type: 'image/jpeg' });
+        try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text: (p.title || '') + '\n' + priceText(p).replace(/[⁦⁩]/g, '') }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+        $('#pp-dl', box).click();
+      };
+      render();
+    });
+  }
   /* ---------- واجهة حية: العناصر كتطلع وحدة بوحدة ملي كتبان، والأرقام كتعدّ ---------- */
   const LV_BOX = '.home-main, .stats, .grid-2, .prop-grid, .dir-grid, .doc-grid, .doc-list, .st-grid, .own-list, .mm-grid, .match-list, .feat-grid, .tr-grid, .nt-list, .law-grid, .iv-grid, .gd-grid, .ev-list, .appt-list, .ag-stats, .detail-grid';
   const LV_OK = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && 'IntersectionObserver' in window;
