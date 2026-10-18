@@ -1115,3 +1115,31 @@ label.chk input { width: 20px; height: 20px; accent-color: var(--gold); }
 .poster-prev { position: relative; margin-top: 12px; border-radius: 14px; overflow: hidden; background: var(--surface-2); min-height: 240px; display: grid; place-items: center; }
 .poster-prev img { width: 100%; max-height: 62vh; object-fit: contain; transition: opacity .3s; }
 .poster-load { position: absolute; font-weight: 800; color: var(--muted); }
+
+/* ============================================================
+   تدبير المكتب: الخريطة، الكراء، المالية
+   ============================================================ */
+.txt-red { color: var(--red); } .txt-green { color: var(--green); } .txt-amber { color: var(--amber); font-weight: 700; }
+.md-warn { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(217, 138, 20, .15); }
+.map-card { overflow: hidden; }
+#pmap { height: calc(100vh - 260px); min-height: 380px; z-index: 0; }
+.map-pin { position: relative; translate: -50% -100%; width: max-content; padding: 5px 10px; border-radius: 12px; font: 800 12px Tajawal, sans-serif; color: #fff; white-space: nowrap;
+  background: linear-gradient(145deg, var(--gold-2), var(--gold)); box-shadow: 0 6px 14px rgba(0,0,0,.3); border: 2px solid #fff; }
+.map-pin::after { content: ''; position: absolute; left: 50%; bottom: -7px; translate: -50% 0; border: 6px solid transparent; border-top-color: #fff; border-bottom: 0; }
+.map-pin.rent { background: linear-gradient(145deg, #4c8ef7, var(--blue)); }
+.map-pin.off { filter: grayscale(.9) opacity(.75); }
+.map-pop { font-family: Tajawal, sans-serif; direction: rtl; text-align: right; min-width: 180px; }
+.map-pop b { display: block; font-size: 14px; } .map-pop div { color: var(--gold); font-weight: 800; } .map-pop small { display: block; color: #777; margin: 2px 0 6px; }
+.map-pop a { font-weight: 800; color: var(--gold); }
+.fin-chart { width: 100%; height: 220px; margin-top: 4px; }
+.fin-grid { stroke: var(--line); stroke-dasharray: 4 4; }
+.fin-in { fill: var(--green); } .fin-out { fill: var(--gold); }
+.fin-chart rect { transform-box: fill-box; transform-origin: bottom; animation: fin-grow .7s cubic-bezier(.2, .8, .2, 1) backwards; }
+@keyframes fin-grow { from { transform: scaleY(0); } }
+.fin-net { fill: none; stroke: var(--blue); stroke-width: 2.5; stroke-linejoin: round; }
+.fin-lbl { fill: var(--muted); font: 600 11px Tajawal, sans-serif; text-anchor: middle; }
+.report-view .kv { margin-bottom: 8px; }
+.report-view h2 { font-size: 16px; margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--gold); }
+.report-view table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.report-view td, .report-view th { border: 1px solid var(--line); padding: 6px 8px; text-align: right; }
+.report-view th { background: var(--surface-2); }

@@ -12,6 +12,7 @@
   const BUCKET = 'w777-media';
   const TABLE = 'w777_records';
   const STORES = ['properties', 'requests', 'appointments'];
+  const LISTS = ['ledger', 'leases'];
 
   let st = null;
   try { st = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { st = null; }
@@ -96,6 +97,7 @@
     for (const s of STORES) (await DB.all(s)).forEach(o => { dirty[s + ':' + o.id] = now; });
     dirty['meta:settings'] = now;
     dirty['meta:customDistricts'] = now;
+    LISTS.forEach(k => { dirty['meta:' + k] = now; });
     await DB.setMeta('sync_dirty', dirty);
     await DB.setMeta('sync_cursor', null);
     await DB.setMeta('sync_uploaded', {});
@@ -157,6 +159,19 @@
       });
       Object.entries(local).forEach(([c, ds]) => { ds.forEach(d => { if (!(remote[c] || []).includes(d)) localExtra = true; }); });
       if (grew) await DB.setMeta('customDistricts', merged);
+      if (localExtra) { dirty[dkey] = Date.now(); await DB.setMeta('sync_dirty', dirty); }
+      return grew ? 1 : 0;
+    }
+    // لوائح (الحسابات، عقود الكراء): كل عنصر بوحدو — الأحدث كيربح، والحذف علامة deleted
+    if (row.kind === 'meta' && LISTS.includes(row.id)) {
+      const local = await DB.getMeta(row.id, []);
+      const remote = (row.data && row.data.value) || [];
+      if (!Array.isArray(remote)) return 0;
+      const map = new Map(local.map(x => [x.id, x])), rmap = new Map(remote.map(x => [x.id, x]));
+      let grew = false, localExtra = false;
+      remote.forEach(r => { const l = map.get(r.id); if (!l || (r.updatedAt || '') > (l.updatedAt || '')) { map.set(r.id, r); grew = true; } });
+      local.forEach(l => { const r = rmap.get(l.id); if (!r || (l.updatedAt || '') > (r.updatedAt || '')) localExtra = true; });
+      if (grew) await DB.setMeta(row.id, Array.from(map.values()));
       if (localExtra) { dirty[dkey] = Date.now(); await DB.setMeta('sync_dirty', dirty); }
       return grew ? 1 : 0;
     }
