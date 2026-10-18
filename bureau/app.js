@@ -708,6 +708,8 @@
     else if (a === 'rental') { nav = 'rentals'; viewRental(b); }
     else if (a === 'finance') { nav = 'finance'; viewFinance(query); }
     else if (a === 'report') { nav = 'finance'; viewReport(query); }
+    else if (a === 'inbox') { nav = 'inbox'; await viewInbox(); }
+    else if (a === 'chat') { nav = 'inbox'; await viewChat(b); }
     else if (a === 'appointments') { nav = 'appointments'; viewAppts(query); }
     else if (a === 'appointment') { nav = 'appointments'; await viewApptForm(b || 'new', query); }
     else if (a === 'agencies') { nav = 'agencies'; await viewNetKind('agency', parts, query); }
@@ -786,6 +788,8 @@
           <a class="btn" href="#/estimate">📊 مقارنة الثمن</a>
           <a class="btn" href="#/loan">🏦 حاسبة القرض</a>
           <a class="btn" href="#/map">🗺️ الخريطة</a>
+          <a class="btn" href="#/rentals">🔑 الكراء</a>
+          <a class="btn" href="#/finance">💹 المالية</a>
           <a class="btn" href="#/guide">🎓 تعلم استعمال التطبيق</a>
         </div>
         <div class="hub-title">✦ شبكة الوسيط 777</div>
@@ -1355,6 +1359,7 @@
           <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
           <button class="btn gold" id="p-pres">📺 عرض للزبون</button>
           <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
+          ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
           ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 القرض</a>` : ''}
           ${EMBED ? '' : `<button class="btn" onclick="window.print()">${ic('print', 18)} طباعة / PDF</button>`}
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
@@ -1454,6 +1459,7 @@
     $('#p-pres').onclick = () => presentProp(p);
     bindPropOffice(p, () => { const y = window.scrollY; viewProp(p.id).then(() => window.scrollTo(0, y)); });
     $('#p-poster').onclick = () => posterModal(p);
+    const pc = $('#p-cat'); if (pc) pc.onclick = () => toggleCatalog(p, () => viewProp(p.id));
     $('#p-del').onclick = async () => {
       if (!(await confirmBox('حذف العقار ' + p.ref + ' وكل صوره وملفاته نهائيا؟', 'حذف نهائي'))) return;
       await DB.delRec('properties', p.id);
@@ -1959,6 +1965,8 @@
               <div class="btn-row">${hasPin ? `<button class="btn" id="pin-change">${ic('lock', 16)} تغيير الرمز</button><button class="btn danger" id="pin-off">إلغاء القفل</button>` : `<button class="btn" id="pin-on">${ic('lock', 16)} تفعيل القفل</button>`}</div></div>
           </div>
         </div>
+        ${await securityBioCard()}
+        ${EMBED ? '' : catalogCard()}
 
         <div class="card card-pad">
           <h3 class="section-title">${ic('image')} التخزين</h3>
@@ -2007,6 +2015,7 @@
     $('#csv-props').onclick = exportPropsCsv;
     $('#csv-reqs').onclick = exportReqsCsv;
     const po = $('#pin-on'); if (po) po.onclick = () => setupPin();
+    bindBioCard(); bindCatalogCard();
     const pc = $('#pin-change'); if (pc) pc.onclick = () => setupPin();
     const pf = $('#pin-off'); if (pf) pf.onclick = async () => { if (await confirmBox('إلغاء القفل بالرمز السري؟', 'إلغاء القفل')) { localStorage.removeItem('w777_pin'); toast('تم إلغاء القفل'); viewSettings(); } };
     const ps = $('#persist'); if (ps) ps.onclick = async () => { const ok = await DB.persist(); toast(ok ? 'تم تفعيل الحماية ✓' : 'المتصفح رفض الطلب — ثبّت التطبيق على الشاشة الرئيسية ثم أعد المحاولة'); viewSettings(); };
@@ -2199,7 +2208,7 @@
         cloudCard().then(html => { const c = $('#cloud-card'); if (c) { c.outerHTML = html; bindCloudCard(); } });
       }
     });
-    if (Sy.onPulled) { Sy.onPulled(importPartnerItems); Sy.onPulled(publishShared); }
+    if (Sy.onPulled) { Sy.onPulled(importPartnerItems); Sy.onPulled(publishShared); Sy.onPulled(publishCatalog); }
     Sy.onChange(async () => {
       await loadAll();
       const h = location.hash;
@@ -4449,9 +4458,11 @@
           ${kind === 'notary' && S.kind !== 'notary' ? `<div class="btn-row"><button class="btn sm" data-ask="${a.uid}" data-k="consult">💬 استشارة</button><button class="btn sm gold" data-ask="${a.uid}" data-k="contract">📝 توثيق عقد</button></div>` : ''}
           <div class="btn-row">${a.phone ? `<a class="btn sm" href="${telLink(a.phone)}">${ic('phone', 15)} ${esc(a.phone)}</a>
             <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} واتساب</a>` : '<span class="muted">التواصل عبر مكتب الوسيط 777</span>'}</div>
+          ${memberActions(a)}
         </div>`;
       }).join('') || `<div class="card empty" style="grid-column:1/-1"><div class="big">${K.ic}</div><h3>مازال حتى ${esc(K.one)} ما كمّل المعلومات ديالو</h3><p>كل عضو كيبان هنا ملي كيكمّل «حسابي» (الاسم، الهاتف، المدينة، الخدمات).</p></div>`;
       bindNtAsk($('#dgrid'), null);
+      bindMemberActions($('#dgrid'), draw);
     };
     const nb = $('#d-near');
     if (nb) nb.onclick = () => {
@@ -4463,6 +4474,7 @@
     $$('#df input, #df select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
     $('#df').onsubmit = e => e.preventDefault();
     draw();
+    if (syOn()) loadRatings().then(() => { if ($('#dgrid')) draw(); });
   }
 
   async function viewAgMe(kind, head) {
@@ -6113,7 +6125,15 @@
   function lockScreen() {
     const stored = localStorage.getItem('w777_pin');
     if (!stored) return Promise.resolve();
-    return new Promise(res => pinPad('أدخل الرمز السري', async code => { const ok = (await hash(code)) === stored; if (ok) res(); return ok; }));
+    return new Promise(res => {
+      pinPad('أدخل الرمز السري', async code => { const ok = (await hash(code)) === stored; if (ok) res(); return ok; });
+      if (!bioOn()) return;
+      // البصمة / Face ID: زر فوق لوحة الأرقام (ومحاولة أوتوماتيكية)
+      const el = $$('.lock').pop(); if (!el) return;
+      const b = document.createElement('button'); b.className = 'btn gold bio-btn'; b.textContent = '🔐 الدخول بالبصمة / Face ID';
+      const go = async () => { if (await bioCheck()) { el.remove(); res(); } };
+      b.onclick = go; $('.dots', el).after(b); setTimeout(go, 300);
+    });
   }
   function setupPin() {
     let first = null;
@@ -6548,7 +6568,7 @@
     const fy = H - foot, fg = x.createLinearGradient(0, fy, W, H); fg.addColorStop(0, '#8f0b21'); fg.addColorStop(1, '#c8102e');
     x.fillStyle = fg; x.fillRect(0, fy, W, foot);
     x.fillStyle = 'rgba(243,210,122,.9)'; x.fillRect(0, fy, W, 5);
-    const qrUrl = `https://wa.me/${waPhone(offPhone())}?text=${encodeURIComponent('مهتم بالعقار ' + (p.ref || ''))}`;
+    const qrUrl = p.catalog && syOn() ? catalogUrl(p.id) : `https://wa.me/${waPhone(offPhone())}?text=${encodeURIComponent('مهتم بالعقار ' + (p.ref || ''))}`;
     const q = window.qrcode(0, 'M'); q.addData(qrUrl); q.make();
     const qn = q.getModuleCount(), qs = 160, cell = qs / qn, qx = 40, qy = fy + (foot - qs) / 2;
     x.fillStyle = '#fff'; rrect(x, qx - 10, qy - 10, qs + 20, qs + 20, 14); x.fill(); x.fillStyle = '#111';
@@ -6558,7 +6578,7 @@
     x.font = '900 58px Tajawal, sans-serif'; x.direction = 'ltr'; x.textAlign = 'right';
     x.fillText('☎ ' + offPhone(), W - 50, fy + 140);
     x.direction = 'rtl'; x.font = '500 26px Tajawal, sans-serif'; x.fillStyle = 'rgba(255,255,255,.85)';
-    x.fillText('امسح الرمز للتواصل عبر واتساب · المرجع ' + (p.ref || ''), W - 50, fy + 185);
+    x.fillText((p.catalog && syOn() ? 'امسح الرمز لمشاهدة الصور والتفاصيل' : 'امسح الرمز للتواصل عبر واتساب') + ' · المرجع ' + (p.ref || ''), W - 50, fy + 185);
     return c;
   }
   async function posterModal(p) {
@@ -6949,6 +6969,260 @@
       ${late.length ? `<a class="list-row" href="#/rentals"><div class="avatar" style="background:rgba(200,16,46,.12)">⛔</div><div class="grow"><b>${late.length} كراء متأخر</b><small class="muted">${esc(late.slice(0, 3).map(l => (l.tenant && l.tenant.name) || '').join('، '))}</small></div></a>` : ''}
       ${md.slice(0, 4).map(p => { const d = daysTo(p.mandate.end); return `<a class="list-row" href="#/property/${p.id}"><div class="avatar" style="background:rgba(217,138,20,.15)">📝</div><div class="grow"><b>${d < 0 ? 'تفويض سالا' : `تفويض كيسالي فـ ${d} يوم`}</b><small class="muted">${esc(p.ref)} · ${esc(p.title || typeAr(p.type))}</small></div></a>`; }).join('')}</div>`;
   }
+  /* ============================================================
+     🌐 الكتالوج العمومي · 💬 المحادثة · ⭐ التقييم · 🔐 البصمة
+     ============================================================ */
+  const syOn = () => !!(window.W777_SYNC && window.W777_SYNC.isOn());
+  const myUid = () => (syOn() ? window.W777_SYNC.uid() : null);
+  const appBase = () => location.href.split('#')[0].replace(/[^/]*$/, '');
+  const catalogUrl = (pid) => appBase() + 'catalog.html?o=' + myUid() + (pid ? '#p=' + encodeURIComponent(pid) : '');
+  const rqJson = async (path, opts) => { const r = await window.W777_SYNC.request(path, opts); if (!r.ok) { const t = await r.text().catch(() => ''); let m = t; try { m = JSON.parse(t).message || t; } catch (e) { /* */ } throw new Error(m || 'HTTP ' + r.status); } return r.status === 204 ? null : r.json().catch(() => null); };
+
+  /* ---------- 🌐 نشر الكتالوج ---------- */
+  let catBusy = false;
+  async function publishCatalog() {
+    if (catBusy || !syOn() || !navigator.onLine) return 0;
+    catBusy = true;
+    try {
+      const Sy = window.W777_SYNC, me = Sy.uid();
+      const prevOwner = await DB.getMeta('catalog_uid', null);
+      const known = prevOwner === me ? await DB.getMeta('catalog_hash', {}) : {};
+      const up = prevOwner === me ? await DB.getMeta('catalog_up', {}) : {};
+      const list = S.props.filter(p => p.catalog && p.status === 'available');
+      // معلومات المكتب
+      const ow = { owner: me, name: offName().slice(0, 120), phone: (offPhone() || '').slice(0, 30) || null, city: S.settings.officeCity || null, logo: S.agency && S.agency.logo ? brandUrl(S.agency.logo) : null };
+      const oh = h32(JSON.stringify(ow));
+      if (list.length && (await DB.getMeta('catalog_ohash', '')) !== oh) {
+        await rqJson('/rest/v1/w777_catalog_owner?on_conflict=owner', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(Object.assign({ updated_at: new Date().toISOString() }, ow)) });
+        await DB.setMeta('catalog_ohash', oh);
+      }
+      const next = {};
+      for (const p of list) {
+        const photos = (p.media || []).filter(m => m.kind === 'photo'); const cv = coverOf(p);
+        if (cv) { photos.splice(photos.indexOf(cv), 1); photos.unshift(cv); }
+        const paths = [];
+        for (const m of photos.slice(0, 8)) {
+          if (up[m.id]) { paths.push(up[m.id]); continue; }
+          const blob = await getBlob(m.id, false) || await getBlob(m.id, true); if (!blob) continue;
+          const small = (await compressImage(blob, 1280, 0.8)).blob;
+          const wm = await watermark(small, true);
+          const path = `${me}/${p.id}/${m.id}.jpg`;
+          const r = await Sy.request(`/storage/v1/object/w777-catalog/${path}`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: wm });
+          if (!r.ok) continue;
+          up[m.id] = path; paths.push(path);
+          await DB.setMeta('catalog_up', up);
+        }
+        const data = { ref: p.ref, title: p.title, transaction: p.transaction, type: p.type, city: p.city, district: p.district,
+          priceMin: p.priceMin, priceMax: p.priceMax, priceUnit: p.priceUnit, negotiable: p.negotiable, areaTotal: p.areaTotal, areaBuilt: p.areaBuilt, areaUseful: p.areaUseful,
+          specs: p.specs || {}, features: p.features || [], description: hideDigits(p.description || buildDescription(p)), createdAt: p.createdAt };
+        const row = { owner: me, id: p.id, data, photos: paths, deleted: false };
+        const h = h32(JSON.stringify(row)); next[p.id] = h;
+        if (known[p.id] !== h) await rqJson('/rest/v1/w777_catalog?on_conflict=owner,id', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(Object.assign({ updated_at: new Date().toISOString() }, row)) });
+      }
+      const gone = Object.keys(known).filter(id => !next[id]);
+      for (const id of gone) {
+        await rqJson(`/rest/v1/w777_catalog?owner=eq.${me}&id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ deleted: true, photos: [], updated_at: new Date().toISOString() }) }).catch(() => {});
+        const p = S.props.find(x => x.id === id);
+        const prefixes = Object.entries(up).filter(([, v]) => v.startsWith(`${me}/${id}/`)).map(([k, v]) => { delete up[k]; return v; });
+        if (prefixes.length) Sy.request('/storage/v1/object/w777-catalog', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes }) }).catch(() => {});
+        if (!p) delete next[id];
+      }
+      await DB.setMeta('catalog_up', up); await DB.setMeta('catalog_hash', next); await DB.setMeta('catalog_uid', me);
+      return list.length;
+    } catch (e) { console.warn('catalog', e); return 0; } finally { catBusy = false; }
+  }
+  async function toggleCatalog(p, after) {
+    if (!syOn()) { toast('الكتالوج كيحتاج المزامنة السحابية — دخل من الإعدادات', 4000); return; }
+    p.catalog = !p.catalog; await DB.saveRec('properties', p);
+    toast(p.catalog ? '🌐 جاري النشر فالكتالوج…' : 'تحيّد من الكتالوج');
+    const n = await publishCatalog();
+    if (p.catalog) toast(`🌐 منشور ✓ (${n} عقار فالكتالوج)`);
+    if (after) after();
+  }
+  function catalogCard() {
+    if (!syOn()) return '';
+    const n = S.props.filter(p => p.catalog && p.status === 'available').length, url = catalogUrl();
+    return `<div class="card card-pad" id="cat-card"><h3 class="section-title">🌐 الكتالوج العمومي للزبناء</h3>
+      <p class="muted" style="margin:0 0 10px">صفحة عمومية فيها العقارات اللي اخترتي (بلا معلومات المالك، والصور بالعلامة المائية). صيفطها للزبناء ولا حطها فإنستغرام وفيسبوك.</p>
+      <div class="kv"><div><small>عقارات منشورة</small><b>${n}</b></div><div><small>المتاحة</small><b>${S.props.filter(p => p.status === 'available').length}</b></div></div>
+      <div class="cat-link" dir="ltr">${esc(url)}</div>
+      <div class="btn-row" style="margin-top:10px"><a class="btn gold" target="_blank" rel="noopener" href="${esc(url)}">👁️ فتح</a><button class="btn" id="cat-copy">${ic('copy', 15)} نسخ الرابط</button>
+        <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('🏠 العقارات ديالنا: ' + url)}">${ic('wa', 15)} صيفط</a><button class="btn" id="cat-all">🌐 نشر كل المتاحة</button><button class="btn" id="cat-none">إخفاء الكل</button></div></div>`;
+  }
+  function bindCatalogCard() {
+    const c = $('#cat-copy'); if (!c) return;
+    c.onclick = () => navigator.clipboard.writeText(catalogUrl()).then(() => toast('تنسخ الرابط ✓'));
+    const bulk = async on => { for (const p of S.props.filter(x => x.status === 'available' && !!x.catalog !== on)) { p.catalog = on; await DB.saveRec('properties', p); } toast('جاري التحديث…'); const n = await publishCatalog(); toast(`✓ ${n} عقار فالكتالوج`); viewSettings(); };
+    $('#cat-all').onclick = () => bulk(true); $('#cat-none').onclick = () => bulk(false);
+  }
+
+  /* ---------- 💬 المحادثة ---------- */
+  let ADMIN_UID = null;
+  const adminUid = async () => ADMIN_UID || (ADMIN_UID = await rqJson('/rest/v1/rpc/w777_admin_uid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => null));
+  async function whoIs(uid) {
+    if (uid === await adminUid()) return { name: 'مكتب الوسيط 777', ic: '👑', admin: true };
+    const a = (S.dir || []).find(x => x.uid === uid);
+    return a ? { name: a.name || a.code, ic: KINDS[kindOf(a)].ic, a } : { name: 'مشترك', ic: '👤' };
+  }
+  async function unreadCount() {
+    if (!syOn()) return 0;
+    const r = await window.W777_SYNC.request(`/rest/v1/w777_msgs?select=id&recipient=eq.${myUid()}&read_at=is.null&limit=1`, { headers: { Prefer: 'count=exact', Range: '0-0' } });
+    const cr = r.headers.get('content-range') || ''; return Number(cr.split('/')[1]) || 0;
+  }
+  async function paintUnread() {
+    const b = $('#btn-chat'); if (!b) return;
+    b.classList.toggle('hidden', !syOn()); if (!syOn()) return;
+    const n = await unreadCount().catch(() => 0);
+    const s = $('#chat-n', b); s.textContent = n > 99 ? '99+' : n || ''; s.classList.toggle('hidden', !n);
+  }
+  function setupChat() {
+    const sync = $('#btn-sync'); if (!sync || $('#btn-chat')) return;
+    const b = document.createElement('a');
+    b.className = 'icon-btn hidden'; b.id = 'btn-chat'; b.href = '#/inbox'; b.title = 'الرسائل'; b.setAttribute('aria-label', 'الرسائل');
+    b.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span id="chat-n" class="chat-n hidden"></span>`;
+    sync.parentNode.insertBefore(b, sync);
+    paintUnread(); setInterval(() => { if (document.visibilityState === 'visible') paintUnread(); }, 60000);
+  }
+  const chatNeed = () => `<div class="card empty"><div class="big">💬</div><h3>الرسائل كتحتاج حسابك فالشبكة</h3><p>دخل للمزامنة السحابية من الإعدادات باش تراسل المشتركين والمكتب.</p><a class="btn gold" href="#/settings">الإعدادات</a></div>`;
+  async function viewInbox() {
+    if (!syOn()) { main().innerHTML = chatNeed(); return; }
+    main().innerHTML = `<div class="page-head"><div><h1>💬 الرسائل</h1><div class="sub">محادثات مع المشتركين ومكتب الوسيط 777</div></div><div class="btn-row" id="ib-act"></div></div><div class="card" id="ib-list"><div class="empty">⏳</div></div>`;
+    const me = myUid();
+    await loadDir().catch(() => {});
+    const adm = await adminUid();
+    if (adm && adm !== me) $('#ib-act').innerHTML = `<a class="btn gold" href="#/chat/${adm}">👑 راسل مكتب الوسيط 777</a>`;
+    const rows = await rqJson(`/rest/v1/w777_msgs?select=id,sender,recipient,body,created_at,read_at&or=(sender.eq.${me},recipient.eq.${me})&order=created_at.desc&limit=600`).catch(e => { toast(e.message); return []; });
+    const conv = new Map();
+    rows.forEach(m => { const o = m.sender === me ? m.recipient : m.sender; const c = conv.get(o) || { o, last: m, unread: 0 }; if (m.recipient === me && !m.read_at) c.unread++; conv.set(o, c); });
+    const items = await Promise.all([...conv.values()].map(async c => Object.assign(c, { who: await whoIs(c.o) })));
+    $('#ib-list').innerHTML = items.length ? items.map(c => `<a class="list-row" href="#/chat/${c.o}"><div class="avatar">${c.who.a && (c.who.a.photo || c.who.a.logo) ? `<img src="${esc(brandUrl(c.who.a.photo || c.who.a.logo))}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">` : c.who.ic}</div>
+      <div class="grow"><b>${esc(c.who.name)}</b><small class="muted">${c.last.sender === me ? 'نتا: ' : ''}${esc(c.last.body.slice(0, 80))}</small></div>
+      <div style="text-align:left"><small class="muted">${esc(c.last.created_at.slice(5, 16).replace('T', ' '))}</small>${c.unread ? `<div><span class="badge red">${c.unread}</span></div>` : ''}</div></a>`).join('')
+      : `<div class="empty"><div class="big">💬</div><h3>ما كاين حتى محادثة</h3><p>فالدليل (الوكالات، الوسطاء، الموثقين…) ضغط على «💬 رسالة» باش تبدا.</p></div>`;
+    paintUnread();
+  }
+  let chatTimer = null;
+  async function viewChat(other) {
+    clearInterval(chatTimer);
+    if (!syOn()) { main().innerHTML = chatNeed(); return; }
+    const me = myUid();
+    await loadDir().catch(() => {});
+    const who = await whoIs(other);
+    main().innerHTML = `<div class="chat-wrap"><div class="chat-head card"><a class="btn sm" href="#/inbox">${ic('back', 16)}</a><div class="avatar">${who.ic}</div><div class="grow"><b>${esc(who.name)}</b>${who.a ? `<small class="muted"><span dir="ltr">${esc(who.a.code)}</span>${who.a.city ? ' · ' + esc(who.a.city) : ''}</small>` : ''}</div>
+      ${who.a && who.a.phone ? `<a class="btn sm" href="${telLink(who.a.phone)}">${ic('phone', 15)}</a>` : ''}</div>
+      <div class="chat-box" id="cbox"><div class="empty">⏳</div></div>
+      <form class="chat-in" id="cin"><textarea name="t" rows="1" maxlength="2000" placeholder="كتب رسالتك…" required></textarea><button class="btn gold" type="submit">➤</button></form></div>`;
+    let lastId = 0, seen = new Set();
+    const box = $('#cbox');
+    const add = rows => {
+      if (!rows.length) { if (!seen.size) box.innerHTML = '<div class="empty muted">ابدا المحادثة 👋</div>'; return; }
+      if (!seen.size) box.innerHTML = '';
+      rows.forEach(m => { if (seen.has(m.id)) return; seen.add(m.id); lastId = Math.max(lastId, m.id);
+        const d = document.createElement('div'); d.className = 'msg ' + (m.sender === me ? 'me' : 'them');
+        d.innerHTML = `<div>${esc(m.body).replace(/\n/g, '<br>')}</div><small>${esc(m.created_at.slice(11, 16))}${m.sender === me ? (m.read_at ? ' ✓✓' : ' ✓') : ''}</small>`; box.appendChild(d); });
+      box.scrollTop = box.scrollHeight;
+    };
+    const pair = `or=(and(sender.eq.${me},recipient.eq.${other}),and(sender.eq.${other},recipient.eq.${me}))`;
+    const load = async first => {
+      const rows = await rqJson(`/rest/v1/w777_msgs?select=id,sender,recipient,body,created_at,read_at&${pair}${first ? '' : '&id=gt.' + lastId}&order=id.${first ? 'desc' : 'asc'}&limit=200`).catch(() => null);
+      if (!rows) return;
+      add(first ? rows.reverse() : rows);
+      if (rows.some(m => m.recipient === me && !m.read_at)) { await rqJson(`/rest/v1/w777_msgs?recipient=eq.${me}&sender=eq.${other}&read_at=is.null`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ read_at: new Date().toISOString() }) }).catch(() => {}); paintUnread(); }
+    };
+    await load(true);
+    const hash = location.hash;
+    chatTimer = setInterval(() => { if (location.hash !== hash || !box.isConnected) { clearInterval(chatTimer); return; } if (document.visibilityState === 'visible') load(false); }, 6000);
+    const form = $('#cin'), ta = $('[name=t]', form);
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && matchMedia('(hover: hover)').matches) { e.preventDefault(); form.requestSubmit(); } });
+    form.onsubmit = async e => {
+      e.preventDefault(); const t = ta.value.trim(); if (!t) return;
+      ta.disabled = true;
+      try { await rqJson('/rest/v1/w777_msgs', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ recipient: other, body: t }) }); ta.value = ''; await load(false); }
+      catch (er) { toast('تعذر الإرسال: ' + er.message, 4000); }
+      ta.disabled = false; ta.focus();
+    };
+  }
+
+  /* ---------- ⭐ التقييم ---------- */
+  let RATINGS = null, RATINGS_AT = 0;
+  async function loadRatings(force) {
+    if (!syOn()) return new Map();
+    if (!force && RATINGS && Date.now() - RATINGS_AT < 300000) return RATINGS;
+    const rows = await rqJson('/rest/v1/w777_ratings?select=rater,target,stars,comment,updated_at&order=updated_at.desc&limit=5000').catch(() => []);
+    const m = new Map();
+    (rows || []).forEach(r => { const x = m.get(r.target) || { sum: 0, n: 0, list: [] }; x.sum += r.stars; x.n++; x.list.push(r); m.set(r.target, x); });
+    RATINGS = m; RATINGS_AT = Date.now(); return m;
+  }
+  const starsTxt = v => '★★★★★'.slice(0, Math.round(v)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(v));
+  function rateBadge(uid) {
+    const x = RATINGS && RATINGS.get(uid);
+    return `<button class="rate-b" data-rshow="${uid}" title="الآراء">${x ? `<span class="stars">${starsTxt(x.sum / x.n)}</span> <b>${(x.sum / x.n).toFixed(1)}</b> <small>(${x.n})</small>` : '<span class="stars off">☆☆☆☆☆</span> <small>بلا تقييم</small>'}</button>`;
+  }
+  // أزرار الرسالة + التقييم فبطاقات الدليل
+  function memberActions(a) {
+    if (!syOn() || !a || a.uid === myUid()) return '';
+    return `<div class="btn-row mem-act">${rateBadge(a.uid)}<a class="btn sm" href="#/chat/${a.uid}">💬 رسالة</a><button class="btn sm" data-rate="${a.uid}">⭐ قيّم</button></div>`;
+  }
+  function bindMemberActions(root, redraw) {
+    $$('[data-rate]', root).forEach(b => b.onclick = async () => {
+      const uid = b.dataset.rate, a = (S.dir || []).find(x => x.uid === uid) || {};
+      const mine = ((RATINGS && RATINGS.get(uid)) || { list: [] }).list.find(r => r.rater === myUid());
+      let stars = mine ? mine.stars : 5;
+      modal(`<h3>⭐ تقييم ${esc(a.name || '')}</h3><div class="star-pick" id="sp">${[1, 2, 3, 4, 5].map(i => `<button type="button" data-s="${i}">★</button>`).join('')}</div>
+        <div class="field full"><label>رأيك (اختياري)</label><textarea id="rc" maxlength="500" placeholder="كيفاش كانت التجربة معاه؟">${esc(mine && mine.comment || '')}</textarea></div>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="r-ok">${ic('check', 16)} حفظ التقييم</button>${mine ? '<button class="btn danger" id="r-del">مسح تقييمي</button>' : ''}</div>`, (box, close) => {
+        const paint = () => $$('[data-s]', box).forEach(x => x.classList.toggle('on', +x.dataset.s <= stars));
+        $$('[data-s]', box).forEach(x => x.onclick = () => { stars = +x.dataset.s; paint(); }); paint();
+        $('#r-ok', box).onclick = async () => {
+          try { await rqJson('/rest/v1/w777_ratings?on_conflict=rater,target', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ rater: myUid(), target: uid, stars, comment: $('#rc', box).value.trim() || null }) });
+            await loadRatings(true); close(); toast('شكرا على التقييم ⭐'); if (redraw) redraw(); } catch (e) { toast('تعذر: ' + e.message, 4000); }
+        };
+        const d = $('#r-del', box); if (d) d.onclick = async () => { await rqJson(`/rest/v1/w777_ratings?rater=eq.${myUid()}&target=eq.${uid}`, { method: 'DELETE' }).catch(() => {}); await loadRatings(true); close(); if (redraw) redraw(); };
+      });
+    });
+    $$('[data-rshow]', root).forEach(b => b.onclick = () => {
+      const uid = b.dataset.rshow, a = (S.dir || []).find(x => x.uid === uid) || {}, x = RATINGS && RATINGS.get(uid);
+      modal(`<h3>⭐ آراء المشتركين — ${esc(a.name || '')}</h3>${x ? `<div class="mkt-big eq"><b>${(x.sum / x.n).toFixed(1)} / 5</b><span>${starsTxt(x.sum / x.n)} · ${x.n} تقييم</span></div>
+        <div style="margin-top:12px">${x.list.map(r => { const ra = (S.dir || []).find(d => d.uid === r.rater); return `<div class="list-row"><div class="grow"><b><span class="stars">${starsTxt(r.stars)}</span> ${esc(ra ? ra.name : 'مشترك')}</b>${r.comment ? `<small class="muted">${esc(r.comment)}</small>` : ''}</div><small class="muted">${esc(r.updated_at.slice(0, 10))}</small></div>`; }).join('')}</div>`
+        : '<p class="muted">مازال حتى واحد ما قيّم هاد المشترك.</p>'}<div class="btn-row" style="margin-top:12px"><button class="btn" data-close>إغلاق</button></div>`);
+    });
+  }
+
+  /* ---------- 🔐 الدخول بالبصمة / Face ID (WebAuthn) ---------- */
+  const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const ub64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+  const bioOn = () => !!localStorage.getItem('w777_bio');
+  async function bioAvailable() { try { return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; } }
+  async function bioEnable() {
+    if (!localStorage.getItem('w777_pin')) { toast('فعّل الرمز السري أولا (كاحتياط إلا ما خدماتش البصمة)', 4500); return; }
+    try {
+      const cred = await navigator.credentials.create({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)), rp: { name: 'الوسيط 777' },
+        user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'w777-' + (offPhone() || 'office'), displayName: offName() },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' }, timeout: 60000, attestation: 'none' } });
+      localStorage.setItem('w777_bio', b64u(cred.rawId)); toast('🔐 تفعّل الدخول بالبصمة ✓'); viewSettings();
+    } catch (e) { if (e.name !== 'NotAllowedError') toast('تعذر: ' + e.message, 4000); }
+  }
+  async function bioCheck() {
+    const id = localStorage.getItem('w777_bio'); if (!id) return false;
+    try {
+      await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), allowCredentials: [{ type: 'public-key', id: ub64(id) }], userVerification: 'required', timeout: 60000 } });
+      return true;
+    } catch (e) { return false; }
+  }
+  async function securityBioCard() {
+    if (!(await bioAvailable())) return '';
+    return `<div class="card card-pad" id="bio-card"><h3 class="section-title">🔐 الدخول بالبصمة / Face ID</h3>
+      <p class="muted" style="margin:0 0 10px">فتح التطبيق ببصمة الصبع ولا الوجه بلاصة الرمز السري. الرمز كيبقى احتياط.</p>
+      ${bioOn() ? `<div class="btn-row"><span class="badge green">✓ مفعّل فهاد الجهاز</span><button class="btn sm" id="bio-test">جرّب</button><button class="btn sm danger" id="bio-off">إلغاء</button></div>`
+        : `<button class="btn gold" id="bio-on">🔐 تفعيل البصمة</button>${localStorage.getItem('w777_pin') ? '' : '<p class="muted" style="font-size:12.5px;margin:8px 0 0">⚠️ خاصك تفعّل «القفل بالرمز السري» أولا.</p>'}`}</div>`;
+  }
+  function bindBioCard() {
+    const on = $('#bio-on'); if (on) on.onclick = bioEnable;
+    const off = $('#bio-off'); if (off) off.onclick = () => { localStorage.removeItem('w777_bio'); toast('تلغى الدخول بالبصمة'); viewSettings(); };
+    const t = $('#bio-test'); if (t) t.onclick = async () => toast((await bioCheck()) ? '✓ البصمة خدامة' : 'ما تقبلاتش البصمة');
+  }
   /* ---------- واجهة حية: العناصر كتطلع وحدة بوحدة ملي كتبان، والأرقام كتعدّ ---------- */
   const LV_BOX = '.home-main, .stats, .grid-2, .prop-grid, .dir-grid, .doc-grid, .doc-list, .st-grid, .own-list, .mm-grid, .match-list, .feat-grid, .tr-grid, .nt-list, .law-grid, .iv-grid, .gd-grid, .ev-list, .appt-list, .ag-stats, .detail-grid';
   const LV_OK = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && 'IntersectionObserver' in window;
@@ -7041,6 +7315,7 @@
     setupFab();
     setupAgent();
     setupSyncUi();
+    setupChat();
     window.addEventListener('hashchange', route);
     if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }
     window.addEventListener('popstate', () => { if (AG.open && !(history.state && history.state.ag)) agHide(); });

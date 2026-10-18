@@ -699,3 +699,154 @@ create policy w777_brand_ins on storage.objects for insert to authenticated
 drop policy if exists w777_brand_upd on storage.objects;
 create policy w777_brand_upd on storage.objects for update to authenticated
   using (bucket_id = 'w777-brand' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+
+-- ============================================================
+-- 🌐 الكتالوج العمومي: عقارات المكتب اللي بغا يعرضها للزبناء (بلا معلومات المالك)
+-- ============================================================
+create table if not exists public.w777_catalog_owner (
+  owner uuid primary key references auth.users(id) on delete cascade,
+  name text not null check (char_length(name) <= 120),
+  phone text check (char_length(phone) <= 30),
+  city text check (char_length(city) <= 60),
+  logo text check (char_length(logo) <= 300),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.w777_catalog (
+  owner uuid not null references auth.users(id) on delete cascade,
+  id text not null check (char_length(id) <= 80),
+  data jsonb not null default '{}'::jsonb check (pg_column_size(data) < 60000),
+  photos text[] not null default '{}' check (cardinality(photos) <= 12),
+  deleted boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (owner, id)
+);
+create index if not exists w777_catalog_owner_idx on public.w777_catalog (owner, deleted);
+alter table public.w777_catalog_owner enable row level security;
+alter table public.w777_catalog enable row level security;
+drop policy if exists w777_cto_sel on public.w777_catalog_owner;
+create policy w777_cto_sel on public.w777_catalog_owner for select to anon, authenticated using (true);
+drop policy if exists w777_cto_ins on public.w777_catalog_owner;
+create policy w777_cto_ins on public.w777_catalog_owner for insert to authenticated with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_cto_upd on public.w777_catalog_owner;
+create policy w777_cto_upd on public.w777_catalog_owner for update to authenticated using (owner = auth.uid()) with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_ct_sel on public.w777_catalog;
+create policy w777_ct_sel on public.w777_catalog for select to anon, authenticated using (not deleted or owner = auth.uid());
+drop policy if exists w777_ct_ins on public.w777_catalog;
+create policy w777_ct_ins on public.w777_catalog for insert to authenticated with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_ct_upd on public.w777_catalog;
+create policy w777_ct_upd on public.w777_catalog for update to authenticated using (owner = auth.uid()) with check (owner = auth.uid() and w777_can_use());
+drop policy if exists w777_ct_del on public.w777_catalog;
+create policy w777_ct_del on public.w777_catalog for delete to authenticated using (owner = auth.uid() or w777_is_admin());
+grant select on public.w777_catalog_owner, public.w777_catalog to anon;
+grant select, insert, update on public.w777_catalog_owner to authenticated;
+grant select, insert, update, delete on public.w777_catalog to authenticated;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('w777-catalog', 'w777-catalog', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+drop policy if exists w777_cat_ins on storage.objects;
+create policy w777_cat_ins on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-catalog' and (storage.foldername(name))[1] = auth.uid()::text and public.w777_can_use());
+drop policy if exists w777_cat_upd on storage.objects;
+create policy w777_cat_upd on storage.objects for update to authenticated
+  using (bucket_id = 'w777-catalog' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists w777_cat_sel on storage.objects;
+create policy w777_cat_sel on storage.objects for select to authenticated
+  using (bucket_id = 'w777-catalog' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists w777_cat_del on storage.objects;
+create policy w777_cat_del on storage.objects for delete to authenticated
+  using (bucket_id = 'w777-catalog' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+
+-- ============================================================
+-- 💬 المحادثة بين المشتركين (والمكتب)
+-- ============================================================
+create table if not exists public.w777_msgs (
+  id bigint generated always as identity primary key,
+  sender uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  recipient uuid not null references auth.users(id) on delete cascade,
+  body text not null check (char_length(btrim(body)) between 1 and 2000),
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+create index if not exists w777_msgs_rcpt_idx on public.w777_msgs (recipient, created_at desc);
+create index if not exists w777_msgs_send_idx on public.w777_msgs (sender, created_at desc);
+alter table public.w777_msgs enable row level security;
+-- المرسل إليه: مشترك مفعّل ولا المدير
+create or replace function public.w777_can_receive(u uuid) returns boolean language sql stable security definer set search_path=public as
+$$ select exists(select 1 from w777_agencies where uid = u and active) or exists(select 1 from w777_admins where uid = u) $$;
+drop policy if exists w777_msg_sel on public.w777_msgs;
+create policy w777_msg_sel on public.w777_msgs for select to authenticated using (sender = auth.uid() or recipient = auth.uid());
+drop policy if exists w777_msg_ins on public.w777_msgs;
+create policy w777_msg_ins on public.w777_msgs for insert to authenticated
+  with check (sender = auth.uid() and recipient <> auth.uid() and w777_can_use() and w777_can_receive(recipient) and read_at is null);
+drop policy if exists w777_msg_upd on public.w777_msgs;
+create policy w777_msg_upd on public.w777_msgs for update to authenticated using (recipient = auth.uid()) with check (recipient = auth.uid());
+revoke all on public.w777_msgs from anon;
+revoke update on public.w777_msgs from authenticated;
+grant select, insert on public.w777_msgs to authenticated;
+grant update (read_at) on public.w777_msgs to authenticated;
+-- حد: 60 رسالة فالساعة لكل مشترك (ضد الإزعاج)
+create or replace function public.w777_msg_limit() returns trigger language plpgsql security definer set search_path=public as
+$$ begin
+  if not w777_is_admin() and (select count(*) from w777_msgs where sender = new.sender and created_at > now() - interval '1 hour') >= 60 then
+    raise exception 'وصلتي للحد ديال الرسائل فالساعة، عاود من بعد';
+  end if;
+  new.created_at := now(); new.read_at := null; return new;
+end $$;
+drop trigger if exists w777_msg_limit on public.w777_msgs;
+create trigger w777_msg_limit before insert on public.w777_msgs for each row execute function public.w777_msg_limit();
+-- معرّف المدير (باش المشتركين يقدرو يراسلو المكتب)
+create or replace function public.w777_admin_uid() returns uuid language sql stable security definer set search_path=public as
+$$ select uid from w777_admins order by uid limit 1 $$;
+revoke all on function public.w777_admin_uid() from public, anon;
+grant execute on function public.w777_admin_uid() to authenticated;
+
+-- ============================================================
+-- ⭐ تقييم المشتركين
+-- ============================================================
+create table if not exists public.w777_ratings (
+  rater uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  target uuid not null references auth.users(id) on delete cascade,
+  stars smallint not null check (stars between 1 and 5),
+  comment text check (char_length(comment) <= 500),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (rater, target),
+  check (rater <> target)
+);
+create index if not exists w777_ratings_target_idx on public.w777_ratings (target);
+alter table public.w777_ratings enable row level security;
+drop policy if exists w777_rt_sel on public.w777_ratings;
+create policy w777_rt_sel on public.w777_ratings for select to authenticated using (w777_can_use());
+drop policy if exists w777_rt_ins on public.w777_ratings;
+create policy w777_rt_ins on public.w777_ratings for insert to authenticated with check (rater = auth.uid() and w777_can_use() and w777_can_receive(target));
+drop policy if exists w777_rt_upd on public.w777_ratings;
+create policy w777_rt_upd on public.w777_ratings for update to authenticated using (rater = auth.uid()) with check (rater = auth.uid());
+drop policy if exists w777_rt_del on public.w777_ratings;
+create policy w777_rt_del on public.w777_ratings for delete to authenticated using (rater = auth.uid() or w777_is_admin());
+revoke all on public.w777_ratings from anon;
+grant select, insert, update, delete on public.w777_ratings to authenticated;
+create or replace function public.w777_rt_touch() returns trigger language plpgsql as
+$$ begin new.updated_at := now(); if tg_op = 'UPDATE' then new.rater := old.rater; new.target := old.target; new.created_at := old.created_at; end if; return new; end $$;
+drop trigger if exists w777_rt_touch on public.w777_ratings;
+create trigger w777_rt_touch before insert or update on public.w777_ratings for each row execute function public.w777_rt_touch();
+-- صلاحيات ضيقة للجداول الجديدة (Supabase كيعطي كلشي افتراضيا)
+revoke all on public.w777_catalog, public.w777_catalog_owner, public.w777_msgs, public.w777_ratings from anon, authenticated;
+grant select on public.w777_catalog, public.w777_catalog_owner to anon;
+grant select, insert, update, delete on public.w777_catalog to authenticated;
+grant select, insert, update on public.w777_catalog_owner to authenticated;
+grant select, insert on public.w777_msgs to authenticated;
+grant update (read_at) on public.w777_msgs to authenticated;
+grant select, insert, update, delete on public.w777_ratings to authenticated;
+revoke all on function public.w777_can_receive(uuid) from public, anon;
+grant execute on function public.w777_can_receive(uuid) to authenticated;
+
+-- ============================================================
+-- 🔒 أمان: TRUNCATE كيتجاوز RLS ← ممنوع على الزوار والمشتركين فكل الجداول (حتى الجداول الجديدة)
+-- ============================================================
+do $$ declare t record; begin
+  for t in select tablename from pg_tables where schemaname = 'public' loop
+    execute format('revoke truncate, references, trigger on public.%I from anon, authenticated', t.tablename);
+  end loop;
+end $$;
+alter default privileges for role postgres in schema public revoke truncate, references, trigger on tables from anon, authenticated;
