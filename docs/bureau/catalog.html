@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>العقارات المعروضة | مجموعة الوسيط 777</title>
+  <meta name="description" content="عقارات للبيع والكراء — شقق، فيلات، أراضي ومحلات. تواصل مباشرة مع المكتب عبر واتساب.">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="icons/icon-192.png?v=8" type="image/png">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { padding-bottom: 40px; }
+    .cw { max-width: 1180px; margin: 0 auto; padding: 14px 16px; }
+    .c-hero { position: relative; overflow: hidden; border-radius: 22px; padding: 22px; color: #fff; margin-bottom: 16px;
+      background: radial-gradient(ellipse at 85% 0%, #5a0f1e, transparent 60%), linear-gradient(150deg, #000, #1c1c1c 60%, #3a0b14); box-shadow: 0 14px 40px -12px rgba(58,11,20,.5); }
+    .c-hero::after { content: '777'; position: absolute; inset-inline-end: -8px; bottom: -36px; font-size: 140px; font-weight: 900; color: rgba(255,255,255,.05); }
+    .c-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .c-top img { height: 58px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.4); background: #fff; }
+    .c-top h1 { margin: 0; font-size: 22px; }
+    .c-top small { color: rgba(255,255,255,.75); }
+    .c-hero .btn-row { margin-top: 14px; position: relative; z-index: 1; }
+    .c-hero .btn:not(.wa) { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.2); }
+    .c-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .c-bar input, .c-bar select { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); min-width: 0; flex: 1 1 140px; font: inherit; }
+    .c-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .c-card { overflow: hidden; text-decoration: none; display: flex; flex-direction: column; animation: lv-rise .5s cubic-bezier(.2,.85,.25,1) backwards; }
+    .c-cover { position: relative; aspect-ratio: 4/3; background: linear-gradient(135deg, #2a0a10, #111); }
+    .c-cover img { width: 100%; height: 100%; object-fit: cover; }
+    .c-cover .badge { position: absolute; top: 10px; inset-inline-start: 10px; background: linear-gradient(145deg, var(--gold-2), var(--gold)); color: #fff; }
+    .c-cover .ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 46px; opacity: .5; }
+    .c-body { padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+    .c-price { font-size: 19px; font-weight: 900; color: var(--gold); }
+    .c-specs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .c-specs span { font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+    .c-det .c-gal { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 18px; scrollbar-width: none; }
+    .c-det .c-gal img { flex: 0 0 100%; width: 100%; aspect-ratio: 4/3; object-fit: cover; scroll-snap-align: center; border-radius: 18px; }
+    .c-gal-n { text-align: center; color: var(--muted); font-size: 13px; margin: 6px 0 12px; }
+    .c-feat { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .c-feat span { font-size: 13px; color: var(--green); }
+    .c-sticky { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; margin-top: 14px; z-index: 5; }
+    .c-sticky .btn { flex: 1; justify-content: center; padding: 14px; font-size: 16px; box-shadow: var(--shadow-lg); }
+    .c-foot { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 26px; }
+    @media (min-width: 900px) { .c-det { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; align-items: start; } }
+  </style>
+</head>
+<body>
+  <div class="cw"><div id="cb"><div class="card empty">⏳ جاري التحميل…</div></div>
+    <div class="c-foot">مدعوم بتطبيق <b>مجموعة الوسيط 777</b> للخدمات العقارية</div></div>
+  <script src="../app/config.js" onerror="void 0"></script>
+  <script src="data.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = window.__ALWASSET_SUPABASE__ || {};
+    const URL_ = String(C.url || '').replace(/\/+$/, ''), KEY = C.anonKey || '';
+    const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+    const D = window.W777_DATA || { PROPERTY_TYPES: [], TRANSACTIONS: [] };
+    const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const NF = new Intl.NumberFormat('fr-FR');
+    const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
+    const fmt = n => '⁦' + NF.format(Number(n) || 0).replace(/[  ]/g, ' ') + '⁩';
+    const TYPE = Object.fromEntries(D.PROPERTY_TYPES.map(t => [t.id, t.ar]));
+    const TRX = Object.fromEntries(D.TRANSACTIONS.map(t => [t.id, t.ar]));
+    const isRent = t => ['rent', 'rent_furnished', 'seasonal'].includes(t);
+    const short = t => ({ sale: 'للبيع', offplan: 'على التصميم', rent: 'للكراء', rent_furnished: 'كراء مفروش', seasonal: 'كراء موسمي' }[t] || TRX[t] || '');
+    const price = d => { const u = d.priceUnit || 'درهم'; if (d.priceMin && d.priceMax && d.priceMin !== d.priceMax) return fmt(d.priceMin) + ' — ' + fmt(d.priceMax) + ' ' + u; const v = d.priceMax || d.priceMin; return v ? fmt(v) + ' ' + u : 'السعر عند الطلب'; };
+    const img = p => `${URL_}/storage/v1/object/public/w777-catalog/${p.split('/').map(encodeURIComponent).join('/')}`;
+    const waPhone = p => { let d = String(p || '').replace(/[^\d+]/g, ''); if (d.startsWith('+')) d = d.slice(1); else if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = '212' + d.slice(1); return d; };
+    const area = d => num(d.areaTotal) || num(d.areaBuilt) || num(d.areaUseful);
+    const specs = d => { const s = d.specs || {}, o = []; if (area(d)) o.push('📐 ' + fmt(area(d)) + ' م²'); if (s.bedrooms) o.push('🛏️ ' + s.bedrooms + ' غرف'); else if (s.rooms) o.push('🚪 ' + s.rooms + ' غرف'); if (s.salons) o.push('🛋️ ' + s.salons + ' صالون'); if (s.bathrooms) o.push('🛁 ' + s.bathrooms); if (s.floor) o.push('🏢 الطابق ' + s.floor); return o; };
+    const box = $('#cb');
+    const owner = new URLSearchParams(location.search).get('o') || '';
+    let OW = null, ALL = [];
+    const get = p => fetch(URL_ + '/rest/v1/' + p, { headers: H }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+
+    function hero() {
+      const ph = OW && OW.phone;
+      return `<div class="c-hero"><div class="c-top"><img src="${esc(OW && OW.logo || 'icons/logo.png?v=9')}" alt="">
+        <div><h1>${esc(OW ? OW.name : 'مجموعة الوسيط 777')}</h1><small>🏠 ${ALL.length} عقار معروض${OW && OW.city ? ' · 📍 ' + esc(OW.city) : ''}</small></div></div>
+        ${ph ? `<div class="btn-row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(ph)}">واتساب</a><a class="btn" href="tel:${esc(ph.replace(/[^\d+]/g, ''))}">📞 <span dir="ltr">${esc(ph)}</span></a></div>` : ''}</div>`;
+    }
+    function card(r, i) {
+      const d = r.data || {}, ph = (r.photos || [])[0];
+      return `<a class="card c-card" href="#p=${encodeURIComponent(r.id)}" style="animation-delay:${Math.min(i, 12) * 50}ms"><div class="c-cover">${ph ? `<img src="${esc(img(ph))}" alt="" loading="lazy">` : '<div class="ph">🏠</div>'}<span class="badge">${esc(short(d.transaction))}</span></div>
+        <div class="c-body"><div class="c-price">${price(d)}</div><b>${esc(d.title || TYPE[d.type] || '')}</b><small class="muted">📍 ${esc([d.district, d.city].filter(Boolean).join('، '))}</small>
+        <div class="c-specs">${specs(d).map(x => `<span>${x}</span>`).join('')}</div></div></a>`;
+    }
+    function list() {
+      const cities = [...new Set(ALL.map(r => r.data.city).filter(Boolean))].sort();
+      const types = [...new Set(ALL.map(r => r.data.type).filter(Boolean))];
+      box.innerHTML = hero() + `<div class="c-bar"><input id="fq" type="search" placeholder="🔎 قلب: حي، نوع…"><select id="ft"><option value="">بيع وكراء</option><option value="sale">للبيع</option><option value="rent">للكراء</option></select>
+        <select id="fy"><option value="">كل الأنواع</option>${types.map(t => `<option value="${esc(t)}">${esc(TYPE[t] || t)}</option>`).join('')}</select>
+        ${cities.length > 1 ? `<select id="fc"><option value="">كل المدن</option>${cities.map(c => `<option>${esc(c)}</option>`).join('')}</select>` : ''}
+        <input id="fp" type="number" inputmode="numeric" placeholder="الثمن الأقصى (درهم)"></div><div class="c-grid" id="cg"></div>`;
+      const draw = () => {
+        const q = ($('#fq').value || '').trim().toLowerCase(), t = $('#ft').value, y = $('#fy').value, c = $('#fc') ? $('#fc').value : '', pmax = Number($('#fp').value) || 0;
+        const res = ALL.filter(r => { const d = r.data; const pr = num(d.priceMin) || num(d.priceMax) || 0;
+          return (!t || (t === 'rent' ? isRent(d.transaction) : !isRent(d.transaction))) && (!y || d.type === y) && (!c || d.city === c) && (!pmax || !pr || pr <= pmax)
+            && (!q || [d.title, d.district, d.city, TYPE[d.type], d.ref, d.description].join(' ').toLowerCase().includes(q)); });
+        $('#cg').innerHTML = res.map(card).join('') || '<div class="card empty" style="grid-column:1/-1"><div class="big">🔎</div><h3>ما كاين حتى عقار بهاد المعايير</h3></div>';
+      };
+      $$('.c-bar input, .c-bar select').forEach(el => el.addEventListener('input', draw));
+      draw();
+    }
+    function detail(id) {
+      const r = ALL.find(x => x.id === id); if (!r) { location.hash = ''; return; }
+      const d = r.data || {}, ph = r.photos || [], tel = OW && OW.phone;
+      const msg = `السلام عليكم، مهتم بالعقار ${d.ref || ''}: ${d.title || ''}\n${location.href}`;
+      document.title = (d.title || 'عقار') + ' | ' + (OW ? OW.name : 'الوسيط 777');
+      box.innerHTML = `<div class="btn-row" style="margin-bottom:12px"><a class="btn" href="#">→ كل العقارات</a><button class="btn" id="c-share">↗ مشاركة</button></div>
+        <div class="c-det"><div>${ph.length ? `<div class="c-gal" id="gal">${ph.map(p => `<img src="${esc(img(p))}" alt="" loading="lazy">`).join('')}</div><div class="c-gal-n" id="gn">1 / ${ph.length}</div>` : '<div class="card empty"><div class="big">🏠</div></div>'}</div>
+        <div><div class="card card-pad"><span class="badge gold">${esc(short(d.transaction))}</span> <span class="badge">${esc(d.ref || '')}</span>
+          <h1 style="margin:8px 0 4px;font-size:22px">${esc(d.title || TYPE[d.type] || '')}</h1><div class="muted">📍 ${esc([d.district, d.city].filter(Boolean).join('، '))}</div>
+          <div class="c-price" style="font-size:26px;margin-top:10px">${price(d)}</div>${d.negotiable ? '<small class="muted">قابل للتفاوض</small>' : ''}
+          <div class="c-specs" style="margin-top:12px">${specs(d).map(x => `<span>${x}</span>`).join('')}<span>🏷️ ${esc(TYPE[d.type] || '')}</span></div>
+          ${(d.features || []).length ? `<div class="c-feat">${d.features.map(f => `<span>✓ ${esc(f)}</span>`).join(' · ')}</div>` : ''}</div>
+          ${d.description ? `<div class="card card-pad" style="margin-top:14px"><b>الوصف</b><p style="white-space:pre-wrap;margin:8px 0 0">${esc(d.description)}</p></div>` : ''}
+          ${tel ? `<div class="c-sticky"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(tel)}?text=${encodeURIComponent(msg)}">💬 مهتم — واتساب</a><a class="btn gold" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}">📞 اتصل</a></div>` : ''}</div></div>`;
+      const g = $('#gal'); if (g) g.addEventListener('scroll', () => { const i = Math.round(Math.abs(g.scrollLeft) / g.clientWidth); $('#gn').textContent = (i + 1) + ' / ' + ph.length; }, { passive: true });
+      $('#c-share').onclick = async () => { try { if (navigator.share) { await navigator.share({ title: d.title, url: location.href }); return; } } catch (e) { if (e.name === 'AbortError') return; } navigator.clipboard.writeText(location.href); alert('تنسخ الرابط ✓'); };
+      window.scrollTo(0, 0);
+    }
+    function route() { const m = location.hash.match(/p=([^&]+)/); if (m) detail(decodeURIComponent(m[1])); else { document.title = (OW ? OW.name : 'مجموعة الوسيط 777') + ' — العقارات المعروضة'; list(); } }
+    async function start() {
+      if (!URL_ || !/^[0-9a-f-]{36}$/i.test(owner)) { box.innerHTML = '<div class="card empty"><div class="big">🔗</div><h3>الرابط ناقص</h3><p>طلب من المكتب الرابط الكامل ديال الكتالوج.</p></div>'; return; }
+      try {
+        const [ow, rows] = await Promise.all([get(`w777_catalog_owner?owner=eq.${owner}&select=name,phone,city,logo`), get(`w777_catalog?owner=eq.${owner}&deleted=eq.false&select=id,data,photos,updated_at&order=updated_at.desc&limit=500`)]);
+        OW = ow[0] || null; ALL = rows || [];
+        if (!ALL.length) { box.innerHTML = hero() + '<div class="card empty"><div class="big">🏠</div><h3>ما كاين حتى عقار معروض دابا</h3><p>تواصل مع المكتب، كاينين عروض جديدة كل نهار.</p></div>'; return; }
+        window.addEventListener('hashchange', route); route();
+      } catch (e) { box.innerHTML = `<div class="card empty"><div class="big">⚠️</div><h3>تعذر التحميل</h3><p>${esc(e.message)}</p></div>`; }
+    }
+    start();
+  })();
+  </script>
+</body>
+</html>
