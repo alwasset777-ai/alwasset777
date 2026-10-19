@@ -4241,7 +4241,7 @@
           <h1>${esc(l.t)}</h1>
           <div class="gd-tag">✦ ${esc(l.tag)}</div>
           <ol class="gd-steps">${l.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
-          <div class="gd-tip"><b>💡 نصيحة</b><p>${esc(l.tip)}</p></div>
+          ${l.tip ? `<div class="gd-tip"><b>💡 نصيحة</b><p>${esc(l.tip)}</p></div>` : ''}
           <div class="btn-row" style="margin-top:14px">
             <button class="btn gold" id="gd-try">${ic('target', 18)} جرّب دابا</button>
             <button class="btn ${done.has(l.n) ? '' : 'primary'}" id="gd-ok">${done.has(l.n) ? '✓ مفهوم' : '✓ فهمت'}</button>
@@ -6010,7 +6010,7 @@
     const bar = prog.firstElementChild;
     const meta = (await DB.all('meta')).filter(m => !m.key.startsWith('sync_'));
     const parts = ['{"app":"wasset777-bureau","version":1,"exportedAt":', JSON.stringify(new Date().toISOString()),
-      ',"properties":', JSON.stringify(S.props), ',"requests":', JSON.stringify(S.reqs), ',"meta":', JSON.stringify(meta), ',"files":['];
+      ',"properties":', JSON.stringify(S.props), ',"requests":', JSON.stringify(S.reqs), ',"appointments":', JSON.stringify(S.appts), ',"meta":', JSON.stringify(meta), ',"files":['];
     const ids = [];
     [...S.props, ...S.reqs].forEach(p => (p.media || []).forEach(m => { if (withVideos || m.kind !== 'video') ids.push(m.id); }));
     let first = true;
@@ -6044,7 +6044,7 @@
     let data;
     try { data = JSON.parse(await file.text()); } catch (e) { toast('ملف غير صالح'); return; }
     if (!data || data.app !== 'wasset777-bureau') { toast('هذا الملف ليس نسخة احتياطية لتطبيق الوسيط 777'); return; }
-    const choice = await new Promise(res => modal(`<h3>استيراد ${data.properties.length} عقار و ${data.requests.length} طلب</h3>
+    const choice = await new Promise(res => modal(`<h3>استيراد ${data.properties.length} عقار و ${data.requests.length} طلب${(data.appointments || []).length ? ' و ' + data.appointments.length + ' موعد' : ''}</h3>
       <p class="muted">تاريخ النسخة: ${esc((data.exportedAt || '').slice(0, 16).replace('T', ' '))}</p>
       <div class="btn-row" style="flex-direction:column;align-items:stretch">
         <button class="btn gold" data-c="merge">دمج مع البيانات الحالية (الأحدث يبقى)</button>
@@ -6055,13 +6055,21 @@
     if (!choice) return;
     const prog = $('#bk-prog'); if (prog) prog.classList.remove('hidden');
     const bar = prog && prog.firstElementChild;
-    if (choice === 'replace') { await Promise.all(['properties', 'requests', 'files', 'meta'].map(s => DB.clear(s))); urlCache.clear(); }
+    if (choice === 'replace') { await Promise.all(['properties', 'requests', 'appointments', 'files', 'meta'].map(s => DB.clear(s))); urlCache.clear(); }
     const newer = (a, b) => !b || (a.updatedAt || '') >= (b.updatedAt || '');
     for (const p of data.properties) { const cur = await DB.get('properties', p.id); if (choice === 'replace' || newer(p, cur)) { await DB.put('properties', p); await DB.markDirty('properties', p.id); } }
     for (const r of data.requests) { const cur = await DB.get('requests', r.id); if (choice === 'replace' || newer(r, cur)) { await DB.put('requests', r); await DB.markDirty('requests', r.id); } }
+    for (const a of data.appointments || []) { const cur = await DB.get('appointments', a.id); if (choice === 'replace' || newer(a, cur)) { await DB.put('appointments', a); await DB.markDirty('appointments', a.id); } }
     for (const m of data.meta || []) {
-      if (choice === 'replace') { if (!m.key.startsWith('sync_')) await DB.put('meta', m); continue; }
+      if (choice === 'replace') { if (!m.key.startsWith('sync_')) { await DB.put('meta', m); if (['settings', 'customDistricts', 'ledger', 'leases'].includes(m.key)) await DB.markDirty('meta', m.key); } continue; }
       const cur = await DB.get('meta', m.key);
+      // المالية وعقود الكراء: دمج عنصر بعنصر (الأحدث كيبقى)
+      if (['ledger', 'leases'].includes(m.key) && Array.isArray(m.value)) {
+        const map = new Map(((cur && cur.value) || []).map(x => [x.id, x]));
+        m.value.forEach(x => { const c = map.get(x.id); if (!c || (x.updatedAt || '') > (c.updatedAt || '')) map.set(x.id, x); });
+        await DB.put('meta', { key: m.key, value: Array.from(map.values()) }); await DB.markDirty('meta', m.key);
+        continue;
+      }
       if (m.key.startsWith('counter_')) await DB.put('meta', { key: m.key, value: Math.max(m.value || 0, (cur && cur.value) || 0) });
       else if (m.key === 'customDistricts') {
         const merged = Object.assign({}, (cur && cur.value) || {});
