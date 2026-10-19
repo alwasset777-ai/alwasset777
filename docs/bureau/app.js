@@ -1432,7 +1432,7 @@
               </div>`).join('') : `<div class="empty" style="padding:22px">لا يوجد طلب مطابق حاليا</div>`}
           </div>
           <div class="card card-pad no-print muted" style="font-size:12.5px">
-            أضيف: ${esc((p.createdAt || '').slice(0, 10))} · آخر تعديل: ${esc((p.updatedAt || '').slice(0, 10))}
+            أضيف: ${esc((p.createdAt || '').slice(0, 10))} · آخر تعديل: ${esc((p.updatedAt || '').slice(0, 10))}${byName(p._by) ? ' — ' + esc(byName(p._by)) : ''}
             <div class="btn-row" style="margin-top:10px">
               <button class="btn sm" id="p-dup">${ic('copy', 15)} نسخ كعقار جديد</button>
               <button class="btn sm danger" id="p-del">${ic('trash', 15)} حذف العقار</button>
@@ -1966,6 +1966,8 @@
           </div>
         </div>
         ${await securityBioCard()}
+        ${EMBED ? '' : staffCard()}
+        ${await pushCard()}
         ${EMBED ? '' : catalogCard()}
 
         <div class="card card-pad">
@@ -2015,7 +2017,7 @@
     $('#csv-props').onclick = exportPropsCsv;
     $('#csv-reqs').onclick = exportReqsCsv;
     const po = $('#pin-on'); if (po) po.onclick = () => setupPin();
-    bindBioCard(); bindCatalogCard();
+    bindBioCard(); bindCatalogCard(); bindStaffCard(); bindPushCard();
     const pc = $('#pin-change'); if (pc) pc.onclick = () => setupPin();
     const pf = $('#pin-off'); if (pf) pf.onclick = async () => { if (await confirmBox('إلغاء القفل بالرمز السري؟', 'إلغاء القفل')) { localStorage.removeItem('w777_pin'); toast('تم إلغاء القفل'); viewSettings(); } };
     const ps = $('#persist'); if (ps) ps.onclick = async () => { const ok = await DB.persist(); toast(ok ? 'تم تفعيل الحماية ✓' : 'المتصفح رفض الطلب — ثبّت التطبيق على الشاشة الرئيسية ثم أعد المحاولة'); viewSettings(); };
@@ -2117,6 +2119,7 @@
   }
   // كل مزامنة: العقارات الجديدة ديال الشركاء كتولي عقارات عادية بسمية الوكالة
   async function importPartnerItems() {
+    if (staffMe()) return 0;
     const Sy = window.W777_SYNC;
     if (!Sy || !Sy.isOn()) return 0;
     const items = await (await Sy.request('/rest/v1/w777_partner_items?imported=eq.false&select=id,token,data,photos,created_at,w777_partners(name,phone)&order=created_at.asc&limit=20')).json();
@@ -3444,6 +3447,7 @@
 
   // كل مزامنة: نسخة «نقية» من العقارات المتاحة ديالي كتمشي للشبكة (بلا المالك، بلا ملاحظات، بلا GPS)
   async function publishShared() {
+    if (staffMe()) return 0; // الموظف ما كينشرش باسمو
     const Sy = window.W777_SYNC;
     if (!Sy || !Sy.isOn()) return 0;
     await refreshRole();
@@ -6981,7 +6985,7 @@
   /* ---------- 🌐 نشر الكتالوج ---------- */
   let catBusy = false;
   async function publishCatalog() {
-    if (catBusy || !syOn() || !navigator.onLine) return 0;
+    if (catBusy || !syOn() || !navigator.onLine || staffMe()) return 0;
     catBusy = true;
     try {
       const Sy = window.W777_SYNC, me = Sy.uid();
@@ -7223,6 +7227,126 @@
     const off = $('#bio-off'); if (off) off.onclick = () => { localStorage.removeItem('w777_bio'); toast('تلغى الدخول بالبصمة'); viewSettings(); };
     const t = $('#bio-test'); if (t) t.onclick = async () => toast((await bioCheck()) ? '✓ البصمة خدامة' : 'ما تقبلاتش البصمة');
   }
+  /* ============================================================
+     👥 الموظفون · 🔔 الإشعارات الفورية
+     ============================================================ */
+  const ROLES = { view: ['👁️ مشاهدة فقط', 'كيشوف العقارات والطلبات بلا ما يبدل والو'], edit: ['✏️ مشاهدة وتعديل', 'كيزيد ويعدّل، ولكن ما يقدرش يمسح'], full: ['🔑 كاملة', 'كيزيد، يعدّل ويمسح'] };
+  const staffMe = () => (window.W777_SYNC && window.W777_SYNC.staff ? window.W777_SYNC.staff() : null);
+  // حماية فالتطبيق (الخادم كيحمي حتى هو)
+  const guard = (store, del) => {
+    const s = staffMe(); if (!s) return;
+    if (s.role === 'view' || (del && s.role !== 'full')) { toast(s.role === 'view' ? '👁️ الحساب ديالك «مشاهدة فقط» — ما تقدرش تبدل' : '🔒 ما عندكش صلاحية الحذف — تواصل مع مول المكتب', 4500); throw new Error('staff-perm'); }
+  };
+  const _saveRec2 = DB.saveRec, _delRec2 = DB.delRec;
+  DB.saveRec = (st, o) => { guard(st, false); return _saveRec2(st, o); };
+  DB.delRec = (st, id) => { guard(st, true); return _delRec2(st, id); };
+  window.addEventListener('unhandledrejection', e => { if (e.reason && e.reason.message === 'staff-perm') e.preventDefault(); });
+  let STAFF = null;
+  async function loadStaff(force) {
+    if (!syOn() || staffMe()) return [];
+    if (STAFF && !force) return STAFF;
+    STAFF = await rqJson(`/rest/v1/w777_staff?owner=eq.${myUid()}&select=uid,name,login,role,active,created_at&order=created_at.asc`).catch(() => []) || [];
+    return STAFF;
+  }
+  const byName = uid => { if (!uid) return ''; if (uid === myUid()) return 'نتا'; const s = (STAFF || []).find(x => x.uid === uid); return s ? '👤 ' + s.name : ''; };
+  const staffFn = body => rqJson('/functions/v1/w777-staff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  function staffCredMsg(login, pass) {
+    return `السلام عليكم،\nهادي معلومات الدخول ديالك لتطبيق ${offName()}:\nالرابط: ${appBase()}\nالإعدادات ← المزامنة السحابية\nالرمز: ${login}\nكلمة السر: ${pass}\n(ما تعطيهاش لحتى واحد)`;
+  }
+  function showCreds(login, pass, title) {
+    modal(`<h3>${title}</h3><p>عطي هاد المعلومات للموظف (كتبان مرة وحدة فقط):</p>
+      <div class="kv"><div><small>الرمز (Login)</small><b dir="ltr">${esc(login)}</b></div><div><small>كلمة السر</small><b dir="ltr">${esc(pass)}</b></div></div>
+      <div class="btn-row" style="margin-top:12px"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(staffCredMsg(login, pass))}">${ic('wa', 16)} صيفط فواتساب</a>
+      <button class="btn" id="cr-copy">${ic('copy', 15)} نسخ</button><button class="btn" data-close>تم</button></div>`, box => {
+      $('#cr-copy', box).onclick = () => navigator.clipboard.writeText(staffCredMsg(login, pass)).then(() => toast('تنسخ ✓'));
+    });
+  }
+  function staffCard() {
+    if (!syOn()) return '';
+    const s = staffMe();
+    if (s) return `<div class="card card-pad" style="border-color:var(--blue)"><h3 class="section-title">👤 حساب موظف</h3>
+      <p style="margin:0">كتخدم على بيانات المكتب. الصلاحية: <b>${esc((ROLES[s.role] || ROLES.view)[0])}</b></p><p class="muted" style="margin:6px 0 0;font-size:13px">${esc((ROLES[s.role] || ROLES.view)[1])}</p></div>`;
+    if (!inNetwork()) return '';
+    return `<div class="card card-pad" id="staff-card"><h3 class="section-title">👥 الموظفون</h3>
+      <p class="muted" style="margin:0 0 10px">كل موظف عندو دخول خاص، كيخدم على العقارات والطلبات ديال المكتب حسب الصلاحية اللي عطيتيه، وكتعرف شكون دار كل تعديل.</p>
+      <div id="staff-list"><div class="muted">⏳</div></div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn gold" id="st-add">${ic('plus', 16)} موظف جديد</button></div>
+      <div id="staff-log" style="margin-top:14px"></div></div>`;
+  }
+  async function bindStaffCard() {
+    const box = $('#staff-list'); if (!box) return;
+    const list = await loadStaff(true);
+    box.innerHTML = list.length ? list.map(s => `<div class="list-row" style="flex-wrap:wrap;gap:8px"><div class="avatar">${esc(s.name.trim()[0] || '؟')}</div>
+      <div class="grow"><b>${esc(s.name)} ${s.active ? '' : '<span class="badge red">موقوف</span>'}</b><small class="muted" dir="ltr">${esc(s.login)}</small></div>
+      <select data-srole="${s.uid}" class="btn sm">${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${s.role === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>
+      <button class="btn sm" data-stog="${s.uid}">${s.active ? 'إيقاف' : 'تفعيل'}</button><button class="btn sm" data-spw="${s.uid}" title="كلمة سر جديدة">🔑</button><button class="btn sm danger" data-sdel="${s.uid}">${ic('trash', 14)}</button></div>`).join('')
+      : '<div class="empty" style="padding:16px">ما زال ما زدتي حتى موظف</div>';
+    const upd = async (uid, body) => { await rqJson(`/rest/v1/w777_staff?uid=eq.${uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) }); toast('تم ✓'); bindStaffCard(); };
+    $$('[data-srole]', box).forEach(x => x.onchange = () => upd(x.dataset.srole, { role: x.value }).catch(e => toast(e.message)));
+    $$('[data-stog]', box).forEach(x => x.onclick = () => { const s = list.find(y => y.uid === x.dataset.stog); upd(s.uid, { active: !s.active }).catch(e => toast(e.message)); });
+    $$('[data-spw]', box).forEach(x => x.onclick = async () => { const s = list.find(y => y.uid === x.dataset.spw);
+      if (!(await confirmBox('نعطيو كلمة سر جديدة لـ ' + s.name + '؟', 'كلمة سر جديدة', false))) return;
+      try { const r = await staffFn({ action: 'password', uid: s.uid }); showCreds(s.login, r.password, '🔑 كلمة سر جديدة'); } catch (e) { toast('تعذر: ' + e.message, 4000); } });
+    $$('[data-sdel]', box).forEach(x => x.onclick = async () => { const s = list.find(y => y.uid === x.dataset.sdel);
+      if (!(await confirmBox('حذف الحساب ديال ' + s.name + ' نهائيا؟ (البيانات ديال المكتب كتبقى)', 'حذف'))) return;
+      try { await staffFn({ action: 'delete', uid: s.uid }); toast('تمسح ✓'); bindStaffCard(); } catch (e) { toast('تعذر: ' + e.message, 4000); } });
+    $('#st-add').onclick = () => modal(`<h3>👥 موظف جديد</h3><form id="stf" class="form-grid" onsubmit="return false">${fInput('name', 'اسم الموظف', '', { req: true })}
+        <div class="field full"><label>الصلاحية</label>${Object.entries(ROLES).map(([k, v]) => `<label class="chk" style="margin:6px 0"><input type="radio" name="role" value="${k}" ${k === 'edit' ? 'checked' : ''}> ${v[0]} <small class="muted" style="font-weight:400">— ${v[1]}</small></label>`).join('')}</div></form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="stf-ok">${ic('check', 16)} إنشاء الحساب</button></div>`, (b2, close) => {
+      $('#stf-ok', b2).onclick = async () => {
+        const v = collect($('#stf', b2)); if (!v.name) { toast('دخل الاسم'); return; }
+        $('#stf-ok', b2).disabled = true;
+        try { const r = await staffFn({ action: 'create', name: v.name, role: v.role || 'edit' }); close(); showCreds(r.login, r.password, '✅ تزاد الموظف'); bindStaffCard(); }
+        catch (e) { toast('تعذر: ' + e.message, 4500); $('#stf-ok', b2).disabled = false; }
+      };
+    });
+    // آخر التعديلات ديال الموظفين
+    const ids = list.map(s => s.uid);
+    if (ids.length) {
+      const rows = await rqJson(`/rest/v1/w777_records?owner=eq.${myUid()}&edited_by=in.(${ids.join(',')})&select=kind,id,edited_by,synced_at,deleted,ref:data->>ref,title:data->>title,client:data->client->>name&order=synced_at.desc&limit=25`).catch(() => []);
+      const KIND = { properties: '🏠', requests: '👥', appointments: '📅', meta: '⚙️' };
+      if (rows && rows.length) $('#staff-log').innerHTML = `<b>📋 آخر ما دارو الموظفين</b>${rows.map(r => `<div class="list-row"><div class="grow"><b>${KIND[r.kind] || '•'} ${esc(r.title || r.client || r.ref || r.id)}${r.deleted ? ' <span class="badge red">تمسح</span>' : ''}</b>
+        <small class="muted">${esc(byName(r.edited_by))} · ${esc(String(r.synced_at).slice(0, 16).replace('T', ' '))}</small></div>${r.kind === 'properties' && !r.deleted ? `<a class="btn sm" href="#/property/${encodeURIComponent(r.id)}">فتح</a>` : r.kind === 'requests' && !r.deleted ? `<a class="btn sm" href="#/request/${encodeURIComponent(r.id)}">فتح</a>` : ''}</div>`).join('')}`;
+    }
+  }
+
+  /* ---------- 🔔 الإشعارات الفورية ---------- */
+  const VAPID_PUB = 'BJI4T6DFbbGD8BDYipNlskvNsm10YDVLPgybzwd99qC3ak43mxHnDJwjNdeIYxcZ2v_wsGIfYFJ87ZCdkKhiYnw';
+  const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  async function pushSub() { try { const reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); } catch (e) { return null; } }
+  async function pushEnable() {
+    if (!syOn()) { toast('خاصك تدخل للمزامنة السحابية أولا', 4000); return; }
+    if (await Notification.requestPermission() !== 'granted') { toast('ما تعطاتش الموافقة على الإشعارات — فعّلها من إعدادات التيليفون', 5000); return; }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: ub64(VAPID_PUB) });
+      const j = sub.toJSON();
+      await rqJson('/rest/v1/w777_push_subs?on_conflict=uid,endpoint', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ uid: myUid(), endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }) });
+      localStorage.setItem('w777_push', '1');
+      reg.showNotification('🔔 الوسيط 777', { body: 'تفعّلو الإشعارات ✓ غادي يوصلوك هنا', icon: 'icons/icon-192.png?v=8', badge: 'icons/icon-192.png?v=8', lang: 'ar', dir: 'rtl' });
+      toast('🔔 تفعّلو الإشعارات ✓'); viewSettings();
+    } catch (e) { toast('تعذر: ' + e.message, 5000); }
+  }
+  async function pushDisable() {
+    const sub = await pushSub();
+    if (sub) { await rqJson(`/rest/v1/w777_push_subs?uid=eq.${myUid()}&endpoint=eq.${encodeURIComponent(sub.endpoint)}`, { method: 'DELETE' }).catch(() => {}); await sub.unsubscribe().catch(() => {}); }
+    localStorage.removeItem('w777_push'); toast('تحبسو الإشعارات'); viewSettings();
+  }
+  async function pushCard() {
+    if (EMBED || !syOn()) return '';
+    const on = pushOk() && Notification.permission === 'granted' && !!(await pushSub());
+    return `<div class="card card-pad" id="push-card"><h3 class="section-title">🔔 الإشعارات الفورية</h3>
+      <p class="muted" style="margin:0 0 10px">توصلك فالتيليفون حتى والتطبيق مسدود: 💬 رسالة جديدة · 🎯 عقار جديد فالشبكة كيناسب طلب عندك · 🖋️ طلب للموثق · ⭐ تقييم · 🏖️ حجز.</p>
+      ${!pushOk() ? (isIOS() && !standalone() ? '<p class="txt-amber" style="margin:0">📱 فالآيفون: زيد التطبيق للشاشة الرئيسية أولا (مشاركة ← «إضافة إلى الشاشة الرئيسية»)، من بعد فعّل الإشعارات من هنا.</p>' : '<p class="muted" style="margin:0">هاد المتصفح ما كيدعمش الإشعارات.</p>')
+        : on ? `<div class="btn-row"><span class="badge green">✓ مفعّلة فهاد الجهاز</span><button class="btn sm danger" id="push-off">إيقاف</button></div>`
+        : `<button class="btn gold" id="push-on">🔔 تفعيل الإشعارات</button>`}</div>`;
+  }
+  function bindPushCard() {
+    const a = $('#push-on'); if (a) a.onclick = pushEnable;
+    const b = $('#push-off'); if (b) b.onclick = pushDisable;
+  }
   /* ---------- واجهة حية: العناصر كتطلع وحدة بوحدة ملي كتبان، والأرقام كتعدّ ---------- */
   const LV_BOX = '.home-main, .stats, .grid-2, .prop-grid, .dir-grid, .doc-grid, .doc-list, .st-grid, .own-list, .mm-grid, .match-list, .feat-grid, .tr-grid, .nt-list, .law-grid, .iv-grid, .gd-grid, .ev-list, .appt-list, .ag-stats, .detail-grid';
   const LV_OK = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && 'IntersectionObserver' in window;
@@ -7316,6 +7440,7 @@
     setupAgent();
     setupSyncUi();
     setupChat();
+    if (syOn()) loadStaff().catch(() => {});
     window.addEventListener('hashchange', route);
     if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }
     window.addEventListener('popstate', () => { if (AG.open && !(history.state && history.state.ag)) agHide(); });

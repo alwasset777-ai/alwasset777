@@ -38,27 +38,51 @@
     return data;
   }
   function takeSession(url, key, d) {
+    const prev = st;
     st = {
       url, key, email: d.user && d.user.email, uid: d.user && d.user.id,
       access: d.access_token, refresh: d.refresh_token,
       exp: d.expires_at || Math.floor(Date.now() / 1000) + (d.expires_in || 3600),
     };
+    // حساب موظف: كنحتافظو بالمكتب والصلاحية عند تجديد الجلسة
+    if (prev && prev.uid === st.uid) { st.owner = prev.owner; st.srole = prev.srole; st.staffAt = prev.staffAt; }
     save();
   }
   // حسابات الشبكة بلا @: «agence001»/«1» ← وكالة، «wasit001»/«W001» ← وسيط،
   // «btp001»/«B001» ← مقاولة، «finition001»/«F001» ← تشطيب (…@alwasset777.ma)
-  const PREFIX = { agence: 'agence', agency: 'agence', ag: 'agence', a: 'agence', '': 'agence', wasit: 'wasit', w: 'wasit', btp: 'btp', b: 'btp', finition: 'finition', f: 'finition', invest: 'invest', i: 'invest', notaire: 'notaire', n: 'notaire', jamia: 'jamia', j: 'jamia' };
+  const PREFIX = { staff: 'staff', s: 'staff', agence: 'agence', agency: 'agence', ag: 'agence', a: 'agence', '': 'agence', wasit: 'wasit', w: 'wasit', btp: 'btp', b: 'btp', finition: 'finition', f: 'finition', invest: 'invest', i: 'invest', notaire: 'notaire', n: 'notaire', jamia: 'jamia', j: 'jamia' };
   function normEmail(e) {
     e = String(e || '').trim().toLowerCase();
     if (e.includes('@')) return e;
     const m = e.match(/^([a-z]*)[\s-]*0*(\d{1,3})$/);
     return m && Object.prototype.hasOwnProperty.call(PREFIX, m[1]) ? PREFIX[m[1]] + m[2].padStart(3, '0') + '@alwasset777.ma' : e;
   }
+  // 👥 حساب موظف ← كيخدم على بيانات المكتب ديال مولاه (حسب الصلاحية)
+  const dOwner = () => (st && (st.owner || st.uid));
+  async function resolveStaff(force) {
+    if (!st || (!force && st.staffAt && Date.now() - st.staffAt < 3600000)) return;
+    try {
+      const res = await api(`/rest/v1/w777_staff?uid=eq.${st.uid}&active=is.true&select=owner,role`);
+      if (!res.ok) return;
+      const r = (await res.json())[0];
+      // موظف تحيّد ولا توقف: كنمسحو بيانات المكتب من هاد الجهاز وكنخرجو
+      if (st.owner && !r) {
+        for (const k of [...STORES, 'files']) await DB.clear(k).catch(() => {});
+        for (const k of [...LISTS, 'sync_dirty', 'sync_cursor', 'sync_uploaded']) await DB.setMeta(k, k === 'sync_dirty' || k === 'sync_uploaded' ? {} : (LISTS.includes(k) ? [] : null));
+        signOut(); setStatus('error', 'الحساب ديالك ما بقاش مفعّل فالمكتب'); changeCbs.forEach(f => f(1));
+        throw new Error('staff revoked');
+      }
+      st.owner = r ? r.owner : null; st.srole = r ? r.role : null; st.staffAt = Date.now(); save();
+    } catch (e) { if (e && e.message === 'staff revoked') throw e; /* كنعاودو من بعد */ }
+  }
   async function signIn(url, key, email, password) {
     url = cleanUrl(url); key = String(key || '').trim(); email = normEmail(email);
     const d = await authCall(url, key, '/auth/v1/token?grant_type=password', { email, password });
     takeSession(url, key, d);
-    await firstSyncPrep();
+    await resolveStaff(true);
+    // موظف كيدخل: ما نرفعوش بيانات هاد الجهاز للمكتب (غير كنجيبو بيانات المكتب)
+    if (st.owner) { await DB.setMeta('sync_dirty', {}); await DB.setMeta('sync_cursor', null); await DB.setMeta('sync_uploaded', {}); }
+    else await firstSyncPrep();
     setStatus('idle');
     syncNow();
     return st;
@@ -110,7 +134,7 @@
     let since = cursor ? new Date(Date.parse(cursor) - 120000).toISOString() : '1970-01-01T00:00:00Z';
     let changed = 0;
     for (;;) {
-      const res = await ok(await api(`/rest/v1/${TABLE}?select=kind,id,data,deleted,synced_at&owner=eq.${st.uid}&synced_at=gt.${encodeURIComponent(since)}&order=synced_at.asc&limit=1000`));
+      const res = await ok(await api(`/rest/v1/${TABLE}?select=kind,id,data,deleted,synced_at,edited_by&owner=eq.${dOwner()}&synced_at=gt.${encodeURIComponent(since)}&order=synced_at.asc&limit=1000`));
       const rows = await res.json();
       for (const r of rows) changed += await apply(r);
       if (rows.length) {
@@ -141,6 +165,7 @@
       // حذف محلي لم يُرفع بعد: يبقى محذوفا إلا إذا عُدّل على جهاز آخر بعد الحذف
       if (!local && dirty[dkey] && Date.parse(rT || 0) <= dirty[dkey]) return 0;
       if (!local || rT > lT) {
+        if (row.edited_by && row.data) row.data._by = row.edited_by; // شكون دار آخر تعديل
         await DB.put(row.kind, row.data);
         delete dirty[dkey]; await DB.setMeta('sync_dirty', dirty);
         return 1;
@@ -186,6 +211,8 @@
 
   /* ---------- الرفع ---------- */
   async function push() {
+    // موظف «مشاهدة فقط»: ما كيرفع والو
+    if (st.owner && st.srole === 'view') { await DB.setMeta('sync_dirty', {}); return; }
     const snap = await DB.getMeta('sync_dirty', {});
     const keys = Object.keys(snap);
     if (!keys.length) return;
@@ -198,7 +225,7 @@
       let data = null;
       if (kind === 'meta') data = { value: await DB.getMeta(id, {}), updatedAt: new Date().toISOString() };
       else data = await DB.get(kind, id);
-      rows.push({ owner: st.uid, kind, id, data: data || { updatedAt: new Date().toISOString() }, deleted: !data });
+      rows.push({ owner: dOwner(), kind, id, data: data || { updatedAt: new Date().toISOString() }, deleted: !data });
     }
     for (let i = 0; i < rows.length; i += 200) {
       await ok(await api(`/rest/v1/${TABLE}?on_conflict=owner,kind,id`, {
@@ -208,7 +235,7 @@
       }));
     }
     if (fileDeletes.length) {
-      const prefixes = fileDeletes.flatMap(id => [st.uid + '/' + id, st.uid + '/' + id + '.t']);
+      const prefixes = fileDeletes.flatMap(id => [dOwner() + '/' + id, dOwner() + '/' + id + '.t']);
       await api(`/storage/v1/object/${BUCKET}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes }) });
       const up = await DB.getMeta('sync_uploaded', {});
       fileDeletes.forEach(id => delete up[id]);
@@ -274,9 +301,9 @@
       try {
         const body = await cloudImage(rec.blob);
         if (body.size > UP_MAX) { skip[rec.id] = { size: body.size, at: Date.now() }; return; }
-        await put(st.uid + '/' + rec.id, body, body.type || rec.mime);
+        await put(dOwner() + '/' + rec.id, body, body.type || rec.mime);
         // مصغرة ما تصغراتش (HEIC ما تقراش) = نسخة من الأصل: ما نرفعوهاش، كنقراو الأصل بلاصتها
-        if (rec.thumb && rec.thumb !== rec.blob && rec.thumb.size < 300 * 1024) await put(st.uid + '/' + rec.id + '.t', rec.thumb, 'image/jpeg');
+        if (rec.thumb && rec.thumb !== rec.blob && rec.thumb.size < 300 * 1024) await put(dOwner() + '/' + rec.id + '.t', rec.thumb, 'image/jpeg');
         up[rec.id] = 1; delete fail[rec.id];
       } catch (e) {
         failed++;
@@ -304,7 +331,7 @@
   async function fetchFile(id, thumb) {
     if (!st || !navigator.onLine) return null;
     try {
-      const u = await netPhotoUrl(st.uid, id, thumb);
+      const u = await netPhotoUrl(dOwner(), id, thumb);
       if (!u) return null;
       const res = await fetch(u);
       return res.ok ? res.blob() : null;
@@ -379,6 +406,7 @@
     running = (async () => {
       setStatus('syncing', 'جاري المزامنة…');
       try {
+        await resolveStaff();
         let changed = await pull();
         for (const h of pullHooks) { try { const n = await h(); if (n) changed += n; } catch (e) { console.warn('pull hook', e); } }
         await push();
@@ -390,6 +418,7 @@
         if (changed) changeCbs.forEach(f => f(changed));
       } catch (e) {
         const m = String(e && e.message || e);
+        if (m === 'staff revoked') return;
         if (/refresh|invalid.*token|JWT/i.test(m)) setStatus('error', 'انتهت الجلسة — المرجو تسجيل الدخول من جديد');
         else if (/w777_records|relation|schema cache/i.test(m)) setStatus('error', 'قاعدة البيانات غير مهيأة — نفّذ ملف supabase.sql');
         else setStatus('error', m);
@@ -425,5 +454,8 @@
     onPulled: f => pullHooks.push(f),
     request: (path, opts) => api(path, opts).then(ok),
     uid: () => st && st.uid,
+    // مول البيانات (المكتب) — الموظف كيخدم على بيانات مولاه
+    dataOwner: dOwner,
+    staff: () => (st && st.owner ? { owner: st.owner, role: st.srole } : null),
   };
 })();
