@@ -30,21 +30,40 @@ const RE = /real estate|property|properties|housing|home prices|homebuyer|mortga
 
 const unx = (s: string) => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
   .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
+  .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
   .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 const tag = (x: string, t: string) => { const m = x.match(new RegExp(`<${t}[^>]*>([\\s\\S]*?)</${t}>`)); return m ? unx(m[1]) : ""; };
 
 const errs: string[] = [];
+const UA = { "User-Agent": "Mozilla/5.0 (compatible; W777NewsBot/1.0)", "Accept": "application/rss+xml, application/xml" };
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Google News كيرفض أحيانا (503/429) ← كنعاودو مرة، ومن بعد كنجربو Bing News بنفس البحث
+async function getXml(f: typeof FEEDS[number]) {
+  for (let i = 0; i < 2; i++) {
+    const res = await fetch(f.url, { headers: UA });
+    if (res.ok) return { xml: await res.text(), bing: false };
+    if (![429, 500, 502, 503].includes(res.status)) { errs.push(String(res.status)); return null; }
+    await sleep(1500 + Math.random() * 1500);
+  }
+  const u = new URL(f.url), q = (u.searchParams.get("q") || "").replace(/\s*when:\d+d/g, "");
+  const mkt = { MA: f.lang === "ar" ? "ar-MA" : "fr-MA", GB: "en-GB", US: "en-US", FR: "fr-FR" }[u.searchParams.get("gl") || "MA"] || "fr-FR";
+  const res = await fetch(`https://www.bing.com/news/search?q=${encodeURIComponent(q)}&format=rss&setmkt=${mkt}&qft=interval%3d%228%22`, { headers: UA });
+  if (!res.ok) { errs.push("g503+b" + res.status); return null; }
+  return { xml: await res.text(), bing: true };
+}
 async function readFeed(f: typeof FEEDS[number]) {
-  const res = await fetch(f.url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; W777NewsBot/1.0)", "Accept": "application/rss+xml, application/xml" } });
-  if (!res.ok) { errs.push(String(res.status)); return []; }
-  const xml = await res.text();
+  const got = await getXml(f);
+  if (!got) return [];
+  const xml = got.xml;
   const out = [];
   for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
     const it = m[1];
-    const source = tag(it, "source");
+    const source = tag(it, "source") || tag(it, "News:Source");
     let title = tag(it, "title");
     if (source && title.endsWith(" - " + source)) title = title.slice(0, -(source.length + 3)).trim();
-    const url = tag(it, "link");
+    let url = tag(it, "link");
+    // روابط Bing كتدوز من صفحة تحويل ← الرابط الأصلي
+    if (got.bing) { try { url = new URL(url).searchParams.get("url") || url; } catch (_) { /* */ } }
     const d = new Date(tag(it, "pubDate"));
     if (!title || !url) continue;
     if (f.scope === "ma" && !MA.test(title + " " + source)) continue;
