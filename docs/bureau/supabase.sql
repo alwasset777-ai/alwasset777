@@ -850,3 +850,124 @@ do $$ declare t record; begin
   end loop;
 end $$;
 alter default privileges for role postgres in schema public revoke truncate, references, trigger on tables from anon, authenticated;
+
+-- ============================================================
+-- 👥 حسابات الموظفين: كل موظف عندو دخول خاص، كيخدم على بيانات المكتب حسب الصلاحية
+--   view = يشوف فقط · edit = يشوف ويزيد ويعدّل · full = حتى الحذف
+-- ============================================================
+create table if not exists public.w777_staff (
+  uid uuid primary key references auth.users(id) on delete cascade,
+  owner uuid not null references auth.users(id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 80),
+  login text not null unique,
+  role text not null default 'edit' check (role in ('view', 'edit', 'full')),
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  check (uid <> owner)
+);
+create index if not exists w777_staff_owner_idx on public.w777_staff (owner);
+alter table public.w777_staff enable row level security;
+drop policy if exists w777_st_sel on public.w777_staff;
+create policy w777_st_sel on public.w777_staff for select to authenticated using (owner = auth.uid() or uid = auth.uid() or w777_is_admin());
+drop policy if exists w777_st_upd on public.w777_staff;
+create policy w777_st_upd on public.w777_staff for update to authenticated using (owner = auth.uid()) with check (owner = auth.uid());
+revoke all on public.w777_staff from anon, authenticated;
+grant select on public.w777_staff to authenticated;
+grant update (name, role, active) on public.w777_staff to authenticated;
+-- مول المكتب ديال الموظف (غير إلا الموظف مفعّل والمكتب مازال مفعّل)
+create or replace function public.w777_staff_owner() returns uuid language sql stable security definer set search_path=public as
+$$ select s.owner from w777_staff s where s.uid = auth.uid() and s.active
+     and (exists(select 1 from w777_agencies a where a.uid = s.owner and a.active) or exists(select 1 from w777_admins m where m.uid = s.owner)) $$;
+create or replace function public.w777_staff_role() returns text language sql stable security definer set search_path=public as
+$$ select s.role from w777_staff s where s.uid = auth.uid() and s.active $$;
+revoke all on function public.w777_staff_owner(), public.w777_staff_role() from public, anon;
+grant execute on function public.w777_staff_owner(), public.w777_staff_role() to authenticated;
+
+-- السجلات: الموظف كيوصل لبيانات المكتب حسب الصلاحية + «شكون دار التعديل»
+alter table public.w777_records add column if not exists edited_by uuid;
+drop policy if exists "w777 own select" on public.w777_records;
+drop policy if exists "w777 own insert" on public.w777_records;
+drop policy if exists "w777 own update" on public.w777_records;
+drop policy if exists "w777 own delete" on public.w777_records;
+create policy "w777 own select" on public.w777_records for select to authenticated using (owner = auth.uid() or owner = w777_staff_owner());
+create policy "w777 own insert" on public.w777_records for insert to authenticated
+  with check (owner = auth.uid() or (owner = w777_staff_owner() and w777_staff_role() in ('edit', 'full')));
+create policy "w777 own update" on public.w777_records for update to authenticated
+  using (owner = auth.uid() or owner = w777_staff_owner())
+  with check (owner = auth.uid() or (owner = w777_staff_owner() and w777_staff_role() in ('edit', 'full')));
+create policy "w777 own delete" on public.w777_records for delete to authenticated using (owner = auth.uid() or (owner = w777_staff_owner() and w777_staff_role() = 'full'));
+create or replace function public.w777_touch() returns trigger language plpgsql security definer set search_path=public as
+$$ begin
+  new.synced_at := clock_timestamp();
+  new.edited_by := auth.uid();
+  -- الحذف (deleted=true) ممنوع على الموظف اللي ماعندوش صلاحية «full»
+  if auth.uid() is not null and new.owner <> auth.uid() and coalesce(w777_staff_role(), '') <> 'full'
+     and new.deleted and (tg_op = 'INSERT' or not old.deleted) then
+    raise exception 'ما عندكش صلاحية الحذف';
+  end if;
+  return new;
+end $$;
+
+-- الصور والملفات: نفس الصلاحيات فدوسي المكتب
+drop policy if exists "w777 media select" on storage.objects;
+drop policy if exists "w777 media insert" on storage.objects;
+drop policy if exists "w777 media update" on storage.objects;
+drop policy if exists "w777 media delete" on storage.objects;
+create policy "w777 media select" on storage.objects for select to authenticated
+  using (bucket_id = 'w777-media' and ((storage.foldername(name))[1] = auth.uid()::text or (storage.foldername(name))[1] = public.w777_staff_owner()::text));
+create policy "w777 media insert" on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-media' and ((storage.foldername(name))[1] = auth.uid()::text
+    or ((storage.foldername(name))[1] = public.w777_staff_owner()::text and public.w777_staff_role() in ('edit', 'full'))));
+create policy "w777 media update" on storage.objects for update to authenticated
+  using (bucket_id = 'w777-media' and ((storage.foldername(name))[1] = auth.uid()::text
+    or ((storage.foldername(name))[1] = public.w777_staff_owner()::text and public.w777_staff_role() in ('edit', 'full'))));
+create policy "w777 media delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'w777-media' and ((storage.foldername(name))[1] = auth.uid()::text
+    or ((storage.foldername(name))[1] = public.w777_staff_owner()::text and public.w777_staff_role() = 'full')));
+
+-- ============================================================
+-- 🔔 الإشعارات الفورية (Web Push)
+-- ============================================================
+create table if not exists public.w777_push_subs (
+  uid uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  endpoint text not null check (char_length(endpoint) <= 1000 and endpoint like 'https://%'),
+  p256dh text not null check (char_length(p256dh) <= 200),
+  auth text not null check (char_length(auth) <= 100),
+  created_at timestamptz not null default now(),
+  primary key (uid, endpoint)
+);
+alter table public.w777_push_subs enable row level security;
+drop policy if exists w777_ps_all on public.w777_push_subs;
+create policy w777_ps_all on public.w777_push_subs for all to authenticated using (uid = auth.uid()) with check (uid = auth.uid());
+revoke all on public.w777_push_subs from anon, authenticated;
+grant select, insert, update, delete on public.w777_push_subs to authenticated;
+-- حد الإرسال (باش ما يتكاثروش الإشعارات): غير الخادم كيقرا ويكتب
+create table if not exists public.w777_push_log (uid uuid not null, kind text not null, at timestamptz not null default now(), primary key (uid, kind));
+alter table public.w777_push_log enable row level security;
+revoke all on public.w777_push_log from anon, authenticated;
+
+-- المنبه: كل حدث كيصيفط للدالة w777-push (مفتاح سري فـ Vault)
+create or replace function public.w777_push_hook() returns trigger language plpgsql security definer set search_path=public as
+$$ declare k text;
+begin
+  select decrypted_secret into k from vault.decrypted_secrets where name = 'w777_push_hook' limit 1;
+  if k is null then return null; end if;
+  perform net.http_post(
+    url := 'https://dctbfhnglogauksdtjdi.supabase.co/functions/v1/w777-push',
+    body := jsonb_build_object('type', tg_argv[0], 'row', to_jsonb(new) - 'data' - 'photo_ids'),
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-w777-hook', k),
+    timeout_milliseconds := 8000);
+  return null;
+exception when others then return null;
+end $$;
+revoke all on function public.w777_push_hook() from public, anon, authenticated;
+drop trigger if exists w777_push_msg on public.w777_msgs;
+create trigger w777_push_msg after insert on public.w777_msgs for each row execute function public.w777_push_hook('msg');
+drop trigger if exists w777_push_rate on public.w777_ratings;
+create trigger w777_push_rate after insert on public.w777_ratings for each row execute function public.w777_push_hook('rating');
+drop trigger if exists w777_push_notary on public.w777_notary_req;
+create trigger w777_push_notary after insert on public.w777_notary_req for each row execute function public.w777_push_hook('notary');
+drop trigger if exists w777_push_booking on public.w777_bookings;
+create trigger w777_push_booking after insert on public.w777_bookings for each row execute function public.w777_push_hook('booking');
+drop trigger if exists w777_push_prop on public.w777_shared_props;
+create trigger w777_push_prop after insert on public.w777_shared_props for each row when (not new.deleted) execute function public.w777_push_hook('prop');
