@@ -2796,6 +2796,9 @@
             <input type="password" id="ag-key-${id}" placeholder="${ph}" autocomplete="off" dir="ltr" style="flex:1;min-width:180px">
             <button class="btn gold sm" data-key-save="${id}">حفظ</button>
             <button class="btn sm" data-key-del="${id}">مسح</button></div>
+          ${id === 'gemini' ? `<div class="btn-row" style="margin-top:8px">
+            <a class="btn sm" href="${url}" target="_blank" rel="noopener">1️⃣ صاوب المفتاح فـ Google</a>
+            <button class="btn gold sm" data-key-paste="${id}">2️⃣ 📋 لصق وحفظ</button></div>` : ''}
           <div class="muted" style="font-size:12.5px;margin-top:6px">من <a href="${url}" target="_blank" rel="noopener">${host}</a> (${how})</div></div>`;
   // كنقبلو المفتاح حتى إلا تنسخ معاه فراغات ولا كلام زايد، وكنجربوه مع Google قبل الحفظ
   const AG_KEYS = {
@@ -2858,6 +2861,14 @@
           if (!agAI() && await confirmBox('المفتاح تسجل ✓ نشعلو الوكيل الذكي دابا؟', 'شعل', false)) await save({ ai_enabled: true }); else toast('المفتاح تسجل ✓');
         } catch (er) { st.textContent = '— ⚪ ما كاينش'; toast('تعذر: ' + er.message, 6000); }
         finally { btn.disabled = false; }
+      };
+      // لصق من الحافظة مباشرة (الآيفون كيبين زر «Coller» صغير)
+      const pb = $(`[data-key-paste="${id}"]`);
+      if (pb) pb.onclick = async () => {
+        let t = '';
+        try { t = await navigator.clipboard.readText(); } catch (er) { /* */ }
+        if (!t) return toast('ما قدرتش نقرا المنسوخ — ضغط مطول فالخانة وختار «Coller» من بعد «حفظ»', 5000);
+        $('#ag-key-' + id).value = t; $(`[data-key-save="${id}"]`).click();
       };
       $(`[data-key-del="${id}"]`).onclick = async () => {
         if (!(await confirmBox('نمسحو هاد المفتاح؟', 'مسح', true))) return;
