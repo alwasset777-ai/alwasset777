@@ -947,17 +947,16 @@ label.loading { opacity: .55; pointer-events: none; }
    (كلشي بـ opacity/translate/scale — خفيف على التيليفون)
    ============================================================ */
 /* خلفية حية: هالات حمراء وذهبية كتتحرك ببطء */
+/* ثابتة (بلا حركة): الطبقة الكبيرة المتحركة كانت كتخلي Safari فالماك يكحّل/يبيّض الشاشة */
 body::before {
-  content: ''; position: fixed; inset: -20vmax; z-index: -1; pointer-events: none;
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     radial-gradient(38vmax 38vmax at 18% 22%, rgba(200,16,46,.10), transparent 70%),
     radial-gradient(34vmax 34vmax at 82% 18%, rgba(214,170,74,.13), transparent 70%),
     radial-gradient(40vmax 40vmax at 70% 85%, rgba(200,16,46,.07), transparent 70%),
     radial-gradient(30vmax 30vmax at 20% 80%, rgba(214,170,74,.09), transparent 70%);
-  animation: lv-drift 26s ease-in-out infinite alternate; will-change: transform;
 }
 body { background: var(--bg); isolation: isolate; }
-@keyframes lv-drift { 0% { transform: translate3d(0, 0, 0) rotate(0deg); } 50% { transform: translate3d(3vmax, -2vmax, 0) rotate(4deg); } 100% { transform: translate3d(-3vmax, 2vmax, 0) rotate(-3deg); } }
 :root[data-theme="dark"] body::before { opacity: 1.6; }
 
 /* الشريط العلوي: خيط ضوء أحمر/ذهبي كيجري */
@@ -972,7 +971,9 @@ body { background: var(--bg); isolation: isolate; }
 
 /* دخول العناصر: كتطلع من التحت بنعومة، وحدة من بعد وحدة */
 .lv-rv { animation: lv-rise .55s cubic-bezier(.2, .85, .25, 1) backwards; animation-delay: calc(var(--lv-i, 0) * 55ms); }
-.lv-wait { opacity: 0; }
+/* ضمانة: إلا ما تبانش العنصر لأي سبب، كيبان بوحدو من بعد 2.5 ثانية */
+.lv-wait { opacity: 0; animation: lv-show 0s linear 2.5s forwards; }
+@keyframes lv-show { to { opacity: 1; } }
 @keyframes lv-rise { from { opacity: 0; translate: 0 22px; scale: .975; } }
 .lv-pop { animation: lv-pop .6s cubic-bezier(.3, 1.6, .5, 1) backwards; animation-delay: calc(var(--lv-i, 0) * 45ms + 120ms); }
 @keyframes lv-pop { from { opacity: 0; scale: .5; translate: 0 14px; } }
@@ -1170,3 +1171,20 @@ label.chk input { width: 20px; height: 20px; accent-color: var(--gold); }
 .star-pick button.on { color: #f5a623; scale: 1.1; text-shadow: 0 4px 12px rgba(245,166,35,.45); }
 .cat-link { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px dashed var(--line); font-size: 12.5px; word-break: break-all; }
 .bio-btn { margin: 4px auto 10px; }
+
+/* ============================================================
+   ⚡ الوضع الخفيف: بلا ضباب وبلا حركات دايمة
+   كيتشعل بوحدو فـ Safari ديال الماك (وكيقدر يتشعل من الإعدادات)
+   ============================================================ */
+html.lv-lite body::before { display: none; }
+html.lv-lite *, html.lv-lite *::before, html.lv-lite *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+html.lv-lite .topbar::after, html.lv-lite .card.stat::after, html.lv-lite .btn.gold::after, html.lv-lite .fab::after,
+html.lv-lite .fab, html.lv-lite .hub-tile, html.lv-lite .hero h2, html.lv-lite .lv-wave,
+html.lv-lite .lv-rv, html.lv-lite .lv-pop, html.lv-lite .lv-lz, html.lv-lite .modal, html.lv-lite .toast, html.lv-lite img.lv-imgin { animation: none !important; }
+html.lv-lite .lv-wait { opacity: 1 !important; animation: none !important; }
+html.lv-lite .hero h2 { background: none; color: inherit; -webkit-text-fill-color: currentColor; }
+html.lv-lite .stat .v { background: none; color: var(--ink); -webkit-text-fill-color: currentColor; }
+html.lv-lite .bottomnav { background: var(--surface); }
+html.lv-lite .topbar.lv-scrolled { background: #000; }
+html.lv-lite .p3d { transform: scale(.97) !important; will-change: auto; filter: none; }
+html.lv-lite .card, html.lv-lite a.card:hover, html.lv-lite .dir-card:hover, html.lv-lite .card.stat:hover { translate: none; }
