@@ -1961,6 +1961,8 @@
           <h3 class="section-title">${ic('lock')} الأمان والمظهر</h3>
           <div class="form-grid">
             <div class="field"><label>المظهر</label>${fSeg('theme', [{ v: 'auto', l: 'تلقائي' }, { v: 'light', l: 'فاتح' }, { v: 'dark', l: 'داكن' }], theme)}</div>
+            <div class="field"><label>⚡ الحركات والتأثيرات</label>${fSeg('motion', [{ v: 'auto', l: 'تلقائي' }, { v: 'full', l: 'كاملة' }, { v: 'lite', l: 'خفيفة' }], motionMode())}
+              <small class="muted">إلا كانت الشاشة كتكحّل ولا كتبيّض ولا التطبيق تقيل فالحاسوب، ختار «خفيفة».</small></div>
             <div class="field"><label>قفل التطبيق برمز سري</label>
               <div class="btn-row">${hasPin ? `<button class="btn" id="pin-change">${ic('lock', 16)} تغيير الرمز</button><button class="btn danger" id="pin-off">إلغاء القفل</button>` : `<button class="btn" id="pin-on">${ic('lock', 16)} تفعيل القفل</button>`}</div></div>
           </div>
@@ -2008,6 +2010,7 @@
       toast('تم الحفظ ✓');
     };
     $$('[name=theme]').forEach(el => el.onchange = () => { localStorage.setItem('w777_theme', el.value); applyTheme(); });
+    $$('[name=motion]').forEach(el => el.onchange = () => { try { localStorage.setItem('w777_motion', el.value); } catch (e) { /* */ } applyMotion(); toast('تم ✓'); });
     $('#imp-folder').onchange = e => { if (e.target.files.length) importFolder(e.target.files); e.target.value = ''; };
     $('#imp-vcf').onchange = e => { if (e.target.files[0]) importContacts(e.target.files[0]); e.target.value = ''; };
     $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
@@ -6180,6 +6183,17 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     const meta = $('meta[name=theme-color]');
     if (meta) meta.content = '#000000';
+    applyMotion();
+  }
+  // ⚡ الوضع الخفيف: Safari ديال الماك كيطيح فالرسم مع الضباب والحركات الدايمة (الشاشة كتكحل/تبيض)
+  function isMacSafari() {
+    const ua = navigator.userAgent || '';
+    return /Macintosh/.test(ua) && /Safari\//.test(ua) && !/Chrome|Chromium|Edg|OPR|Firefox/.test(ua) && !(navigator.maxTouchPoints > 1);
+  }
+  function motionMode() { try { return localStorage.getItem('w777_motion') || 'auto'; } catch (e) { return 'auto'; } }
+  function applyMotion() {
+    const m = motionMode();
+    document.documentElement.classList.toggle('lv-lite', m === 'lite' || (m === 'auto' && isMacSafari()));
   }
 
   function notFound() {
