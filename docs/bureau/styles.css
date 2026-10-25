@@ -236,6 +236,14 @@ main { flex: 1; min-width: 0; padding: 18px 16px calc(var(--nav-h) + var(--safe-
 .hero p { margin: 0; color: #4a4a4a; }
 .hero .btn-row { margin-top: 16px; position: relative; z-index: 1; }
 .hero .btn { border-color: transparent; }
+/* الرئيسية: 3 أزرار كبار */
+.hero-big3 { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.hero-big3 .btn { height: 58px; font-size: 16px; font-weight: 800; justify-content: center; text-align: center; line-height: 1.2; padding: 0 10px; }
+@media (max-width: 560px) { .hero-big3 { grid-template-columns: 1fr; } .hero-big3 .btn { height: 54px; font-size: 17px; } }
+/* النافذة ديال الخانات */
+.hub-menu { grid-template-columns: repeat(3, 1fr) !important; gap: 18px 6px; padding: 10px 0 4px; }
+@media (min-width: 640px) { .hub-menu { grid-template-columns: repeat(4, 1fr) !important; } }
+.hub-tile .hi .emo { position: absolute; inset: 5px; border-radius: 50%; background: #fffdf8; display: grid; place-items: center; font-style: normal; font-size: 36px; z-index: 1; }
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
 @media (min-width: 720px) { .stats { grid-template-columns: repeat(4, 1fr); } }
 .stat { padding: 16px; }
