@@ -1250,11 +1250,15 @@ body.in-studio #fab, body.in-studio #fab-menu, body.in-studio .agent-fab { displ
 @media (max-width: 360px) { .hnum { font-size: 20px; } .hst b { font-size: 11px; } }
 
 /* الرئيسية: خانة «أفضل الفرص» وحدها + العدد */
-.opp-cta { display: flex; align-items: center; gap: 12px; padding: 16px; text-decoration: none; color: var(--ink); align-self: start; border-inline-start: 4px solid #1f9d68; }
-.opp-cta .opp-ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: color-mix(in srgb, #1f9d68 12%, #fff); flex-shrink: 0; }
+.hboxes { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 720px) { .hboxes { grid-template-columns: 1fr 1fr; gap: 14px; } }
+.opp-cta { --c: #1f9d68; display: flex; align-items: center; gap: 12px; padding: 14px 16px; text-decoration: none; color: var(--ink); border-inline-start: 4px solid var(--c); width: 100%; font: inherit; text-align: start; cursor: pointer; }
+.opp-cta .opp-ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: color-mix(in srgb, var(--c) 12%, #fff); flex-shrink: 0; }
+.opp-cta .grow { flex: 1 1 auto; min-width: 0; }
+button.opp-cta { justify-content: flex-start; background: var(--surface); }
 .opp-cta b { display: block; font-size: 16px; }
 .opp-cta small { color: var(--muted); font-size: 12.5px; }
-.opp-cta .opp-n { min-width: 56px; height: 44px; padding: 0 12px; border-radius: 22px; display: grid; place-items: center; background: #1f9d68; color: #fff; font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.opp-cta .opp-n { min-width: 56px; height: 44px; padding: 0 12px; border-radius: 22px; display: grid; place-items: center; background: var(--c); color: #fff; font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 
 /* شريط المدن المشاركة (فالشريط العلوي) — من اليسار لليمين */
 .city-ticker { max-width: 1400px; margin: 8px auto 0; overflow: hidden; direction: ltr; height: 22px; position: relative;

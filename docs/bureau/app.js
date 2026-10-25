@@ -839,33 +839,27 @@
             <button class="btn" id="seed">${ic('sparkle', 18)} بيانات تجريبية</button>
           </div>
         </div>` : `
-      <div class="grid-2">
-        <a class="card opp-cta" href="#/matching">
+      <div class="hboxes">
+        <a class="card opp-cta" href="#/matching" style="--c:#1f9d68">
           <span class="opp-ic">✨</span>
           <span class="grow"><b>أفضل الفرص (طلب ↔ عقار)</b><small>${cold ? '⏳ جاري الحساب…' : strong ? 'ضغط باش تشوف المطابقات كاملين' : 'لا توجد مطابقات قوية حاليا'}</small></span>
           <span class="opp-n">${cold ? '…' : strong}</span>
         </a>
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="card">
-            <div class="pair-head"><b>${ic('calendar', 18)} مواعيد اليوم</b><a class="btn sm" href="#/appointment/new">${ic('plus', 15)}</a></div>
-            ${todayAppts.length ? todayAppts.slice(0, 6).map(a => `
-              <a class="list-row" href="#/appointment/${a.id}"><div class="avatar" style="width:46px;height:38px;font-size:13px;border-radius:10px">${esc(a.time || '')}</div>
-              <div class="grow"><b>${esc((a.client || {}).name || '')}</b><small class="muted">${esc(APPT_TYPES[a.type] || '')}${a.place ? ' · ' + esc(a.place) : ''}</small></div></a>`).join('')
-              : `<div class="empty" style="padding:22px">ما كاين حتى موعد اليوم</div>`}
-          </div>
-          <div class="card">
-            <div class="pair-head"><b>${ic('calendar', 18)} متابعات اليوم</b><span class="badge ${follow.length ? 'amber' : ''}">${follow.length}</span></div>
-            ${follow.length ? follow.slice(0, 6).map(r => `
-              <a class="list-row" href="#/request/${r.id}"><div class="avatar" style="width:38px;height:38px;font-size:14px">${esc(((r.client && r.client.name) || '؟').trim()[0])}</div>
-              <div class="grow"><b>${esc(r.client && r.client.name)}</b><small class="muted">${esc(r.followUp)} · ${esc(trxAr(r.transaction))} · ${esc(r.city || '')}</small></div></a>`).join('')
-              : `<div class="empty" style="padding:22px">لا توجد متابعات مستحقة ✓</div>`}
-          </div>
-          <div class="card card-pad">
-            <b style="display:block;margin-bottom:12px">توزيع العقارات المتاحة</b>
-            <div class="bars">${Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([k, v]) => `
-              <div class="bar"><span>${esc(k)}</span><div class="track"><div class="fill" style="width:${v / maxT * 100}%"></div></div><b>${v}</b></div>`).join('') || '<span class="muted">—</span>'}</div>
-          </div>
-        </div>
+        <button class="card opp-cta" data-hbox="appts" style="--c:#2f6fd6">
+          <span class="opp-ic">📅</span>
+          <span class="grow"><b>مواعيد اليوم</b><small>${todayAppts.length ? 'ضغط باش تشوف المواعيد' : 'ما كاين حتى موعد اليوم'}</small></span>
+          <span class="opp-n">${todayAppts.length}</span>
+        </button>
+        <button class="card opp-cta" data-hbox="follow" style="--c:#d98a14">
+          <span class="opp-ic">🔔</span>
+          <span class="grow"><b>متابعات اليوم</b><small>${follow.length ? 'زبناء خاصك تتاصل بيهم' : 'لا توجد متابعات مستحقة ✓'}</small></span>
+          <span class="opp-n">${follow.length}</span>
+        </button>
+        <button class="card opp-cta" data-hbox="dist" style="--c:#c8102e">
+          <span class="opp-ic">📊</span>
+          <span class="grow"><b>توزيع العقارات المتاحة</b><small>${esc(Object.entries(byType).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([k, v]) => k.split(' ')[0] + ' ' + v).join(' · ') || '—')}</small></span>
+          <span class="opp-n">${avail.length}</span>
+        </button>
       </div>
       <h3 style="margin:22px 0 12px">آخر العقارات المضافة</h3>
       <div class="prop-grid">${S.props.slice(0, 6).map(propCard).join('')}</div>`}
@@ -873,6 +867,24 @@
     hydrateThumbs(main());
     bindHomeSearch();
     odoRoll(main());
+    $$('[data-hbox]').forEach(bt => bt.onclick = () => {
+      const k = bt.dataset.hbox;
+      if (k === 'appts') modal(`<div class="pair-head"><b>${ic('calendar', 18)} مواعيد اليوم</b><a class="btn sm gold" href="#/appointment/new" data-close>${ic('plus', 15)} موعد</a></div>
+        ${todayAppts.length ? todayAppts.map(a => `
+          <a class="list-row" href="#/appointment/${a.id}" data-close><div class="avatar" style="width:46px;height:38px;font-size:13px;border-radius:10px">${esc(a.time || '')}</div>
+          <div class="grow"><b>${esc((a.client || {}).name || '')}</b><small class="muted">${esc(APPT_TYPES[a.type] || '')}${a.place ? ' · ' + esc(a.place) : ''}</small></div></a>`).join('')
+          : `<div class="empty" style="padding:22px">ما كاين حتى موعد اليوم</div>`}
+        <div class="btn-row" style="margin-top:12px"><a class="btn" href="#/appointments" data-close>${ic('calendar', 16)} جميع المواعيد</a></div>`);
+      else if (k === 'follow') modal(`<div class="pair-head"><b>🔔 متابعات اليوم</b><span class="badge ${follow.length ? 'amber' : ''}">${follow.length}</span></div>
+        ${follow.length ? follow.map(r => `
+          <a class="list-row" href="#/request/${r.id}" data-close><div class="avatar" style="width:38px;height:38px;font-size:14px">${esc(((r.client && r.client.name) || '؟').trim()[0])}</div>
+          <div class="grow"><b>${esc(r.client && r.client.name)}</b><small class="muted">${esc(r.followUp)} · ${esc(trxAr(r.transaction))} · ${esc(r.city || '')}</small></div></a>`).join('')
+          : `<div class="empty" style="padding:22px">لا توجد متابعات مستحقة ✓</div>`}`);
+      else modal(`<b style="display:block;margin-bottom:12px">📊 توزيع العقارات المتاحة (${avail.length})</b>
+        <div class="bars">${Object.entries(byType).sort((x, y) => y[1] - x[1]).map(([kk, v]) => `
+          <div class="bar"><span>${esc(kk)}</span><div class="track"><div class="fill" style="width:${v / maxT * 100}%"></div></div><b>${v}</b></div>`).join('') || '<span class="muted">—</span>'}</div>
+        <div class="btn-row" style="margin-top:14px"><a class="btn" href="#/properties" data-close>${ic('building', 16)} جميع العقارات</a></div>`);
+    });
     $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length));
     if (!EMBED && window.W777_SYNC && window.W777_SYNC.isOn()) homeNetwork();
     if (inNetwork() && !$('.grp-strip')) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (h && g && !$('.grp-strip', h)) h.insertAdjacentHTML('beforeend', g); }).catch(() => {});
