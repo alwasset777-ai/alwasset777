@@ -4189,7 +4189,7 @@
           && (!t.length || hit(norm([a.code, a.name, a.city, a.country, a.services, a.about, a.phone].join(' ')), t)));
         n = r.length;
         html = r.length ? `<div class="dir-grid">${r.slice(0, 200).map(a => `<div class="card dir-card"><div class="dir-top"><div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>
-          <div class="grow"><b>${esc(a.name)}</b><small class="muted">${KINDS[kindOf(a)].ic} ${esc(KINDS[kindOf(a)].one)} · <span dir="ltr">${esc(a.code)}</span>${a.city ? ' · 📍 ' + esc(a.city) : ''}${isAbroad(a) ? ' · 🌍 ' + esc(a.country) : ''}</small></div></div>
+          <div class="grow"><b>${esc(a.name)}</b><small class="muted">${KINDS[kindOf(a)].ic} ${esc(KINDS[kindOf(a)].one)} · <span dir="ltr">${esc(a.code)}</span> · ${isAbroad(a) ? '🌍' : '📍'} ${esc(placeOf(a))}</small></div></div>
           ${splitList(a.services).length ? `<div class="chips wrap">${splitList(a.services).map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
           <div class="btn-row">${a.phone ? `<a class="btn sm" href="${telLink(a.phone)}">${ic('phone', 15)} ${esc(a.phone)}</a><a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}">${ic('wa', 15)} واتساب</a>` : ''}</div></div>`).join('')}</div>` : '';
       }
@@ -4320,6 +4320,10 @@
   const kindOf = a => (a && a.kind) || 'agency';
   const isNamed = a => !!a.name && !KINDS[kindOf(a)].def.test(a.name);
   const isAbroad = a => (a.country || 'المغرب') !== 'المغرب';
+  const COUNTRIES = ['المغرب', 'فرنسا', 'إسبانيا', 'بلجيكا', 'هولندا', 'إيطاليا', 'ألمانيا', 'البرتغال', 'سويسرا', 'المملكة المتحدة', 'السويد', 'النرويج', 'الدنمارك',
+    'كندا', 'الولايات المتحدة', 'الإمارات', 'السعودية', 'قطر', 'الكويت', 'البحرين', 'عمان', 'تركيا', 'مصر', 'تونس', 'الجزائر', 'موريتانيا', 'السنغال', 'كوت ديفوار'];
+  const placeOf = a => [a.city, a.country || 'المغرب'].filter(Boolean).join('، ');
+  const placeLists = () => `<datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist><datalist id="dl-countries">${COUNTRIES.map(c => `<option value="${esc(c)}">`).join('')}</datalist>`;
   const loginOf = a => kindOf(a) === 'agency' && /^\d+$/.test(a.code) ? 'agence' + a.code : a.code;
   const roleBadge = () => S.role === 'admin' ? '<span class="badge gold">👑 المدير</span>'
     : `<span class="badge blue">${(KINDS[S.kind] || KINDS.agency).ic} ${esc(myAgencyName())}</span>`;
@@ -4491,7 +4495,7 @@
         const msg = `السلام عليكم ${a.name}، شفت الحساب ديالكم فدليل ${K.ar} ديال الوسيط 777.`;
         return `<div class="card dir-card">
           <div class="dir-top">${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy">` : `<div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>`}
-            <div class="grow"><b>${esc(a.name)}</b>${a.id_ok ? ' <span class="badge green" title="هوية مؤكدة من مكتب الوسيط 777">🪪✔</span>' : ''}<small class="muted"><span dir="ltr">${esc(a.code)}</span>${a.city ? ' · 📍 ' + esc(a.city) : ''}${isAbroad(a) ? ' · 🌍 ' + esc(a.country) : ''}</small></div></div>
+            <div class="grow"><b>${esc(a.name)}</b>${a.id_ok ? ' <span class="badge green" title="هوية مؤكدة من مكتب الوسيط 777">🪪✔</span>' : ''}<small class="muted"><span dir="ltr">${esc(a.code)}</span> · ${isAbroad(a) ? '🌍' : '📍'} ${esc(placeOf(a))}</small></div></div>
           ${splitList(a.services).length ? `<div class="chips wrap">${splitList(a.services).map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
           ${kind === 'investor' && (a.budget || a.invest_modes) ? `<div class="iv-mini">${a.budget ? `💰 حتى ${nm(a.budget)} درهم` : ''}${a.invest_modes ? `<span>${esc(a.invest_modes)}</span>` : ''}</div>` : ''}
           ${kind === 'notary' && (a.district || kmOf(a) != null) ? `<div class="iv-mini">📍 ${esc([a.district, a.city].filter(Boolean).join('، '))}${kmOf(a) != null ? ` · <b>${kmTxt(kmOf(a))}</b>` : ''}</div>` : ''}
@@ -4527,20 +4531,20 @@
         <form id="agme" class="form-grid">
           ${fInput('name', 'الاسم', ag.name, { req: true })}
           ${fInput('phone', 'الهاتف / واتساب', ag.phone, { type: 'tel' })}
-          ${fInput('city', 'المدينة', ag.city, { list: 'dl-cities' })}
+          ${fInput('city', 'المدينة', ag.city, { list: 'dl-cities', ph: 'مكناس، فاس، باريس…' })}
+          ${fInput('country', 'الدولة', ag.country === 'خارج المغرب' ? '' : (ag.country || 'المغرب'), { list: 'dl-countries', ph: 'المغرب، فرنسا، إسبانيا…' })}
           ${kind === 'notary' ? fInput('district', 'الحي / العنوان ديال المكتب', ag.district, { ph: 'مثال: حمرية، شارع…' }) : ''}
           ${kind === 'notary' ? `<div class="field"><label>الموقع (GPS) — باش تتقترح مع أقرب عقار</label><div class="range"><input name="gps" value="${esc(ag.gps || '')}" placeholder="33.89,-5.55" dir="ltr">
             <button type="button" class="btn sm" id="me-gps">${ic('gps', 16)} موقعي الآن</button></div></div>` : ''}
           ${kind === 'investor' ? fInput('budget', 'الميزانية القصوى (درهم)', ag.budget, { money: true }) : ''}
           ${kind === 'investor' ? `<div class="field full"><label>نوع الاستثمار</label><div class="chips wrap" id="mode-pick">${Object.values(INV_MODES).map(m => `<label class="chip"><input type="checkbox" data-mode value="${esc(m[0])}" ${splitList(ag.invest_modes).includes(m[0]) ? 'checked' : ''}> ${esc(m[0])}</label>`).join('')}</div></div>` : ''}
-          ${abroad ? fInput('country', 'الدولة', ag.country === 'خارج المغرب' ? '' : ag.country, { ph: 'فرنسا، إسبانيا، بلجيكا، الإمارات…' }) : ''}
           <div class="field"><label>الرمز</label><input value="${esc(ag.code || '')}" disabled dir="ltr"></div>
           ${fInput('services', kind === 'investor' ? 'القطاعات اللي كتهمك (فرّق بالفاصلة)' : kind === 'notary' ? 'الاختصاصات (فرّق بالفاصلة)' : 'الخدمات (فرّق بالفاصلة)', ag.services, { cls: 'full', ph: K.sv.slice(0, 4).join('، ') })}
           <div class="field full"><div class="chips wrap" id="sv-pick">${K.sv.map(s => `<button type="button" class="chip" data-sv="${esc(s)}">+ ${esc(s)}</button>`).join('')}</div></div>
           ${fText('about', 'تعريف قصير', ag.about, { ph: 'شكون نتوما، شحال من عام فالميدان، المناطق اللي خدامين فيها…' })}
           <div class="field" style="justify-content:flex-end"><button class="btn gold">${ic('check', 18)} حفظ</button></div>
         </form>
-        <datalist id="dl-cities">${Object.values(CITY).map(c => `<option value="${esc(c.n)}">`).join('')}</datalist>
+        ${placeLists()}
         <p class="muted" style="font-size:13px">✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.${kind === 'notary' ? '<br>✔️ الموقع (GPS) والحي كيخليوك تتقترح أوتوماتيكيا مع العقارات القريبة ليك.' : ''}${kind === 'investor' ? '<br>✔️ زيد عروض الاستثمار ديالك فـ «💼 فرص الاستثمار» باش يتواصلو معاك أصحاب المشاريع.' : ''}</p>
       </div>
       ${memberMediaCard()}
@@ -4568,7 +4572,7 @@
         body.district = v.district || null; body.gps = parseGps(v.gps) ? parseGps(v.gps).join(',') : null;
       }
       if (kind === 'investor') { body.budget = v.budget || null; body.invest_modes = $$('#mode-pick [data-mode]:checked').map(c => c.value).join('، ') || null; }
-      if (abroad) body.country = (v.country || '').trim() || 'خارج المغرب';
+      body.country = (v.country || '').trim() || (abroad ? 'خارج المغرب' : 'المغرب');
       try {
         await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', body);
         await refreshRole(true);
@@ -4646,7 +4650,7 @@
       $$('[data-edit]').forEach(b => b.onclick = () => {
         const a = ags.find(x => x.uid === b.dataset.edit);
         modal(`<h3>${K.ic} <span dir="ltr">${esc(a.code)}</span></h3><form id="age" class="form-grid">${fInput('name', 'الاسم', a.name, { req: true })}${fInput('phone', 'الهاتف', a.phone, { type: 'tel' })}
-          ${fInput('city', 'المدينة', a.city)}${fInput('country', 'الدولة', a.country || 'المغرب', { hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (77 وكالة خارج المغرب)' : '' })}
+          ${placeLists()}${fInput('city', 'المدينة', a.city, { list: 'dl-cities' })}${fInput('country', 'الدولة', a.country || 'المغرب', { list: 'dl-countries', hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (77 وكالة خارج المغرب)' : '' })}
           ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}
           ${fInput('sub_until', 'الاشتراك (199 درهم) خالص حتى', a.sub_until, { type: 'date', hint: a.terms_at ? 'وافق على القانون: ' + dAr(a.terms_at) : 'مازال ما وافقش على القانون' })}
           <div class="field" style="justify-content:flex-end"><button type="button" class="btn sm" id="age-year">💳 +1 عام</button></div></form>
