@@ -1248,3 +1248,10 @@ body.in-studio #fab, body.in-studio #fab-menu, body.in-studio .agent-fab { displ
 .hst b { font-size: 12px; font-weight: 700; line-height: 1.25; color: var(--ink-2); }
 @media (min-width: 720px) { .hstats { gap: 14px; } .hst { padding: 14px 8px; } .hst-ic { width: 42px; height: 42px; font-size: 22px; } .hnum { font-size: 32px; } .hst b { font-size: 14px; } }
 @media (max-width: 360px) { .hnum { font-size: 20px; } .hst b { font-size: 11px; } }
+
+/* الرئيسية: خانة «أفضل الفرص» وحدها + العدد */
+.opp-cta { display: flex; align-items: center; gap: 12px; padding: 16px; text-decoration: none; color: var(--ink); align-self: start; border-inline-start: 4px solid #1f9d68; }
+.opp-cta .opp-ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: color-mix(in srgb, #1f9d68 12%, #fff); flex-shrink: 0; }
+.opp-cta b { display: block; font-size: 16px; }
+.opp-cta small { color: var(--muted); font-size: 12.5px; }
+.opp-cta .opp-n { min-width: 56px; height: 44px; padding: 0 12px; border-radius: 22px; display: grid; place-items: center; background: #1f9d68; color: #fff; font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; flex-shrink: 0; }
