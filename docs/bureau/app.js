@@ -805,9 +805,7 @@
       const y = window.scrollY; await viewHome(); window.scrollTo(0, y);
     });
     let strong = 0;
-    const opps = [];
-    if (!cold) open.forEach(r => matchesForReq(r).forEach(x => { if (x.m.score >= 75) { strong++; opps.push({ r, p: x.p, s: x.m.score }); } }));
-    opps.sort((a, b) => b.s - a.s);
+    if (!cold) open.forEach(r => matchesForReq(r).forEach(x => { if (x.m.score >= 75) strong++; }));
     const follow = open.filter(r => r.followUp && r.followUp <= today()).sort((a, b) => a.followUp.localeCompare(b.followUp));
     const byType = {};
     avail.forEach(p => { const k = D.CATEGORIES[catOf(p.type)].ar; byType[k] = (byType[k] || 0) + 1; });
@@ -842,15 +840,11 @@
           </div>
         </div>` : `
       <div class="grid-2">
-        <div class="card">
-          <div class="pair-head"><b>${ic('sparkle', 18)} أفضل الفرص (طلب ↔ عقار)</b><a class="btn sm" href="#/matching">الكل</a></div>
-          ${opps.length ? opps.slice(0, 6).map(o => `
-            <a class="list-row" href="#/request/${o.r.id}">
-              ${scoreRing(o.s)}
-              <div class="grow"><b>${esc(o.r.client && o.r.client.name)} ← ${esc(o.p.title || typeAr(o.p.type))}</b>
-              <small class="muted">${esc(o.p.ref)} · ${esc(priceText(o.p))} · ${esc(o.p.district || o.p.city || '')}</small></div>
-            </a>`).join('') : `<div class="empty" style="padding:26px">${cold ? '⏳ جاري حساب أحسن الفرص…' : 'لا توجد مطابقات قوية حاليا'}</div>`}
-        </div>
+        <a class="card opp-cta" href="#/matching">
+          <span class="opp-ic">✨</span>
+          <span class="grow"><b>أفضل الفرص (طلب ↔ عقار)</b><small>${cold ? '⏳ جاري الحساب…' : strong ? 'ضغط باش تشوف المطابقات كاملين' : 'لا توجد مطابقات قوية حاليا'}</small></span>
+          <span class="opp-n">${cold ? '…' : strong}</span>
+        </a>
         <div style="display:flex;flex-direction:column;gap:16px">
           <div class="card">
             <div class="pair-head"><b>${ic('calendar', 18)} مواعيد اليوم</b><a class="btn sm" href="#/appointment/new">${ic('plus', 15)}</a></div>
