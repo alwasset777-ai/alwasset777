@@ -799,7 +799,7 @@
 
     main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + `
       <div class="hero">
-        <div class="hero-marq"><span>${esc(S.role === 'agency' ? myAgencyName() : S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
+        <div class="hero-marq"><span>${esc(S.role === 'agency' ? myAgencyName() : String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط'))} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
         <div class="hero-big3">
           <button class="btn gold" data-hm="add">${ic('plus', 20)} إضافة</button>
           <button class="btn" data-hm="svc">🧰 خدمات المجموعة${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</button>
