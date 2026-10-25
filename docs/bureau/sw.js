@@ -1,10 +1,10 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v74';
+const CACHE = 'w777-bureau-v75';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
 const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'manifest.webmanifest', ...FONTS,
-  'vendor/qrcode.js', 'icons/logo.png?v=9', 'icons/icon-192.png?v=8', 'icons/icon-512.png?v=8', 'icons/apple-touch-icon.png?v=8', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
+  'vendor/qrcode.js', 'icons/logo.png?v=10', 'icons/icon-192.png?v=9', 'icons/icon-512.png?v=9', 'icons/apple-touch-icon.png?v=9', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
   ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=6`)];
 
 self.addEventListener('install', e => {
@@ -64,7 +64,7 @@ self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: 'الوسيط 777', body: e.data ? e.data.text() : '' }; }
   e.waitUntil(self.registration.showNotification(d.title || 'الوسيط 777', {
-    body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag, icon: 'icons/icon-192.png?v=8', badge: 'icons/icon-192.png?v=8',
+    body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag, icon: 'icons/icon-192.png?v=9', badge: 'icons/icon-192.png?v=9',
     lang: 'ar', dir: 'rtl', data: { url: d.url || '#/' } }));
 });
 self.addEventListener('notificationclick', e => {
