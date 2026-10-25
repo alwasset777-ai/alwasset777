@@ -6271,6 +6271,14 @@
   let deferredInstall = null;
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; });
 
+  // شريط المدن المغربية المشاركة فالشريط العلوي (كيتحرك من اليسار لليمين)
+  function setupCityTicker() {
+    const tr = $('#ct-track'); if (!tr) return;
+    const names = D.REGIONS.flatMap(r => r.cities.map(c => c.n));
+    const one = names.map(n => `<span>📍 ${esc(n)}</span>`).join('');
+    tr.innerHTML = `<div class="ct-set">${one}</div><div class="ct-set">${one}</div>`;
+    tr.style.animationDuration = Math.max(60, names.length * 3) + 's';
+  }
   function setupFab() {
     const fab = $('#fab');
     const menu = $('#fab-menu');
@@ -7543,7 +7551,7 @@
     if (window.W777_SYNC.isOn()) localStorage.setItem('w777_last_email', window.W777_SYNC.account().email || '');
     cleanOrphans();
     setupSearch();
-    setupFab();
+    setupFab(); setupCityTicker();
     setupAgent();
     setupSyncUi();
     setupChat();
