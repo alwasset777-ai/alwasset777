@@ -1205,3 +1205,8 @@ html.lv-lite .bottomnav { background: var(--surface); }
 html.lv-lite .topbar.lv-scrolled { background: #000; }
 html.lv-lite .p3d { transform: scale(.97) !important; will-change: auto; filter: none; }
 html.lv-lite .card, html.lv-lite a.card:hover, html.lv-lite .dir-card:hover, html.lv-lite .card.stat:hover { translate: none; }
+
+/* ✨ صانع الإعلانات (الاستوديو) داخل التطبيق */
+.studio-head { align-items: flex-end; flex-wrap: wrap; gap: 10px; }
+.studio-frame { display: block; width: 100%; height: calc(100vh - 230px); height: calc(100dvh - 230px); min-height: 560px; border: 0; border-radius: 18px; background: #f6f6f6; box-shadow: 0 10px 30px -14px rgba(0,0,0,.35); }
+@media (max-width: 700px) { .studio-frame { height: calc(100dvh - 250px); min-height: 480px; border-radius: 14px; } }
