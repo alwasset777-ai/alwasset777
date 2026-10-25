@@ -454,8 +454,9 @@ html, body { overflow-x: clip; }
 #btn-sync[data-state="error"]::after { background: var(--red); }
 @keyframes pulse { 50% { opacity: .3; } }
 /* الشعار */
-.logo-pill { height: 54px; padding: 0; background: #0b0b0b; border-radius: 12px; display: flex; align-items: center; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 4px 14px rgba(0,0,0,.35); }
-.logo-pill img { height: 100%; width: auto; display: block; }
+/* الشعار دائري (أبيض بإطار رمادي) */
+.logo-pill { height: 54px; aspect-ratio: 1; padding: 0; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; box-shadow: 0 0 0 2px rgba(255,255,255,.18), 0 4px 14px rgba(0,0,0,.45); }
+.logo-pill img { height: 100%; width: 100%; object-fit: contain; display: block; }
 @media (max-width: 640px) { .logo-pill { height: 46px; } }
 
 /* ---------- المواعيد ---------- */
@@ -798,7 +799,7 @@ a.chip { text-decoration: none; }
 .tr-hero { display: flex; align-items: center; gap: 14px; padding: 14px; margin-bottom: 14px; }
 .tr-hero b { display: block; font-size: 15.5px; }
 .tr-hero small { color: var(--muted); font-size: 12.5px; }
-.tr-logo { height: 64px; width: auto; border-radius: 12px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.tr-logo { height: 64px; width: auto; border-radius: 50%; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
 @media (max-width: 640px) { .tr-logo { height: 48px; } }
 .tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .tr-art { position: relative; border-top: 3px solid var(--gold); }
@@ -938,7 +939,7 @@ label.loading { opacity: .55; pointer-events: none; }
 @keyframes prmove { to { transform: translateY(-50%); } }
 .pr-item { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #fff; border: 2px solid var(--line); flex-shrink: 0; text-decoration: none; }
 .pr-item img { width: 100%; height: 100%; object-fit: contain; }
-.pr-office { border-color: var(--gold); background: #0b0b0b; }
+.pr-office { border-color: var(--gold); background: #fff; }
 .pr-office img { object-fit: cover; }
 .pr-add { border-style: dashed; border-color: var(--gold); color: var(--gold); font-size: 20px; font-weight: 800; line-height: 1; display: flex; flex-direction: column; justify-content: center; }
 .pr-add small { font-size: 8.5px; font-weight: 700; }
@@ -1109,7 +1110,7 @@ label.chk input { width: 20px; height: 20px; accent-color: var(--gold); }
 @keyframes pres-kb { from { scale: 1.12; translate: 1.5% 1%; } to { scale: 1; translate: 0 0; } }
 .pres-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 45%, rgba(0,0,0,.88) 100%); pointer-events: none; }
 .pres-top { position: absolute; top: 0; inset-inline: 0; display: flex; align-items: center; gap: 12px; padding: calc(var(--safe-t) + 14px) 18px 0; }
-.pres-logo { height: 52px; width: auto; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+.pres-logo { height: 52px; width: auto; border-radius: 50%; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
 .pres-trx { background: linear-gradient(145deg, var(--gold-2), var(--gold)); padding: 8px 18px; border-radius: 999px; font-weight: 900; box-shadow: 0 6px 20px rgba(200,16,46,.5); }
 .pres-count { font-weight: 700; opacity: .8; }
 .pres-x { width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); color: #fff; font-size: 20px; cursor: pointer; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
