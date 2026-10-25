@@ -703,6 +703,7 @@
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
+    else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
     else if (a === 'rentals') { nav = 'rentals'; viewRentals(); }
     else if (a === 'rental') { nav = 'rentals'; viewRental(b); }
@@ -6424,6 +6425,18 @@
       a0 = a1; return v ? `<path d="${d}" fill="${c}"><animate attributeName="opacity" from="0" to="1" dur=".6s"/></path>` : '';
     });
     return `<svg viewBox="0 0 120 120" width="150" height="150" class="ln-donut">${arcs.join('')}</svg>`;
+  }
+  /* ---------- ✨ إصنع إعلانا: بلاصة محجوزة لتطبيق صناعة المنشورات (كيتوجد) ---------- */
+  function viewAdMaker() {
+    main().innerHTML = `
+      <div class="page-head"><div><h1>✨ إصنع إعلانا</h1><div class="sub">صناعة منشورات إعلانية للعقارات ديالك</div></div></div>
+      <div class="card empty">
+        <div class="big">🎨</div>
+        <h3>قريبا إن شاء الله</h3>
+        <p>تطبيق صناعة المنشورات الإعلانية كيتوجد دابا، وغادي يتزاد هنا ملي يكمل.</p>
+        <p class="muted" style="font-size:13px">فهاد الوقت تقدر تصاوب ملصق جاهز بالـ QR لأي عقار: حل العقار ← «🖼️ ملصق إعلاني».</p>
+        <a class="btn gold" href="#/properties">🏠 العقارات</a>
+      </div>`;
   }
   function viewLoan(query) {
     const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };
