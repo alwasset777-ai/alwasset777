@@ -7,7 +7,7 @@
   const D = window.W777_DATA;
   // نسخة مدمجة (صفحة claude.ai): لا طباعة ولا تنزيل ملفات ولا اتصال خارجي
   const EMBED = !!window.W777_EMBED;
-  const LOGO = window.W777_LOGO || 'icons/logo.png?v=9';
+  const LOGO = window.W777_LOGO || 'icons/logo.png?v=10';
   const DB = window.W777_DB;
 
   /* ============================================================
@@ -2259,7 +2259,7 @@
     agPaintButton();
     return AG.cfg;
   }
-  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=8';
+  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=9';
   function agPaintButton() {
     const b = $('#agent-fab'); if (!b) return;
     b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
@@ -3410,7 +3410,7 @@
       toast('⏰ موعد: ' + body, 8000);
       try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) { /* */ }
       if ('Notification' in window && Notification.permission === 'granted') {
-        const opt = { body, icon: 'icons/icon-192.png?v=8', badge: 'icons/icon-192.png?v=8', tag: key, data: { url: '#/appointments' }, requireInteraction: true };
+        const opt = { body, icon: 'icons/icon-192.png?v=9', badge: 'icons/icon-192.png?v=9', tag: key, data: { url: '#/appointments' }, requireInteraction: true };
         try {
           const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
           if (reg) await reg.showNotification('⏰ موعد ' + (APPT_TYPES[a.type] || ''), opt); else new Notification('⏰ موعد', opt);
@@ -7424,7 +7424,7 @@
       const j = sub.toJSON();
       await rqJson('/rest/v1/w777_push_subs?on_conflict=uid,endpoint', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ uid: myUid(), endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }) });
       localStorage.setItem('w777_push', '1');
-      reg.showNotification('🔔 الوسيط 777', { body: 'تفعّلو الإشعارات ✓ غادي يوصلوك هنا', icon: 'icons/icon-192.png?v=8', badge: 'icons/icon-192.png?v=8', lang: 'ar', dir: 'rtl' });
+      reg.showNotification('🔔 الوسيط 777', { body: 'تفعّلو الإشعارات ✓ غادي يوصلوك هنا', icon: 'icons/icon-192.png?v=9', badge: 'icons/icon-192.png?v=9', lang: 'ar', dir: 'rtl' });
       toast('🔔 تفعّلو الإشعارات ✓'); viewSettings();
     } catch (e) { toast('تعذر: ' + e.message, 5000); }
   }
