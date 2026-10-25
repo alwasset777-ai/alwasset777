@@ -78,15 +78,17 @@
     if (m >= 1000) { const v = m / 1000; return { n: v >= 100 ? Math.round(v) : +v.toFixed(1), u: 'مليار سنتيم' }; }
     return { n: m >= 100 ? Math.round(m) : +m.toFixed(1), u: 'مليون سنتيم' };
   }
-  // عداد بحال ديال الطوموبيل: كل رقم كيدور حتى يوقف فبلاصتو
-  function odo(v) {
-    const t = String(v);
-    return `<span class="odo d${Math.min(7, t.length)}" aria-label="${esc(t)}">${[...t].map(ch => /\d/.test(ch)
-      ? `<span class="od"><span class="od-r" data-d="${ch}">${'0123456789'.split('').map(x => `<i>${x}</i>`).join('')}</span></span>`
-      : `<span class="od-s">${esc(ch)}</span>`).join('')}</span>`;
-  }
+  // رقم كبير وواضح كيعدّ من 0 حتى يوصل للقيمة
+  function odo(v) { return `<span class="hnum" data-to="${esc(String(v))}">${esc(String(v))}</span>`; }
   function odoRoll(root) {
-    $$('.od-r', root).forEach((r, i) => { r.style.transitionDelay = (i * 90) + 'ms'; requestAnimationFrame(() => requestAnimationFrame(() => { r.style.transform = `translateY(-${r.dataset.d * 10}%)`; })); });
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    $$('.hnum[data-to]', root).forEach(el => {
+      const t = el.dataset.to, to = parseFloat(t), dec = (t.split('.')[1] || '').length;
+      if (!isFinite(to) || to <= 0) return;
+      const t0 = performance.now(), dur = 1200;
+      const step = now => { const k = Math.min(1, (now - t0) / dur), v = to * (1 - Math.pow(1 - k, 3)); el.textContent = k < 1 ? v.toFixed(dec) : t; if (k < 1 && el.isConnected) requestAnimationFrame(step); };
+      el.textContent = (0).toFixed(dec); requestAnimationFrame(step);
+    });
   }
   function money(n, unit) {
     if (num(n) === null) return '';
@@ -824,10 +826,10 @@
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
       <div class="hstats">
-        <div class="hst" style="--c1:#ff6b6b;--c2:#c8102e"><span class="hst-ic">🏠</span>${odo(avail.length)}<b>عقار متاح</b><small>من ${S.props.length}</small></div>
-        <div class="hst" style="--c1:#5ab0ff;--c2:#2f6fd6"><span class="hst-ic">👥</span>${odo(open.length)}<b>طلب مفتوح</b><small>زبناء كيقلبو</small></div>
-        <div class="hst" style="--c1:#5fe0a8;--c2:#1f9d68"><span class="hst-ic">🎯</span>${cold ? '<span class="odo">…</span>' : odo(strong)}<b>مطابقة قوية</b><small><bdi dir="ltr">+75%</bdi></small></div>
-        <div class="hst" style="--c1:#ffd36e;--c2:#c99a2e"><span class="hst-ic">💰</span>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="odo">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b><small>قيمة المعروض للبيع</small></div>
+        <div class="hst" style="--c:#c8102e"><span class="hst-ic">🏠</span>${odo(avail.length)}<b>عقار متاح</b></div>
+        <div class="hst" style="--c:#2f6fd6"><span class="hst-ic">👥</span>${odo(open.length)}<b>طلب مفتوح</b></div>
+        <div class="hst" style="--c:#1f9d68"><span class="hst-ic">🎯</span>${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
+        <div class="hst" style="--c:#b8860b"><span class="hst-ic">💰</span>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
       </div>
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
