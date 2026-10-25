@@ -72,6 +72,22 @@
     if (m < 1) return '';
     return (m % 1 === 0 ? m : m.toFixed(1)) + ' مليون سنتيم';
   }
+  // قيمة كبيرة ← رقم قصير + الوحدة (مليون / مليار سنتيم)
+  function saleCompact(n) {
+    const m = (num(n) || 0) / 10000;
+    if (m >= 1000) { const v = m / 1000; return { n: v >= 100 ? Math.round(v) : +v.toFixed(1), u: 'مليار سنتيم' }; }
+    return { n: m >= 100 ? Math.round(m) : +m.toFixed(1), u: 'مليون سنتيم' };
+  }
+  // عداد بحال ديال الطوموبيل: كل رقم كيدور حتى يوقف فبلاصتو
+  function odo(v) {
+    const t = String(v);
+    return `<span class="odo d${Math.min(7, t.length)}" aria-label="${esc(t)}">${[...t].map(ch => /\d/.test(ch)
+      ? `<span class="od"><span class="od-r" data-d="${ch}">${'0123456789'.split('').map(x => `<i>${x}</i>`).join('')}</span></span>`
+      : `<span class="od-s">${esc(ch)}</span>`).join('')}</span>`;
+  }
+  function odoRoll(root) {
+    $$('.od-r', root).forEach((r, i) => { r.style.transitionDelay = (i * 90) + 'ms'; requestAnimationFrame(() => requestAnimationFrame(() => { r.style.transform = `translateY(-${r.dataset.d * 10}%)`; })); });
+  }
   function money(n, unit) {
     if (num(n) === null) return '';
     return fmt(n) + ' ' + (unit || 'درهم');
@@ -807,11 +823,11 @@
         </div>
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
-      <div class="stats">
-        <div class="card stat"><div class="ic">${ic('building')}</div><div class="v">${avail.length}</div><div class="l">عقار متاح (من ${S.props.length})</div></div>
-        <div class="card stat"><div class="ic">${ic('users')}</div><div class="v">${open.length}</div><div class="l">طلب مفتوح</div></div>
-        <div class="card stat"><div class="ic">${ic('target')}</div><div class="v">${cold ? '…' : strong}</div><div class="l">مطابقة قوية (+75%)</div></div>
-        <div class="card stat"><div class="ic">${ic('handshake')}</div><div class="v" style="font-size:20px">${saleValue ? esc(millions(saleValue) || fmt(saleValue)) : '—'}</div><div class="l">قيمة العقارات المعروضة للبيع</div></div>
+      <div class="hstats">
+        <div class="hst" style="--c1:#ff6b6b;--c2:#c8102e"><span class="hst-ic">🏠</span>${odo(avail.length)}<b>عقار متاح</b><small>من ${S.props.length}</small></div>
+        <div class="hst" style="--c1:#5ab0ff;--c2:#2f6fd6"><span class="hst-ic">👥</span>${odo(open.length)}<b>طلب مفتوح</b><small>زبناء كيقلبو</small></div>
+        <div class="hst" style="--c1:#5fe0a8;--c2:#1f9d68"><span class="hst-ic">🎯</span>${cold ? '<span class="odo">…</span>' : odo(strong)}<b>مطابقة قوية</b><small><bdi dir="ltr">+75%</bdi></small></div>
+        <div class="hst" style="--c1:#ffd36e;--c2:#c99a2e"><span class="hst-ic">💰</span>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="odo">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b><small>قيمة المعروض للبيع</small></div>
       </div>
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
@@ -860,6 +876,7 @@
     </div></div>`;
     hydrateThumbs(main());
     bindHomeSearch();
+    odoRoll(main());
     $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length));
     if (!EMBED && window.W777_SYNC && window.W777_SYNC.isOn()) homeNetwork();
     if (inNetwork() && !$('.grp-strip')) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (h && g && !$('.grp-strip', h)) h.insertAdjacentHTML('beforeend', g); }).catch(() => {});
