@@ -682,6 +682,7 @@
     if (leaveGuard) { const g = leaveGuard; leaveGuard = null; await g(); }
     navTrack();
     const { parts, query } = parseHash();
+    document.body.classList.toggle('in-studio', parts[0] === 'ad-maker');
     const [a, b, c] = parts;
     let nav = 'home';
     window.scrollTo(0, 0);
@@ -6429,7 +6430,7 @@
   }
   /* ---------- ✨ إصنع إعلانا: تطبيق «صانع الإعلانات» داخل التطبيق، مربوط بالعقارات ----------
      العقار كيتصيفط للاستوديو (postMessage) ملي كيقول «w777-studio-ready»: المعلومات + حتى 5 صور */
-  const STUDIO_URL = 'https://al-wasset-777-git-claude-multi-platform-2eef47-alwasset777-1944.vercel.app/studio';
+  const STUDIO_URL = 'https://al-wasset-777.vercel.app/studio';
   const STUDIO_ORIGIN = new URL(STUDIO_URL).origin;
   let studioProp = null, studioSent = false;
   window.addEventListener('message', e => {
