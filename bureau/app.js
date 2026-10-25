@@ -4179,29 +4179,14 @@
     $('#sf-toggle').onclick = () => { S.sfHide = !S.sfHide; $('#sf-card').classList.toggle('hidden', S.sfHide); };
     draw();
   }
-  // البحث فالرئيسية (لفوق): كلمة + العملية + المدينة + الميزانية ← صفحة البحث
+  // الرئيسية (لفوق): غير جوج أزرار — «إصنع إعلانا» (على اليمين) و«بحث» ← صفحة البحث بالفلتر الكامل
   function homeSearch() {
-    return `<div class="card hs-card">
-      <div class="hs-title">🔎 البحث <small>قلّب فالعقارات، الزبناء${inNetwork() ? '، الشبكة والدليل' : ''}</small></div>
-      <form id="hs" class="hs-form" onsubmit="return false">
-        <input name="q" placeholder="شنو كتقلب؟ (مرجع، حي، نوع، زبون، هاتف…)" autocomplete="off">
-        <select name="trx"><option value="">كل العمليات</option>${D.TRANSACTIONS.map(t => `<option value="${t.id}">${esc(t.ar)}</option>`).join('')}</select>
-        <select name="city"><option value="">كل المدن</option>${cityGroups().map(g => `<optgroup label="${esc(g.label)}">${g.items.map(c => `<option value="${esc(c.v)}">${esc(c.v)}</option>`).join('')}</optgroup>`).join('')}</select>
-        <input name="pmax" inputmode="numeric" placeholder="الثمن الأقصى (درهم)">
-        <button class="btn gold" id="hs-go">${ic('search', 18)} بحث</button>
-        <a class="btn" href="#/search">${ic('filter', 18)} فلتر كامل</a>
-      </form></div>`;
+    return `<div class="card hs-card hs-two">
+      <a class="btn ad-cta" href="#/ad-maker">✨ إصنع إعلانا</a>
+      <a class="btn gold" href="#/search?scope=mine">${ic('search', 18)} بحث</a>
+    </div>`;
   }
-  function bindHomeSearch() {
-    const fm = $('#hs'); if (!fm) return;
-    const go = () => {
-      const v = Object.fromEntries(new FormData(fm).entries());
-      const qs = new URLSearchParams(Object.entries(v).filter(([, x]) => String(x).trim()).map(([k, x]) => [k, k === 'pmax' ? String(x).replace(/[^\d]/g, '') : x]));
-      location.hash = '#/search' + (qs.toString() ? '?' + qs : '?scope=mine');
-    };
-    $('#hs-go').onclick = go;
-    $('[name=q]', fm).addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-  }
+  function bindHomeSearch() { /* الأزرار روابط عادية */ }
 
   /* ============================================================
      دليل استعمال التطبيق: دروس خطوة بخطوة بالصور + «جرّب دابا»
