@@ -971,3 +971,26 @@ drop trigger if exists w777_push_booking on public.w777_bookings;
 create trigger w777_push_booking after insert on public.w777_bookings for each row execute function public.w777_push_hook('booking');
 drop trigger if exists w777_push_prop on public.w777_shared_props;
 create trigger w777_push_prop after insert on public.w777_shared_props for each row when (not new.deleted) execute function public.w777_push_hook('prop');
+
+-- ============================================================
+-- ⚡ تسريع قواعد الأمان (2026-10-25) — نفس المعنى، حساب مرة وحدة فالطلب بلاصة كل سطر
+-- ============================================================
+-- 1) فكل سياسات public و storage: auth.uid() ← ( SELECT auth.uid() AS uid )
+--    و w777_is_admin() / w777_can_use() / w777_staff_owner() / w777_staff_role() / w777_my_kind() / w777_admin_uid()
+--    ← ( SELECT w777_xxx() AS w777_xxx )   (تبدلو بـ ALTER POLICY ... USING/WITH CHECK بنفس الشروط)
+-- 2) فهارس للمفاتيح الأجنبية:
+create index if not exists w777_bookings_stay_id_fkey_ix on public.w777_bookings (stay_id);
+create index if not exists w777_disputes_owner_fkey_ix on public.w777_disputes (owner);
+create index if not exists w777_donations_owner_fkey_ix on public.w777_donations (owner);
+create index if not exists w777_invest_owner_fkey_ix on public.w777_invest (owner);
+create index if not exists w777_partner_items_token_fkey_ix on public.w777_partner_items (token);
+create index if not exists w777_partners_owner_fkey_ix on public.w777_partners (owner);
+create index if not exists w777_projects_owner_fkey_ix on public.w777_projects (owner);
+create index if not exists w777_stays_owner_fkey_ix on public.w777_stays (owner);
+alter function public.w777_rt_touch() set search_path = public;
+-- 3) دوال التريغر (SECURITY DEFINER) ما خاصهاش تتنادى من برا عبر /rest/v1/rpc — التريغر كيبقى خدام
+do $$ declare f record; begin
+  for f in select p.oid::regprocedure sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.prorettype = 'trigger'::regtype and p.prosecdef loop
+    execute format('revoke all on function %s from public, anon, authenticated', f.sig);
+  end loop; end $$;
