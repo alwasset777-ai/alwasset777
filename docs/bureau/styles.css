@@ -716,6 +716,10 @@ a.chip { text-decoration: none; }
 .hs-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto auto; gap: 8px; }
 .hs-form input, .hs-form select { min-width: 0; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); padding: 0 12px; font: inherit; }
 .hs-form .btn { height: 44px; white-space: nowrap; }
+.hs-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
+.hs-two .btn { height: 52px; font-size: 17px; font-weight: 800; justify-content: center; white-space: nowrap; }
+.btn.ad-cta { background: linear-gradient(135deg, #f3d27a, #c99a2e); color: #1a1205; border-color: rgba(201,154,46,.6); box-shadow: 0 6px 18px -6px rgba(201,154,46,.7); }
+.btn.ad-cta:hover { filter: brightness(1.06); }
 @media (max-width: 900px) { .hs-form { grid-template-columns: 1fr 1fr; } .hs-form input[name=q] { grid-column: 1 / -1; } }
 .sf-card .form-grid { align-items: end; }
 .sf-feats { max-height: 132px; overflow-y: auto; }
