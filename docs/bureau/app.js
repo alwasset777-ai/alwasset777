@@ -749,6 +749,27 @@
   // لون الهالة ديال كل أيقونة 3D
   const HUB_C = { agencies: '#4aa3ff', brokers: '#ffb02e', contractors: '#ffcc4d', finishing: '#ff7aa8', projects: '#ff5a5f', events: '#e84393', stays: '#20c997',
     news: '#a0aec0', donations: '#ffc83d', disputes: '#b39ddb', investors: '#f4a62a', notaries: '#3d8bfd', associations: '#34d399', terms: '#e6c77e' };
+  // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
+  const HUB_NET = ['agencies', 'brokers', 'associations', 'investors', 'contractors', 'finishing', 'notaries'];
+  const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
+  const hubImg = r => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=6" alt="" decoding="async" onerror="this.replaceWith(document.createTextNode('${h[1]}'))">`, h[2], h[3]); };
+  const hubEmo = (href, e, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo">${e}</i>`, l, s);
+  function homeMenu(kind, nAppts) {
+    const M = {
+      add: ['➕ إضافة', [hubEmo('#/property/new', '🏠', 'إضافة عقار', 'بيع، كراء…', '#ff5a5f'), hubEmo('#/request/new', '🧾', 'إضافة طلب', 'زبون كيقلب', '#4aa3ff'), hubEmo('#/appointment/new', '📅', 'إضافة موعد', 'زيارة، لقاء…', '#20c997')]],
+      svc: ['🧰 خدمات المجموعة', [
+        hubEmo('#/matching', '🎯', 'المطابقة', 'طلب ↔ عقار'), hubEmo('#/appointments', '📅', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubEmo('#/estimate', '📊', 'مقارنة الثمن', 'درهم/م²'),
+        hubEmo('#/loan', '🏦', 'حاسبة القرض', 'القسط الشهري'), hubEmo('#/map', '🗺️', 'الخريطة', 'العقارات'), hubEmo('#/rentals', '🔑', 'الكراء', 'الكاريين والتوصيلات'),
+        hubEmo('#/finance', '💹', 'المالية', 'المداخيل والمصاريف'), hubEmo('#/ad-maker', '✨', 'إصنع إعلانا', 'منشورات إعلانية'),
+        ...HUB.map(h => h[0]).filter(r => !HUB_NET.includes(r)).map(hubImg),
+        hubEmo('#/guide', '🎓', 'تعلم استعمال التطبيق', 'دروس بالصور')]],
+      net: ['✦ شبكة الوسيط 777', HUB_NET.map(hubImg)],
+    }[kind];
+    if (!M) return;
+    modal(`<h3>${M[0]}</h3><div class="hub hub-menu">${M[1].join('')}</div>`, (box, close) => {
+      $$('.hub-tile', box).forEach(a => a.addEventListener('click', () => close()));
+    });
+  }
   function gdBanner() {
     const L = gdLessons(), d = gdDone();
     if (!L.length || d.size >= Math.min(5, L.length)) return '';
@@ -782,20 +803,11 @@
       <div class="hero">
         <h2>${greet} <span class="lv-wave">👋</span></h2>
         <p>${esc(S.role === 'agency' ? myAgencyName() : S.settings.officeName)} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</p>
-        <div class="btn-row">
-          <a class="btn gold" href="#/property/new">${ic('plus', 18)} إضافة عقار</a>
-          <a class="btn" href="#/request/new">${ic('users', 18)} إضافة طلب</a>
-          <a class="btn" href="#/matching">${ic('target', 18)} المطابقة</a>
-          <a class="btn" href="#/appointments">${ic('calendar', 18)} المواعيد${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</a>
-          <a class="btn" href="#/estimate">📊 مقارنة الثمن</a>
-          <a class="btn" href="#/loan">🏦 حاسبة القرض</a>
-          <a class="btn" href="#/map">🗺️ الخريطة</a>
-          <a class="btn" href="#/rentals">🔑 الكراء</a>
-          <a class="btn" href="#/finance">💹 المالية</a>
-          <a class="btn" href="#/guide">🎓 تعلم استعمال التطبيق</a>
+        <div class="hero-big3">
+          <button class="btn gold" data-hm="add">${ic('plus', 20)} إضافة</button>
+          <button class="btn" data-hm="svc">🧰 خدمات المجموعة${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</button>
+          <button class="btn" data-hm="net">✦ شبكة الوسيط 777</button>
         </div>
-        <div class="hub-title">✦ شبكة الوسيط 777</div>
-        <div class="hub">${HUB.map(([r, i, l, s]) => `<a class="hub-tile" href="#/${r}" style="--c:${HUB_C[r] || '#e6c77e'}"><span class="hi"><img src="icons/hub/${r}.webp?v=6" alt="" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('${i}'))"></span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`).join('')}</div>
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
       <div class="stats">
@@ -851,6 +863,7 @@
     </div></div>`;
     hydrateThumbs(main());
     bindHomeSearch();
+    $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length));
     if (!EMBED && window.W777_SYNC && window.W777_SYNC.isOn()) homeNetwork();
     if (inNetwork() && !$('.grp-strip')) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (h && g && !$('.grp-strip', h)) h.insertAdjacentHTML('beforeend', g); }).catch(() => {});
     const seed = $('#seed');
