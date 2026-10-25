@@ -703,7 +703,7 @@
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
-    else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(); }
+    else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(query); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
     else if (a === 'rentals') { nav = 'rentals'; viewRentals(); }
     else if (a === 'rental') { nav = 'rentals'; viewRental(b); }
@@ -1360,6 +1360,7 @@
           <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
           <button class="btn gold" id="p-pres">📺 عرض للزبون</button>
           <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
+          <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إصنع إعلانا</a>
           ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
           ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 القرض</a>` : ''}
           ${EMBED ? '' : `<button class="btn" onclick="window.print()">${ic('print', 18)} طباعة / PDF</button>`}
@@ -6426,17 +6427,68 @@
     });
     return `<svg viewBox="0 0 120 120" width="150" height="150" class="ln-donut">${arcs.join('')}</svg>`;
   }
-  /* ---------- ✨ إصنع إعلانا: بلاصة محجوزة لتطبيق صناعة المنشورات (كيتوجد) ---------- */
-  function viewAdMaker() {
+  /* ---------- ✨ إصنع إعلانا: تطبيق «صانع الإعلانات» داخل التطبيق، مربوط بالعقارات ----------
+     العقار كيتصيفط للاستوديو (postMessage) ملي كيقول «w777-studio-ready»: المعلومات + حتى 5 صور */
+  const STUDIO_URL = 'https://al-wasset-777-git-claude-multi-platform-2eef47-alwasset777-1944.vercel.app/studio';
+  const STUDIO_ORIGIN = new URL(STUDIO_URL).origin;
+  let studioProp = null, studioSent = false;
+  window.addEventListener('message', e => {
+    if (e.origin !== STUDIO_ORIGIN || !e.data || e.data.type !== 'w777-studio-ready') return;
+    const fr = $('#studio-frame');
+    if (!fr || e.source !== fr.contentWindow || !studioProp || studioSent) return;
+    studioSent = true;
+    studioPayload(studioProp).then(m => fr.contentWindow.postMessage(m, STUDIO_ORIGIN)).catch(() => { studioSent = false; });
+  });
+  function studioType(t) {
+    const c = (TYPE[t] || {}).cat;
+    if (/villa|bungalow|palace|chalet/.test(t)) return 'Villa';
+    if (t === 'riad' || t === 'traditional_house') return 'Riad';
+    if (/office|plateau/.test(t)) return 'Bureau';
+    if (t === 'farm' || t === 'haouz_house') return 'Ferme';
+    return { apartment: 'Appartement', room: 'Appartement', house: 'Maison', land: 'Terrain', agri: 'Terrain', commercial: 'Local Commercial', industrial: 'Local Commercial', building: 'Immeuble', tourism: 'Immeuble' }[c] || '';
+  }
+  // المميزات ديالنا ← الأسماء اللي كيعرف الاستوديو (والباقي كيدوز كيف ما هو)
+  const STUDIO_FEAT = [[/مصعد/, 'مصعد'], [/مرآب|باركينغ|موقف/, 'موقف سيارات'], [/شرفة|بالكون|تيراس/, 'شرفة'], [/مسبح/, 'مسبح'], [/حديقة|مساحات خضراء/, 'حديقة'], [/مفروش/, 'مفروشة'], [/محفظة|رسوم عقارية/, 'وثائق قانونية جاهزة'], [/مطبخ/, 'مطبخ مجهز'], [/مدفأة|شوميني|تدفئة/, 'تدفئة مركزية']];
+  async function studioPayload(p) {
+    const s = p.specs || {}, trx = p.transaction;
+    const feats = [];
+    (p.features || []).forEach(f => { const m = STUDIO_FEAT.find(([re]) => re.test(f)); const v = m ? m[1] : f; if (!feats.includes(v)) feats.push(v); });
+    const v = p.priceMax || p.priceMin;
+    const data = {
+      deal: trx === 'rent' ? 'location' : (trx === 'rent_furnished' || trx === 'seasonal') ? 'meuble' : 'vente',
+      type: studioType(p.type), headline: '',
+      city: p.city || '', district: p.district || '',
+      surface: Math.round(areaOf(p) || 0), surfaceMax: 0,
+      bedrooms: num(s.bedrooms) || num(s.rooms) || 0, bathrooms: num(s.bathrooms) || 0,
+      price: v ? fmtRaw(v) + ' ' + (p.priceUnit || 'درهم') : '',
+      features: feats.slice(0, 8), extras: [],
+    };
+    const ph = (p.media || []).filter(m => m.kind === 'photo'), cv = coverOf(p);
+    if (cv) { ph.splice(ph.indexOf(cv), 1); ph.unshift(cv); }
+    const photos = (await Promise.all(ph.slice(0, 5).map(m => getBlob(m.id, false).then(b => b || getBlob(m.id, true)).catch(() => null)))).filter(Boolean);
+    return { type: 'w777-prefill', v: 1, ref: p.ref || '', data, photos };
+  }
+  function viewAdMaker(query) {
+    const p = query.p ? S.props.find(x => x.id === query.p) : null;
+    studioProp = p; studioSent = false;
     main().innerHTML = `
-      <div class="page-head"><div><h1>✨ إصنع إعلانا</h1><div class="sub">صناعة منشورات إعلانية للعقارات ديالك</div></div></div>
-      <div class="card empty">
-        <div class="big">🎨</div>
-        <h3>قريبا إن شاء الله</h3>
-        <p>تطبيق صناعة المنشورات الإعلانية كيتوجد دابا، وغادي يتزاد هنا ملي يكمل.</p>
-        <p class="muted" style="font-size:13px">فهاد الوقت تقدر تصاوب ملصق جاهز بالـ QR لأي عقار: حل العقار ← «🖼️ ملصق إعلاني».</p>
-        <a class="btn gold" href="#/properties">🏠 العقارات</a>
-      </div>`;
+      <div class="page-head studio-head"><div><h1>✨ إصنع إعلانا</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(المعلومات والصور كيتعمرو بوحدهم)</span>` : 'ختار عقار باش تتعمر المعلومات والصور بوحدهم، ولا عمّرهم بيدك'}</div></div>
+        <div class="btn-row"><button class="btn sm" id="st-pick">🏠 ${p ? 'بدّل العقار' : 'ختار عقار'}</button><a class="btn sm" href="${STUDIO_URL}" target="_blank" rel="noopener">↗ فتح فصفحة جديدة</a></div></div>
+      <iframe id="studio-frame" class="studio-frame" src="${STUDIO_URL}?embed=w777" title="صانع الإعلانات" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
+    $('#st-pick').onclick = () => studioPick();
+  }
+  function studioPick() {
+    const list = S.props.filter(x => !x.deleted).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+    if (!list.length) return toast('مازال ما كاين حتى عقار — زيد عقار أولا');
+    modal(`<h3>🏠 ختار العقار</h3><input id="stp-q" type="search" placeholder="مرجع، حي، نوع…" style="width:100%;margin-bottom:10px"><div id="stp-l" style="max-height:60vh;overflow:auto"></div>`, (box, close) => {
+      const paint = () => {
+        const q = $('#stp-q', box).value.trim().toLowerCase();
+        $('#stp-l', box).innerHTML = list.filter(x => !q || [x.ref, x.title, typeAr(x.type), x.district, x.city].join(' ').toLowerCase().includes(q)).slice(0, 60)
+          .map(x => `<a class="list-row" href="#/ad-maker?p=${encodeURIComponent(x.id)}" data-close><div class="grow"><b>${esc(x.title || typeAr(x.type))}</b><div class="muted" style="font-size:12.5px">${esc(x.ref || '')} · ${esc([x.district, x.city].filter(Boolean).join('، '))} · ${esc(priceText(x).replace(/[⁦⁩]/g, ''))}</div></div></a>`).join('') || '<p class="muted">ما كاين والو</p>';
+        $$('#stp-l a', box).forEach(a => a.addEventListener('click', () => close()));
+      };
+      $('#stp-q', box).oninput = paint; paint();
+    });
   }
   function viewLoan(query) {
     const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };
