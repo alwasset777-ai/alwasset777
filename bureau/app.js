@@ -5356,7 +5356,11 @@
      الستوري ديال المشتركين: نص ولا صورة، كيبقى 24 ساعة، كيبان فشريط الشركاء
      ============================================================ */
   const ST = { list: [], at: 0, img: new Map() };
-  const ST_BG = ['linear-gradient(135deg,#c8102e,#5a0b18)', 'linear-gradient(135deg,#111,#3a3a3a)', 'linear-gradient(135deg,#d9a73b,#8a5a00)', 'linear-gradient(135deg,#1f9d68,#0b4d33)', 'linear-gradient(135deg,#2f6fd6,#16336b)', 'linear-gradient(135deg,#7b2ff7,#f107a3)'];
+  // خلفيات الستوري النصي: أحمر، أبيض، أسود (كيتختارو بأسهم 🔺)
+  const ST_BG = ['linear-gradient(135deg,#c8102e,#5a0b18)', '#ffffff', 'linear-gradient(135deg,#111,#3a3a3a)'];
+  const ST_BG_OLD = ['linear-gradient(135deg,#d9a73b,#8a5a00)', 'linear-gradient(135deg,#1f9d68,#0b4d33)', 'linear-gradient(135deg,#2f6fd6,#16336b)', 'linear-gradient(135deg,#7b2ff7,#f107a3)'];
+  const stBgOk = b => ST_BG.includes(b) || ST_BG_OLD.includes(b) ? b : ST_BG[0];
+  const stTextCls = b => b === '#ffffff' ? 'st-text st-light' : 'st-text';
   async function loadStories(force) {
     const Sy = window.W777_SYNC;
     if (!Sy || !Sy.isOn()) return [];
@@ -5412,7 +5416,7 @@
         <div class="st-head">${g.logo ? `<img src="${esc(g.logo)}" alt="">` : `<span class="st-av">${esc((g.name || '؟').trim()[0])}</span>`}
           <div class="grow"><b>${esc(g.name)}</b><small>${stAgo(x.created_at)}</small></div>
           ${mine ? `<button class="st-btn" data-del title="حذف">🗑</button>` : ''}<button class="st-btn" data-x title="إغلاق">✕</button></div>
-        <div class="st-body">${x.kind === 'text' ? `<div class="st-text" style="background:${ST_BG.includes(x.bg) ? x.bg : ST_BG[0]}"><p>${esc(x.body || '').replace(/\n/g, '<br>')}</p></div>`
+        <div class="st-body">${x.kind === 'text' ? `<div class="${stTextCls(x.bg)}" style="background:${stBgOk(x.bg)}"><p>${esc(x.body || '').replace(/\n/g, '<br>')}</p></div>`
           : `<div class="st-img"><div class="st-spin"></div><img alt="">${x.body ? `<p class="st-cap">${esc(x.body)}</p>` : ''}</div>`}</div>
         <button class="st-nav st-prev" aria-label="السابق"></button><button class="st-nav st-next" aria-label="التالي"></button></div>`;
       $('[data-x]', ov).onclick = close;
@@ -5451,13 +5455,13 @@
       <div class="st-seg" id="stk"><button type="button" class="on" data-k="text">📝 نص</button><button type="button" data-k="image">🖼️ صورة</button></div>
       <div class="st-prev-box" id="stp"></div>
       <div id="st-text-f"><textarea id="st-body" maxlength="300" rows="3" placeholder="كتب الستوري ديالك… (مثلا: فيلا جديدة للبيع فحمرية 🔥)"></textarea>
-        <div class="st-colors">${ST_BG.map((b, i) => `<button type="button" data-bg="${i}" style="background:${b}" class="${i ? '' : 'on'}"></button>`).join('')}</div></div>
+        <div class="st-colors">${ST_BG.map((b, i) => `<button type="button" data-bg="${i}" class="${i ? '' : 'on'}" title="${['أحمر', 'أبيض', 'أسود'][i]}" aria-label="${['أحمر', 'أبيض', 'أسود'][i]}"><i style="background:${b}"></i></button>`).join('')}</div></div>
       <div id="st-img-f" class="hidden"><label class="btn sm">${ic('camera', 15)} اختار صورة<input type="file" id="st-file" accept="image/*" hidden></label>
         <input id="st-cap" maxlength="200" placeholder="تعليق (اختياري)" style="margin-top:8px;width:100%"></div>
       <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="st-pub">${ic('check', 16)} نشر الستوري</button></div>`, (box, close) => {
       const prev = $('#stp', box), ta = $('#st-body', box), cap = $('#st-cap', box);
       const paint = () => {
-        prev.innerHTML = kind === 'text' ? `<div class="st-text" style="background:${bg}"><p>${esc(ta.value || 'النص ديالك هنا…').replace(/\n/g, '<br>')}</p></div>`
+        prev.innerHTML = kind === 'text' ? `<div class="${stTextCls(bg)}" style="background:${bg}"><p>${esc(ta.value || 'النص ديالك هنا…').replace(/\n/g, '<br>')}</p></div>`
           : img ? `<div class="st-img"><img src="${img}" alt="">${cap.value ? `<p class="st-cap">${esc(cap.value)}</p>` : ''}</div>` : '<div class="st-text" style="background:#222"><p>🖼️ اختار صورة</p></div>';
       };
       $$('#stk button', box).forEach(b => b.onclick = () => { kind = b.dataset.k; $$('#stk button', box).forEach(x => x.classList.toggle('on', x === b)); $('#st-text-f', box).classList.toggle('hidden', kind !== 'text'); $('#st-img-f', box).classList.toggle('hidden', kind !== 'image'); paint(); });
