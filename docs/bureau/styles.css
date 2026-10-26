@@ -1292,20 +1292,39 @@ button.opp-cta { justify-content: flex-start; background: var(--surface); }
 
 /* ---------- شعار التطبيق: كبير (200%) وكيدور بلا توقف ---------- */
 .topbar .logo { perspective: 600px; }
-/* قطعة نقدية 3D: وجه أمامي ووجه خلفي (الشعار ديما مقروء، ما كيتعكسش) + سُمك فضي */
-.topbar .logo-pill.logo-coin { height: 108px; margin: -4px 0 -54px; position: relative; z-index: 2; background: none; overflow: visible; box-shadow: none; perspective: 520px;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(200,16,46,.35)); }
-.coin { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: logo-spin 7s linear infinite; }
-.coin > * { position: absolute; inset: 0; border-radius: 50%; }
-.coin-e { transform: translateZ(var(--z)); background: linear-gradient(90deg, #8a8a8a, #e9e9e9 45%, #b9b9b9 60%, #7a7a7a); }
-.coin-f { transform: translateZ(4.6px); backface-visibility: hidden; -webkit-backface-visibility: hidden;
-  background: url(icons/logo.png?v=10) center / 100% no-repeat, #fff; box-shadow: inset 0 0 0 2px rgba(255,255,255,.9), inset 0 0 0 4px rgba(200,16,46,.55); }
-.coin-f::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle at 32% 25%, rgba(255,255,255,.55), transparent 42%), radial-gradient(circle at 70% 85%, rgba(0,0,0,.18), transparent 55%); }
-.coin-b { transform: rotateY(180deg) translateZ(4.6px); }
-@keyframes logo-spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+.topbar .logo { perspective: 600px; }
+/* كرة 3D: الشعار كيدور حول الكرة بحال الكرة الأرضية (ديما مقروء، ما كيتعكسش) + ضوء وظل كروي */
+.topbar .logo-pill.logo-globe { height: 108px; margin: -4px 0 -54px; position: relative; z-index: 2; background: none; overflow: visible; box-shadow: none; }
+.globe { position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 36% 30%, #ffffff 0%, #f4f4f4 38%, #d9d9d9 70%, #a9a9a9 100%);
+  box-shadow: 0 10px 18px rgba(0,0,0,.55), 0 0 14px rgba(200,16,46,.45), inset 0 0 0 2px rgba(255,255,255,.6); }
+.g-decal { position: absolute; inset: 7%; border-radius: 50%; background: url(icons/logo.png?v=10) center / 100% no-repeat;
+  animation: globe-turn 9s linear infinite; will-change: transform, opacity; }
+.g-decal.g2 { animation-delay: -4.5s; }
+@keyframes globe-turn {
+  0.00% { transform: translateX(-46.0%) scaleX(0.020); opacity: 0; }
+  4.17% { transform: translateX(-44.4%) scaleX(0.259); opacity: 0.55; }
+  8.33% { transform: translateX(-39.8%) scaleX(0.500); opacity: 1; }
+  12.50% { transform: translateX(-32.5%) scaleX(0.707); opacity: 1; }
+  16.67% { transform: translateX(-23.0%) scaleX(0.866); opacity: 1; }
+  20.83% { transform: translateX(-11.9%) scaleX(0.966); opacity: 1; }
+  25.00% { transform: translateX(0.0%) scaleX(1.000); opacity: 1; }
+  29.17% { transform: translateX(11.9%) scaleX(0.966); opacity: 1; }
+  33.33% { transform: translateX(23.0%) scaleX(0.866); opacity: 1; }
+  37.50% { transform: translateX(32.5%) scaleX(0.707); opacity: 1; }
+  41.67% { transform: translateX(39.8%) scaleX(0.500); opacity: 1; }
+  45.83% { transform: translateX(44.4%) scaleX(0.259); opacity: 0.55; }
+  50.00% { transform: translateX(46.0%) scaleX(0.020); opacity: 0; }
+  50.01%, 100% { transform: translateX(46%) scaleX(.02); opacity: 0; }
+}
+/* التظليل الكروي: لمعة فوق على اليسار، وظلمة على الحواشي */
+.g-shade { position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 34% 26%, rgba(255,255,255,.85) 0%, rgba(255,255,255,.25) 16%, transparent 34%),
+              radial-gradient(circle at 50% 50%, transparent 52%, rgba(0,0,0,.18) 72%, rgba(0,0,0,.5) 100%),
+              radial-gradient(circle at 70% 82%, rgba(200,16,46,.18), transparent 45%); }
+@media (prefers-reduced-motion: reduce) { .g-decal.g2 { display: none; } .g-decal { animation: none; } }
 .city-ticker { --lg: 116px; margin-right: max(var(--lg), calc((100% - 1400px) / 2 + var(--lg))); margin-left: max(0px, calc((100% - 1400px) / 2)); max-width: none; }
-@media (max-width: 640px) { .topbar .logo-pill.logo-coin { height: 92px; margin: -2px 0 -44px; } .city-ticker { --lg: 98px; } }
+@media (max-width: 640px) { .topbar .logo-pill.logo-globe { height: 92px; margin: -2px 0 -44px; } .city-ticker { --lg: 98px; } }
 
 /* ---------- الستوري فشريط الشركاء ---------- */
 .pr-item.has-st { border: 0; padding: 3px; background: conic-gradient(#c8102e, #f3b33d, #7b2ff7, #c8102e); cursor: pointer; }
