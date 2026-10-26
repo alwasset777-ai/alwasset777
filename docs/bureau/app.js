@@ -2267,7 +2267,7 @@
      الأدوات كتخدم هنا فالجهاز، على بيانات الحساب اللي داخل.
      ============================================================ */
   const AG_LANGS = [
-    { id: 'darija', l: 'الدارجة', dir: 'rtl' }, { id: 'ar', l: 'العربية', dir: 'rtl' }, { id: 'fr', l: 'Français', dir: 'ltr' },
+    { id: 'ar', l: 'العربية', dir: 'rtl' }, { id: 'darija', l: 'الدارجة', dir: 'rtl' }, { id: 'fr', l: 'Français', dir: 'ltr' },
     { id: 'en', l: 'English', dir: 'ltr' }, { id: 'es', l: 'Español', dir: 'ltr' }, { id: 'it', l: 'Italiano', dir: 'ltr' },
   ];
   const AG_T = {
@@ -2280,15 +2280,15 @@
   };
   const AG = { open: false, busy: false, history: [], view: [], cfg: null };
   const agAI = () => !!(AG.cfg && AG.cfg.ai_enabled);
-  const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'darija'; } catch (e) { return 'darija'; } };
-  const agT = () => AG_T[agLang()] || AG_T.darija;
+  const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'ar'; } catch (e) { return 'ar'; } };
+  const agT = () => AG_T[agLang()] || AG_T.ar;
   function agCfgCached() { try { return JSON.parse(localStorage.getItem('w777_agent_cfg') || 'null'); } catch (e) { return null; } }
   async function agLoadCfg() {
     const Sy = window.W777_SYNC;
     AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد الوسيط 777', photo: null };
     if (!Sy || !Sy.isOn()) return AG.cfg;
     try {
-      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,ai_enabled,wa_group,tg_group,updated_at')).json())[0];
+      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,face,ai_enabled,wa_group,tg_group,updated_at')).json())[0];
       if (r) { AG.cfg = r; try { localStorage.setItem('w777_agent_cfg', JSON.stringify(r)); } catch (e) { /* */ } }
     } catch (e) { /* بدون إنترنت */ }
     agPaintButton();
@@ -2304,6 +2304,7 @@
     if (p) {
       p.style.setProperty('--ag-photo', `url("${agPhoto().replace(/"/g, '%22')}")`);
       $$('#ag-3d img, .ag-msg.bot img', p).forEach(i => { i.src = agPhoto(); });
+      agFaceVars();
     }
   }
   function setupAgent() {
@@ -2316,38 +2317,164 @@
     b.onclick = () => (AG.open ? agClose() : agOpen());
     agLoadCfg();
   }
-  // ---------- الصوت: الوكيل كيجاوب بالهضرة (Speech Synthesis ديال المتصفح — فابور) ----------
+  // ---------- الصوت ----------
+  // 1) صوت طبيعي من Gemini (عبر السيرفر ديالنا) كيتقرا بـ Web Audio، والفم كيتبع قوة الصوت.
+  // 2) إلا ما خدمش (بلا إنترنت، الحصة…): صوت المتصفح (Speech Synthesis) والفم كيتحرك بالتقريب.
+  // الجواب كيتقسم لجمل: أول جملة كتبدا تتقرا قبل ما يكمل الكتابة.
   const agTTS = () => 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
   const agVoiceOn = () => { try { return localStorage.getItem('w777_agent_voice') !== '0'; } catch (e) { return true; } };
+  const AGV = { ctx: null, an: null, buf: null, src: null, q: [], playing: false, gen: 0, cloudOff: 0, synth: false, said: 0, pend: '', pulse: 0 };
+  function agAudio() {
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    if (!AGV.ctx) {
+      try { AGV.ctx = new C(); AGV.an = AGV.ctx.createAnalyser(); AGV.an.fftSize = 512; AGV.an.smoothingTimeConstant = 0.35; AGV.an.connect(AGV.ctx.destination); AGV.buf = new Uint8Array(AGV.an.fftSize); }
+      catch (e) { AGV.ctx = null; return null; }
+    }
+    if (AGV.ctx.state === 'suspended') AGV.ctx.resume().catch(() => {});
+    return AGV.ctx;
+  }
   let agTTSReady = false;
-  function agUnlockTTS() { // iPhone: خاص أول نطق يكون من ضغطة
+  function agUnlockTTS() { // iPhone: خاص أول صوت يكون من ضغطة
+    const c = agAudio();
+    if (c && !AGV.unlocked) { try { const b = c.createBuffer(1, 1, 22050), s0 = c.createBufferSource(); s0.buffer = b; s0.connect(c.destination); s0.start(0); AGV.unlocked = true; } catch (e) { /* */ } }
     if (agTTSReady || !agTTS()) return; agTTSReady = true;
     try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) { /* */ }
   }
   function agVoice(tag) {
     const vs = speechSynthesis.getVoices(), base = tag.split('-')[0];
-    return vs.find(v => v.lang === tag) || vs.find(v => v.lang.replace('_', '-').startsWith(base + '-')) || vs.find(v => v.lang.startsWith(base)) || null;
+    const male = v => /male|homme|maged|tarik|hamed|naayf|majed|rachid|thomas|daniel/i.test(v.name) && !/female/i.test(v.name);
+    const fit = vs.filter(v => v.lang === tag || v.lang.replace('_', '-').startsWith(base));
+    return fit.find(male) || fit.find(v => v.lang === tag) || fit[0] || null;
   }
   const agStage = on => { const st = $('#ag-stage'); if (st) st.classList.toggle('talk', on); };
-  function agHush() { if (agTTS()) { try { speechSynthesis.cancel(); } catch (e) { /* */ } } agStage(false); }
-  function agSpeak(src, isHtml) {
-    if (!agTTS() || !agVoiceOn() || !AG.open) return;
+  // نص صالح للقراية: بلا رموز ولا روابط ولا إيموجي
+  function agSpeechText(src, isHtml) {
     let txt = src;
     if (isHtml) { const d = document.createElement('div'); d.innerHTML = src; $$('.ag-card small, .ag-stats small', d).forEach(x => x.remove()); $$('*', d).forEach(x => x.append(' ')); txt = d.textContent; }
-    txt = String(txt).replace(/\*\*/g, '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, ' ').replace(/[#*_`>|]/g, ' ').replace(/https?:\/\/\S+/g, '').replace(/W777-0*(\d+)/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 600);
-    if (!txt) return;
-    agHush();
-    const tag = AG_SR_LANG[agLang()] || 'ar-MA', u = new SpeechSynthesisUtterance(txt);
+    return String(txt).replace(/\*\*/g, '').replace(/[\p{Extended_Pictographic}️‍]/gu, ' ').replace(/[#*_`>|•]/g, ' ').replace(/https?:\/\/\S+/g, '').replace(/W777-0*(\d+)/g, '$1').replace(/DM-0*(\d+)/g, 'طلب $1').replace(/\s+/g, ' ').trim();
+  }
+  function agHush() {
+    AGV.gen++; AGV.q = []; AGV.playing = false; AGV.pend = ''; AGV.said = 0;
+    if (AGV.src) { try { AGV.src.onended = null; AGV.src.stop(); } catch (e) { /* */ } AGV.src = null; }
+    if (agTTS()) { try { speechSynthesis.cancel(); } catch (e) { /* */ } }
+    AGV.synth = false; agStage(false);
+  }
+  // جواب جديد: كنوقفو الصوت القديم ونبداو صف جديد
+  function agSayStart() { agHush(); }
+  // كيوصل النص شوية بشوية: كنقطعوه لجمل ونصيفطو كل جملة كاملة للصوت
+  function agSayFeed(delta) {
+    if (!agVoiceOn() || !AG.open) return;
+    AGV.pend += delta;
+    for (;;) {
+      const min = AGV.q.length || AGV.playing ? 140 : 20; // الجملة الأولى قصيرة باش يبدا بسرعة
+      const re = /[.!?؟؛:](?=\s)|\n/g; let m, cut = -1;
+      while ((m = re.exec(AGV.pend))) { if (m.index + 1 >= min) { cut = m.index + 1; break; } }
+      if (cut < 0) { if (AGV.pend.length <= 400) break; const sp = AGV.pend.lastIndexOf(' ', 380); cut = sp > 50 ? sp : 380; }
+      agSayChunk(AGV.pend.slice(0, cut)); AGV.pend = AGV.pend.slice(cut);
+    }
+  }
+  function agSayFlush() { if (AGV.pend.trim()) agSayChunk(AGV.pend); AGV.pend = ''; }
+  function agSayChunk(raw) {
+    const txt = agSpeechText(raw);
+    if (!txt || /^[\d\s.,:-]*$/.test(txt) || AGV.said > 1400) return;
+    AGV.said += txt.length;
+    const gen = AGV.gen, item = { txt, gen };
+    item.audio = agCloudOK() ? agFetchVoice(txt).catch(() => null) : Promise.resolve(null);
+    AGV.q.push(item);
+    if (!AGV.playing) agPlayNext();
+  }
+  const agCloudOK = () => !!(agAudio() && AG.cfg && AG.cfg.ai_enabled && window.W777_SYNC && window.W777_SYNC.isOn() && Date.now() > AGV.cloudOff);
+  async function agFetchVoice(txt) {
+    const res = await window.W777_SYNC.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tts: txt, lang: agLang() }) });
+    if (!/audio/.test(res.headers.get('content-type') || '')) throw new Error('tts');
+    const ab = await res.arrayBuffer();
+    return await new Promise((ok, ko) => { const p = AGV.ctx.decodeAudioData(ab, ok, ko); if (p && p.then) p.then(ok, ko); });
+  }
+  async function agPlayNext() {
+    const it = AGV.q.shift();
+    if (!it || it.gen !== AGV.gen || !AG.open) { AGV.playing = false; if (!AGV.q.length) agStage(false); return; }
+    AGV.playing = true; agStage(true);
+    const buf = await it.audio;
+    if (it.gen !== AGV.gen) return;
+    if (buf && AGV.ctx) {
+      const src = AGV.ctx.createBufferSource(); src.buffer = buf; src.connect(AGV.an);
+      AGV.src = src; src.onended = () => { if (AGV.src === src) AGV.src = null; agPlayNext(); };
+      try { src.start(0); return; } catch (e) { /* نكملو بصوت المتصفح */ }
+    }
+    if (agCloudOK() && !buf) AGV.cloudOff = Date.now() + 10 * 60000; // الصوت الطبيعي ما خدمش: 10 دقايق بصوت المتصفح
+    if (!agTTS()) { agPlayNext(); return; }
+    const tag = AG_SR_LANG[agLang()] || 'ar-SA', u = new SpeechSynthesisUtterance(it.txt);
     u.lang = tag; const v = agVoice(tag); if (v) u.voice = v;
-    u.rate = 1; u.pitch = 1;
-    const st = () => $('#ag-stage');
-    u.onstart = () => agStage(true);
-    u.onend = u.onerror = () => agStage(false);
-    // كل كلمة: حركة صغيرة ديال الراس باش يبان كيهضر
-    u.onboundary = () => { const s = st(); if (s) { s.classList.remove('beat'); void s.offsetWidth; s.classList.add('beat'); } };
+    u.rate = 1.02; u.pitch = 0.95;
+    u.onstart = () => { AGV.synth = true; };
+    u.onboundary = () => { AGV.pulse = performance.now(); };
+    u.onend = u.onerror = () => { AGV.synth = false; if (it.gen === AGV.gen) agPlayNext(); };
     speechSynthesis.speak(u);
   }
+  // الطريقة القديمة (جواب كامل دفعة وحدة) — للمساعد البسيط
+  function agSpeak(src, isHtml) {
+    if (!agVoiceOn() || !AG.open) return;
+    const txt = agSpeechText(src, isHtml).slice(0, 700);
+    if (!txt) return;
+    agSayStart(); agSayFeed(txt + ' '); agSayFlush();
+  }
   if (agTTS()) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch (e) { /* */ } }
+
+  // ---------- الوجه الحي: الفم كيتحل مع الصوت، العينين كيرمشو، والراس كيتحرك ----------
+  // مكان الفم والعينين (نسبة من الصورة) كيحددو المدير مرة وحدة من الإعدادات.
+  const AG_FACE_DEF = { mx: 0.5, my: 0.64, ex1: 0.4, ex2: 0.6, ey: 0.43 };
+  function agFace() {
+    const f = Object.assign({}, AG_FACE_DEF, (AG.cfg && AG.cfg.face) || {});
+    const d = Math.max(0.08, (f.ex2 - f.ex1));
+    f.mw = f.mw || d * 0.85; f.ew = f.ew || d * 0.32;
+    return f;
+  }
+  function agFaceVars() {
+    const el = $('#ag-face'); if (!el) return;
+    const f = agFace(), pc = v => (v * 100).toFixed(2) + '%';
+    el.style.setProperty('--mx', pc(f.mx)); el.style.setProperty('--my', pc(f.my)); el.style.setProperty('--mw', pc(f.mw));
+    el.style.setProperty('--ex1', pc(f.ex1)); el.style.setProperty('--ex2', pc(f.ex2)); el.style.setProperty('--ey', pc(f.ey)); el.style.setProperty('--ew', pc(f.ew));
+    // لون الجلد فوق العين (للرمشة)
+    const img = $('img.ag-base', el);
+    const skin = () => { try {
+      const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, 64, 64);
+      const px = (u, v) => x.getImageData(Math.round(u * 63), Math.round(v * 63), 1, 1).data;
+      const a = px(f.ex1, f.ey - f.ew * 0.55), b = px(f.ex2, f.ey - f.ew * 0.55);
+      el.style.setProperty('--skin', `rgb(${(a[0] + b[0]) >> 1},${(a[1] + b[1]) >> 1},${(a[2] + b[2]) >> 1})`);
+    } catch (e) { /* */ } };
+    if (img) { if (img.complete && img.naturalWidth) skin(); else img.onload = skin; }
+  }
+  let agRaf = 0;
+  function agAnimate() {
+    cancelAnimationFrame(agRaf);
+    const face = $('#ag-face'), stage = $('#ag-stage');
+    if (!face || !AG.open) return;
+    let open = 0, nextBlink = performance.now() + 1800, blinkT = 0;
+    const tick = now => {
+      if (!AG.open || !face.isConnected) return;
+      let target = 0;
+      if (AGV.src && AGV.an) {
+        AGV.an.getByteTimeDomainData(AGV.buf);
+        let sum = 0; for (let i = 0; i < AGV.buf.length; i++) { const v = (AGV.buf[i] - 128) / 128; sum += v * v; }
+        target = Math.min(1, Math.sqrt(sum / AGV.buf.length) * 4.5);
+      } else if (AGV.synth) {
+        // صوت المتصفح ما كيعطيش الموجة: حركة طبيعية تقريبية + نبضة مع كل كلمة
+        const w = 0.45 + 0.35 * Math.sin(now / 70) * Math.sin(now / 190 + 1.3);
+        target = Math.max(0, w) + (now - AGV.pulse < 120 ? 0.3 : 0);
+      }
+      open += (target - open) * (target > open ? 0.55 : 0.3);
+      if (open < 0.02) open = 0;
+      face.style.setProperty('--open', open.toFixed(3));
+      if (stage) stage.style.setProperty('--nod', (open * 2.2).toFixed(2) + 'deg');
+      // رمشة كل 2–6 ثواني
+      if (now > nextBlink) { blinkT = now; nextBlink = now + 2000 + Math.random() * 4000; }
+      const bt = now - blinkT, blink = bt < 160 ? Math.sin((bt / 160) * Math.PI) : 0;
+      face.style.setProperty('--blink', blink.toFixed(3));
+      agRaf = requestAnimationFrame(tick);
+    };
+    agRaf = requestAnimationFrame(tick);
+  }
   // ---------- الصورة 3D: كتميل مع الصبع/الفأرة ----------
   function agTilt(stage, card) {
     if (!stage || !card) return;
@@ -2363,7 +2490,7 @@
   }
   // ---------- الميكروفون (التعرف على الصوت ديال المتصفح — فابور) ----------
   const agSR = () => window.SpeechRecognition || window.webkitSpeechRecognition;
-  const AG_SR_LANG = { darija: 'ar-MA', ar: 'ar-SA', fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT' };
+  const AG_SR_LANG = { darija: 'ar-MA', ar: 'ar-MA', fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT' };
   const agMicSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
   let agRec = null;
   function agListen() {
@@ -2412,7 +2539,7 @@
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
         ${agTTS() ? `<button class="ag-x" id="ag-voice" title="🔊">${agVoiceOn() ? '🔊' : '🔇'}</button>` : ''}<button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
       <div class="ag-stage" id="ag-stage">
-        <div class="ag-3d" id="ag-3d"><img src="${agPhoto()}" alt=""><i class="ag-gloss"></i></div>
+        <div class="ag-3d" id="ag-3d"><div class="ag-face" id="ag-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i></div><i class="ag-gloss"></i></div>
         <div class="ag-wave"><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
@@ -2429,6 +2556,7 @@
     const vb = $('#ag-voice');
     if (vb) vb.onclick = () => { const on = !agVoiceOn(); try { localStorage.setItem('w777_agent_voice', on ? '1' : '0'); } catch (e) { /* */ } vb.textContent = on ? '🔊' : '🔇'; if (!on) agHush(); };
     agTilt($('#ag-stage'), $('#ag-3d'));
+    agFaceVars(); agAnimate();
     agLoadCfg(); // ديما آخر صورة واسم حطهم المدير
     agRender();
     setTimeout(() => ta.focus(), 50);
@@ -2441,9 +2569,9 @@
     const items = AG.view.length ? AG.view : [{ who: 'bot', text: agAI() ? t.hi : lx().hi }];
     body.innerHTML = items.map(m => m.who === 'tool'
       ? `<div class="ag-tool">⚙️ ${esc(m.text)}</div>`
-      : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div>${m.html || agFmt(m.text)}</div></div>`).join('')
+      : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div${m === AG.live ? ' id="ag-live"' : ''}>${m.html || agFmt(m.text)}</div></div>`).join('')
       + (!AG.view.length && agAI() ? `<div class="ag-sugg">${t.s.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
-      + (AG.busy ? `<div class="ag-msg bot"><img src="${agPhoto()}" alt=""><div class="ag-dots">${esc(t.think)}<span>.</span><span>.</span><span>.</span></div></div>` : '');
+      + (AG.busy && !AG.live ? `<div class="ag-msg bot"><img src="${agPhoto()}" alt=""><div class="ag-dots">${esc(t.think)}<span>.</span><span>.</span><span>.</span></div></div>` : '');
     $$('.ag-sugg button', body).forEach(b => b.onclick = () => agSend(b.textContent));
     $$('a.ag-card, a.ag-more', body).forEach(a => a.addEventListener('click', () => { if (window.innerWidth < 960) agHide(); }));
     const acts = $('#ag-acts');
@@ -2454,50 +2582,121 @@
     }
     body.scrollTop = body.scrollHeight;
   }
-  async function agCall() {
+  // صورة حية على المكتب كتتصيفط مع كل سؤال: الأرقام والمواعيد ديال اليوم بلا ما يحتاج المساعد يسول الأدوات
+  function agSnap() {
+    const t = today(), open = S.reqs.filter(openReq), wk = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const ap = S.appts.filter(x => x.status === 'planned' && x.date >= t).sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time));
+    let late = 0; try { late = lateLeases().length; } catch (e) { /* */ }
+    return {
+      properties_total: S.props.length, available: S.props.filter(p => p.status === 'available').length,
+      sold_or_rented: S.props.filter(p => ['sold', 'rented'].includes(p.status)).length, open_requests: open.length,
+      appointments_today: ap.filter(x => x.date === t).slice(0, 8).map(x => ({ time: x.time, client: (x.client || {}).name, type: APPT_TYPES[x.type] || x.type, place: x.place })),
+      appointments_next_7_days: ap.filter(x => x.date <= wk).length,
+      followups_due: open.filter(r => r.followUp && r.followUp <= t).slice(0, 6).map(r => ({ ref: r.ref, client: (r.client || {}).name })),
+      late_rentals: late, office: S.settings.officeName || '', city: S.settings.officeCity || '',
+    };
+  }
+  // البحث فدليل الاستعمال (W777_GUIDE): الدروس الأقرب لسؤال المستعمل
+  function agGuide(q, n = 3) {
+    const G = window.W777_GUIDE; if (!G || !G.lessons) return [];
+    const stop = /^(كيف|كيفاش|فين|أين|وين|شنو|ما|ماذا|هل|واش|في|فـ|على|من|الى|إلى|و|ديال|the|how|do|i|to|a|in|comment|je|le|la|les|de|un|une|où)$/;
+    const tk = tokens(q).filter(w => w.length > 1 && !stop.test(w)).map(w => w.replace(/^(ال|وال|بال|فال|لل)/, ''));
+    if (!tk.length) return [];
+    return G.lessons.map(l => {
+      const hay = norm([l.t, l.tag, (l.steps || []).join(' '), l.tip].join(' '));
+      return { l, sc: tk.reduce((a, w) => a + (hay.includes(w) ? (norm(l.t + ' ' + l.tag).includes(w) ? 3 : 1) : 0), 0) };
+    }).filter(x => x.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, n)
+      .map(({ l }) => ({ lesson: l.t, about: l.tag, steps: l.steps, tip: l.tip }));
+  }
+  const AG_HOWTO = /كيف|كيفاش|فين|أين|وين|طريق|نستعمل|استعمل|أستعمل|نزيد|أضيف|اضيف|نضيف|نبدل|أغير|نغير|شرح|اشرح|علمني|دليل|زر|صفحة|الإعدادات|الاعدادات|ميزة|خاصية|comment|how|o[uù] |where|utiliser|ajouter|tutorial/i;
+  // كنصيفطو غير آخر جزء من المحادثة (أسرع وأرخص)، وكنبداو ديما من سؤال ديال المستعمل
+  function agTrim(h) {
+    let i = Math.max(0, h.length - 24);
+    while (i > 0 && !(h[i].role === 'user' && typeof h[i].content === 'string')) i--;
+    return h.slice(i);
+  }
+  async function agCall(onText) {
     const Sy = window.W777_SYNC;
-    const ctx = { today: today(), agency: S.role === 'agency' ? myAgencyName() : S.settings.officeName, role: S.role || 'office', page: location.hash || '#/' };
+    const lastQ = [...AG.history].reverse().find(m => m.role === 'user' && typeof m.content === 'string');
+    const ctx = { today: today(), agency: S.role === 'agency' ? myAgencyName() : S.settings.officeName, role: S.role || 'office', page: location.hash || '#/', snap: agSnap() };
+    if (lastQ && AG_HOWTO.test(lastQ.content)) { const h = agGuide(lastQ.content, 2); if (h.length) ctx.help = h; }
     const res = await Sy.request('/functions/v1/w777-agent', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: AG.history, lang: agLang(), ctx }),
-    }).catch(e => { throw e; });
-    return res.json();
+      body: JSON.stringify({ messages: agTrim(AG.history), lang: agLang(), ctx, stream: true }),
+    });
+    if (!/event-stream/.test(res.headers.get('content-type') || '') || !res.body) return res.json();
+    // البث المباشر: الكلمات كيبانو وهوما كيتكتبو
+    const rd = res.body.getReader(), dec = new TextDecoder();
+    let buf = '', fin = null;
+    for (;;) {
+      const { value, done } = await rd.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf('\n\n')) >= 0) {
+        const line = buf.slice(0, i).split('\n').find(l => l.startsWith('data:')); buf = buf.slice(i + 2);
+        if (!line) continue;
+        let j; try { j = JSON.parse(line.slice(5)); } catch (e) { continue; }
+        if (j.t) onText(j.t);
+        else if (j.done) fin = j;
+        else if (j.error) throw new Error(j.error);
+      }
+    }
+    return fin;
   }
   async function agSend(text) {
     const Sy = window.W777_SYNC, t = agT();
     AG.view.push({ who: 'me', text });
     if (!agAI()) { agLocal(text); return; }
     if (!Sy || !Sy.isOn()) { AG.view.push({ who: 'bot', text: t.login }); agRender(); return; }
+    const base = AG.history.length; // إلا وقع مشكل كنرجعو المحادثة كيف كانت (باش ما تخسرش)
     AG.history.push({ role: 'user', content: text });
-    AG.busy = true; agRender();
-    let lastTxt = '';
+    AG.busy = true; AG.live = null; agRender();
+    agSayStart();
+    let paint = 0;
+    const onText = d => {
+      if (!AG.live) { AG.live = { who: 'bot', text: '' }; AG.view.push(AG.live); agRender(); }
+      AG.live.text += d;
+      agSayFeed(d);
+      if (!paint) paint = requestAnimationFrame(() => {
+        paint = 0; const el = $('#ag-live'), body = $('#ag-body');
+        if (el && AG.live) el.innerHTML = agFmt(AG.live.text); else agRender();
+        if (body) body.scrollTop = body.scrollHeight;
+      });
+    };
     try {
       for (let step = 0; step < 8; step++) {
         let r;
-        try { r = await agCall(); } catch (e) {
+        AG.live = null;
+        try { r = await agCall(onText); } catch (e) {
           const m = String(e.message || e);
           // ما كاينش مفتاح: نجاوبو بالمساعد المجاني بلا ما نوقفو الخدمة
-          if (/no_key/.test(m)) { AG.history.pop(); AG.busy = false; agLocal(text); return; }
-          AG.view.push({ who: 'bot', text: /no_key/.test(m) ? t.nokey : /quota/.test(m) ? t.quota : t.err });
-          AG.history.pop(); break;
+          if (/no_key/.test(m)) { AG.history.splice(base); AG.busy = false; agLocal(text); return; }
+          if (!AG.live || !AG.live.text) AG.view.push({ who: 'bot', text: /quota/.test(m) ? t.quota : t.err });
+          AG.history.splice(base);
+          break;
         }
-        if (!r || !r.content) { AG.view.push({ who: 'bot', text: t.err }); AG.history.pop(); break; }
+        if (!r || !r.content) { if (!AG.live) AG.view.push({ who: 'bot', text: t.err }); AG.history.splice(base); break; }
         AG.history.push({ role: 'assistant', content: r.content });
         const txt = r.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-        if (txt) { AG.view.push({ who: 'bot', text: txt }); lastTxt = txt; }
+        if (txt) {
+          if (AG.live) AG.live.text = txt;
+          else { AG.view.push({ who: 'bot', text: txt }); agSayFeed(txt + ' '); } // جواب بلا بث (Claude)
+        } else if (AG.live) { AG.view.splice(AG.view.indexOf(AG.live), 1); }
+        agSayFlush();
         if (r.stop_reason === 'refusal' && !txt) AG.view.push({ who: 'bot', text: t.err });
         if (r.stop_reason !== 'tool_use') break;
         const results = [];
         for (const b of r.content.filter(x => x.type === 'tool_use')) {
           AG.view.push({ who: 'tool', text: b.name.replace(/_/g, ' ') });
-          agRender();
+          AG.live = null; agRender();
           let out, isErr = false;
           try { out = await agRunTool(b.name, b.input || {}); } catch (e) { out = { error: String(e.message || e) }; isErr = true; }
-          results.push({ type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out).replace(/[\u2066-\u2069]/g, '').slice(0, 12000), ...(isErr ? { is_error: true } : {}) });
+          results.push({ type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out).replace(/[⁦-⁩]/g, '').slice(0, 6000), ...(isErr ? { is_error: true } : {}) });
         }
         AG.history.push({ role: 'user', content: results });
       }
-    } finally { AG.busy = false; agRender(); if (lastTxt) agSpeak(lastTxt); }
+    } finally { AG.busy = false; AG.live = null; agRender(); }
   }
   /* ---------- المساعد المحلي (فابور، بلا AI): أزرار + كلمات مفتاحية فـ 6 لغات ---------- */
   const LX = {
@@ -2797,9 +2996,22 @@
           && (!tk.length || hit(norm([x.agency, (x.data || {}).title, typeAr(x.type), (x.data || {}).district, x.city].join(' ')), tk)));
         return { total: list.length, results: list.slice(0, lim).map(x => ({ agency: x.agency, agency_phone: x.phone, ref: (x.data || {}).ref, type: typeAr(x.type), city: x.city, district: (x.data || {}).district, price: priceText(netAsProp(x)) })) };
       }
+      case 'app_help': return { lessons: agGuide(a.query || '', 3) };
+      case 'finance_summary': {
+        const k = /^\d{4}-\d{2}$/.test(a.month || '') ? a.month : ym(), all = live('ledger'), m = monthSums(all, k);
+        const yr = all.filter(x => String(x.date || '').slice(0, 4) === k.slice(0, 4)), sum = t2 => yr.filter(x => x.type === t2).reduce((q, x) => q + (num(x.amount) || 0), 0);
+        const cats = {}; m.e.filter(x => x.type === 'out').forEach(x => { cats[x.cat || 'أخرى'] = (cats[x.cat || 'أخرى'] || 0) + (num(x.amount) || 0); });
+        return { month: k, income_dh: m.inn, expenses_dh: m.out, net_profit_dh: m.net, expenses_by_category: cats, year_income_dh: sum('in'), year_profit_dh: sum('in') - sum('out') };
+      }
+      case 'rentals_summary': {
+        const act = live('leases').filter(l => !l.ended);
+        return { active_leases: act.length, monthly_rent_total_dh: act.reduce((q, l) => q + (num(l.rent) || 0), 0),
+          collected_this_month_dh: act.reduce((q, l) => q + ((l.payments || {})[ym()] ? l.payments[ym()].paid || 0 : 0), 0),
+          late: act.map(l => ({ tenant: (l.tenant || {}).name, property: l.propLabel, rent_dh: num(l.rent) || 0, months_late: leaseArrears(l).length })).filter(x => x.months_late) };
+      }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new', new_appointment: '#/appointment/new', rentals: '#/rentals', finance: '#/finance', report: '#/report', loan: '#/loan', map: '#/map', ad_maker: '#/ad-maker', messages: '#/inbox' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -2808,6 +3020,38 @@
       }
       default: return { error: 'unknown tool' };
     }
+  }
+  // المدير كيحدد فين الفم والعينين فالصورة (3 ضغطات) — باش الفم يتحل والعينين يرمشو فالبلاصة الصحيحة
+  function agFaceCalib(save) {
+    const tips = ['1️⃣ اضغط على <b>وسط الفم</b> (الخط اللي بين الشفتين)', '2️⃣ اضغط على <b>العين الأولى</b>', '3️⃣ اضغط على <b>العين الثانية</b>', '✓ جرّب الحركة ثم احفظ'];
+    let pts = [], timer = 0;
+    modal(`<h3>🎯 مكان الفم والعينين</h3><p class="muted" id="fc-step" style="min-height:24px"></p>
+      <div id="fc-box" style="position:relative;width:min(300px,78vw);aspect-ratio:1;margin:8px auto;border-radius:50%;overflow:hidden;cursor:crosshair;background:#fff;box-shadow:0 0 0 3px var(--gold)">
+        <div class="ag-face" id="fc-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i></div></div>
+      <div class="btn-row" style="justify-content:center"><button class="btn sm" id="fc-redo">↺ عاود</button><button class="btn sm" id="fc-try" disabled>👄 جرّب الحركة</button><button class="btn gold sm" id="fc-ok" disabled>${ic('check', 15)} حفظ</button></div>`, (box, close) => {
+      const area = $('#fc-box', box), face = $('#fc-face', box), step = $('#fc-step', box);
+      face.style.transform = 'none';
+      const calc = () => { const [m, e1, e2] = pts; const a = e1.x < e2.x ? e1 : e2, b = e1.x < e2.x ? e2 : e1;
+        return { mx: +m.x.toFixed(3), my: +m.y.toFixed(3), ex1: +a.x.toFixed(3), ex2: +b.x.toFixed(3), ey: +((a.y + b.y) / 2).toFixed(3) }; };
+      const paint = () => {
+        step.innerHTML = tips[Math.min(pts.length, 3)];
+        $$('.fc-dot', area).forEach(d => d.remove());
+        pts.forEach(p0 => { const d = document.createElement('i'); d.className = 'fc-dot'; d.style.cssText = `position:absolute;left:${p0.x * 100}%;top:${p0.y * 100}%;width:12px;height:12px;margin:-6px;border-radius:50%;background:var(--gold);border:2px solid #fff;z-index:3;pointer-events:none`; area.appendChild(d); });
+        $('#fc-try', box).disabled = $('#fc-ok', box).disabled = pts.length < 3;
+      };
+      area.onclick = e => { if (pts.length >= 3) return; const r = area.getBoundingClientRect(); pts.push({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }); paint(); };
+      $('#fc-redo', box).onclick = () => { pts = []; clearInterval(timer); paint(); };
+      $('#fc-try', box).onclick = () => {
+        const f = calc(), d = f.ex2 - f.ex1, pc = v => (v * 100).toFixed(2) + '%';
+        Object.entries({ mx: f.mx, my: f.my, mw: d * 0.85, ex1: f.ex1, ex2: f.ex2, ey: f.ey, ew: d * 0.32 }).forEach(([k, v]) => face.style.setProperty('--' + k, pc(v)));
+        $$('.fc-dot', area).forEach(x => x.remove());
+        const t0 = performance.now(); clearInterval(timer);
+        timer = setInterval(() => { const t = performance.now() - t0; if (t > 4000) { clearInterval(timer); face.style.setProperty('--open', 0); return; }
+          face.style.setProperty('--open', Math.max(0, 0.5 + 0.45 * Math.sin(t / 75) * Math.sin(t / 230))); face.style.setProperty('--blink', t % 2000 < 160 ? Math.sin(t % 2000 / 160 * Math.PI) : 0); }, 30);
+      };
+      $('#fc-ok', box).onclick = async () => { clearInterval(timer); close(); await save({ face: calc() }); };
+      paint();
+    });
   }
   // بطاقة الإعدادات: الصورة كيبدلها غير المدير
   function agentSettingsCard() {
@@ -2824,6 +3068,7 @@
       ${isAdmin ? `<div class="btn-row" style="margin-top:12px">
         <label class="btn gold sm">${ic('camera', 15)} بدّل الصورة<input type="file" id="ag-photo" accept="image/*" hidden></label>
         <button class="btn sm" id="ag-rename">${ic('edit', 15)} بدّل الاسم</button>
+        <button class="btn sm" id="ag-face-set">🎯 مكان الفم والعينين${AG.cfg && AG.cfg.face ? ' ✓' : ''}</button>
         <button class="btn sm" id="ag-ai">${agAI() ? '🟢 الوكيل الذكي (AI) مشعول — طفيه' : '⚪ الوضع البسيط — شعل الوكيل الذكي (AI)'}</button></div>
         <p class="muted" style="font-size:12.5px">الصورة والاسم كيبانو لجميع الوكالات. غير نتا (المدير) اللي يقدر يبدلهم.</p>
         ${agKeyRow('gemini', '🔑 مفتاح Gemini (فابور)', 'AIza…', 'https://aistudio.google.com/app/apikey', 'aistudio.google.com', 'Get API key → Create API key')}
@@ -2875,9 +3120,11 @@
         const out = await compressImage(file, 720, 0.85);
         const blob = out.blob || out;
         const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
-        await save({ photo: dataUrl });
+        await save({ photo: dataUrl, face: null });
+        agFaceCalib(save); // صورة جديدة: نحددو فين الفم والعينين باش يتحركو مزيان
       } catch (er) { toast('تعذر: ' + er.message, 4000); }
     };
+    const fs = $('#ag-face-set'); if (fs) fs.onclick = () => agFaceCalib(save);
     const ai = $('#ag-ai');
     if (ai) ai.onclick = async () => {
       if (!agAI() && !(await confirmBox('الوكيل الذكي كيحتاج مفتاح محفوظ: Gemini (فابور) ولا Claude (مدفوع). نشعلو؟', 'شعل', false))) return;
