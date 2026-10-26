@@ -6690,10 +6690,17 @@
   // شريط المدن المغربية المشاركة فالشريط العلوي (كيتحرك من اليسار لليمين)
   function setupCityTicker() {
     const tr = $('#ct-track'); if (!tr) return;
-    const names = D.REGIONS.flatMap(r => r.cities.map(c => c.n));
-    const one = names.map(n => `<span>📍 ${esc(n)}</span>`).join('');
+    // المدن الكبرى أولا (بالترتيب اللي طلب المدير)، من بعد باقي المدن بلا تكرار
+    const top = ['الدار البيضاء', 'الرباط', 'مراكش', 'فاس', 'طنجة', 'أكادير', 'مكناس', 'وجدة', 'تطوان', 'القنيطرة', 'صفي', 'تمارة', 'إنزكان', 'آيت ملول', 'سلا', 'المحمدية', 'خريبكة', 'بني ملال', 'الجديدة', 'تازة', 'الناظور', 'سطات', 'القصر الكبير', 'العرائش', 'الخميسات', 'تيزنيت', 'برشيد', 'كلميم', 'بركان', 'الراشيدية', 'تارودانت', 'سيدي قاسم', 'خنيفرة', 'وزان', 'الحسيمة', 'شفشاون', 'الصويرة', 'إفران', 'ورزازات'];
+    const same = { 'آسفي': 'صفي', 'الرشيدية': 'الراشيدية' };
+    const names = [...new Set([...top, ...D.REGIONS.flatMap(r => r.cities.map(c => same[c.n] || c.n))])];
+    // الشريط كيمشي من اليسار لليمين: كنقلبو الترتيب باش المدن كيدخلو بالترتيب ديال اللائحة،
+    // وكنبداو الحركة من النقطة اللي كتبين «الدار البيضاء» حدا الشعار (على اليمين) من أول لحظة
+    const one = names.slice().reverse().map(n => `<span>📍 ${esc(n)}</span>`).join('');
     tr.innerHTML = `<div class="ct-set">${one}</div><div class="ct-set">${one}</div>`;
-    tr.style.animationDuration = Math.max(60, names.length * 3) + 's';
+    const dur = Math.max(60, names.length * 3);
+    tr.style.animationDuration = dur + 's';
+    requestAnimationFrame(() => { const setW = tr.firstChild.offsetWidth, vw = tr.parentElement.offsetWidth; if (setW && vw) tr.style.animationDelay = -(Math.min(1, vw * 0.9 / setW) * dur).toFixed(2) + 's'; });
   }
   function setupFab() {
     const fab = $('#fab');
