@@ -1003,3 +1003,35 @@ alter table public.w777_agent_config add column if not exists face jsonb;
 
 -- 2026-10-26 — رابط مجموعة فيسبوك ديال المشتركين (كيبان كشعار فالرئيسية مع واتساب وتيليغرام)
 alter table public.w777_agent_config add column if not exists fb_group text;
+
+-- ============================================================
+-- 2026-10-26 — الستوري ديال المشتركين (نص ولا صورة، 24 ساعة)
+-- ============================================================
+create table if not exists public.w777_stories (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null default auth.uid(),
+  kind text not null check (kind in ('text','image')),
+  body text check (body is null or char_length(body) <= 500),
+  bg text check (bg is null or char_length(bg) <= 40),
+  img text check (img is null or char_length(img) <= 450000),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '24 hours'
+);
+create index if not exists w777_stories_exp on public.w777_stories (expires_at);
+create index if not exists w777_stories_owner on public.w777_stories (owner);
+alter table public.w777_stories enable row level security;
+revoke all on public.w777_stories from anon;
+grant select, insert, delete on public.w777_stories to authenticated;
+create policy w777_st_sel on public.w777_stories for select to authenticated using ((select w777_can_use()) and expires_at > now());
+create policy w777_st_ins on public.w777_stories for insert to authenticated with check (owner = (select auth.uid()) and (select w777_can_use()) and expires_at <= now() + interval '25 hours' and (kind = 'text' and body is not null or kind = 'image' and img is not null));
+create policy w777_st_del on public.w777_stories for delete to authenticated using (owner = (select auth.uid()) or (select w777_is_admin()));
+create or replace function public.w777_story_limit() returns trigger language plpgsql set search_path = public as $$
+begin
+  if (select count(*) from public.w777_stories where owner = new.owner and expires_at > now()) >= 10 then
+    raise exception 'وصلتي للحد: 10 ستوريات فـ 24 ساعة';
+  end if;
+  return new;
+end $$;
+revoke execute on function public.w777_story_limit() from public, anon, authenticated;
+create trigger w777_story_limit before insert on public.w777_stories for each row execute function public.w777_story_limit();
+select cron.schedule('w777-stories-clean', '17 * * * *', $$delete from public.w777_stories where expires_at < now()$$);

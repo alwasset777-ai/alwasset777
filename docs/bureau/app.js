@@ -5333,14 +5333,157 @@
     // شريط الشركاء: الشعارات (ولا الصور) ديال المشتركين
     const rail = $('#home-rail');
     if (!rail) return;
-    const withLogo = live.filter(a => a.logo || a.photo).sort((x, y) => (y.logo ? 1 : 0) - (x.logo ? 1 : 0));
-    const tiles = [`<a class="pr-item pr-office" href="#/terms" title="مجموعة الوسيط 777"><img src="${LOGO}" alt=""></a>`,
-      ...withLogo.map(a => `<a class="pr-item" href="#/${(KINDS[kindOf(a)] || KINDS.agency).route}/dir" title="${esc(a.name)}"><img src="${esc(brandUrl(a.logo || a.photo))}" alt="" loading="lazy"></a>`)];
+    // الستوري: اللي عندو ستوري كيبان أول بإطار ملون (رمادي إلا شافو)
+    const sts = await loadStories(true), groups = stGroups(sts, dir), seen = stSeen();
+    const ring = uid => { const g = groups.find(x => x.uid === uid); return g ? ` has-st${g.items.every(i => seen[i.id]) ? ' st-seen' : ''}" data-st="${g.uid}` : ''; };
+    const officeUid = (groups.find(g => g.office) || {}).uid || '';
+    const withLogo = live.filter(a => a.logo || a.photo || groups.some(g => g.uid === a.uid))
+      .sort((x, y) => (groups.some(g => g.uid === y.uid) ? 2 : 0) + (y.logo ? 1 : 0) - (groups.some(g => g.uid === x.uid) ? 2 : 0) - (x.logo ? 1 : 0));
+    const tiles = [`<a class="pr-item pr-office${officeUid ? ring(officeUid) : ''}" href="#/terms" title="مجموعة الوسيط 777"><img src="${LOGO}" alt=""></a>`,
+      ...withLogo.map(a => `<a class="pr-item${ring(a.uid)}" href="#/${(KINDS[kindOf(a)] || KINDS.agency).route}/dir" title="${esc(a.name)}">${a.logo || a.photo ? `<img src="${esc(brandUrl(a.logo || a.photo))}" alt="" loading="lazy">` : `<b class="pr-letter">${esc((a.name || '؟').trim()[0])}</b>`}</a>`)];
     const myKind = S.kind && KINDS[S.kind];
     const plus = myKind && !(S.agency || {}).logo ? `<a class="pr-item pr-add" href="#/${myKind.route}/me" title="زيد الشعار ديالك">＋<small>شعارك</small></a>` : '';
     const moving = tiles.length > 6;
-    rail.innerHTML = `<div class="pr-title">الشركاء</div><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? tiles.join('') : ''}</div></div>${plus}`;
+    rail.innerHTML = `<div class="pr-title">الشركاء</div><button class="pr-item pr-story-add" type="button" title="ستوري جديد" aria-label="ستوري جديد">＋<small>ستوري</small></button><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? tiles.join('') : ''}</div></div>${plus}`;
     rail.classList.remove('hidden');
+    rail.onclick = e => {
+      if (e.target.closest('.pr-story-add')) { e.preventDefault(); storyComposer(); return; }
+      const a = e.target.closest('[data-st]'); if (a) { e.preventDefault(); storyView(a.dataset.st); }
+    };
+  }
+
+  /* ============================================================
+     الستوري ديال المشتركين: نص ولا صورة، كيبقى 24 ساعة، كيبان فشريط الشركاء
+     ============================================================ */
+  const ST = { list: [], at: 0, img: new Map() };
+  const ST_BG = ['linear-gradient(135deg,#c8102e,#5a0b18)', 'linear-gradient(135deg,#111,#3a3a3a)', 'linear-gradient(135deg,#d9a73b,#8a5a00)', 'linear-gradient(135deg,#1f9d68,#0b4d33)', 'linear-gradient(135deg,#2f6fd6,#16336b)', 'linear-gradient(135deg,#7b2ff7,#f107a3)'];
+  async function loadStories(force) {
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) return [];
+    if (!force && Date.now() - ST.at < 60000) return ST.list;
+    try { ST.list = await (await Sy.request('/rest/v1/w777_stories?select=id,owner,kind,body,bg,created_at&order=created_at.asc')).json(); ST.at = Date.now(); }
+    catch (e) { /* بلا إنترنت */ }
+    return ST.list;
+  }
+  const stSeen = () => { try { return JSON.parse(localStorage.getItem('w777_st_seen') || '{}'); } catch (e) { return {}; } };
+  function stMarkSeen(id) {
+    const m = stSeen(); m[id] = Date.now();
+    Object.keys(m).forEach(k => { if (Date.now() - m[k] > 2 * 86400000) delete m[k]; });
+    try { localStorage.setItem('w777_st_seen', JSON.stringify(m)); } catch (e) { /* */ }
+  }
+  // كنجمعو الستوري حسب المشترك (اللي ماشي فالدليل = مكتب الوسيط 777)
+  function stGroups(list, dir) {
+    const by = new Map();
+    list.forEach(x => { if (!by.has(x.owner)) by.set(x.owner, []); by.get(x.owner).push(x); });
+    return [...by].map(([uid, items]) => {
+      const a = (dir || S.dir || []).find(d => d.uid === uid);
+      return { uid, items, office: !a, name: a ? a.name : 'مجموعة الوسيط 777', logo: a ? (a.logo || a.photo ? brandUrl(a.logo || a.photo) : '') : LOGO };
+    }).sort((x, y) => (y.office ? 1 : 0) - (x.office ? 1 : 0) || String(y.items[y.items.length - 1].created_at).localeCompare(String(x.items[x.items.length - 1].created_at)));
+  }
+  const stAgo = t => { const m = Math.max(1, Math.round((Date.now() - new Date(t)) / 60000)); return m < 60 ? `قبل ${m} دقيقة` : `قبل ${Math.round(m / 60)} ساعة`; };
+  async function storyView(startUid) {
+    const groups = stGroups(await loadStories(), S.dir);
+    let gi = Math.max(0, groups.findIndex(g => g.uid === startUid)), ii = 0, timer = 0, t0 = 0, left = 0, paused = false;
+    if (!groups.length) return;
+    // كنبداو من أول ستوري ما تشافش
+    const seen0 = stSeen(); ii = Math.max(0, groups[gi].items.findIndex(x => !seen0[x.id]));
+    const ov = document.createElement('div'); ov.className = 'st-view'; ov.setAttribute('role', 'dialog');
+    document.body.appendChild(ov); document.body.classList.add('st-open');
+    const DUR = 6000;
+    const close = () => { clearTimeout(timer); ov.remove(); document.body.classList.remove('st-open'); document.removeEventListener('keydown', key); if ((location.hash || '#/') === '#/') homeNetwork(); };
+    const key = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') go(1); else if (e.key === 'ArrowRight') go(-1); };
+    document.addEventListener('keydown', key);
+    const go = d => {
+      clearTimeout(timer);
+      ii += d;
+      if (ii >= groups[gi].items.length) { gi++; ii = 0; }
+      if (ii < 0) { gi--; ii = gi >= 0 ? groups[gi].items.length - 1 : 0; }
+      if (gi < 0) { gi = 0; ii = 0; }
+      if (gi >= groups.length) return close();
+      show();
+    };
+    const run = ms => { left = ms; t0 = Date.now(); const bar = $('.st-bars i.on b', ov); if (bar) { bar.style.transition = 'none'; bar.style.width = (100 - ms / DUR * 100) + '%'; void bar.offsetWidth; bar.style.transition = `width ${ms}ms linear`; bar.style.width = '100%'; } timer = setTimeout(() => go(1), ms); };
+    async function show() {
+      const g = groups[gi], x = g.items[ii];
+      stMarkSeen(x.id);
+      const mine = x.owner === window.W777_SYNC.uid() || S.role === 'admin';
+      ov.innerHTML = `<div class="st-card">
+        <div class="st-bars">${g.items.map((_, k) => `<i class="${k < ii ? 'done' : k === ii ? 'on' : ''}"><b></b></i>`).join('')}</div>
+        <div class="st-head">${g.logo ? `<img src="${esc(g.logo)}" alt="">` : `<span class="st-av">${esc((g.name || '؟').trim()[0])}</span>`}
+          <div class="grow"><b>${esc(g.name)}</b><small>${stAgo(x.created_at)}</small></div>
+          ${mine ? `<button class="st-btn" data-del title="حذف">🗑</button>` : ''}<button class="st-btn" data-x title="إغلاق">✕</button></div>
+        <div class="st-body">${x.kind === 'text' ? `<div class="st-text" style="background:${ST_BG.includes(x.bg) ? x.bg : ST_BG[0]}"><p>${esc(x.body || '').replace(/\n/g, '<br>')}</p></div>`
+          : `<div class="st-img"><div class="st-spin"></div><img alt="">${x.body ? `<p class="st-cap">${esc(x.body)}</p>` : ''}</div>`}</div>
+        <button class="st-nav st-prev" aria-label="السابق"></button><button class="st-nav st-next" aria-label="التالي"></button></div>`;
+      $('[data-x]', ov).onclick = close;
+      const del = $('[data-del]', ov);
+      if (del) del.onclick = async () => {
+        clearTimeout(timer);
+        if (!(await confirmBox('نحيدو هاد الستوري؟', 'حذف', true))) return run(left || DUR);
+        try { await window.W777_SYNC.request('/rest/v1/w777_stories?id=eq.' + x.id, { method: 'DELETE' }); ST.list = ST.list.filter(s0 => s0.id !== x.id); g.items.splice(ii, 1); toast('تم الحذف ✓'); }
+        catch (e) { toast('تعذر: ' + e.message, 4000); }
+        if (!g.items.length) { groups.splice(gi, 1); ii = 0; if (gi >= groups.length) return close(); } else if (ii >= g.items.length) ii = g.items.length - 1;
+        show();
+      };
+      // الضغط على اليمين/اليسار، والضغط المطول كيوقف
+      $('.st-prev', ov).onclick = () => go(-1);
+      $('.st-next', ov).onclick = () => go(1);
+      const body = $('.st-card', ov);
+      body.onpointerdown = e => { if (e.target.closest('.st-btn')) return; paused = true; clearTimeout(timer); left = Math.max(300, left - (Date.now() - t0)); const b = $('.st-bars i.on b', ov); if (b) { b.style.width = getComputedStyle(b).width; b.style.transition = 'none'; } };
+      body.onpointerup = body.onpointercancel = () => { if (paused) { paused = false; run(left); } };
+      if (x.kind === 'image') {
+        const img = $('.st-img img', ov);
+        try {
+          if (!ST.img.has(x.id)) ST.img.set(x.id, (await (await window.W777_SYNC.request(`/rest/v1/w777_stories?id=eq.${x.id}&select=img`)).json())[0].img);
+          if (groups[gi] !== g || g.items[ii] !== x) return;
+          img.src = ST.img.get(x.id); img.onload = () => { const sp = $('.st-spin', ov); if (sp) sp.remove(); };
+        } catch (e) { toast('تعذر تحميل الصورة'); }
+      }
+      run(DUR);
+    }
+    show();
+  }
+  function storyComposer() {
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) return toast('دخل بالحساب ديالك أولا (الإعدادات ← المزامنة السحابية)', 4000);
+    let kind = 'text', bg = ST_BG[0], img = '';
+    modal(`<h3>📸 ستوري جديد</h3><p class="muted" style="margin-top:0">كيبان لجميع المشتركين فشريط «الشركاء» لمدة 24 ساعة.</p>
+      <div class="st-seg" id="stk"><button type="button" class="on" data-k="text">📝 نص</button><button type="button" data-k="image">🖼️ صورة</button></div>
+      <div class="st-prev-box" id="stp"></div>
+      <div id="st-text-f"><textarea id="st-body" maxlength="300" rows="3" placeholder="كتب الستوري ديالك… (مثلا: فيلا جديدة للبيع فحمرية 🔥)"></textarea>
+        <div class="st-colors">${ST_BG.map((b, i) => `<button type="button" data-bg="${i}" style="background:${b}" class="${i ? '' : 'on'}"></button>`).join('')}</div></div>
+      <div id="st-img-f" class="hidden"><label class="btn sm">${ic('camera', 15)} اختار صورة<input type="file" id="st-file" accept="image/*" hidden></label>
+        <input id="st-cap" maxlength="200" placeholder="تعليق (اختياري)" style="margin-top:8px;width:100%"></div>
+      <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="st-pub">${ic('check', 16)} نشر الستوري</button></div>`, (box, close) => {
+      const prev = $('#stp', box), ta = $('#st-body', box), cap = $('#st-cap', box);
+      const paint = () => {
+        prev.innerHTML = kind === 'text' ? `<div class="st-text" style="background:${bg}"><p>${esc(ta.value || 'النص ديالك هنا…').replace(/\n/g, '<br>')}</p></div>`
+          : img ? `<div class="st-img"><img src="${img}" alt="">${cap.value ? `<p class="st-cap">${esc(cap.value)}</p>` : ''}</div>` : '<div class="st-text" style="background:#222"><p>🖼️ اختار صورة</p></div>';
+      };
+      $$('#stk button', box).forEach(b => b.onclick = () => { kind = b.dataset.k; $$('#stk button', box).forEach(x => x.classList.toggle('on', x === b)); $('#st-text-f', box).classList.toggle('hidden', kind !== 'text'); $('#st-img-f', box).classList.toggle('hidden', kind !== 'image'); paint(); });
+      $$('.st-colors button', box).forEach(b => b.onclick = () => { bg = ST_BG[+b.dataset.bg]; $$('.st-colors button', box).forEach(x => x.classList.toggle('on', x === b)); paint(); });
+      ta.oninput = cap.oninput = paint;
+      $('#st-file', box).onchange = async e => {
+        const f = e.target.files[0]; if (!f) return;
+        const toData = blob => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+        let out = await compressImage(f, 1080, 0.82); img = await toData(out.blob);
+        if (img.length > 440000) { out = await compressImage(f, 800, 0.7); img = await toData(out.blob); }
+        if (img.length > 440000) { img = ''; toast('الصورة كبيرة بزاف، جرب صورة أخرى', 4000); }
+        paint();
+      };
+      $('#st-pub', box).onclick = async () => {
+        const body = kind === 'text' ? ta.value.trim() : cap.value.trim();
+        if (kind === 'text' && !body) return toast('كتب شي حاجة أولا');
+        if (kind === 'image' && !img) return toast('اختار صورة أولا');
+        const btn = $('#st-pub', box); btn.disabled = true;
+        try {
+          await Sy.request('/rest/v1/w777_stories', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ kind, body: body || null, bg: kind === 'text' ? bg : null, img: kind === 'image' ? img : null }) });
+          ST.at = 0; close(); toast('تنشر الستوري ✓ — كيبان 24 ساعة');
+          if ((location.hash || '#/') === '#/') homeNetwork(); else location.hash = '#/';
+        } catch (e) { btn.disabled = false; toast('تعذر النشر: ' + e.message, 4500); }
+      };
+      paint();
+    });
   }
   const groupLinks = () => { const c = AG.cfg || {}; return { wa: c.wa_group || '', tg: c.tg_group || '', fb: c.fb_group || '' }; };
   // شعارات المنصات (ملونين)
@@ -6556,6 +6699,8 @@
     const fab = $('#fab');
     const menu = $('#fab-menu');
     fab.onclick = e => { e.stopPropagation(); menu.classList.toggle('hidden'); };
+    const st = $('[data-act="story"]', menu);
+    if (st) st.onclick = e => { e.preventDefault(); menu.classList.add('hidden'); storyComposer(); };
     document.addEventListener('click', () => menu.classList.add('hidden'));
   }
 
