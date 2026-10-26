@@ -994,3 +994,9 @@ do $$ declare f record; begin
            where n.nspname = 'public' and p.prorettype = 'trigger'::regtype and p.prosecdef loop
     execute format('revoke all on function %s from public, anon, authenticated', f.sig);
   end loop; end $$;
+
+-- ============================================================
+-- 2026-10-26 — المساعد الذكي: الوجه الحي (الفم والعينين)
+-- مكان الفم والعينين فصورة المساعد (نسب من 0 حتى 1)، كيحددهم المدير من الإعدادات.
+-- ============================================================
+alter table public.w777_agent_config add column if not exists face jsonb;

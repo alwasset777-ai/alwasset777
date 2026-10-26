@@ -587,16 +587,32 @@ a.chip { text-decoration: none; }
 .ag-body { position: relative; background:
   linear-gradient(color-mix(in srgb, var(--bg) 88%, transparent), color-mix(in srgb, var(--bg) 93%, transparent)),
   var(--ag-photo) center 20% / cover no-repeat; }
-.ag-stage { position: relative; flex: none; height: 168px; overflow: hidden; display: grid; place-items: center; perspective: 700px; cursor: pointer;
+.ag-stage { --nod: 0deg; position: relative; flex: none; height: 196px; overflow: hidden; display: grid; place-items: center; perspective: 700px; cursor: pointer;
   background: #0b0b0b; border-bottom: 1px solid #000; transition: height .35s ease; touch-action: pan-y; }
 .ag-stage::before { content: ''; position: absolute; inset: -20px; background: var(--ag-photo) center 25% / cover no-repeat; filter: blur(18px) brightness(.45) saturate(1.2); transform: scale(1.1); }
 .ag-stage::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 120%, rgba(212,160,23,.35), transparent 60%); pointer-events: none; }
-.ag-3d { --rx: 0deg; --ry: 0deg; position: relative; z-index: 1; width: 124px; height: 124px; border-radius: 50%;
-  transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)) translateZ(0);
+.ag-3d { --rx: 0deg; --ry: 0deg; position: relative; z-index: 1; width: 156px; height: 156px; border-radius: 50%;
+  transform-style: preserve-3d; transform: rotateX(calc(var(--rx) + var(--nod))) rotateY(var(--ry)) translateZ(0);
   transition: transform .25s ease-out, width .35s, height .35s;
   box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 0 3px var(--gold), 0 0 0 7px rgba(212,160,23,.25);
   animation: agbreath 4.5s ease-in-out infinite; }
-.ag-3d img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; background: #fff; transform: translateZ(18px) scale(1.02); }
+/* الوجه الحي: صورة أساسية + فم (تجويف) + فك سفلي كيتحرك + جفون للرمشة */
+.ag-face { --open: 0; --blink: 0; --mx: 50%; --my: 64%; --mw: 17%; --ex1: 40%; --ex2: 60%; --ey: 43%; --ew: 6.4%; --skin: #d9a58a;
+  position: absolute; inset: 0; border-radius: 50%; overflow: hidden; background: #fff; transform: translateZ(18px) scale(1.02); }
+.ag-face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 0; }
+.ag-mouth { position: absolute; left: calc(var(--mx) - var(--mw) * .4); width: calc(var(--mw) * .8); top: calc(var(--my) - var(--mw) * .03);
+  height: calc(var(--mw) * .06 + var(--open) * var(--mw) * .34); border-radius: 30% 30% 50% 50% / 25% 25% 75% 75%;
+  background: linear-gradient(#f3efe6 0 18%, transparent 30%), radial-gradient(ellipse at 50% 40%, #6b1f22, #2a0707 70%);
+  opacity: min(1, calc(var(--open) * 6)); }
+.ag-jaw { transform: translateY(calc(var(--open) * var(--mw) * .3));
+  -webkit-mask-image: radial-gradient(ellipse calc(var(--mw) * 1.35) calc(var(--mw) * 1.15) at var(--mx) calc(var(--my) + var(--mw) * .62), #000 52%, transparent 74%), linear-gradient(to bottom, transparent calc(var(--my) - .2%), #000 calc(var(--my) + 1.2%));
+  -webkit-mask-composite: source-in;
+  mask-image: radial-gradient(ellipse calc(var(--mw) * 1.35) calc(var(--mw) * 1.15) at var(--mx) calc(var(--my) + var(--mw) * .62), #000 52%, transparent 74%), linear-gradient(to bottom, transparent calc(var(--my) - .2%), #000 calc(var(--my) + 1.2%));
+  mask-composite: intersect; }
+.ag-lid { position: absolute; top: calc(var(--ey) - var(--ew) * .36); width: calc(var(--ew) * 1.05); height: calc(var(--ew) * .62); margin-left: calc(var(--ew) * -.525);
+  border-radius: 50% 50% 45% 45%; background: var(--skin); box-shadow: inset 0 -1.5px 0 rgba(40,20,15,.65);
+  transform-origin: 50% 0; transform: scaleY(var(--blink)); opacity: min(1, calc(var(--blink) * 8)); }
+.ag-lid.l { left: var(--ex1); } .ag-lid.r { left: var(--ex2); }
 .ag-gloss { position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle at calc(35% + var(--ry) * 1.5) calc(25% - var(--rx) * 1.5), rgba(255,255,255,.45), transparent 45%),
               radial-gradient(circle at 50% 110%, rgba(0,0,0,.45), transparent 55%); transform: translateZ(19px); }
@@ -610,10 +626,9 @@ a.chip { text-decoration: none; }
 @keyframes agwave { 0%, 100% { height: 4px; } 50% { height: 18px; } }
 .ag-stage.talk .ag-3d { animation: agtalk .9s ease-in-out infinite; box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 0 3px var(--gold), 0 0 22px 8px rgba(212,160,23,.55); }
 @keyframes agtalk { 0%, 100% { translate: 0 0; rotate: 0deg; } 30% { translate: 0 -2px; rotate: -1.2deg; } 70% { translate: 0 1px; rotate: 1deg; } }
-.ag-stage.beat .ag-3d img { animation: agbeat .22s ease-out; }
 @keyframes agbeat { 0% { transform: translateZ(18px) scale(1.02); } 45% { transform: translateZ(24px) scale(1.05, 1.035); } 100% { transform: translateZ(18px) scale(1.02); } }
-.ag-stage.mini { height: 64px; } .ag-stage.mini .ag-3d { width: 48px; height: 48px; } .ag-stage.mini .ag-wave { bottom: 4px; }
-@media (max-height: 640px) { .ag-stage { height: 120px; } .ag-3d { width: 88px; height: 88px; } }
+.ag-stage.mini { height: 72px; } .ag-stage.mini .ag-3d { width: 56px; height: 56px; } .ag-stage.mini .ag-wave { bottom: 4px; }
+@media (max-height: 640px) { .ag-stage { height: 132px; } .ag-3d { width: 104px; height: 104px; } }
 @media (prefers-reduced-motion: reduce) { .ag-3d, .ag-stage.talk .ag-3d, .ag-stage.talk .ag-wave span { animation: none; } }
 
 /* ---------- شبكة الوسيط 777: البلاطات فالرئيسية + الدليل + المشاريع + الهبة + النزاعات ---------- */
