@@ -2267,7 +2267,7 @@
      الأدوات كتخدم هنا فالجهاز، على بيانات الحساب اللي داخل.
      ============================================================ */
   const AG_LANGS = [
-    { id: 'ar', l: 'العربية', dir: 'rtl' }, { id: 'darija', l: 'الدارجة', dir: 'rtl' }, { id: 'fr', l: 'Français', dir: 'ltr' },
+    { id: 'darija', l: 'الدارجة', dir: 'rtl' }, { id: 'ar', l: 'العربية', dir: 'rtl' }, { id: 'fr', l: 'Français', dir: 'ltr' },
     { id: 'en', l: 'English', dir: 'ltr' }, { id: 'es', l: 'Español', dir: 'ltr' }, { id: 'it', l: 'Italiano', dir: 'ltr' },
   ];
   const AG_T = {
@@ -2280,8 +2280,10 @@
   };
   const AG = { open: false, busy: false, history: [], view: [], cfg: null };
   const agAI = () => !!(AG.cfg && AG.cfg.ai_enabled);
-  const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'ar'; } catch (e) { return 'ar'; } };
-  const agT = () => AG_T[agLang()] || AG_T.ar;
+  // الدارجة هي اللغة الافتراضية (مرة وحدة كنرجعو ليها حتى اللي كانو مختارين العربية من قبل)
+  try { if (!localStorage.getItem('w777_agent_lang_v2')) { localStorage.setItem('w777_agent_lang_v2', '1'); localStorage.removeItem('w777_agent_lang'); } } catch (e) { /* */ }
+  const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'darija'; } catch (e) { return 'darija'; } };
+  const agT = () => AG_T[agLang()] || AG_T.darija;
   function agCfgCached() { try { return JSON.parse(localStorage.getItem('w777_agent_cfg') || 'null'); } catch (e) { return null; } }
   async function agLoadCfg() {
     const Sy = window.W777_SYNC;
