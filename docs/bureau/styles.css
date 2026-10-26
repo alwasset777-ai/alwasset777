@@ -1336,6 +1336,11 @@ body.st-open { overflow: hidden; }
 .st-prev-box { height: 230px; border-radius: 14px; overflow: hidden; display: flex; margin-bottom: 10px; }
 .st-prev-box .st-text { padding: 20px; } .st-prev-box .st-text p { font-size: 19px; }
 #st-body { width: 100%; }
-.st-colors { display: flex; gap: 8px; margin-top: 8px; }
-.st-colors button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
-.st-colors button.on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.st-colors { display: flex; gap: 14px; margin-top: 10px; align-items: flex-end; }
+/* أسهم 🔺: مثلث بإطار رمادي، والمختار كيكبر بإطار ذهبي */
+.st-colors button { position: relative; width: 38px; height: 34px; padding: 0; border: 0; background: #9a9a9a; cursor: pointer;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%); transition: transform .15s, background .15s; }
+.st-colors button i { position: absolute; inset: 0; clip-path: polygon(50% 9%, 94% 95%, 6% 95%); }
+.st-colors button.on { background: var(--gold); transform: scale(1.2) translateY(-2px); }
+.st-text.st-light { color: #111; border: 1px solid var(--line); }
+.st-text.st-light p { text-shadow: none; }
