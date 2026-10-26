@@ -6706,6 +6706,78 @@
     tr.style.animationDuration = dur + 's';
     requestAnimationFrame(() => { const setW = tr.firstChild.offsetWidth, vw = tr.parentElement.offsetWidth; if (setW && vw) tr.style.animationDelay = -(Math.min(1, vw * 0.9 / setW) * dur).toFixed(2) + 's'; });
   }
+  /* ---------- الشعار 3D: كرة حقيقية (WebGL) ملفوف عليها الشعار ----------
+     كل نقطة فالكرة كتاخد لونها من الأيقونة (الوجه القدامي والوجه اللوراني بجوج مقروءين)،
+     مع ضوء، لمعة وحافة — والكرة كتدور ببطء. بلا WebGL كتبقى الأيقونة العادية. */
+  function setupLogoBall() {
+    const box = $('.logo-ball'), cv = $('#logo-ball');
+    if (!box || !cv) return;
+    const gl = cv.getContext('webgl', { premultipliedAlpha: true, antialias: true, alpha: true });
+    if (!gl) return;
+    const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p;gl_Position=vec4(p,0.,1.);}';
+    const FS = `precision mediump float;varying vec2 v;uniform sampler2D T;uniform float A;uniform float E;
+      void main(){
+        float r=length(v); if(r>1.){gl_FragColor=vec4(0.);return;}
+        float al=1.-smoothstep(1.-E,1.,r);
+        vec3 n=vec3(v,sqrt(max(0.,1.-r*r)));
+        float t=-.16,c=cos(t),s=sin(t);
+        vec3 q=vec3(n.x,c*n.y+s*n.z,-s*n.y+c*n.z);
+        c=cos(A);s=sin(A);
+        vec3 o=vec3(c*q.x-s*q.z,q.y,s*q.x+c*q.z);
+        float k=.97;
+        float rr=acos(clamp(abs(o.z),0.,1.))/1.5708;
+        vec2 dir=length(o.xy)>1e-4?normalize(o.xy):vec2(0.);
+        vec2 w=dir*rr*k;
+        vec2 uv=o.z>=0.?vec2(.5+.5*w.x,.5-.5*w.y):vec2(.5-.5*w.x,.5-.5*w.y);
+        vec3 col=texture2D(T,uv).rgb;
+        col=mix(col,vec3(.43,.43,.45),smoothstep(.935,.965,rr));
+        vec3 L=normalize(vec3(-.45,.55,.75));
+        float d=max(dot(n,L),0.);
+        vec3 H=normalize(L+vec3(0.,0.,1.));
+        float sp=pow(max(dot(n,H),0.),48.);
+        col=col*(.38+.72*d);
+        col+=vec3(1.)*sp*.6+vec3(1.)*pow(max(dot(n,H),0.),8.)*.08;
+        col+=vec3(.85,.1,.16)*pow(1.-n.z,3.)*.35;
+        col*=.86+.14*n.z;
+        gl_FragColor=vec4(col*al,al);
+      }`;
+    const sh = (t, src) => { const x = gl.createShader(t); gl.shaderSource(x, src); gl.compileShader(x); return gl.getShaderParameter(x, gl.COMPILE_STATUS) ? x : null; };
+    const vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) return;
+    const pr = gl.createProgram(); gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const uA = gl.getUniformLocation(pr, 'A'), uE = gl.getUniformLocation(pr, 'E');
+    const img = new Image();
+    img.onload = () => {
+      // نسخة 512×512 (مقاس مربع ديال 2) باش الصورة تبقى حادة فكل الأحجام
+      const c2 = document.createElement('canvas'); c2.width = c2.height = 512;
+      const x2 = c2.getContext('2d'); x2.fillStyle = '#fff'; x2.fillRect(0, 0, 512, 512); x2.drawImage(img, 0, 0, 512, 512);
+      const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      box.classList.add('gl');
+      const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const t0 = performance.now();
+      const draw = now => {
+        const w = Math.round(box.clientWidth * Math.min(3, window.devicePixelRatio || 1));
+        if (w && cv.width !== w) { cv.width = cv.height = w; gl.viewport(0, 0, w, w); }
+        gl.uniform1f(uE, 2.5 / Math.max(1, cv.width));
+        gl.uniform1f(uA, still ? 0 : ((now - t0) / 1000) * (Math.PI * 2 / 7)); // دورة كاملة كل 7 ثواني
+        gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        if (!still) requestAnimationFrame(draw);
+      };
+      requestAnimationFrame(draw);
+    };
+    img.src = 'icons/logo.png?v=10';
+  }
   function setupFab() {
     const fab = $('#fab');
     const menu = $('#fab-menu');
@@ -7980,7 +8052,7 @@
     if (window.W777_SYNC.isOn()) localStorage.setItem('w777_last_email', window.W777_SYNC.account().email || '');
     cleanOrphans();
     setupSearch();
-    setupFab(); setupCityTicker();
+    setupFab(); setupCityTicker(); setupLogoBall();
     setupAgent();
     setupSyncUi();
     setupChat();
