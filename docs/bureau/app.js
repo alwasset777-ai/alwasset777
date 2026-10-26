@@ -815,7 +815,7 @@
 
     main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + `
       <div class="hero">
-        <div class="hero-marq"><span>${esc(S.role === 'agency' ? myAgencyName() : String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط'))} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
+        <div class="hero-marq"><span>${esc(S.role === 'agency' ? myAgencyName() : String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط')).replace(/777/g, '<b class="r777">777</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
         <div class="hero-big3">
           <button class="btn gold" data-hm="add">${ic('plus', 20)} إضافة</button>
           <button class="btn" data-hm="svc">🧰 خدمات المجموعة${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</button>
@@ -2290,7 +2290,7 @@
     AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد الوسيط 777', photo: null };
     if (!Sy || !Sy.isOn()) return AG.cfg;
     try {
-      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,face,ai_enabled,wa_group,tg_group,updated_at')).json())[0];
+      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,face,ai_enabled,wa_group,tg_group,fb_group,updated_at')).json())[0];
       if (r) { AG.cfg = r; try { localStorage.setItem('w777_agent_cfg', JSON.stringify(r)); } catch (e) { /* */ } }
     } catch (e) { /* بدون إنترنت */ }
     agPaintButton();
@@ -4852,7 +4852,7 @@
           : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
             : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.') +
       `\n📜 قانون التطبيق (199 درهم فالعام من بعد 3 أشهر مجانية): ${appUrl}#/terms` +
-      (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '');
+      (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
         <div class="kv"><div><small>الحسابات</small><b>${ags.length}</b></div><div><small>مفعلة</small><b>${ags.filter(a => a.active).length}</b></div>
@@ -5342,12 +5342,19 @@
     rail.innerHTML = `<div class="pr-title">الشركاء</div><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? tiles.join('') : ''}</div></div>${plus}`;
     rail.classList.remove('hidden');
   }
-  const groupLinks = () => { const c = AG.cfg || {}; return { wa: c.wa_group || '', tg: c.tg_group || '' }; };
+  const groupLinks = () => { const c = AG.cfg || {}; return { wa: c.wa_group || '', tg: c.tg_group || '', fb: c.fb_group || '' }; };
+  // شعارات المنصات (ملونين)
+  const GRP_LOGO = {
+    wa: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#25D366"/><path fill="#fff" d="M16 6.5a9.4 9.4 0 0 0-8.1 14.2L6.6 25.5l4.9-1.3A9.4 9.4 0 1 0 16 6.5zm0 17.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A7.8 7.8 0 1 1 16 23.6zm4.3-5.8c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.4 6.4 0 0 1-3.2-2.8c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 2s.8 2.3 1 2.5c.1.2 1.6 2.5 4 3.5 1.5.6 2 .7 2.8.6.4-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.6-.4z"/></svg>',
+    tg: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#29A9EB"/><path fill="#fff" d="M7.2 15.6l15.4-5.9c.7-.3 1.3.2 1.1 1.3l-2.6 12.3c-.2.9-.7 1.1-1.5.7l-4-3-1.9 1.9c-.2.2-.4.4-.8.4l.3-4.1 7.4-6.7c.3-.3-.1-.4-.5-.2l-9.2 5.8-3.9-1.2c-.9-.3-.9-.9.2-1.3z"/></svg>',
+    fb: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#1877F2"/><path fill="#fff" d="M17.6 26v-8h2.7l.4-3.2h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V8.4c-.3 0-1.3-.1-2.4-.1-2.4 0-4.1 1.5-4.1 4.2v2.3h-2.7V18h2.7v8h3.2z"/></svg>',
+  };
+  const GRP_NAME = { wa: 'مجموعة واتساب', tg: 'مجموعة تيليغرام', fb: 'مجموعة فيسبوك' };
   function groupsCard(full) {
-    const g = groupLinks();
-    const btns = `${g.wa ? `<a class="btn wa" target="_blank" rel="noopener" href="${safeUrl(g.wa)}">${ic('wa', 18)} مجموعة واتساب</a>` : ''}
-      ${g.tg ? `<a class="btn tg" target="_blank" rel="noopener" href="${safeUrl(g.tg)}">✈️ مجموعة تيليغرام</a>` : ''}`;
-    if (!full) return g.wa || g.tg ? `<div class="grp-strip"><b>👥 مجموعات المشتركين</b><div class="btn-row">${btns}</div></div>` : '';
+    const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
+    // فالرئيسية: غير الشعارات (بلا مربعات)
+    if (!full) return keys.length ? `<div class="grp-strip"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div>` : '';
+    const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
       <p class="muted" style="margin-top:0">مجموعة لكل مشتركي التطبيق: الوكالات، الوسطاء، المقاولات، التشطيب، المستثمرون والموثقون — للأخبار، الفرص والتعاون المباشر.</p>
@@ -5355,6 +5362,7 @@
       ${S.role === 'admin' ? `<form id="grpf" class="form-grid" style="margin-top:14px">
           ${fInput('wa_group', 'رابط مجموعة / مجتمع واتساب', g.wa, { ph: 'https://chat.whatsapp.com/…', cls: 'full' })}
           ${fInput('tg_group', 'رابط مجموعة تيليغرام', g.tg, { ph: 'https://t.me/+…', cls: 'full' })}
+          ${fInput('fb_group', 'رابط مجموعة فيسبوك', g.fb, { ph: 'https://www.facebook.com/groups/…', cls: 'full' })}
           <div class="field"><button class="btn gold">${ic('check', 16)} حفظ الروابط</button></div></form>
         <p class="muted" style="font-size:12.5px;margin-bottom:0">💡 مجموعة واتساب فيها حد 1024 عضو — مع 4662 حساب استعمل «مجتمع واتساب» (Community) ولا قناة. تيليغرام كيقبل حتى 200 000 عضو.<br>الروابط كتزاد أوتوماتيكيا فرسالة «صيفط الدخول» لكل مشترك جديد.</p>` : ''}
     </div>`;
@@ -5392,11 +5400,11 @@
     const gf = $('#grpf');
     if (gf) gf.onsubmit = async e => {
       e.preventDefault();
-      const v = collect(gf), okUrl = u => !u || /^https:\/\/(chat\.whatsapp\.com|whatsapp\.com|wa\.me|t\.me|telegram\.me)\//i.test(u);
-      if (!okUrl(v.wa_group) || !okUrl(v.tg_group)) return toast('الرابط خاصو يبدا بـ https://chat.whatsapp.com/ ولا https://t.me/', 4000);
+      const v = collect(gf), okUrl = u => !u || /^https:\/\/(chat\.whatsapp\.com|whatsapp\.com|wa\.me|t\.me|telegram\.me|(www\.|m\.|web\.)?facebook\.com|fb\.com)\//i.test(u);
+      if (!okUrl(v.wa_group) || !okUrl(v.tg_group) || !okUrl(v.fb_group)) return toast('الرابط خاصو يبدا بـ https://chat.whatsapp.com/ ولا https://t.me/ ولا https://www.facebook.com/', 4000);
       try {
-        await rq('/rest/v1/w777_agent_config?id=eq.1', 'PATCH', { wa_group: v.wa_group || null, tg_group: v.tg_group || null, updated_at: new Date().toISOString() }, 'return=minimal');
-        AG.cfg = Object.assign({}, AG.cfg, { wa_group: v.wa_group || null, tg_group: v.tg_group || null });
+        await rq('/rest/v1/w777_agent_config?id=eq.1', 'PATCH', { wa_group: v.wa_group || null, tg_group: v.tg_group || null, fb_group: v.fb_group || null, updated_at: new Date().toISOString() }, 'return=minimal');
+        AG.cfg = Object.assign({}, AG.cfg, { wa_group: v.wa_group || null, tg_group: v.tg_group || null, fb_group: v.fb_group || null });
         try { localStorage.setItem('w777_agent_cfg', JSON.stringify(AG.cfg)); } catch (er) { /* */ }
         toast('تحفظو الروابط ✓'); viewTerms(sub);
       } catch (er) { toast('تعذر: ' + er.message); }

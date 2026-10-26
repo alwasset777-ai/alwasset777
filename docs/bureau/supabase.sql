@@ -1000,3 +1000,6 @@ do $$ declare f record; begin
 -- مكان الفم والعينين فصورة المساعد (نسب من 0 حتى 1)، كيحددهم المدير من الإعدادات.
 -- ============================================================
 alter table public.w777_agent_config add column if not exists face jsonb;
+
+-- 2026-10-26 — رابط مجموعة فيسبوك ديال المشتركين (كيبان كشعار فالرئيسية مع واتساب وتيليغرام)
+alter table public.w777_agent_config add column if not exists fb_group text;
