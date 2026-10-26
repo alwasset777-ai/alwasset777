@@ -141,7 +141,7 @@ function toGemini(messages: Blk[], model: string) {
 // كيرجع أول جواب صالح من لائحة النماذج (مع إعادة المحاولة بلا إعدادات التفكير إلا ما قبلهاش النموذج)
 async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean) {
   let last = { status: 0, message: "" };
-  for (const g of GEMINI_MODELS) {
+  for (const [gi, g] of GEMINI_MODELS.entries()) {
     for (const th of g.th ? [g.th, null] : [null]) {
       const payload = JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
@@ -151,7 +151,8 @@ async function geminiOpen(key: string, system: string, messages: Blk[], stream: 
         generationConfig: { maxOutputTokens: 4096, temperature: 0.6, ...(th ? { thinkingConfig: th } : {}) },
       });
       const ac = new AbortController();
-      const timer = setTimeout(() => ac.abort(), 25000);
+      // Google أحياناً كيتعطل بزاف فالمستوى المجاني: إلا ما بدا الجواب فـ 10 ثواني كنمشيو للنموذج اللي من بعد
+      const timer = setTimeout(() => ac.abort(), gi < GEMINI_MODELS.length - 1 ? 10000 : 25000);
       let res: Response;
       try {
         res = await fetch(`${GBASE}${g.m}:${stream ? "streamGenerateContent?alt=sse" : "generateContent"}`, {
