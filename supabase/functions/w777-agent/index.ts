@@ -20,7 +20,12 @@ Darija rules:
 - Real-estate words Moroccans use: شقة، دار، فيلا، بقعة، محل/حانوت، كراء، بيع، الشومبرات/البيوت، الصالون، الكوزينة، الطابق، الأسانسور، الباركينغ، السانديك، الرسم العقاري (تيتري)، الملكية، العربون، الموثق، العدول، السمسرة/الكوميسيون.
 - Money: say prices the Moroccan way too — "70 مليون" (سنتيم) next to the DH amount when useful (1 مليون = 10 000 DH); rents in درهم.
 - Understand users who write Darija in Latin letters / Arabizi (3=ع، 7=ح، 9=ق، 8=ه، 2=ء; e.g. "bghit chi chqa f hamria ta7t 50 mlyon"), mixed with French words (appartement, terrain, rdv, location, vente) — but always answer in Arabic script.
-- Short sentences, friendly tone (مرحبا، الله يعاونك، بالتوفيق)، no long formal paragraphs. Your text may be read aloud, so avoid tables and symbols.`,
+- Short sentences, friendly tone (مرحبا، الله يعاونك، بالتوفيق)، no long formal paragraphs. Your text is read aloud by a Moroccan voice, so avoid tables, symbols and **bold** markers.
+- Say times and dates the Moroccan way: "فالعشرة ديال الصباح"، "فالجوج ونص ديال العشية"، "غدا"، "نهار الخميس" (not "مع 10:00").
+- Examples of the tone you must use:
+  • "عندك اليوم جوج مواعيد: الأول فالعشرة ديال الصباح مع يوسف فمرجان، والثاني فالتلاتة ونص مع نادية فالمكتب. واش نحل ليك صفحة المواعيد؟"
+  • "باش تزيد عقار: ورك على «إضافة» فالرئيسية، من بعد «إضافة عقار»، عمّر النوع والمدينة والثمن وزيد التصاور، وفالأخير «حفظ العقار». بغيتي نحلها ليك دابا؟"
+  • "لقيت ليك تلاتة ديال الشقق فحمرية تحت 80 مليون. الأرخص فيهم 68 مليون، فيها جوج بيوت وصالون."`,
   ar: "Modern Standard Arabic (العربية الفصحى) — simple, clear and warm, like a friendly professional advisor; short natural sentences that sound good when read aloud",
   fr: "French",
   en: "English",
@@ -241,9 +246,13 @@ function wav(pcm: Uint8Array, rate: number) {
   const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h.buffer), 0); out.set(pcm, 44);
   return out;
 }
-async function tts(key: string, text: string) {
+const TTS_STYLE: Record<string, string> = {
+  darija: "Read the following in a natural Moroccan Darija accent, like a friendly real-estate agent from Meknes:\n",
+  ar: "Read the following in clear, warm Modern Standard Arabic:\n",
+};
+async function tts(key: string, text: string, lang = "darija") {
   const payload = JSON.stringify({
-    contents: [{ parts: [{ text }] }],
+    contents: [{ parts: [{ text: (TTS_STYLE[lang] ?? "") + text }] }],
     generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } } },
   });
   let last = 0;
@@ -296,7 +305,7 @@ Deno.serve(async (req) => {
     const text = body.tts.trim().slice(0, 1200);
     if (!text) return json({ error: "empty" }, 400);
     try {
-      const audio = await tts(geminiKey, text);
+      const audio = await tts(geminiKey, text, String(body.lang ?? "darija"));
       return new Response(audio, { headers: { ...CORS, "Content-Type": "audio/wav", "Cache-Control": "no-store" } });
     } catch (e) { return json({ error: "tts", status: (e as { status?: number }).status ?? 0 }, 502); }
   }
@@ -307,7 +316,7 @@ Deno.serve(async (req) => {
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(-60) : [];
   if (!messages.length) return json({ error: "empty" }, 400);
-  const lang = LANGS[body.lang ?? "ar"] ?? LANGS.ar;
+  const lang = LANGS[body.lang ?? "darija"] ?? LANGS.darija;
   const ctx = body.ctx ?? {};
   const turnInfo = [
     `Reply in ${lang}. Today is ${String(ctx.today ?? "")}. Agency: ${String(ctx.agency ?? "")}. Role: ${String(ctx.role ?? "")}. Current page: ${String(ctx.page ?? "")}.`,
