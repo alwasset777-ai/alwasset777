@@ -20,6 +20,7 @@ Darija rules:
 - Real-estate words Moroccans use: شقة، دار، فيلا، بقعة، محل/حانوت، كراء، بيع، الشومبرات/البيوت، الصالون، الكوزينة، الطابق، الأسانسور، الباركينغ، السانديك، الرسم العقاري (تيتري)، الملكية، العربون، الموثق، العدول، السمسرة/الكوميسيون.
 - Money: say prices the Moroccan way too — "70 مليون" (سنتيم) next to the DH amount when useful (1 مليون = 10 000 DH); rents in درهم.
 - Understand users who write Darija in Latin letters / Arabizi (3=ع، 7=ح، 9=ق، 8=ه، 2=ء; e.g. "bghit chi chqa f hamria ta7t 50 mlyon"), mixed with French words (appartement, terrain, rdv, location, vente) — but always answer in Arabic script.
+- 100% Darija in Arabic script: NEVER write English or French words or sentences, not even one word. Transliterate every Latin name from the data into Arabic letters the way Moroccans say it (Avenue Saadiyine → شارع السعديين، Marjane → مرجان، Hamria → حمرية، Résidence Al Amal → إقامة الأمل، rdv → موعد، appartement → شقة). Only property refs (W777-0012) and numbers stay as they are.
 - Short sentences, friendly tone (مرحبا، الله يعاونك، بالتوفيق)، no long formal paragraphs. Your text is read aloud by a Moroccan voice, so avoid tables, symbols and **bold** markers.
 - Say times and dates the Moroccan way: "فالعشرة ديال الصباح"، "فالجوج ونص ديال العشية"، "غدا"، "نهار الخميس" (not "مع 10:00").
 - Examples of the tone you must use:
@@ -52,6 +53,7 @@ Speaking style (your answers are also read aloud by a voice and shown next to a 
 - Answer FAST and SHORT: first sentence = the direct answer. Usually 1–4 short sentences; use a short list only when listing items (max 5 items, then offer to show more / open the page).
 - Natural spoken tone, no markdown tables, no headings, no code, no long URLs, minimal emojis. Write numbers the way people say them.
 - If the live snapshot already contains the answer (counts, today's appointments, follow-ups), answer directly without calling tools.
+- Be fast: every tool call costs the user a few seconds. Call each tool ONCE with broad filters; when you need several tools, call them all in the same turn. search_properties already returns "closest" alternatives when nothing matches exactly — use them in your answer instead of searching again.
 
 Knowing the app (answer any "how do I / where is / what is" question about the app):
 - Use the "Relevant lessons" given in the context when present; otherwise call app_help with keywords. Explain in 2–4 numbered steps with the exact button names, then offer to open the page with open_page.
@@ -69,7 +71,7 @@ const str = (d: string) => ({ type: "string", description: d });
 const num = (d: string) => ({ type: "number", description: d });
 
 const TOOLS = [
-  { name: "search_properties", description: "Search the agency's own properties. All filters optional. Returns up to `limit` matches (default 10) with ref, title, type, transaction, city, district, price, area, bedrooms, status.",
+  { name: "search_properties", description: "Search the agency's own properties. All filters optional. Returns up to `limit` matches (default 10) with ref, title, type, transaction, city, district, price, area, bedrooms, status. When nothing matches, it also returns `closest`: the nearest alternatives (same search without the price limits, cheapest first) — present them instead of searching again.",
     input_schema: S({ query: str("free text: district, type, ref, keywords"), transaction: str("sale | rent | rent_furnished | seasonal | ..."), category: str("apartment | house | land | commercial | building | tourism | industrial | agri"), city: str("city name in Arabic, e.g. مكناس"), price_min: num("DH"), price_max: num("DH"), bedrooms_min: num("minimum bedrooms"), status: str("available (default) | all | sold | rented | reserved"), limit: num("max results, default 10") }) },
   { name: "get_property", description: "Full details of one of the agency's properties by ref (owner contact included — the agency's own data).", input_schema: S({ ref: str("e.g. W777-0012") }, ["ref"]) },
   { name: "search_requests", description: "Search the agency's client requests (buyers/tenants). Returns ref, client name, phone, transaction, type, city, budget, status, follow-up date.", input_schema: S({ query: str("name, phone, district, keywords"), status: str("open (default) | all | done | cancelled"), limit: num("default 10") }) },
@@ -246,10 +248,8 @@ function wav(pcm: Uint8Array, rate: number) {
   const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h.buffer), 0); out.set(pcm, 44);
   return out;
 }
-const TTS_STYLE: Record<string, string> = {
-  darija: "Read the following in a natural Moroccan Darija accent, like a friendly real-estate agent from Meknes:\n",
-  ar: "Read the following in clear, warm Modern Standard Arabic:\n",
-};
+// بلا تعليمات قبل النص: نموذج الصوت كان أحياناً كيقرا الجملة الإنجليزية بصوت عالي قبل الدارجة
+const TTS_STYLE: Record<string, string> = {};
 async function tts(key: string, text: string, lang = "darija") {
   const payload = JSON.stringify({
     contents: [{ parts: [{ text: (TTS_STYLE[lang] ?? "") + text }] }],
