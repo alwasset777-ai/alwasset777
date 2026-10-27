@@ -2719,14 +2719,15 @@
         agSayFlush();
         if (r.stop_reason === 'refusal' && !txt) AG.view.push({ who: 'bot', text: t.err });
         if (r.stop_reason !== 'tool_use') break;
-        const results = [];
-        for (const b of r.content.filter(x => x.type === 'tool_use')) {
-          AG.view.push({ who: 'tool', text: b.name.replace(/_/g, ' ') });
-          AG.live = null; agRender();
+        // الأدوات كتخدم كاملين فنفس الوقت (أسرع)، والسمية ديالها كتبان بالعربية
+        const uses = r.content.filter(x => x.type === 'tool_use');
+        uses.forEach(b => AG.view.push({ who: 'tool', text: AG_TOOL_AR[b.name] || '⏳ كنخدم…' }));
+        AG.live = null; agRender();
+        const results = await Promise.all(uses.map(async b => {
           let out, isErr = false;
           try { out = await agRunTool(b.name, b.input || {}); } catch (e) { out = { error: String(e.message || e) }; isErr = true; }
-          results.push({ type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out).replace(/[⁦-⁩]/g, '').slice(0, 6000), ...(isErr ? { is_error: true } : {}) });
-        }
+          return { type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out).replace(/[⁦-⁩]/g, '').slice(0, 6000), ...(isErr ? { is_error: true } : {}) };
+        }));
         AG.history.push({ role: 'user', content: results });
       }
     } finally { AG.busy = false; AG.live = null; agRender(); }
@@ -2947,6 +2948,13 @@
   const agReq = r => ({ ref: r.ref, client: (r.client || {}).name, phone: (r.client || {}).phone, transaction: trxAr(r.transaction), types: (r.types || []).map(typeAr), city: r.city, districts: r.districts || [], budget_max: r.budgetMax || null, status: (RSTATUS[r.status] || {}).ar || r.status, follow_up: r.followUp || null });
   const byRef = (list, ref) => list.find(x => String(x.ref || '').toLowerCase() === String(ref || '').trim().toLowerCase());
   const agAsk = async msg => confirmBox(msg, '✓', false);
+  const AG_TOOL_AR = {
+    search_properties: 'كنقلب فالعقارات…', get_property: 'كنشوف تفاصيل العقار…', search_requests: 'كنقلب فالطلبات…', get_request: 'كنشوف الطلب…',
+    matches_for_request: 'كنقلب على العقارات المناسبة…', matches_for_property: 'كنقلب على الزبناء المناسبين…', create_request: 'كنزيد الطلب…',
+    list_appointments: 'كنشوف المواعيد…', create_appointment: 'كنزيد الموعد…', update_property_status: 'كنبدل حالة العقار…', market_price: 'كنقارن مع ثمن السوق…',
+    office_stats: 'كنحسب الأرقام ديال المكتب…', network_search: 'كنقلب فالشبكة…', app_help: 'كنقلب فدليل التطبيق…', finance_summary: 'كنحسب المالية…',
+    rentals_summary: 'كنشوف الكراء…', open_page: 'كنحل الصفحة…',
+  };
   async function agRunTool(name, a) {
     const lim = Math.min(num(a.limit) || 10, 25);
     switch (name) {
@@ -2961,7 +2969,10 @@
         if (num(a.price_max)) list = list.filter(p => pr(p) && pr(p) <= num(a.price_max));
         if (num(a.price_min)) list = list.filter(p => pr(p) >= num(a.price_min));
         if (num(a.bedrooms_min)) list = list.filter(p => num((p.specs || {}).bedrooms) >= num(a.bedrooms_min));
-        return { total: list.length, results: list.slice(0, lim).map(agProp) };
+        if (a._near) list.sort((x, y) => (pr(x) || 1e15) - (pr(y) || 1e15));
+        if (list.length || a._near) return { total: list.length, results: list.slice(0, lim).map(agProp) };
+        // ما كاين والو بالضبط: كنعطيو الأقرب (بلا حدود الثمن) فنفس الجواب باش الذكاء الاصطناعي ما يعاودش يقلب (كيربح ثواني)
+        return { total: 0, results: [], closest: await agRunTool('search_properties', Object.assign({}, a, { price_max: 0, price_min: 0, limit: 3, _near: 1 })).then(r => r.results || []) };
       }
       case 'get_property': {
         const p = byRef(S.props, a.ref); if (!p) return { error: 'not found' };
