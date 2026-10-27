@@ -799,6 +799,11 @@
     if (!M) return;
     modal(`<h3>${M[0]}</h3><div class="hub hub-menu hub-spin">${M[1].join('')}</div>`, (box, close) => {
       $$('.hub-tile', box).forEach(a => a.addEventListener('click', () => close()));
+      // الدوائر كتدور بنفس السرعة ونفس اللحظة ديال الشعار الكبير اللي فوق (نصف دورة = 3.5 ثواني)
+      const sp = $('.hub-spin', box), lg = $('.coin');
+      const la = lg && lg.getAnimations ? lg.getAnimations()[0] : null;
+      const t = la && la.currentTime != null ? la.currentTime : (document.timeline ? document.timeline.currentTime : 0);
+      if (sp) sp.style.setProperty('--spin-d', -(Math.round(t || 0) % 3500) + 'ms');
     });
   }
   function gdBanner() {

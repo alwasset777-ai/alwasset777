@@ -1365,8 +1365,5 @@ body.st-open { overflow: hidden; }
 
 /* القوائم الثلاثة (إضافة، خدمات المجموعة، شبكة الوسيط 777): الدوائر كتدور بحال قطعة نقدية (الوجه ديما مقابل، بلا انعكاس) */
 @keyframes hub-coin { 0% { transform: perspective(520px) rotateY(0deg); } 50% { transform: perspective(520px) rotateY(90deg); } 50.01% { transform: perspective(520px) rotateY(-90deg); } 100% { transform: perspective(520px) rotateY(0deg); } }
-.hub-spin .hub-tile .hi { animation: hub-coin 4s linear infinite; }
-.hub-spin .hub-tile:nth-child(3n+2) .hi { animation-delay: -1.33s; }
-.hub-spin .hub-tile:nth-child(3n) .hi { animation-delay: -2.66s; }
-.hub-spin .hub-tile:hover .hi { animation-play-state: paused; }
+.hub-spin .hub-tile .hi { animation: hub-coin 3.5s linear infinite; animation-delay: var(--spin-d, 0s); will-change: transform; transform-style: flat; -webkit-font-smoothing: antialiased; } /* كاملين بنفس الدوران فنفس الوقت */
 @media (prefers-reduced-motion: reduce) { .hub-spin .hub-tile .hi { animation: none; } }
