@@ -808,6 +808,12 @@
       const la = lg && lg.getAnimations ? lg.getAnimations()[0] : null;
       const t = la && la.currentTime != null ? la.currentTime : (document.timeline ? document.timeline.currentTime : 0);
       if (sp) sp.style.setProperty('--spin-d', -(Math.round(t || 0) % 3500) + 'ms');
+      // اللمس فالتيليفون: الدائرة كتوقف مادام الصبع عليها
+      $$('.hub-tile', box).forEach(tile => {
+        tile.addEventListener('touchstart', () => tile.classList.add('hold'), { passive: true });
+        const up = () => tile.classList.remove('hold');
+        tile.addEventListener('touchend', up); tile.addEventListener('touchcancel', up);
+      });
     });
   }
   function gdBanner() {
