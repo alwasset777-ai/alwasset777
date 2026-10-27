@@ -1353,3 +1353,11 @@ body.st-open { overflow: hidden; }
 .st-colors button.on { background: var(--gold); transform: scale(1.2) translateY(-2px); }
 .st-text.st-light { color: #111; border: 1px solid var(--line); }
 .st-text.st-light p { text-shadow: none; }
+
+/* زر اللغة داخل شريط «دول المشتركين» (الرئيسية) */
+.flag-band.has-lang { padding-inline-end: 6px; }
+.flag-band .lang-btn { height: 36px; min-width: 36px; margin-inline-start: auto; color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.flag-band .lang-btn:hover { background: var(--surface); }
+/* التيليفون: بلا أيقونة البحث فالشريط الفوقاني (البحث كاين فالرئيسية وفـ +) */
+@media (max-width: 640px) { .topbar .search-wrap { display: none; } }
