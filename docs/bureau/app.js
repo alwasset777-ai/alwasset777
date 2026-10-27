@@ -788,7 +788,7 @@
   const hubEmo = (href, e, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo">${e}</i>`, l, s);
   function homeMenu(kind, nAppts) {
     const M = {
-      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubEmo('#/appointment/new', '📅', 'إضافة موعد', 'زيارة، لقاء…', '#20c997')]],
+      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=1" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب اللي اختارو المدير
         hubImg('news'), hubImg('events'), hubImg('stays'), hubEmo('#/ad-maker', '✨', 'إصنع إعلانا', 'منشورات إعلانية'),
         hubImg('projects'), hubEmo('#/appointments', '📅', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubEmo('#/matching', '🎯', 'المطابقة', 'طلب ↔ عقار'), hubEmo('#/estimate', '📊', 'مقارنة الثمن', 'درهم/م²'),
