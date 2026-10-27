@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v101';
+const CACHE = 'w777-bureau-v102';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);

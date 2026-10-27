@@ -791,7 +791,7 @@
       add: ['➕ إضافة', [hubEmo('#/property/new', '🏠', 'إضافة عقار', 'بيع، كراء…', '#ff5a5f'), hubEmo('#/request/new', '🧾', 'إضافة طلب', 'زبون كيقلب', '#4aa3ff'), hubEmo('#/appointment/new', '📅', 'إضافة موعد', 'زيارة، لقاء…', '#20c997')]],
       svc: ['🧰 خدمات المجموعة', [
         hubEmo('#/matching', '🎯', 'المطابقة', 'طلب ↔ عقار'), hubEmo('#/appointments', '📅', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubEmo('#/estimate', '📊', 'مقارنة الثمن', 'درهم/م²'),
-        hubEmo('#/loan', '🏦', 'حاسبة القرض', 'القسط الشهري'), hubEmo('#/map', '🗺️', 'الخريطة', 'العقارات'), hubEmo('#/rentals', '🔑', 'الكراء', 'الكاريين والتوصيلات'),
+        hubEmo('#/loan', '🏦', 'حاسبة القرض', 'القسط الشهري'), hubEmo('#/map', '🗺️', 'الخريطة', 'العقارات'), hubEmo('#/rentals', '🔑', 'تدبير الكراء', 'الكاريين والتوصيلات'),
         hubEmo('#/finance', '💹', 'المالية', 'المداخيل والمصاريف'), hubEmo('#/ad-maker', '✨', 'إصنع إعلانا', 'منشورات إعلانية'),
         ...HUB.map(h => h[0]).filter(r => !HUB_NET.includes(r)).map(hubImg),
         hubEmo('#/guide', '🎓', 'تعلم استعمال التطبيق', 'دروس بالصور')]],
@@ -7422,7 +7422,7 @@
     months.reverse();
     const arr = leaseArrears(l), t = l.tenant || {};
     const remind = `السلام عليكم ${t.name || ''}،\nكنذكّروك بأداء واجب الكراء${arr.length ? ` (${arr.map(ymAr).join('، ')})` : ` ديال ${ymAr(ym())}`}: ${fmtRaw(Math.round((num(l.rent) || 0) * Math.max(1, arr.length)))} درهم.\nشكرا — ${offName()} ${offPhone()}`;
-    main().innerHTML = `<div class="page-head"><a class="btn" href="#/rentals">${ic('back', 18)} الكراء</a><div class="btn-row">
+    main().innerHTML = `<div class="page-head"><a class="btn" href="#/rentals">${ic('back', 18)} تدبير الكراء</a><div class="btn-row">
         ${t.phone ? `<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(t.phone)}?text=${encodeURIComponent(remind)}">${ic('wa', 16)} تذكير المكتري</a>` : ''}
         <button class="btn" id="l-edit">${ic('edit', 16)} تعديل</button><button class="btn" id="l-end">${l.ended ? '♻️ إعادة التفعيل' : '🔒 إنهاء العقد'}</button><button class="btn danger" id="l-del">${ic('trash', 16)}</button></div></div>
       <div class="detail-grid"><div class="card card-pad"><h2 style="margin:0 0 4px">${esc(t.name || 'مكتري')}</h2><div class="muted">${esc(l.propLabel || '')}</div>
