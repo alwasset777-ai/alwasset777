@@ -784,7 +784,7 @@
   // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
   const HUB_NET = ['agencies', 'brokers', 'associations', 'investors', 'contractors', 'finishing', 'notaries'];
   const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
-  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=6" alt="" decoding="async" onerror="this.replaceWith(document.createTextNode('${h[1]}'))">`, l || h[2], h[3]); };
+  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=7" alt="" decoding="async" onerror="this.replaceWith(document.createTextNode('${h[1]}'))">`, l || h[2], h[3]); };
   const hubEmo = (href, e, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo">${e}</i>`, l, s);
   // أيقونة صورة (بلاصة الإيموجي) داخل الدائرة: icons/hub/<f>.webp
   const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=1" alt="" decoding="async"></i>`, l, s);
