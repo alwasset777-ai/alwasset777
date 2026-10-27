@@ -784,16 +784,16 @@
   // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
   const HUB_NET = ['agencies', 'brokers', 'associations', 'investors', 'contractors', 'finishing', 'notaries'];
   const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
-  const hubImg = r => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=6" alt="" decoding="async" onerror="this.replaceWith(document.createTextNode('${h[1]}'))">`, h[2], h[3]); };
+  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=6" alt="" decoding="async" onerror="this.replaceWith(document.createTextNode('${h[1]}'))">`, l || h[2], h[3]); };
   const hubEmo = (href, e, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo">${e}</i>`, l, s);
   function homeMenu(kind, nAppts) {
     const M = {
       add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=1" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
-      svc: ['🧰 خدمات المجموعة', [ // الترتيب اللي اختارو المدير
-        hubImg('news'), hubImg('events'), hubImg('stays'), hubEmo('#/ad-maker', '✨', 'إصنع إعلانا', 'منشورات إعلانية'),
-        hubImg('projects'), hubEmo('#/appointments', '📅', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubEmo('#/matching', '🎯', 'المطابقة', 'طلب ↔ عقار'), hubEmo('#/estimate', '📊', 'مقارنة الثمن', 'درهم/م²'),
-        hubEmo('#/map', '🗺️', 'الخريطة', 'العقارات'), hubEmo('#/finance', '💹', 'المالية', 'المداخيل والمصاريف'), hubEmo('#/rentals', '🔑', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubEmo('#/guide', '🎓', 'تعلم استعمال التطبيق', 'دروس بالصور'),
-        hubImg('disputes'), hubImg('donations'), hubImg('terms'), hubEmo('#/loan', '🏦', 'حاسبة القرض', 'القسط الشهري')]],
+      svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
+        hubImg('news', 'الأخبار العقارية'), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubEmo('#/ad-maker', '✨', 'إعلانات فورية', 'منشورات إعلانية'),
+        hubImg('projects', 'عرض المشاريع'), hubEmo('#/appointments', '📅', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubEmo('#/matching', '🎯', 'المطابقة الذكية', 'طلب ↔ عقار'), hubEmo('#/estimate', '📊', 'مقارنة الأسعار', 'درهم/م²'),
+        hubEmo('#/map', '🗺️', 'الخريطة العقارية', 'العقارات'), hubEmo('#/finance', '💹', 'المحفظة المالية', 'المداخيل والمصاريف'), hubEmo('#/rentals', '🔑', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubEmo('#/guide', '🎓', 'تعلم استعمال التطبيق', 'دروس بالصور'),
+        hubImg('disputes', 'نزاعات و حلول'), hubImg('donations', 'الهبة'), hubImg('terms', 'قانون التطبيق'), hubEmo('#/loan', '🏦', 'حساب التمويل', 'القسط الشهري')]],
       net: ['✦ شبكة الوسيط 777', HUB_NET.map(hubImg)],
     }[kind];
     if (!M) return;
