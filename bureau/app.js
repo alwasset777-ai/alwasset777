@@ -794,10 +794,10 @@
         hubImg('projects', 'عرض المشاريع'), hubEmo('#/appointments', '📅', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubEmo('#/matching', '🎯', 'المطابقة الذكية', 'طلب ↔ عقار'), hubEmo('#/estimate', '📊', 'مقارنة الأسعار', 'درهم/م²'),
         hubEmo('#/map', '🗺️', 'الخريطة العقارية', 'العقارات'), hubEmo('#/finance', '💹', 'المحفظة المالية', 'المداخيل والمصاريف'), hubEmo('#/rentals', '🔑', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubEmo('#/guide', '🎓', 'تعلم استعمال التطبيق', 'دروس بالصور'),
         hubImg('disputes', 'نزاعات و حلول'), hubImg('donations', 'الهبة'), hubImg('terms', 'قانون التطبيق'), hubEmo('#/loan', '🏦', 'حساب التمويل', 'القسط الشهري')]],
-      net: ['✦ شبكة الوسيط 777', HUB_NET.map(hubImg)],
+      net: ['✦ شبكة الوسيط 777', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
     if (!M) return;
-    modal(`<h3>${M[0]}</h3><div class="hub hub-menu hub-spin">${M[1].join('')}</div>`, (box, close) => {
+    modal(`<h3>${M[0]}</h3><div class="hub hub-menu hub-spin${kind === 'net' ? ' hub-big' : ''}">${M[1].join('')}</div>`, (box, close) => {
       $$('.hub-tile', box).forEach(a => a.addEventListener('click', () => close()));
       // الدوائر كتدور بنفس السرعة ونفس اللحظة ديال الشعار الكبير اللي فوق (نصف دورة = 3.5 ثواني)
       const sp = $('.hub-spin', box), lg = $('.coin');
