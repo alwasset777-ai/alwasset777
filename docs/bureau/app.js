@@ -1279,13 +1279,15 @@
         const rec = { id: fid, owner: p.id, kind, name: f.name, mime: f.type, size: f.size };
         if (kind === 'photo' || (kind === 'doc' && f.type.startsWith('image/'))) {
           const big = await compressImage(f, 1920, 0.85);
-          const small = await compressImage(f, 480, 0.75);
+          // صور العقار كتاخد الشعار وأرقام الهاتف مباشرة ملي كتزاد (الوثائق لا)
+          if (kind === 'photo' && S.settings.watermark !== false) { big.blob = await watermark(big.blob, true); rec.wm = 1; }
+          const small = await compressImage(big.blob, 480, 0.75);
           rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
         } else rec.blob = f;
         if (kind === 'video' && f.size > 300 * 1024 * 1024) toast('تنبيه: فيديو كبير (' + Math.round(f.size / 1048576) + ' MB) — قد يملأ ذاكرة الجهاز');
         await DB.put('files', rec);
         sessionFiles.push(fid);
-        media.push({ id: fid, kind, name: f.name, mime: rec.mime, size: rec.size });
+        media.push({ id: fid, kind, name: f.name, mime: rec.mime, size: rec.size, ...(rec.wm ? { wm: 1 } : {}) });
         done++; bar.style.width = (done / files.length * 100) + '%';
       }
       setTimeout(() => prog.classList.add('hidden'), 500);
@@ -1549,7 +1551,7 @@
         const files = [];
         for (const m of photos) {
           const blob = await getBlob(m.id, false);
-          if (blob) { const wm = await watermark(blob); files.push(new File([wm], (p.ref || 'photo') + '-' + (files.length + 1) + '.jpg', { type: wm.type || 'image/jpeg' })); }
+          if (blob) { const wm = m.wm ? blob : await watermark(blob); files.push(new File([wm], (p.ref || 'photo') + '-' + (files.length + 1) + '.jpg', { type: wm.type || 'image/jpeg' })); }
         }
         if (navigator.canShare({ files })) { await navigator.share({ files, text, title: p.title }); return; }
       }
@@ -6411,11 +6413,13 @@
             const rec = { id: fid, owner: id, kind: video ? 'video' : 'photo', name: f.name, mime: f.type, size: f.size };
             if (video) rec.blob = f;
             else {
-              const big = await compressImage(f, 1280, 0.78), small = await compressImage(f, 400, 0.7);
+              const big = await compressImage(f, 1280, 0.78);
+              if (S.settings.watermark !== false) { big.blob = await watermark(big.blob, true); rec.wm = 1; }
+              const small = await compressImage(big.blob, 400, 0.7);
               rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
             }
             await DB.put('files', rec);
-            media.push({ id: fid, kind: rec.kind, name: f.name, mime: rec.mime, size: rec.size });
+            media.push({ id: fid, kind: rec.kind, name: f.name, mime: rec.mime, size: rec.size, ...(rec.wm ? { wm: 1 } : {}) });
             done++; prog.firstElementChild.style.width = (done / total * 100) + '%';
             st.textContent = `${done} / ${total} — ${j.label}`;
           }
@@ -6999,26 +7003,52 @@
   }
 
   /* ---------- 💧 العلامة المائية ---------- */
-  let LOGO_IMG = null;
-  const logoImg = () => LOGO_IMG || (LOGO_IMG = new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = LOGO; }));
+  // كل صورة كتاخد هوية مولاها: المكتب (شعار مجموعة الوسيط 777 + الرقمين) ولا الوكالة المشتركة (الشعار والرقم ديالها)
+  const IMG_CACHE = new Map();
+  const loadImg = src => { if (!src) return Promise.resolve(null); if (!IMG_CACHE.has(src)) IMG_CACHE.set(src, new Promise(res => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => { IMG_CACHE.delete(src); res(null); }; i.src = src; })); return IMG_CACHE.get(src); };
+  const logoImg = () => loadImg(LOGO);
+  function brandOf() {
+    if (S.role === 'agency') { const a = S.agency || {}; return { logo: a.logo ? brandUrl(a.logo) : '', name: a.name || myAgencyName(), mark: a.name || myAgencyName() }; }
+    return { logo: LOGO, name: 'مجموعة الوسيط 777', mark: 'الوسيط 777' };
+  }
   async function watermark(blob, force) {
     if (!force && S.settings.watermark === false) return blob;
     try {
       await fontsReady();
+      const B = brandOf();
       const bmp = await decodeImage(blob);
       const w = bmp.naturalWidth || bmp.width, h = bmp.naturalHeight || bmp.height;
       const c = document.createElement('canvas'); c.width = w; c.height = h;
       const x = c.getContext('2d'); x.drawImage(bmp, 0, 0, w, h); if (bmp.close) bmp.close();
       const u = Math.min(w, h);
-      // كتابة شفافة فالوسط
+      // كتابة شفافة فالوسط (اسم المكتب)
+      const mark = String(B.mark || '').slice(0, 26);
       x.save(); x.translate(w / 2, h / 2); x.rotate(-Math.PI / 9); x.globalAlpha = .16; x.fillStyle = '#fff';
       x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = Math.max(1, u * .003);
-      x.font = `900 ${Math.round(u * .11)}px Tajawal, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
-      x.strokeText('الوسيط 777', 0, 0); x.fillText('الوسيط 777', 0, 0); x.restore();
-      // الشعار + الهاتف فالركن
-      const lg = await logoImg(), m = Math.round(u * .03);
-      if (lg) { const lw = Math.round(u * .2), lh = Math.round(lw * lg.height / lg.width); x.globalAlpha = .92; x.drawImage(lg, m, h - lh - m, lw, lh); x.globalAlpha = 1;
-        const ph = offPhones(); if (ph) { x.font = `800 ${Math.round(u * .035)}px Tajawal, sans-serif`; x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = u * .01; x.textBaseline = 'bottom'; x.direction = 'ltr'; x.fillText('☎ ' + ph, m + lw + m * .6, h - m * 1.2); } }
+      x.font = `900 ${Math.round(u * (mark.length > 14 ? .07 : .11))}px Tajawal, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+      x.strokeText(mark, 0, 0); x.fillText(mark, 0, 0); x.restore();
+      // الركن: الشعار (فدائرة بيضاء) + أرقام الهاتف
+      const m = Math.round(u * .03), d = Math.round(u * .19), cx = m + d / 2, cy = h - m - d / 2;
+      const lg = await loadImg(B.logo);
+      x.save(); x.shadowColor = 'rgba(0,0,0,.45)'; x.shadowBlur = u * .015;
+      x.fillStyle = '#fff'; x.beginPath(); x.arc(cx, cy, d / 2, 0, Math.PI * 2); x.fill(); x.restore();
+      x.save(); x.beginPath(); x.arc(cx, cy, d / 2 - u * .004, 0, Math.PI * 2); x.clip();
+      if (lg) { const k = Math.min((d * .96) / lg.width, (d * .96) / lg.height), lw = lg.width * k, lh = lg.height * k; x.drawImage(lg, cx - lw / 2, cy - lh / 2, lw, lh); }
+      else { // بلا شعار: اسم الوكالة داخل الدائرة
+        const nm = String(B.name || '').trim().slice(0, 24), wd = nm.split(/\s+/), ln = wd.length > 1 ? [wd.slice(0, Math.ceil(wd.length / 2)).join(' '), wd.slice(Math.ceil(wd.length / 2)).join(' ')] : [nm];
+        x.fillStyle = '#c8102e'; x.textAlign = 'center'; x.textBaseline = 'middle';
+        let fs = d * .3; x.font = `900 ${fs}px Tajawal, sans-serif`; const mw = Math.max(...ln.map(l => x.measureText(l).width)); if (mw > d * .8) fs *= d * .8 / mw;
+        x.font = `900 ${Math.round(fs)}px Tajawal, sans-serif`; ln.forEach((l, i) => x.fillText(l, cx, cy + (i - (ln.length - 1) / 2) * fs * 1.1));
+      }
+      x.restore();
+      const ph = offPhones();
+      if (ph) {
+        const fs = Math.round(u * .036); x.font = `800 ${fs}px Tajawal, sans-serif`; x.direction = 'ltr'; x.textBaseline = 'middle';
+        const t = '☎ ' + ph, tw = x.measureText(t).width, px = m + d + m * .6, py = cy, pad = fs * .45;
+        x.fillStyle = 'rgba(0,0,0,.55)'; x.beginPath();
+        if (x.roundRect) x.roundRect(px - pad, py - fs * .75, tw + pad * 2, fs * 1.5, fs * .4); else x.rect(px - pad, py - fs * .75, tw + pad * 2, fs * 1.5);
+        x.fill(); x.fillStyle = '#fff'; x.fillText(t, px, py);
+      }
       return await new Promise(r => c.toBlob(b => r(b || blob), 'image/jpeg', .9));
     } catch (e) { return blob; }
   }
@@ -7557,7 +7587,10 @@
       const Sy = window.W777_SYNC, me = Sy.uid();
       const prevOwner = await DB.getMeta('catalog_uid', null);
       const known = prevOwner === me ? await DB.getMeta('catalog_hash', {}) : {};
-      const up = prevOwner === me ? await DB.getMeta('catalog_up', {}) : {};
+      // مرة وحدة: كنعاودو نرفعو صور الكتالوج القديمة باش ياخدو الشعار والأرقام
+      const fresh = !(await DB.getMeta('catalog_wm_v2', false));
+      const up = prevOwner === me && !fresh ? await DB.getMeta('catalog_up', {}) : {};
+      if (fresh) await DB.setMeta('catalog_wm_v2', true);
       const list = S.props.filter(p => p.catalog && p.status === 'available');
       // معلومات المكتب
       const ow = { owner: me, name: offName().slice(0, 120), phone: (offPhone() || '').slice(0, 30) || null, city: S.settings.officeCity || null, logo: S.agency && S.agency.logo ? brandUrl(S.agency.logo) : null };
@@ -7575,7 +7608,7 @@
           if (up[m.id]) { paths.push(up[m.id]); continue; }
           const blob = await getBlob(m.id, false) || await getBlob(m.id, true); if (!blob) continue;
           const small = (await compressImage(blob, 1280, 0.8)).blob;
-          const wm = await watermark(small, true);
+          const wm = m.wm ? small : await watermark(small, true);
           const path = `${me}/${p.id}/${m.id}.jpg`;
           const r = await Sy.request(`/storage/v1/object/w777-catalog/${path}`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: wm });
           if (!r.ok) continue;
