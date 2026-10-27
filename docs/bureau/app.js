@@ -772,9 +772,9 @@
   const HUB = [
     ['agencies', '🏢', 'الوكالات العقارية', '700 داخل · 77 خارج'], ['brokers', '🤝', 'الوسطاء', '777 وسيط'],
     ['contractors', '🏗️', 'شركات المقاولات', '777 شركة'], ['finishing', '🎨', 'شركات التشطيب', '777 شركة'],
-    ['projects', '🚀', 'مشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات', 'معارض وصالونات'],
-    ['stays', '🏖️', 'الحجز', 'مفروش وعطل'], ['news', '📰', 'الأخبار', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
-    ['disputes', '⚖️', 'النزاعات', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
+    ['projects', '🚀', 'عرض المشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات العقارية', 'معارض وصالونات'],
+    ['stays', '🏖️', 'الحجز الفوري', 'مفروش وعطل'], ['news', '📰', 'الأخبار العقارية', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
+    ['disputes', '⚖️', 'نزاعات و حلول', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
     ['associations', '🏘️', 'الجمعيات السكنية', '777 جمعية'],
     ['terms', '📜', 'قانون التطبيق', 'شروط الاشتراك'],
   ];
@@ -1411,9 +1411,9 @@
           <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
           <button class="btn gold" id="p-pres">📺 عرض للزبون</button>
           <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
-          <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إصنع إعلانا</a>
+          <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
           ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
-          ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 القرض</a>` : ''}
+          ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب التمويل</a>` : ''}
           ${EMBED ? '' : `<button class="btn" onclick="window.print()">${ic('print', 18)} طباعة / PDF</button>`}
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
         </div>
@@ -3192,7 +3192,7 @@
      ============================================================ */
   const OWN_STEPS = [
     { t: 'الميزانية والتمويل', ic: '💰', d: ['حدد الميزانية: الثمن + المصاريف (حوالي 7% إلى 8% من الثمن، شوف الحاسبة لتحت).', 'إلا غادي تاخد قرض: سول البنك على القدرة الاقتراضية (القسط ما يفوتش تقريبا 40% من الدخل) وخد «موافقة مبدئية».', 'الدعم المباشر للسكن (للمغاربة اللي ما عندهمش سكن): 100 000 درهم إلا كان الثمن ≤ 300 000 درهم، و70 000 درهم من 300 000 حتى 700 000 درهم — عبر منصة الدعم الرسمية.'] },
-    { t: 'البحث والمعاينة', ic: '🔎', d: ['زور العقار مزيان: الحالة، الرطوبة، الكهرباء والماء، الواجهة، الجيران، السانديك.', 'قارن الثمن مع السوق (زر «📊 مقارنة الثمن» فالتطبيق).', 'تأكد من المساحة الحقيقية مقارنة مع اللي مكتوب فالرسم العقاري.'] },
+    { t: 'البحث والمعاينة', ic: '🔎', d: ['زور العقار مزيان: الحالة، الرطوبة، الكهرباء والماء، الواجهة، الجيران، السانديك.', 'قارن الثمن مع السوق (زر «📊 مقارنة الأسعار» فالتطبيق).', 'تأكد من المساحة الحقيقية مقارنة مع اللي مكتوب فالرسم العقاري.'] },
     { t: 'التحقق القانوني من العقار', ic: '⚖️', d: ['شهادة الملكية (Certificat de propriété) من الوكالة الوطنية للمحافظة العقارية ANCFCC: كتبين المالك الحقيقي والرهون والحجوزات والتقييدات الاحتياطية — 100 درهم، كتطلب أونلاين.', 'واش العقار محفّظ (عندو رسم عقاري) ولا غير محفّظ (ملكية / عقد عدلي)؟ إلا ما كانش محفّظ، شوف «مسطرة التحفيظ» لتحت.', 'المذكرة المعلوماتية التعميرية (Note de renseignements) من الوكالة الحضرية / الجماعة: واش كاين شي تصفيف ولا طريق ولا منع البناء.', 'رخصة السكن / شهادة المطابقة، والتصاميم المصادق عليها (خاصة للفيلات والديور).', 'فالشقق: نظام الملكية المشتركة وواش البائع خالص واجبات السانديك.'] },
     { t: 'الوعد بالبيع + العربون', ic: '🤝', d: ['كيتوقع «الوعد بالبيع» (Compromis) عند الموثق ولا المحامي ولا العدول، فيه الثمن، الآجال، والشروط (بحال الحصول على القرض).', 'العربون عادة بين 10% و20% من الثمن، ويتخلص بطريقة كتبان (شيك ولا تحويل).', 'تقدر تستعمل النموذج فـ «📄 طباعة العقود» ← «عقد الوعد بالبيع».'] },
     { t: 'القرض البنكي (إلا كان)', ic: '🏦', d: ['البنك كيعطي «عرض القرض»، وكيطلب تأمين على الحياة وتأمين على العقار.', 'البنك كيسجل رهن رسمي من الدرجة الأولى على الرسم العقاري (عند ANCFCC).', 'الموثق كيستقبل مبلغ القرض مباشرة من البنك.'] },
@@ -3510,7 +3510,7 @@
   function viewEstimate(query) {
     const city = query.city || S.settings.officeCity || 'مكناس';
     main().innerHTML = `
-      <div class="page-head"><h1>📊 مقارنة الثمن مع السوق</h1></div>
+      <div class="page-head"><h1>📊 مقارنة الأسعار</h1></div>
       <div class="card card-pad form">
         <form id="ef" class="form-grid">
           ${fSelect('city', 'المدينة', [], city, { groups: cityGroups(), noEmpty: true })}
@@ -3972,14 +3972,14 @@
         <div class="st-price">${nm(s.price_night)} درهم <small>/ الليلة</small></div></div></a>`;
   }
   async function viewStays(parts, query) {
-    if (!await netGate('الحجز', '🏖️')) return;
+    if (!await netGate('الحجز الفوري', '🏖️')) return;
     const admin = S.role === 'admin';
     const tabs = [['', '🏖️ تصفح واحجز'], ['mine', '🏠 عقاراتي وحجوزاتي'], ['new', '➕ زيد عقار للحجز']];
     if (admin) tabs.push(['bookings', '📒 إدارة الحجوزات'], ['review', '🛡️ المراجعة']);
     if (parts[1] === 'v') return viewStay(parts[2]);
     const tab = pickTab(tabs, parts[1] || '', '');
     const pub = location.href.split('#')[0].replace(/index\.html$/, '') + 'stays.html';
-    const head = secHead('🏖️', 'الحجز — شقق مفروشة وعقارات العطل', 'حجز بحال Airbnb، والأمان عبر مكتب الوسيط 777: المبلغ كيبقى عند المكتب حتى يوصل الزبون ويكون راضي.', tabs, tab, 'stays')
+    const head = secHead('🏖️', 'الحجز الفوري — شقق مفروشة وعقارات العطل', 'حجز بحال Airbnb، والأمان عبر مكتب الوسيط 777: المبلغ كيبقى عند المكتب حتى يوصل الزبون ويكون راضي.', tabs, tab, 'stays')
       + `<div class="btn-row" style="margin:-4px 0 12px"><button class="btn sm" id="st-link">🔗 رابط الحجز للزبناء</button>
          <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('🏖️ احجز شقة مفروشة ولا عقار للعطلة مع مكتب الوسيط 777 — الأداء آمن عبر المكتب:\n' + pub)}">${ic('wa', 15)} شارك الرابط</a></div>`;
     const bindLink = () => { const b = $('#st-link'); if (b) b.onclick = async () => { try { await navigator.clipboard.writeText(pub); toast('تنسخ الرابط ✓'); } catch (e) { modal(`<h3>رابط الحجز</h3><input value="${esc(pub)}" style="width:100%" dir="ltr" readonly>`); } }; };
@@ -4482,7 +4482,7 @@
   // الرئيسية (لفوق): غير جوج أزرار — «إصنع إعلانا» (على اليمين) و«بحث» ← صفحة البحث بالفلتر الكامل
   function homeSearch() {
     return `<div class="card hs-card hs-two">
-      <a class="btn ad-cta" href="#/ad-maker">✨ إصنع إعلانا</a>
+      <a class="btn ad-cta" href="#/ad-maker">✨ إعلانات فورية</a>
       <a class="btn gold" href="#/search?scope=mine">${ic('search', 18)} بحث</a>
     </div>`;
   }
@@ -5673,12 +5673,12 @@
   }
   const pjCount = r => { const f = r.files || []; return ['photo', 'pdf', 'video'].map(t => [t, f.filter(x => x.t === t).length]).filter(x => x[1]); };
   async function viewProjects(parts, query) {
-    if (!await netGate('المشاريع', '🚀')) return;
+    if (!await netGate('عرض المشاريع', '🚀')) return;
     const admin = S.role === 'admin', me = window.W777_SYNC.uid();
     const tabs = [['', '🚀 المشاريع المنشورة'], ['mine', '📁 مشاريعي'], ['new', '➕ نشر مشروع']];
     if (admin) tabs.push(['review', '🛡️ المراجعة']);
     const tab = pickTab(tabs, parts[1] || '', '');
-    const head = secHead('🚀', 'المشاريع والتمويل', 'نشر المشروع العقاري ديالك باش تلقى المموّل ولا الشريك. كل مشروع كيبان للجميع غير من بعد موافقة مكتب الوسيط 777.', tabs, tab, 'projects');
+    const head = secHead('🚀', 'عرض المشاريع والتمويل', 'نشر المشروع العقاري ديالك باش تلقى المموّل ولا الشريك. كل مشروع كيبان للجميع غير من بعد موافقة مكتب الوسيط 777.', tabs, tab, 'projects');
     if (tab === 'new') return pjForm(head, query.id);
     let rows;
     try {
@@ -5807,7 +5807,7 @@
      ============================================================ */
   const EV_KINDS = ['معرض', 'صالون', 'مؤتمر', 'ملتقى', 'تكوين', 'أخرى'];
   async function viewEvents(parts) {
-    if (!await netGate('المناسبات', '🎪')) return;
+    if (!await netGate('المناسبات العقارية', '🎪')) return;
     const admin = S.role === 'admin';
     const tabs = [['', '📅 القادمة'], ['past', '🕘 اللي فاتت']];
     const tab = pickTab(tabs, parts[1] || '', '');
@@ -5866,7 +5866,7 @@
      الأخبار العقارية: المغرب + العالم (كتتجدد أوتوماتيكيا كل نهار)
      ============================================================ */
   async function viewNews(parts) {
-    if (!await netGate('الأخبار', '📰')) return;
+    if (!await netGate('الأخبار العقارية', '📰')) return;
     const tabs = [['', '🇲🇦 أخبار المغرب'], ['world', '🌍 أخبار العالم']];
     const tab = pickTab(tabs, parts[1] || '', '');
     const head = secHead('📰', 'الأخبار العقارية', 'آخر وأهم أخبار العقار فالمغرب وفالعالم — كتتجدد أوتوماتيكيا كل نهار من المصادر الإخبارية.', tabs, tab, 'news');
@@ -6077,12 +6077,12 @@
     agSend(text);
   };
   async function viewDisputes(parts) {
-    if (!await netGate('النزاعات', '⚖️')) return;
+    if (!await netGate('نزاعات و حلول', '⚖️')) return;
     const admin = S.role === 'admin', me = window.W777_SYNC.uid();
     const tabs = [['', '⚖️ مشكل جديد'], ['mine', '📁 ملفاتي'], ['guide', '📚 الدليل القانوني']];
     if (admin) tabs.push(['all', '🛡️ كل الملفات']);
     const tab = pickTab(tabs, parts[1] || '', '');
-    const head = secHead('⚖️', 'النزاعات العقارية', 'كتب المشكل العقاري ديالك وخود توجيه قانوني أولي فالحين. والنزاعات المستعصية كيحوّلها مكتب الوسيط 777 للمختص: محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري.', tabs, tab, 'disputes');
+    const head = secHead('⚖️', 'نزاعات و حلول', 'كتب المشكل العقاري ديالك وخود توجيه قانوني أولي فالحين. والنزاعات المستعصية كيحوّلها مكتب الوسيط 777 للمختص: محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري.', tabs, tab, 'disputes');
     if (tab === 'guide') {
       main().innerHTML = head + `<div class="law-grid">${LAW.filter(L => L.id !== 'other').map(lawCard).join('')}</div>`;
       return;
@@ -6941,7 +6941,7 @@
     const p = query.p ? S.props.find(x => x.id === query.p) : null;
     studioProp = p; studioSent = false;
     main().innerHTML = `
-      <div class="page-head studio-head"><div><h1>✨ إصنع إعلانا</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(المعلومات والصور كيتعمرو بوحدهم)</span>` : 'ختار عقار باش تتعمر المعلومات والصور بوحدهم، ولا عمّرهم بيدك'}</div></div>
+      <div class="page-head studio-head"><div><h1>✨ إعلانات فورية</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(المعلومات والصور كيتعمرو بوحدهم)</span>` : 'ختار عقار باش تتعمر المعلومات والصور بوحدهم، ولا عمّرهم بيدك'}</div></div>
         <div class="btn-row"><button class="btn sm" id="st-pick">🏠 ${p ? 'بدّل العقار' : 'ختار عقار'}</button><a class="btn sm" href="${STUDIO_URL}" target="_blank" rel="noopener">↗ فتح فصفحة جديدة</a></div></div>
       <iframe id="studio-frame" class="studio-frame" src="${STUDIO_URL}?embed=w777" title="صانع الإعلانات" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
     $('#st-pick').onclick = () => studioPick();
@@ -6962,7 +6962,7 @@
   function viewLoan(query) {
     const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };
     main().innerHTML = `
-      <div class="page-head"><div><h1>🏦 حاسبة القرض البنكي</h1><div class="sub">القسط الشهري، الفوائد، والدخل اللازم باش البنك يوافق</div></div></div>
+      <div class="page-head"><div><h1>🏦 حساب التمويل</h1><div class="sub">القسط الشهري، الفوائد، والدخل اللازم باش البنك يوافق</div></div></div>
       <div class="detail-grid">
         <div class="card card-pad form"><form id="lf" class="form-grid" onsubmit="return false">
           ${fInput('price', 'ثمن العقار (درهم)', pre.price, { money: true, cls: 'full' })}
@@ -7258,7 +7258,7 @@
   /* ---------- 🗺️ الخريطة ---------- */
   async function viewMap(query) {
     const trx = query.t || '';
-    main().innerHTML = `<div class="page-head"><div><h1>🗺️ خريطة العقارات</h1><div class="sub" id="map-sub"></div></div>
+    main().innerHTML = `<div class="page-head"><div><h1>🗺️ الخريطة العقارية</h1><div class="sub" id="map-sub"></div></div>
       <div class="chips">${[['', 'الكل'], ['sale', 'بيع'], ['rent', 'كراء']].map(([v, l]) => `<a class="chip${v === trx ? ' on' : ''}" href="#/map${v ? '?t=' + v : ''}">${l}</a>`).join('')}</div></div>
       <div class="card map-card"><div id="pmap"></div></div><div id="map-miss" style="margin-top:12px"></div>`;
     loadCss('vendor/leaflet/leaflet.css');
@@ -7498,7 +7498,7 @@
     const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
     const logged = new Set(all.map(x => x.propId).filter(Boolean));
     const pend = S.props.filter(p => ['sold', 'rented'].includes(p.status) && p.commission && !logged.has(p.id)).slice(0, 10);
-    main().innerHTML = `<div class="page-head"><div><h1>💹 المالية</h1><div class="sub">الدخل، المصاريف والربح ديال المكتب</div></div>
+    main().innerHTML = `<div class="page-head"><div><h1>💹 المحفظة المالية</h1><div class="sub">الدخل، المصاريف والربح ديال المكتب</div></div>
       <div class="btn-row"><a class="btn sm" href="#/finance?m=${addMonths(k, -1)}">→</a><b style="align-self:center">${ymAr(k)}</b><a class="btn sm" href="#/finance?m=${addMonths(k, 1)}">←</a>
       <button class="btn gold" id="fn-in">${ic('plus', 16)} دخل</button><button class="btn" id="fn-out">${ic('plus', 16)} مصروف</button><a class="btn" href="#/report?m=${k}">📄 التقرير الشهري</a></div></div>
       <div class="stats"><div class="card stat"><div class="ic">💰</div><div class="v" style="font-size:20px">${M0(cur.inn)}</div><div class="l">دخل ${ymAr(k)}</div></div>
@@ -7543,7 +7543,7 @@
   function reportBody(k, R) {
     return `<div class="kv"><div><small>عقارات جديدة</small><b>${R.added.length}</b></div><div><small>تباعو / تكراو</small><b>${R.closed.length}</b></div><div><small>طلبات جديدة</small><b>${R.reqs.length}</b></div>
       <div><small>المواعيد</small><b>${R.appts.length} (${R.appts.filter(a => a.status === 'done').length} تمّت)</b></div><div><small>الزيارات المسجلة</small><b>${R.visits.length}</b></div><div><small>العقارات المعروضة دابا</small><b>${S.props.filter(p => p.status === 'available').length}</b></div></div>
-      <h2>💹 المالية</h2><div class="kv"><div><small>الدخل</small><b>${M0(R.fin.inn)} د</b></div><div><small>المصاريف</small><b>${M0(R.fin.out)} د</b></div><div><small>الربح الصافي</small><b>${M0(R.fin.net)} د</b></div></div>
+      <h2>💹 المحفظة المالية</h2><div class="kv"><div><small>الدخل</small><b>${M0(R.fin.inn)} د</b></div><div><small>المصاريف</small><b>${M0(R.fin.out)} د</b></div><div><small>الربح الصافي</small><b>${M0(R.fin.net)} د</b></div></div>
       <h2>🔑 الكراء</h2><div class="kv"><div><small>عقود جارية</small><b>${R.ls.length}</b></div><div><small>تخلص هاد الشهر</small><b>${M0(R.rentGot)} د</b></div><div><small>متأخرين</small><b>${R.rentLate.length}</b></div></div>
       ${R.closed.length ? `<h2>✅ العمليات المنجزة</h2><table><tr><th>المرجع</th><th>العقار</th><th>الحالة</th><th>الثمن</th></tr>${R.closed.map(p => `<tr><td>${esc(p.ref)}</td><td>${esc(p.title || typeAr(p.type))}</td><td>${esc((PSTATUS[p.status] || {}).ar || '')}</td><td>${esc(priceText(p))}</td></tr>`).join('')}</table>` : ''}
       ${R.added.length ? `<h2>🏠 العقارات الجديدة (${R.added.length})</h2><table><tr><th>المرجع</th><th>العقار</th><th>المكان</th><th>الثمن</th></tr>${R.added.slice(0, 40).map(p => `<tr><td>${esc(p.ref)}</td><td>${esc(p.title || typeAr(p.type))}</td><td>${esc([p.district, p.city].filter(Boolean).join('، '))}</td><td>${esc(priceText(p))}</td></tr>`).join('')}</table>` : ''}
