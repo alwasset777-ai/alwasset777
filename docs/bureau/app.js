@@ -794,7 +794,7 @@
     const M = {
       add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=2" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
-        hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubEmo('#/ad-maker', '✨', 'إعلانات فورية', 'منشورات إعلانية'),
+        hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubImg('projects', 'عرض المشاريع'), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubEmo('#/matching', '🎯', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
         hubEmo('#/map', '🗺️', 'الخريطة العقارية', 'العقارات'), hubEmo('#/finance', '💹', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
         hubImg('disputes', 'نزاعات و حلول'), hubImg('donations', 'الهبة'), hubImg('terms', 'قانون التطبيق'), hubEmo('#/loan', '🏦', 'حساب التمويل', 'القسط الشهري')]],
