@@ -200,7 +200,7 @@
     dropMatches();
     S.reqs = reqs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     S.custom = custom || {};
-    S.settings = Object.assign({ officeName: 'مكتب الوسيط 777 للخدمات العقارية', officePhone: '0777777959', officeCity: 'مكناس' }, settings || {});
+    S.settings = Object.assign({ officeName: 'مكتب الوسيط 777 للخدمات العقارية', officePhone: '0777777959', officePhone2: '0777777848', officeCity: 'مكناس' }, settings || {});
   }
 
   function districtsOf(city) {
@@ -1375,7 +1375,7 @@
     if (p.titleStatus) L.push('📄 ' + p.titleStatus);
     const pr = p.priceMax || p.priceMin;
     if (pr) L.push(`💰 الثمن: ${fmt(pr)} ${p.priceUnit || 'درهم'}${!isRent(p.transaction) && millions(pr) ? ' (' + millions(pr) + ')' : ''}${p.negotiable ? ' — قابل للتفاوض' : ''}`);
-    L.push(`📞 للتواصل: ${S.settings.officeName}${S.settings.officePhone ? ' — ' + S.settings.officePhone : ''}`);
+    L.push(`📞 للتواصل: ${S.settings.officeName}${S.settings.officePhone ? ' — ' + [S.settings.officePhone, S.settings.officePhone2].filter(Boolean).join(' / ') : ''}`);
     if (p.ref) L.push(`🔖 المرجع: ${p.ref}`);
     return L.join('\n');
   }
@@ -1956,6 +1956,7 @@
           <form id="sform" class="form-grid">
             ${fInput('officeName', 'اسم المكتب', S.settings.officeName)}
             ${fInput('officePhone', 'هاتف المكتب (يظهر في الإعلانات)', S.settings.officePhone, { type: 'tel' })}
+            ${fInput('officePhone2', 'هاتف المكتب الثاني', S.settings.officePhone2, { type: 'tel' })}
             ${fSelect('officeCity', 'المدينة الافتراضية', [], S.settings.officeCity, { groups: cityGroups() })}
             <div class="field full"><label class="chk"><input type="checkbox" name="watermark" ${S.settings.watermark !== false ? 'checked' : ''}> 💧 علامة مائية (الشعار + الهاتف) على الصور اللي كتشاركها</label></div>
             <div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">${ic('check', 18)} حفظ</button></div>
@@ -4563,7 +4564,8 @@
      شبكة 777: الوكالات (700 داخل المغرب + 77 خارج المغرب)، الوسطاء،
      شركات المقاولات، شركات التشطيب — 777 حساب لكل خانة، بنفس الطريقة
      ============================================================ */
-  const W777_OFFICE = '0777777959';
+  const W777_OFFICE = '0777777959', W777_OFFICE2 = '0777777848';
+  const officeTels = () => [W777_OFFICE, W777_OFFICE2].map(n => `<a href="${telLink(n)}" dir="ltr">${n}</a>`).join(' · ');
   const KINDS = {
     agency: { ar: 'الوكالات العقارية', one: 'وكالة', ic: '🏢', route: 'agencies', def: /^Agence \d+$/,
       sv: ['بيع', 'كراء', 'تسيير الأملاك', 'كراء موسمي', 'عقارات فاخرة', 'استثمار', 'أراضي', 'محلات تجارية'] },
@@ -4639,7 +4641,7 @@
     await refreshRole(force || !S.role || S.role === 'solo');
     if (!inNetwork()) {
       main().innerHTML = `<div class="card empty"><div class="big">🔒</div><h3>هاد الحساب ماشي مفعل فشبكة الوسيط 777</h3>
-        <p>تواصل مع مكتب الوسيط 777: <a href="${telLink(W777_OFFICE)}" dir="ltr">${W777_OFFICE}</a></p></div>`;
+        <p>تواصل مع مكتب الوسيط 777: ${officeTels()}</p></div>`;
       return false;
     }
     if (S.role === 'agency' && S.agency && !S.agency.terms_at) { termsGate(); return false; }
@@ -5554,6 +5556,7 @@
           <button class="btn" id="tr-report">📣 بلّغ عن عملية</button>
           <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/212777777959">${ic('wa', 16)} مكتب الوسيط 777</a>
           <a class="btn" href="${telLink(W777_OFFICE)}" dir="ltr">${ic('phone', 16)} ${W777_OFFICE}</a>
+          <a class="btn" href="${telLink(W777_OFFICE2)}" dir="ltr">${ic('phone', 16)} ${W777_OFFICE2}</a>
         </div>
       </div>
       ${groupsCard(true)}`;
@@ -6848,6 +6851,8 @@
   const loadCss = href => { if (!$(`link[href="${href}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); } };
   const offName = () => myAgencyName() || S.settings.officeName;
   const offPhone = () => myAgencyPhone() || S.settings.officePhone || '';
+  // للعرض: المكتب كيبان بجوج أرقام (الوكالات بالرقم ديالها)
+  const offPhones = () => S.role === 'agency' ? offPhone() : [offPhone(), S.settings.officePhone2].filter(Boolean).join(' / ');
   // أهم المواصفات (المساحة + الغرف…) لنص قصير
   function propSpecs(p, max = 4) {
     const s = p.specs || {}, out = [];
@@ -7013,7 +7018,7 @@
       // الشعار + الهاتف فالركن
       const lg = await logoImg(), m = Math.round(u * .03);
       if (lg) { const lw = Math.round(u * .2), lh = Math.round(lw * lg.height / lg.width); x.globalAlpha = .92; x.drawImage(lg, m, h - lh - m, lw, lh); x.globalAlpha = 1;
-        const ph = offPhone(); if (ph) { x.font = `800 ${Math.round(u * .035)}px Tajawal, sans-serif`; x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = u * .01; x.textBaseline = 'bottom'; x.direction = 'ltr'; x.fillText('☎ ' + ph, m + lw + m * .6, h - m * 1.2); } }
+        const ph = offPhones(); if (ph) { x.font = `800 ${Math.round(u * .035)}px Tajawal, sans-serif`; x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = u * .01; x.textBaseline = 'bottom'; x.direction = 'ltr'; x.fillText('☎ ' + ph, m + lw + m * .6, h - m * 1.2); } }
       return await new Promise(r => c.toBlob(b => r(b || blob), 'image/jpeg', .9));
     } catch (e) { return blob; }
   }
@@ -7036,7 +7041,7 @@
         <div class="pres-loc">📍 ${esc([p.district, p.city].filter(Boolean).join('، '))}</div>
         <div class="pres-specs">${specs.map(([e, t]) => `<span>${e} ${esc(t)}</span>`).join('')}</div>
         ${(p.features || []).length ? `<div class="pres-feat">${p.features.slice(0, 8).map(f => `<span>✓ ${esc(f)}</span>`).join('')}</div>` : ''}
-        <div class="pres-office">${esc(offName())} · <span dir="ltr">${esc(offPhone())}</span></div>
+        <div class="pres-office">${esc(offName())} · <span dir="ltr">${esc(offPhones())}</span></div>
       </div>
       <button class="pres-nav prev" aria-label="السابق">‹</button><button class="pres-nav next" aria-label="التالي">›</button>
       <div class="pres-dots">${photos.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>`;
@@ -7138,8 +7143,10 @@
     for (let r = 0; r < qn; r++) for (let k = 0; k < qn; k++) if (q.isDark(r, k)) x.fillRect(qx + k * cell, qy + r * cell, Math.ceil(cell), Math.ceil(cell));
     x.fillStyle = '#fff'; x.font = '800 40px Tajawal, sans-serif';
     x.fillText(wrapText(x, offName(), W - 330, 1)[0], W - 50, fy + 70);
-    x.font = '900 58px Tajawal, sans-serif'; x.direction = 'ltr'; x.textAlign = 'right';
-    x.fillText('☎ ' + offPhone(), W - 50, fy + 140);
+    x.direction = 'ltr'; x.textAlign = 'right';
+    const tel = '☎ ' + offPhones(); let fs = 58; x.font = `900 ${fs}px Tajawal, sans-serif`;
+    while (x.measureText(tel).width > W - 380 && fs > 30) { fs -= 2; x.font = `900 ${fs}px Tajawal, sans-serif`; } // جوج أرقام: كنصغرو الخط باش ما يغطيش QR
+    x.fillText(tel, W - 50, fy + 140);
     x.direction = 'rtl'; x.font = '500 26px Tajawal, sans-serif'; x.fillStyle = 'rgba(255,255,255,.85)';
     x.fillText((p.catalog && syOn() ? 'امسح الرمز لمشاهدة الصور والتفاصيل' : 'امسح الرمز للتواصل عبر واتساب') + ' · المرجع ' + (p.ref || ''), W - 50, fy + 185);
     return c;
@@ -7205,7 +7212,7 @@
       .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kv div{border:1px solid #ddd;border-radius:8px;padding:8px}.kv small{display:block;color:#666}.kv b{font-size:17px}
       .sig{display:flex;justify-content:space-between;margin-top:50px}.sig div{width:45%;border-top:1px solid #111;padding-top:6px;text-align:center}.muted{color:#666;font-size:12px}
       @page{margin:14mm}</style></head><body>
-      <div class="hd"><div><h1>${esc(title)}</h1><div class="muted">${esc(offName())} — ${esc(offPhone())}</div></div><img src="${LOGO}" alt=""></div>${body}</body></html>`);
+      <div class="hd"><div><h1>${esc(title)}</h1><div class="muted">${esc(offName())} — ${esc(offPhones())}</div></div><img src="${LOGO}" alt=""></div>${body}</body></html>`);
     f.contentDocument.close();
     const go = () => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { toast('تعذرت الطباعة'); } setTimeout(() => f.remove(), 60000); };
     const fonts = f.contentDocument.fonts;
