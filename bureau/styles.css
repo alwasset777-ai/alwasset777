@@ -1367,6 +1367,10 @@ body.st-open { overflow: hidden; }
 @keyframes hub-coin { 0% { transform: perspective(520px) rotateY(0deg); } 50% { transform: perspective(520px) rotateY(90deg); } 50.01% { transform: perspective(520px) rotateY(-90deg); } 100% { transform: perspective(520px) rotateY(0deg); } }
 .hub-spin .hub-tile .hi { animation: hub-coin 3.5s linear infinite; animation-delay: var(--spin-d, 0s); will-change: transform; transform-style: flat; -webkit-font-smoothing: antialiased; } /* كاملين بنفس الدوران فنفس الوقت */
 @media (prefers-reduced-motion: reduce) { .hub-spin .hub-tile .hi { animation: none; } }
+/* كتوقف مقابلة ملي كتحط عليها الفأرة (الحاسوب) ولا كتلمسها (التيليفون) */
+/* !important كيغلب الحركة بلا ما يوقفها: الدوران كيبقى خدام فالخفاء، وملي كتحيد الفأرة كترجع الدائرة فنفس اللحظة مع الباقين */
+@media (hover: hover) { .hub-spin .hub-tile:hover .hi { transform: perspective(520px) rotateY(0deg) translateY(-4px) !important; } }
+.hub-spin .hub-tile.hold .hi { transform: perspective(520px) rotateY(0deg) scale(.96) !important; }
 /* «شبكة الوسيط 777»: الكتابة تحت الدوائر كبيرة وواضحة (×3) — النافذة كتوسع وكتولي 3 أعمدة (2 فالتيليفون) */
 .modal:has(.hub-big) { max-width: min(1180px, 96vw); width: 96vw; }
 .hub-menu.hub-big { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 30px 14px; }
