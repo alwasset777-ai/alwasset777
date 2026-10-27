@@ -1363,10 +1363,10 @@ body.st-open { overflow: hidden; }
 /* التيليفون: بلا أيقونة البحث فالشريط الفوقاني (البحث كاين فالرئيسية وفـ +) */
 @media (max-width: 640px) { .topbar .search-wrap { display: none; } }
 
-/* قائمة «إضافة»: الدوائر كتدور بحال قطعة نقدية (الوجه ديما مقابل، بلا انعكاس) */
+/* قوائم «إضافة» و«شبكة الوسيط 777»: الدوائر كتدور بحال قطعة نقدية (الوجه ديما مقابل، بلا انعكاس) */
 @keyframes hub-coin { 0% { transform: perspective(520px) rotateY(0deg); } 50% { transform: perspective(520px) rotateY(90deg); } 50.01% { transform: perspective(520px) rotateY(-90deg); } 100% { transform: perspective(520px) rotateY(0deg); } }
 .hub-spin .hub-tile .hi { animation: hub-coin 4s linear infinite; }
-.hub-spin .hub-tile:nth-child(2) .hi { animation-delay: -1.33s; }
-.hub-spin .hub-tile:nth-child(3) .hi { animation-delay: -2.66s; }
+.hub-spin .hub-tile:nth-child(3n+2) .hi { animation-delay: -1.33s; }
+.hub-spin .hub-tile:nth-child(3n) .hi { animation-delay: -2.66s; }
 .hub-spin .hub-tile:hover .hi { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .hub-spin .hub-tile .hi { animation: none; } }

@@ -797,7 +797,7 @@
       net: ['✦ شبكة الوسيط 777', HUB_NET.map(hubImg)],
     }[kind];
     if (!M) return;
-    modal(`<h3>${M[0]}</h3><div class="hub hub-menu${kind === 'add' ? ' hub-spin' : ''}">${M[1].join('')}</div>`, (box, close) => {
+    modal(`<h3>${M[0]}</h3><div class="hub hub-menu${kind === 'add' || kind === 'net' ? ' hub-spin' : ''}">${M[1].join('')}</div>`, (box, close) => {
       $$('.hub-tile', box).forEach(a => a.addEventListener('click', () => close()));
     });
   }
