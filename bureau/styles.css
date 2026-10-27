@@ -1371,10 +1371,10 @@ body.st-open { overflow: hidden; }
 /* !important كيغلب الحركة بلا ما يوقفها: الدوران كيبقى خدام فالخفاء، وملي كتحيد الفأرة كترجع الدائرة فنفس اللحظة مع الباقين */
 @media (hover: hover) { .hub-spin .hub-tile:hover .hi { transform: perspective(520px) rotateY(0deg) translateY(-4px) !important; } }
 .hub-spin .hub-tile.hold .hi { transform: perspective(520px) rotateY(0deg) scale(.96) !important; }
-/* «شبكة الوسيط 777»: الكتابة تحت الدوائر كبيرة وواضحة (×3) — النافذة كتوسع وكتولي 3 أعمدة (2 فالتيليفون) */
+/* «شبكة الوسيط 777»: الكتابة تحت الدوائر كبيرة وواضحة (×2) — النافذة كتوسع وكتولي 3 أعمدة (2 فالتيليفون) */
 .modal:has(.hub-big) { max-width: min(1180px, 96vw); width: 96vw; }
 .hub-menu.hub-big { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 30px 14px; }
 @media (max-width: 639px) { .hub-menu.hub-big { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
-.hub-big .hub-tile b { font-size: 39px; line-height: 1.15; font-weight: 900; overflow-wrap: anywhere; }
-.hub-big .hub-tile small { font-size: 31px; line-height: 1.2; color: #333; overflow-wrap: anywhere; }
-@media (max-width: 639px) { .hub-big .hub-tile b { font-size: 26px; overflow-wrap: normal; } .hub-big .hub-tile small { font-size: 20px; } }
+.hub-big .hub-tile b { font-size: 26px; line-height: 1.15; font-weight: 900; overflow-wrap: anywhere; }
+.hub-big .hub-tile small { font-size: 21px; line-height: 1.2; color: #333; overflow-wrap: anywhere; }
+@media (max-width: 639px) { .hub-big .hub-tile b { font-size: 18px; overflow-wrap: normal; } .hub-big .hub-tile small { font-size: 14px; } }
