@@ -749,7 +749,21 @@
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
     if (a !== 'properties') $('#q').value = '';
+    placeLang();
     lvPage();
+  }
+  // زر اللغة: فالرئيسية كيتحط فشريط «دول المشتركين»، وفالصفحات الأخرى كيرجع للشريط الفوقاني
+  const LANG_HOME = document.createComment('lang');
+  let langBtn = null; // كنحتفظو بالزر حتى ملي كتتبدل الصفحة (innerHTML) باش ما يضيعش
+  function placeLang() {
+    const b = langBtn || (langBtn = $('#btn-lang')); if (!b) return;
+    if (!LANG_HOME.parentNode) b.before(LANG_HOME);
+    const fl = $('#home-flags');
+    if (fl) {
+      if (!fl.children.length) fl.innerHTML = '<b class="fl-title">🌐 لغة التطبيق</b><div class="fl-view"></div>';
+      fl.classList.remove('hidden'); fl.classList.add('has-lang');
+      if (b.parentNode !== fl || fl.lastElementChild !== b) fl.appendChild(b);
+    } else if (b.previousSibling !== LANG_HOME) LANG_HOME.after(b);
   }
 
   /* ============================================================
@@ -5329,6 +5343,7 @@
       const one = items.map(([c, n]) => `<span class="fl-item" title="${esc(c)} — ${n}"><span class="fl-emoji">${flagOf(c)}</span>${esc(c)}<small>${n}</small></span>`).join('');
       fl.innerHTML = `<b class="fl-title">🌍 دول المشتركين</b><div class="fl-view"><div class="fl-track${items.length > 3 ? ' moving' : ''}">${one}${items.length > 3 ? one : ''}</div></div>`;
       fl.classList.remove('hidden');
+      placeLang();
     }
     // شريط الشركاء: الشعارات (ولا الصور) ديال المشتركين
     const rail = $('#home-rail');
