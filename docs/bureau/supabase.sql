@@ -1035,3 +1035,43 @@ end $$;
 revoke execute on function public.w777_story_limit() from public, anon, authenticated;
 create trigger w777_story_limit before insert on public.w777_stories for each row execute function public.w777_story_limit();
 select cron.schedule('w777-stories-clean', '17 * * * *', $$delete from public.w777_stories where expires_at < now()$$);
+
+-- ============================================================
+-- حماية إضافية (مراجعة الأمان): حقول ما خاصهاش تتبدل + حد للطلبات
+-- ============================================================
+-- الرسائل: اللي توصلو الرسالة يقدر غير يعلّمها «مقروءة»، ما يبدلش النص ولا المرسل
+create or replace function public.w777_msg_guard() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then
+    new.id := old.id; new.sender := old.sender; new.recipient := old.recipient; new.body := old.body; new.created_at := old.created_at;
+  end if;
+  return new; end $$;
+drop trigger if exists w777_msg_guard on public.w777_msgs;
+create trigger w777_msg_guard before update on public.w777_msgs for each row execute function public.w777_msg_guard();
+
+-- الموظفين: مول المكتب يبدل غير السمية والدور والتفعيل (ماشي الحساب المربوط)
+create or replace function public.w777_staff_guard() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then
+    new.uid := old.uid; new.owner := old.owner; new.login := old.login; new.created_at := old.created_at;
+    if new.role not in ('view', 'edit', 'full') then new.role := old.role; end if;
+  end if;
+  return new; end $$;
+drop trigger if exists w777_staff_guard on public.w777_staff;
+create trigger w777_staff_guard before update on public.w777_staff for each row execute function public.w777_staff_guard();
+
+-- الحجز من الصفحة العمومية: حد لكل عقار فالنهار وحد عام (ضد الإغراق بطلبات وهمية)
+create or replace function public.w777_book_limit() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then
+    if (select count(*) from w777_bookings where stay_id = new.stay_id and created_at > now() - interval '1 day') >= 20 then
+      raise exception 'بزاف ديال الطلبات على هاد العقار اليوم، تواصل مع المكتب'; end if;
+    if (select count(*) from w777_bookings where created_at > now() - interval '1 hour') >= 120 then
+      raise exception 'الخدمة مشغولة، عاود من بعد شوية'; end if;
+  end if;
+  return new; end $$;
+drop trigger if exists w777_book_limit on public.w777_bookings;
+create trigger w777_book_limit before insert on public.w777_bookings for each row execute function public.w777_book_limit();
+
+-- دوال المنبهات ما خاصهاش تتنادى مباشرة من الخارج
+revoke execute on function public.w777_msg_guard(), public.w777_staff_guard(), public.w777_book_limit() from public, anon, authenticated;
