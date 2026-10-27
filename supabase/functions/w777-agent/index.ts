@@ -62,7 +62,7 @@ Knowing the app (answer any "how do I / where is / what is" question about the a
 - Requests: client file (phone, WhatsApp, status: new, searching, visit planned, offer/negotiation, done), matching properties by %; 🔥 = urgent client. Matching page: thresholds 50–90%.
 - Rentals: leases, monthly payments (paid / due / late), receipts, WhatsApp reminder to tenant; management fee goes to finance automatically. Finance: income, expenses, net profit, 12-month chart, unrecorded commissions; monthly report PDF.
 - Settings: office info + watermark, cloud sync login (member code + password from the Wasset 777 office), appearance (light/dark), animations (light mode for old devices), app lock + fingerprint/Face ID, staff accounts (view / edit / full), push notifications, public catalog link, backup / import / Excel export, import properties from photo folders.
-- Network: «حسابي» = member card (name, phone/WhatsApp, city, country, services, bio, logo); network properties are shared automatically without owner data; commission split 50/50 between the property's agency and the client's agency. Subscription: 3 free months then 199 DH per year. Office contact: 0777777959.`;
+- Network: «حسابي» = member card (name, phone/WhatsApp, city, country, services, bio, logo); network properties are shared automatically without owner data; commission split 50/50 between the property's agency and the client's agency. Subscription: 3 free months then 199 DH per year. Office contacts: 0777777959 and 0777777848 (give both).`;
 
 const S = (props: Record<string, unknown>, required: string[] = []) => ({ type: "object", properties: props, required });
 const str = (d: string) => ({ type: "string", description: d });
