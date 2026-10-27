@@ -789,10 +789,10 @@
   // أيقونة صورة (بلاصة الإيموجي) داخل الدائرة: icons/hub/<f>.webp
   // صورة كاملة كتعمّر الدائرة: icons/hub/<f>.webp
   const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=1" alt="" decoding="async">`, l, s);
-  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=2" alt="" decoding="async"></i>`, l, s);
+  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=3" alt="" decoding="async"></i>`, l, s);
   function homeMenu(kind, nAppts) {
     const M = {
-      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=2" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
+      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=3" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
