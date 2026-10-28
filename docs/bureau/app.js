@@ -722,6 +722,7 @@
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
+    else if (a === 'game') { nav = 'game'; viewGame(); }
     else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(query); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
     else if (a === 'rentals') { nav = 'rentals'; viewRentals(); }
@@ -797,6 +798,7 @@
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
+        hubIco('#/game', 'game', 'الكلمات المتقاطعة', 'لعبة عقارية', '#c8102e'),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
       net: ['✦ شبكة الوسيط 777', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
@@ -6983,6 +6985,19 @@
         $$('#stp-l a', box).forEach(a => a.addEventListener('click', () => close()));
       };
       $('#stp-q', box).oninput = paint; paint();
+    });
+  }
+  /* ---------- 🧩 الكلمات المتقاطعة العقارية (crossword.js) + ترتيب مشترك بين المشتركين ---------- */
+  function viewGame() {
+    main().innerHTML = '<div id="cw-root"></div>';
+    if (!window.W777_CW) { main().innerHTML = '<div class="card card-pad">تعذر تحميل اللعبة — عاود حل التطبيق.</div>'; return; }
+    const Sy = window.W777_SYNC, on = !!(Sy && Sy.isOn());
+    const rpc = async (fn, body) => (await Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })).json();
+    window.W777_CW.mount($('#cw-root'), {
+      logo: LOGO,
+      shareUrl: location.href.split('#')[0].replace(/index\.html$/, '') + 'game.html',
+      onFinish: on ? r => rpc('w777_game_submit', { p: r.points, n: r.words }) : null,
+      loadBoard: on ? () => rpc('w777_game_top') : null,
     });
   }
   function viewLoan(query) {
