@@ -1,9 +1,9 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v134';
+const CACHE = 'w777-bureau-v135';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
-const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'crossword-words.js', 'crossword.js', 'manifest.webmanifest', ...FONTS,
+const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'wasla-levels.js', 'wasla.js', 'manifest.webmanifest', ...FONTS,
   'vendor/qrcode.js', 'icons/logo.png?v=10', 'icons/icon-192.png?v=9', 'icons/icon-512.png?v=9', 'icons/apple-touch-icon.png?v=9', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
   ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=7`), 'icons/hub/add-request.webp?v=1', 'icons/hub/add-property.webp?v=1', 'icons/hub/add-appointment.webp?v=3', 'icons/hub/guide.webp?v=3', 'icons/hub/rentals.webp?v=1', 'icons/hub/estimate.webp?v=1', 'icons/hub/news-ico.webp?v=3', 'icons/hub/ad-maker.webp?v=1', 'icons/hub/projects-ico.webp?v=3', 'icons/hub/matching.webp?v=1', 'icons/hub/disputes-ico.webp?v=1', 'icons/hub/donations-ico.webp?v=3', 'icons/hub/map-ico.webp?v=3', 'icons/hub/finance-ico.webp?v=3', 'icons/hub/loan-ico.webp?v=3', 'icons/hub/games.webp?v=1'];
 
