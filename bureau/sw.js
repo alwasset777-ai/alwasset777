@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v144';
+const CACHE = 'w777-bureau-v145';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
@@ -50,15 +50,6 @@ self.addEventListener('fetch', e => {
 });
 
 // الضغط على تنبيه موعد ⏰: فتح التطبيق على صفحة المواعيد
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  const url = new URL('./' + ((e.notification.data && e.notification.data.url) || ''), self.registration.scope).href;
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-    for (const c of list) { if ('focus' in c) { c.navigate(url).catch(() => {}); return c.focus(); } }
-    return self.clients.openWindow(url);
-  }));
-});
-
 /* 🔔 الإشعارات الفورية */
 self.addEventListener('push', e => {
   let d = {};

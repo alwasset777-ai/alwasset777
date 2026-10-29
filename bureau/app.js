@@ -291,7 +291,8 @@
       const w = Math.round(bw * scale), h = Math.round(bh * scale);
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
-      c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); // الأجزاء الشفافة كتولي بيضاء ماشي كحلة فـ JPEG
+      g.drawImage(bmp, 0, 0, w, h);
       const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
       if (bmp.close) bmp.close();
       return { blob: blob || file, w, h };
@@ -1301,7 +1302,7 @@
         if (kind === 'photo' || (kind === 'doc' && f.type.startsWith('image/'))) {
           const big = await compressImage(f, 1920, 0.85);
           // صور العقار كتاخد الشعار وأرقام الهاتف مباشرة ملي كتزاد (الوثائق لا)
-          if (kind === 'photo' && S.settings.watermark !== false) { big.blob = await watermark(big.blob, true); rec.wm = 1; }
+          if (kind === 'photo' && S.settings.watermark !== false) { const wb = await watermark(big.blob, true); if (wb !== big.blob) { big.blob = wb; rec.wm = 1; } } // wm غير إلا تطبعات فعلاً
           const small = await compressImage(big.blob, 480, 0.75);
           rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
         } else rec.blob = f;
@@ -1398,7 +1399,7 @@
     if (p.titleStatus) L.push('📄 ' + p.titleStatus);
     const pr = p.priceMax || p.priceMin;
     if (pr) L.push(`💰 الثمن: ${fmt(pr)} ${p.priceUnit || 'درهم'}${!isRent(p.transaction) && millions(pr) ? ' (' + millions(pr) + ')' : ''}${p.negotiable ? ' — قابل للتفاوض' : ''}`);
-    L.push(`📞 للتواصل: ${S.settings.officeName}${S.settings.officePhone ? ' — ' + [S.settings.officePhone, S.settings.officePhone2].filter(Boolean).join(' / ') : ''}`);
+    L.push(`📞 للتواصل: ${offName()}${offPhones() ? ' — ' + offPhones() : ''}`);
     if (p.ref) L.push(`🔖 المرجع: ${p.ref}`);
     return L.join('\n');
   }
@@ -2249,7 +2250,7 @@
     if (b('cl-sync')) b('cl-sync').onclick = async () => { await Sy.syncNow(); viewSettings(); };
     if (b('cl-out')) b('cl-out').onclick = async () => {
       if (!(await confirmBox('تسجيل الخروج من المزامنة؟ البيانات تبقى على هذا الجهاز.', 'خروج', false))) return;
-      Sy.signOut(); S.role = null; S.kind = null; S.dir = null; S.agency = null; S.roleFor = null; S.net = null; localStorage.removeItem('w777_role'); localStorage.removeItem('w777_agent_my'); AG.my = null; agPaintButton(); viewSettings();
+      Sy.signOut(); S.role = null; S.kind = null; S.dir = null; S.agency = null; S.roleFor = null; S.net = null; localStorage.removeItem('w777_role'); localStorage.removeItem('w777_agent_my'); localStorage.removeItem('w777_agc1'); AG.my = null; agPaintButton(); viewSettings();
     };
     const go = async up => {
       const v = collect($('#cl-form'));
@@ -2643,7 +2644,7 @@
     document.body.appendChild(p);
     $('#ag-close').onclick = agClose;
     $('#ag-back').onclick = agClose;
-    $('#ag-new').onclick = () => { AG.history = []; AG.view = []; agRender(); };
+    $('#ag-new').onclick = () => { if (AG.busy) return; AG.history = []; AG.view = []; agRender(); };
     $('#ag-lang').onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } agHide(); agOpen(); };
     const ta = $('#ag-text');
     ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
@@ -2706,7 +2707,7 @@
     return t.s;
   }
   // كيحل المساعد (إلا كان مسدود) وكيصيفط سؤال واجد (الدروس، العقود…)
-  function agStart(text) { if (!AG.open) agOpen(); if (text) agSend(text); }
+  function agStart(text) { if (!AG.open) agOpen(); if (text && !AG.busy) agSend(text); }
   // قراية ملف مرفق: صورة (مصغرة)، PDF، Word (النص)، TXT
   const agB64 = buf => { const u = new Uint8Array(buf); let s2 = ''; for (let i = 0; i < u.length; i += 0x8000) s2 += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s2); };
   async function agUnzip(buf, want) {
@@ -2730,7 +2731,7 @@
     if (/^image\//.test(f.type)) {
       const bmp = await createImageBitmap(f), sc = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
       const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
       return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: c.toDataURL('image/jpeg', 0.85).split(',')[1] } };
     }
     if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
@@ -2791,7 +2792,9 @@
     }).filter(x => x.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, n)
       .map(({ l }) => ({ lesson: l.t, about: l.tag, steps: l.steps, tip: l.tip }));
   }
-  const AG_HOWTO = /كيف|كيفاش|فين|أين|وين|طريق|نستعمل|استعمل|أستعمل|نزيد|أضيف|اضيف|نضيف|نبدل|أغير|نغير|شرح|اشرح|علمني|دليل|زر|صفحة|الإعدادات|الاعدادات|ميزة|خاصية|comment|how|o[uù] |where|utiliser|ajouter|tutorial/i;
+  const AG_HOWTO = /كيف|كيفاش|فين|أين|وين|طريق|نستعمل|استعمل|أستعمل|نزيد|أضيف|اضيف|نضيف|نبدل|أغير|نغير|شرح|اشرح|علمني|دليل|(?<!\p{L})زر(?!\p{L})|صفحة|الإعدادات|الاعدادات|ميزة|خاصية|comment|how|o[uù] |where|utiliser|ajouter|tutorial/iu;
+  // أسئلة فيها معلومات ديال المكتب (المواعيد، الزبناء…) ما كتتخباش: الجواب كيتبدل كل نهار
+  const AG_DATA = /اليوم|غدا|البارح|امس|أمس|هاد السيمانة|هذا الأسبوع|عندي|لدي|ديالي|شحال|كم عدد|W777-|DM-|today|tomorrow|yesterday|this week|my |how many|aujourd|demain|hier|cette semaine|mes |combien/iu;
   // كنصيفطو غير آخر جزء من المحادثة (أسرع وأرخص)، وكنبداو ديما من سؤال ديال المستعمل
   const agIsQ = m => m.role === 'user' && (typeof m.content === 'string' || (Array.isArray(m.content) && m.content.some(b => b.type === 'text')));
   const agQText = m => typeof m.content === 'string' ? m.content : m.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
@@ -2802,6 +2805,7 @@
     // الملفات (صور/PDF) كتمشي غير مع آخر سؤال فيه ملف — الباقي كيتعوض بإشارة صغيرة (أسرع)
     let last = -1;
     out.forEach((m, k) => { if (m.role === 'user' && Array.isArray(m.content) && m.content.some(b => b.type === 'image' || b.type === 'document')) last = k; });
+    if (last >= 0 && out.slice(last + 1).filter(agIsQ).length > 2) last = -1;
     return out.map((m, k) => (k !== last && m.role === 'user' && Array.isArray(m.content) && m.content.some(b => b.type === 'image' || b.type === 'document'))
       ? { ...m, content: m.content.map(b => (b.type === 'image' || b.type === 'document' ? { type: 'text', text: '[ملف مرفق قبل]' } : b)) } : m);
   }
@@ -2835,7 +2839,7 @@
     return fin;
   }
   // ذاكرة الأجوبة (شرح التطبيق فقط) — 3 أيام، 60 جواب على الأكثر
-  const AGC = 'w777_agc1', agCacheKey = q => agLang() + ':' + norm(q).replace(/[^\p{L}\p{N} ]/gu, '').replace(/\s+/g, ' ').trim();
+  const AGC = 'w777_agc1', agCacheKey = q => ((window.W777_SYNC && window.W777_SYNC.uid && window.W777_SYNC.uid()) || '-') + ':' + agLang() + ':' + norm(q).replace(/[^\p{L}\p{N} ]/gu, '').replace(/\s+/g, ' ').trim();
   const agCacheAll = () => { try { return JSON.parse(localStorage.getItem(AGC) || '{}') || {}; } catch (e) { return {}; } };
   function agCacheGet(k) { const c = agCacheAll()[k]; return c && Date.now() - c.t < 3 * 864e5 ? c.a : ''; }
   function agCachePut(k, a) {
@@ -2847,10 +2851,10 @@
   async function agSend(text, att) {
     const Sy = window.W777_SYNC, t = agT();
     AG.view.push({ who: 'me', text: att ? `📎 ${att.name}\n${text}` : text });
-    if (!agAI()) { agLocal(text); return; }
+    if (!agAI()) { if (att) AG.view.push({ who: 'bot', text: agLang() === 'fr' ? '📎 Les fichiers joints sont lus uniquement par l’assistant IA (à activer par l’administrateur dans les Paramètres).' : agLang() === 'en' ? '📎 Attachments are only read by the AI assistant (the admin can turn it on in Settings).' : '📎 الملفات المرفقة كيقراهم غير الوكيل الذكي (المدير يقدر يفعّلو فالإعدادات).' }); agLocal(text); return; }
     if (!Sy || !Sy.isOn()) { AG.view.push({ who: 'bot', text: t.login }); agRender(); return; }
     // أسئلة «كيفاش نستعمل التطبيق»: الجواب كيتخبى فالتيليفون → نفس السؤال كيتجاوب فالحين
-    const ck = !att && AG_HOWTO.test(text) && agGuide(text, 1).length ? agCacheKey(text) : '';
+    const ck = !att && AG_HOWTO.test(text) && !AG_DATA.test(text) && agGuide(text, 1).length ? agCacheKey(text) : '';
     const hit = ck && agCacheGet(ck);
     if (hit) {
       AG.history.push({ role: 'user', content: text }, { role: 'assistant', content: [{ type: 'text', text: hit }] });
@@ -2901,11 +2905,15 @@
         const uses = r.content.filter(x => x.type === 'tool_use');
         uses.forEach(b => AG.view.push({ who: 'tool', text: AG_TOOL_AR[b.name] || '⏳ كنخدم…' }));
         AG.live = null; agRender();
-        const results = await Promise.all(uses.map(async b => {
+        const run1 = async b => {
           let out, isErr = false;
           try { out = await agRunTool(b.name, b.input || {}); } catch (e) { out = { error: String(e.message || e) }; isErr = true; }
           return { type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out).replace(/[⁦-⁩]/g, '').slice(0, 6000), ...(isErr ? { is_error: true } : {}) };
-        }));
+        };
+        // الأدوات اللي كتكتب (زيادة طلب/موعد، تبديل الحالة) كتخدم وحدة بوحدة باش ما يتكررش نفس المرجع
+        const writes = uses.some(b => /^(create|update)_/.test(b.name));
+        const results = [];
+        if (writes) { for (const b of uses) results.push(await run1(b)); } else results.push(...await Promise.all(uses.map(run1)));
         AG.history.push({ role: 'user', content: results });
       }
     } finally { AG.busy = false; AG.live = null; agRender(); agMood('happy', null, 2200); }
@@ -3992,12 +4000,12 @@
     try {
       const c = JSON.parse(localStorage.getItem('w777_role') || 'null');
       const Sy = window.W777_SYNC;
-      if (c && Sy && Sy.isOn() && c.u === Sy.uid()) { S.role = c.role; S.agency = c.agency; S.kind = c.kind || (c.role === 'agency' ? 'agency' : c.role); S.roleFor = c.u; }
+      if (c && Sy && Sy.isOn() && c.u === Sy.uid()) { S.role = c.role; S.agency = c.agency; S.kind = c.kind || (c.role === 'agency' ? 'agency' : c.role); S.roleFor = c.u; S.staffBrand = c.sb || null; }
     } catch (e) { /* */ }
   }
   async function refreshRole(force) {
     const Sy = window.W777_SYNC;
-    if (!Sy || !Sy.isOn()) { S.role = null; S.kind = null; S.agency = null; S.roleFor = null; return 0; }
+    if (!Sy || !Sy.isOn()) { S.role = null; S.kind = null; S.agency = null; S.roleFor = null; S.staffBrand = null; return 0; }
     const u = Sy.uid();
     if (!force && S.roleFor === u && S.roleAt && Date.now() - S.roleAt < 3600000) return 0;
     const before = S.role;
@@ -4010,7 +4018,10 @@
       S.role = admin === true ? 'admin' : ag ? 'agency' : 'solo';
       S.kind = admin === true ? 'admin' : ag ? ag.kind || 'agency' : null;
       S.agency = ag; S.roleFor = u; S.roleAt = Date.now();
-      localStorage.setItem('w777_role', JSON.stringify({ u, role: S.role, kind: S.kind, agency: ag }));
+      // موظف عند وكالة مشتركة: الصور والنصوص كياخدو الهوية ديال الوكالة ماشي ديال المكتب
+      S.staffBrand = null;
+      if (S.role === 'solo' && Sy.staff && Sy.staff()) S.staffBrand = await Sy.request('/rest/v1/rpc/w777_staff_brand', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()).catch(() => null) || null;
+      localStorage.setItem('w777_role', JSON.stringify({ u, role: S.role, kind: S.kind, agency: ag, sb: S.staffBrand }));
     } catch (e) { /* بدون إنترنت: نبقاو على اللي محفوظ */ }
     return before !== S.role ? 1 : 0;
   }
@@ -5612,7 +5623,7 @@
     const rail = $('#home-rail');
     if (!rail) return;
     // الستوري: اللي عندو ستوري كيبان أول بإطار ملون (رمادي إلا شافو)
-    const sts = await loadStories(true), groups = stGroups(sts, dir), seen = stSeen();
+    const sts = await loadStories(), groups = stGroups(sts, dir), seen = stSeen();
     const ring = uid => { const g = groups.find(x => x.uid === uid); return g ? ` has-st${g.items.every(i => seen[i.id]) ? ' st-seen' : ''}" data-st="${g.uid}` : ''; };
     const officeUid = (groups.find(g => g.office) || {}).uid || '';
     const withLogo = live.filter(a => a.logo || a.photo || groups.some(g => g.uid === a.uid))
@@ -5716,7 +5727,7 @@
       if (x.kind === 'image') {
         const img = $('.st-img img', ov);
         try {
-          if (!ST.img.has(x.id)) ST.img.set(x.id, (await (await window.W777_SYNC.request(`/rest/v1/w777_stories?id=eq.${x.id}&select=img`)).json())[0].img);
+          if (!ST.img.has(x.id)) { ST.img.set(x.id, (await (await window.W777_SYNC.request(`/rest/v1/w777_stories?id=eq.${x.id}&select=img`)).json())[0].img); if (ST.img.size > 30) ST.img.delete(ST.img.keys().next().value); } // الذاكرة: 30 صورة على الأكثر
           if (groups[gi] !== g || g.items[ii] !== x) return;
           img.src = ST.img.get(x.id); img.onload = () => { const sp = $('.st-spin', ov); if (sp) sp.remove(); };
         } catch (e) { toast('تعذر تحميل الصورة'); }
@@ -5728,6 +5739,7 @@
   function storyComposer() {
     const Sy = window.W777_SYNC;
     if (!Sy || !Sy.isOn()) return toast('دخل بالحساب ديالك أولا (الإعدادات ← المزامنة السحابية)', 4000);
+    if (!inNetwork()) return toast('الستوري خاص بأعضاء شبكة الوسيط 777 المفعّلين', 4000);
     let kind = 'text', bg = ST_BG[0], img = '';
     modal(`<h3>📸 ستوري جديد</h3><p class="muted" style="margin-top:0">كيبان لجميع المشتركين فشريط «الشركاء» لمدة 24 ساعة.</p>
       <div class="st-seg" id="stk"><button type="button" class="on" data-k="text">📝 نص</button><button type="button" data-k="image">🖼️ صورة</button></div>
@@ -5762,7 +5774,7 @@
           await Sy.request('/rest/v1/w777_stories', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ kind, body: body || null, bg: kind === 'text' ? bg : null, img: kind === 'image' ? img : null }) });
           ST.at = 0; close(); toast('تنشر الستوري ✓ — كيبان 24 ساعة');
           if ((location.hash || '#/') === '#/') homeNetwork(); else location.hash = '#/';
-        } catch (e) { btn.disabled = false; toast('تعذر النشر: ' + e.message, 4500); }
+        } catch (e) { btn.disabled = false; toast(/row-level security|42501/.test(e.message) ? 'تعذر النشر: الحساب ديالك ماشي مفعّل فالشبكة' : 'تعذر النشر: ' + e.message, 4500); }
       };
       paint();
     });
@@ -6674,7 +6686,7 @@
             if (video) rec.blob = f;
             else {
               const big = await compressImage(f, 1280, 0.78);
-              if (S.settings.watermark !== false) { big.blob = await watermark(big.blob, true); rec.wm = 1; }
+              if (S.settings.watermark !== false) { const wb = await watermark(big.blob, true); if (wb !== big.blob) { big.blob = wb; rec.wm = 1; } }
               const small = await compressImage(big.blob, 400, 0.7);
               rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
             }
@@ -7113,10 +7125,10 @@
     document.head.appendChild(s);
   }));
   const loadCss = href => { if (!$(`link[href="${href}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); } };
-  const offName = () => myAgencyName() || S.settings.officeName;
-  const offPhone = () => myAgencyPhone() || S.settings.officePhone || '';
-  // للعرض: المكتب كيبان بجوج أرقام (الوكالات بالرقم ديالها)
-  const offPhones = () => S.role === 'agency' ? offPhone() : [offPhone(), S.settings.officePhone2].filter(Boolean).join(' / ');
+  const offName = () => (S.staffBrand && S.staffBrand.name) || myAgencyName() || S.settings.officeName;
+  const offPhone = () => (S.staffBrand && S.staffBrand.phone) || myAgencyPhone() || S.settings.officePhone || '';
+  // للعرض: المكتب كيبان بجوج أرقام (الوكالات والموظفين ديالها بالرقم ديالهم)
+  const offPhones = () => S.role === 'agency' || S.staffBrand ? offPhone() : [offPhone(), S.settings.officePhone2].filter(Boolean).join(' / ');
   // أهم المواصفات (المساحة + الغرف…) لنص قصير
   function propSpecs(p, max = 4) {
     const s = p.specs || {}, out = [];
@@ -7221,7 +7233,13 @@
     });
   }
   /* ---------- 🧩 وصلة العقار (wasla.js) + ترتيب مشترك بين المشتركين ---------- */
-  function viewGame() {
+  async function viewGame() {
+    // اللعبة كتتحمل غير ملي كتحلها (التطبيق كيتحل أسرع)
+    if (!window.W777_CW) {
+      main().innerHTML = '<div class="card card-pad muted">⏳ كتتحمل اللعبة…</div>';
+      try { await loadScript('wasla-levels.js'); await loadScript('wasla.js'); } catch (e) { /* الرسالة لتحت */ }
+      if (!/^#\/game/.test(location.hash)) return;
+    }
     main().innerHTML = '<div id="cw-root"></div>';
     if (!window.W777_CW) { main().innerHTML = '<div class="card card-pad">تعذر تحميل اللعبة — عاود حل التطبيق.</div>'; return; }
     const Sy = window.W777_SYNC, on = !!(Sy && Sy.isOn());
@@ -7231,6 +7249,7 @@
       shareUrl: location.href.split('#')[0].replace(/index\.html$/, '') + 'game.html',
       onFinish: on ? r => rpc('w777_game_submit', { p: r.points, n: r.words }) : null,
       loadBoard: on ? () => rpc('w777_game_top') : null,
+      uid: on && Sy.uid ? Sy.uid() : null,
       // منير فاللعبة: المشترك كيتحسب فالحصة ديالو؛ بلا حساب كيستعمل المدخل العمومي (بحد يومي)
       agentName: agMine() && AG.my.name ? AG.my.name : null,
       agentPhoto: AG.my && AG.my.photo ? AG.my.photo : null,
@@ -7286,6 +7305,7 @@
   const logoImg = () => loadImg(LOGO);
   function brandOf() {
     if (S.role === 'agency') { const a = S.agency || {}; return { logo: a.logo ? brandUrl(a.logo) : '', name: a.name || myAgencyName(), mark: a.name || myAgencyName() }; }
+    if (S.staffBrand) { const a = S.staffBrand; return { logo: a.logo ? brandUrl(a.logo) : '', name: a.name || 'وكالة', mark: a.name || 'وكالة' }; }
     return { logo: LOGO, name: 'مجموعة الوسيط 777', mark: 'الوسيط 777' };
   }
   async function watermark(blob, force) {
@@ -7326,7 +7346,7 @@
         if (x.roundRect) x.roundRect(px - pad, py - fs * .75, tw + pad * 2, fs * 1.5, fs * .4); else x.rect(px - pad, py - fs * .75, tw + pad * 2, fs * 1.5);
         x.fill(); x.fillStyle = '#fff'; x.fillText(t, px, py);
       }
-      return await new Promise(r => c.toBlob(b => r(b || blob), 'image/jpeg', .9));
+      return await new Promise(r => c.toBlob(b => r(b || blob), 'image/jpeg', .85));
     } catch (e) { return blob; }
   }
   const fontsReady = () => (document.fonts && document.fonts.load ? Promise.all(['400 20px Tajawal', '700 20px Tajawal', '800 20px Tajawal', '900 20px Tajawal'].map(f => document.fonts.load(f, 'الوسيط 777'))).catch(() => {}) : Promise.resolve());
@@ -7887,8 +7907,8 @@
           const small = (await compressImage(blob, 1280, 0.8)).blob;
           const wm = m.wm ? small : await watermark(small, true);
           const path = `${me}/${p.id}/${m.id}.jpg`;
-          const r = await Sy.request(`/storage/v1/object/w777-catalog/${path}`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: wm });
-          if (!r.ok) continue;
+          // صورة وحدة ما تطلعش (كبيرة بزاف ولا ما تقراتش) ما توقفش النشر ديال الباقي
+          try { await Sy.request(`/storage/v1/object/w777-catalog/${path}`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: wm }); } catch (e) { continue; }
           up[m.id] = path; paths.push(path);
           await DB.setMeta('catalog_up', up);
         }

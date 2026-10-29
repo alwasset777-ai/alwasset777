@@ -905,21 +905,8 @@ a.chip { text-decoration: none; }
 .lang-btn:active { transform: scale(.95); }
 .lang-btn b { font-size: 12.5px; font-weight: 800; letter-spacing: .5px; line-height: 1; }
 @media (max-width: 420px) { .lang-btn { padding: 0 8px; gap: 4px; } .lang-btn b { font-size: 11px; } }
-/* ✨ زر «إصنع إعلانا» فالشريط العلوي */
-.ad-btn {
-  height: 44px; padding: 0 14px; border-radius: 22px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
-  background: linear-gradient(135deg, #f3d27a, #c99a2e); color: #1a1205; text-decoration: none; white-space: nowrap;
-  border: 1px solid rgba(255,235,180,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 4px 14px -4px rgba(214,170,74,.7);
-  font-weight: 800; transition: transform .15s, filter .15s;
-}
-.ad-btn b { font-size: 13px; font-weight: 800; line-height: 1; }
-.ad-btn:hover { filter: brightness(1.07); }
-.ad-btn:active { transform: scale(.95); }
 /* التيليفون: الاسم فجوج سطور، وزر الفلتر كيتخبى (البحث بالفلتر كاين فـ +) باش يبقى البحث واسع */
 @media (max-width: 520px) {
-  .ad-btn { height: 44px; padding: 0 9px 0 8px; gap: 4px; }
-  .ad-btn b { font-size: 11px; line-height: 1.15; white-space: normal; width: min-content; text-align: center; }
-  .ad-btn span { font-size: 14px; }
   #btn-filter { display: none; }
 }
 .lang-modal { max-width: 560px; }
@@ -1304,7 +1291,6 @@ button.opp-cta { justify-content: flex-start; background: var(--surface); }
 
 /* ---------- شعار التطبيق: كبير (200%) وكيدور بلا توقف ---------- */
 .topbar .logo { perspective: 600px; }
-.topbar .logo { perspective: 600px; }
 /* قطعة نقدية 3D: وجه أمامي ووجه خلفي (الشعار ديما مقروء، ما كيتعكسش) + سُمك فضي */
 .topbar .logo-pill.logo-coin { height: 86px; margin: -4px 0 -32px; position: relative; z-index: 2; background: none; overflow: visible; box-shadow: none; perspective: 520px;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(200,16,46,.35)); }
@@ -1426,3 +1412,6 @@ html.lv-lite .agent-fab.mood-on::after, html.lv-lite .agent-fab.mood-on img { an
 .agent-fab:not(.mood-on) img { animation: ag-breathe 5s ease-in-out infinite; }
 @keyframes ag-breathe { 0%, 100% { transform: scale(1) rotate(0); } 45% { transform: scale(1.035) rotate(0); } 70% { transform: scale(1.02) rotate(-3deg); } 80% { transform: scale(1.02) rotate(2deg); } }
 html.lv-lite .agent-fab img { animation: none !important; }
+/* الوضع الخفيف وتقليل الحركة: الشعار والأيقونات ما كيدوروش (البطارية) */
+html.lv-lite .coin, html.lv-lite .hub-tile .hi { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .coin, .hub-tile .hi { animation: none !important; } }
