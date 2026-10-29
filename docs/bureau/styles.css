@@ -816,6 +816,16 @@ a.chip { text-decoration: none; }
 .grp-logo { display: block; width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 3px 10px rgba(0,0,0,.18); transition: transform .15s; }
 .grp-logo svg { display: block; width: 100%; height: 100%; }
 .grp-logo:hover, .grp-logo:active { transform: scale(1.08); }
+.grp-game { display: block; width: 62px; height: 62px; border-radius: 50%; overflow: hidden; background: #fff; border: 2px solid #c8102e; box-shadow: 0 3px 12px rgba(200,16,46,.3); transition: transform .15s; }
+.grp-game img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.grp-game:hover, .grp-game:active { transform: scale(1.08); }
+@media (max-width: 520px) {
+  .grp-strip { flex-wrap: nowrap; gap: 8px; padding: 8px 10px; }
+  .grp-strip b { font-size: 13px; min-width: 0; flex: 1 1 auto; }
+  .grp-game { width: 50px; height: 50px; flex: 0 0 auto; }
+  .grp-logos { gap: 7px; flex: 0 0 auto; }
+  .grp-logo { width: 36px; height: 36px; }
+}
 .grp-btn { gap: 8px; } .grp-ic { display: inline-block; width: 22px; height: 22px; } .grp-ic svg { display: block; width: 100%; height: 100%; }
 .hero-marq .r777 { color: #c8102e; font-weight: 900; }
 .grp-card { margin-top: 14px; border-top: 3px solid #25d366; }
