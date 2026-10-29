@@ -726,6 +726,7 @@
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
+    else if (a === 'tamwil') { nav = 'loan'; await viewTamwil(parts, query); }
     else if (a === 'game') { nav = 'game'; viewGame(); }
     else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(query); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
@@ -796,6 +797,9 @@
   // صورة كاملة كتعمّر الدائرة: icons/hub/<f>.webp
   const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=1" alt="" decoding="async">`, l, s);
   const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=3" alt="" decoding="async"></i>`, l, s);
+  // زر «التمويل العقاري»: شعارات الجهات كتدوز داخل الدائرة (CSS فقط)
+  const FIN_HUB = ['awb', 'bcp', 'boa', 'cih', 'bmci', 'cdm', 'saham', 'cam', 'abb', 'cfg', 'assafa', 'yousr'];
+  const finHub = () => hubTile('#/tamwil', '#c8102e', `<i class="emo fin-rot" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}<b class="fin-777">٪</b></i>`, 'التمويل العقاري', 'البنوك وجهات التمويل');
   function homeMenu(kind, nAppts) {
     const M = {
       add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=3" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
@@ -803,7 +807,7 @@
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
-        hubPic('#/game', 'games', 'وصلة العقار', 'لعبة أسئلة عقارية', '#c8102e'),
+        hubPic('#/game', 'games', 'وصلة العقار', 'لعبة أسئلة عقارية', '#c8102e'), finHub(),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
       net: ['✦ شبكة الوسيط 777', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
@@ -2431,7 +2435,7 @@
   const PAGE_MOOD = {
     '': ['hi'], contracts: ['think'], learn: ['teach'], guide: ['teach'], properties: ['page', '🏠'], property: ['page', '🏠'], requests: ['page', '🤝'], request: ['page', '🤝'],
     appointments: ['page', '📅'], appointment: ['page', '📅'], finance: ['page', '💰'], rentals: ['page', '🔑'], rental: ['page', '🔑'], news: ['page', '📰'], map: ['page', '🗺️'],
-    estimate: ['page', '📊'], loan: ['page', '🏦'], events: ['page', '🎉'], donations: ['page', '🎁'], disputes: ['think'], matching: ['page', '💞'], search: ['page', '🔍'],
+    estimate: ['page', '📊'], loan: ['page', '🏦'], tamwil: ['page', '🏦'], events: ['page', '🎉'], donations: ['page', '🎁'], disputes: ['think'], matching: ['page', '💞'], search: ['page', '🔍'],
     stays: ['page', '🏨'], projects: ['page', '🏗️'], investors: ['page', '💼'], notaries: ['page', '📜'], ownership: ['page', '🏡'], settings: ['page', '⚙️'], chat: ['page', '💬'],
     inbox: ['page', '💬'], 'ad-maker': ['page', '📸'], report: ['page', '📈'], agencies: ['page', '🏢'], brokers: ['page', '🤝'], contractors: ['page', '👷'], finishing: ['page', '🎨'],
     associations: ['page', '🏛️'], terms: ['page', '📜'],
@@ -7415,6 +7419,71 @@
       agentPhoto: AG.my && AG.my.photo ? AG.my.photo : null,
       askAI: on ? body => Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) : null,
     });
+  }
+  /* ============================================================
+     🏦 التمويل العقاري: الجهات المموّلة (شعار + معلومات تعريفية + مراحل بشعارين)
+     الشروط والنسب كيتزادو غير ملي يأكدهم المكتب بعد الاتصال بكل جهة
+     ============================================================ */
+  const FIN_ST = { ok: ['✅', 'معلومات كافية', 'green'], partial: ['🟡', 'معلومات جزئية — تُستكمل', 'amber'], missing: ['🔴', 'معلومات ناقصة — تواصل مباشر', 'red'] };
+  const FIN_STEPS = [['📝', 'استقبال الطلب', 'عند مكتب الوسيط 777: المشروع، الدخل، العقار'], ['🗂️', 'تجميع الوثائق', 'لائحة الوثائق حسب فئتك'], ['🔍', 'دراسة الملف', 'لدى الجهة المموّلة'], ['📄', 'العرض والموافقة', 'الشروط النهائية مكتوبة'], ['✍️', 'التوقيع', 'عند الموثق أو العدول'], ['🔑', 'الصرف والمفاتيح', 'مبروك السكن!']];
+  const finLogo = (k, cls = '') => k ? `<img class="${cls}" src="icons/fin/${k}.webp" alt="" loading="lazy" decoding="async">` : '';
+  const finPair = (x, big) => `<span class="fin-pair${big ? ' big' : ''}"><img src="${LOGO}" alt=""><i>×</i><span class="fp-i">${x.logo ? finLogo(x.logo) : x.glogo ? finLogo(x.glogo) : `<b>${esc((x.ar || '؟').trim()[0])}</b>`}</span></span>`;
+  async function viewTamwil(parts, query) {
+    main().innerHTML = '<div class="card card-pad muted">⏳</div>';
+    if (!window.W777_FIN) { try { await loadScript('finance-data.js'); } catch (e) { /* */ } }
+    if (!/^#\/tamwil/.test(location.hash)) return;
+    const F = window.W777_FIN;
+    if (!F) { main().innerHTML = '<div class="card card-pad">تعذر التحميل — تأكد من الإنترنت.</div>'; return; }
+    const id = parts[1];
+    if (id) return viewTamwilOne(F, F.inst.find(x => x.id === id));
+    const st = { cat: query.cat || '', q: query.q || '', mre: query.mre === '1' };
+    main().innerHTML = `
+      <div class="fin-hero card">
+        <div class="fin-hero-t"><h1>🏦 التمويل العقاري</h1><p>البنوك والبنوك التشاركية وشركات التمويل والضمانات العمومية — بالمغرب وللمغاربة المقيمين بالخارج.</p>
+          <div class="btn-row"><a class="btn gold" href="#/loan">🧮 احسب القسط الشهري</a></div></div>
+        <div class="fin-orbit" aria-hidden="true"><img class="fo-c" src="${LOGO}" alt="">${F.inst.filter(x => x.logo).slice(0, 12).map((x, i, a) => `<span style="--a:${(360 / a.length) * i}deg"><img src="icons/fin/${x.logo}.webp" alt=""></span>`).join('')}</div>
+      </div>
+      <div class="fin-tools"><input id="fin-q" type="search" placeholder="🔍 قلب على بنك أو جهة…" value="${esc(st.q)}">
+        <label class="fin-mre"><input type="checkbox" id="fin-mre" ${st.mre ? 'checked' : ''}> 🌍 مغاربة العالم</label></div>
+      <div class="fin-chips" id="fin-chips"><button data-c="" class="${st.cat ? '' : 'on'}">الكل <small>${F.inst.length}</small></button>${F.cats.map(c => `<button data-c="${c[0]}" class="${st.cat === c[0] ? 'on' : ''}">${esc(c[2])} <small>${F.inst.filter(x => x.cat === c[0]).length}</small></button>`).join('')}</div>
+      <div id="fin-list" class="fin-grid"></div>
+      <p class="muted fin-disc">ℹ️ معلومات تعريفية مأخوذة من المواقع الرسمية للجهات (تحقق: ${esc(F.date)}). النسب والشروط كتبان هنا غير بعد ما يأكدها مكتب الوسيط 777 مع كل جهة. المرجع النهائي هو الجهة المموّلة. الشعارات للتعريف فقط ولا تعني شراكة.</p>`;
+    const paint = () => {
+      const q = norm(st.q);
+      const list = F.inst.filter(x => (!st.cat || x.cat === st.cat) && (!st.mre || x.mre === 'oui') && (!q || norm(x.ar + ' ' + x.name + ' ' + x.group + ' ' + x.types.join(' ')).includes(q)));
+      $('#fin-list').innerHTML = list.length ? list.map(x => {
+        const S0 = FIN_ST[x.status], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
+        return `<a class="fin-card card" href="#/tamwil/${x.id}">
+          <div class="fc-top">${finPair(x)}<span class="badge ${S0[2]}" title="${esc(S0[1])}">${S0[0]}</span></div>
+          <b class="fc-n">${esc(x.ar)}</b><small class="fc-f" dir="ltr">${esc(x.name)}</small>
+          <div class="fc-tags"><span>${esc(cat)}</span>${x.mre === 'oui' ? '<span>🌍 MRE</span>' : ''}${x.web ? '<span>🌐 موقع رسمي</span>' : ''}</div></a>`;
+      }).join('') : '<div class="card card-pad muted">ما لقينا والو — جرب كلمة أخرى.</div>';
+    };
+    paint();
+    $('#fin-q').oninput = e => { st.q = e.target.value; paint(); };
+    $('#fin-mre').onchange = e => { st.mre = e.target.checked; paint(); };
+    $('#fin-chips').onclick = e => { const b = e.target.closest('button'); if (!b) return; st.cat = b.dataset.c; $$('#fin-chips button').forEach(x => x.classList.toggle('on', x === b)); paint(); };
+  }
+  function viewTamwilOne(F, x) {
+    if (!x) { main().innerHTML = '<div class="card card-pad">هاد الجهة ما كايناش. <a href="#/tamwil">رجوع</a></div>'; return; }
+    const S0 = FIN_ST[x.status], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
+    const tel = n => String(n).replace(/[^\d+]/g, '');
+    main().innerHTML = `
+      <div class="page-head"><div><a class="muted" href="#/tamwil">→ التمويل العقاري</a><h1>${esc(x.ar)}</h1><div class="sub" dir="ltr">${esc(x.name)}</div></div></div>
+      <div class="fin-one card card-pad">
+        <div class="fo-head">${finPair(x, true)}<div><span class="badge ${S0[2]}">${S0[0]} ${esc(S0[1])}</span><div class="muted" style="margin-top:6px">${esc(cat)}${x.group ? ' · ' + esc(x.group) : ''}</div>
+          ${x.glogo && x.logo ? `<div class="fo-group">المجموعة الأم: ${finLogo(x.glogo)}</div>` : ''}</div></div>
+        <div class="fc-tags">${x.types.map(t => `<span dir="ltr">${esc(t)}</span>`).join('')}${x.mre === 'oui' ? '<span>🌍 مغاربة العالم</span>' : ''}</div>
+        <h3 class="section-title">📞 الاتصال</h3>
+        <div class="fo-ph">${x.phones.length ? x.phones.map(([l, n, s]) => `<a class="fo-call" href="tel:${esc(tel(n))}"><span>${esc(l)}${s === 's' ? ' <em>يُؤكَّد</em>' : ''}</span><b dir="ltr">${esc(n)}</b></a>`).join('') : '<div class="muted">الهاتف الرسمي غير منشور — كيتأكد من بعد الاتصال.</div>'}</div>
+        ${x.web ? `<a class="btn" href="${esc(x.web)}" target="_blank" rel="noopener">🌐 الموقع الرسمي</a>` : ''}
+        ${x.products.length ? `<h3 class="section-title">🏠 العروض المنشورة</h3><div class="fc-tags">${x.products.map(p => `<span dir="ltr">${esc(p)}</span>`).join('')}</div>` : ''}
+        <div class="fo-wait">⏳ النسب، المدة، نسبة التمويل والوثائق المطلوبة: <b>كتتزاد قريباً بعد تأكيدها مع ${esc(x.ar)}</b>.</div>
+      </div>
+      <div class="card card-pad"><h3 class="section-title">🧭 مراحل التمويل مع الوسيط 777</h3><p class="muted" style="margin-top:0">مراحل مرجعية — كتتحدّث حسب مسطرة كل جهة.</p>
+        <ol class="fin-steps">${FIN_STEPS.map(([ic, t, d], k) => `<li><span class="fs-n">${k + 1}</span>${finPair(x)}<div><b>${ic} ${t}</b><small>${d}</small></div></li>`).join('')}</ol>
+        <div class="btn-row"><a class="btn gold" href="#/loan">🧮 احسب القسط</a><a class="btn" href="https://wa.me/212777777848?text=${encodeURIComponent('السلام عليكم، بغيت معلومات على التمويل العقاري مع ' + x.ar)}" target="_blank" rel="noopener">💬 اسأل الوسيط 777</a></div></div>
+      <p class="muted fin-disc">ℹ️ المعلومات إرشادية؛ المرجع النهائي هو الجهة المموّلة. الشعار للتعريف فقط.</p>`;
   }
   function viewLoan(query) {
     const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };

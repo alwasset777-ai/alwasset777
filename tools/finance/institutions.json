@@ -1,0 +1,1796 @@
+{
+ "date": "29/10/2026",
+ "cats": [
+  [
+   "bank",
+   "Banques conventionnelles (Maroc)",
+   "البنوك التقليدية بالمغرب"
+  ],
+  [
+   "part",
+   "Banques participatives",
+   "البنوك التشاركية"
+  ],
+  [
+   "window",
+   "Fenêtres participatives",
+   "النوافذ التشاركية"
+  ],
+  [
+   "finco",
+   "Sociétés de financement & leasing immobilier",
+   "شركات التمويل والإيجار التمويلي العقاري"
+  ],
+  [
+   "micro",
+   "Microfinance – habitat",
+   "التمويل الأصغر للسكن"
+  ],
+  [
+   "state",
+   "Garanties & aides de l'État",
+   "الضمانات والدعم العمومي"
+  ],
+  [
+   "mre",
+   "Réseaux à l'étranger pour les MRE",
+   "شبكات الخارج لمغاربة العالم"
+  ],
+  [
+   "intl",
+   "Institutions internationales (projets)",
+   "المؤسسات الدولية (تمويل المشاريع)"
+  ]
+ ],
+ "inst": [
+  {
+   "id": "awb",
+   "cat": "bank",
+   "name": "Attijariwafa bank",
+   "ar": "التجاري وفا بنك",
+   "group": "Groupe Attijariwafa bank",
+   "web": "https://www.attijariwafabank.com",
+   "city": "Casablanca",
+   "addr": "2, boulevard Moulay Youssef, 20000 Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Centre de Relation Client (particuliers, lun–sam 8h–20h)",
+     "+212 5 22 58 88 88",
+     "s"
+    ],
+    [
+     "Centre de Relation Client (entreprises)",
+     "+212 5 22 58 88 55",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Centre de Relation Client",
+     "crc@attijariwafa.com",
+     "s"
+    ]
+   ],
+   "types": [
+    "Résidentiel",
+    "Terrain",
+    "Construction",
+    "MRE",
+    "Professionnel"
+   ],
+   "products": [
+    [
+     "Crédit immobilier (offre « Miftah »)",
+     "Financement de la résidence principale ou secondaire ; demandes et simulations via Attijari Mobile / Attijarinet. Quotité et durée annoncées par des sources secondaires (jusqu'à 100 % / 25 ans) — à confirmer.",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Taux et conditions actuelles",
+    "Contact dédié partenariats / apporteurs d'affaires",
+    "Interlocuteur régional Meknès"
+   ],
+   "notes": "Site officiel inaccessible au moment de la vérification automatique : coordonnées issues des pages officielles citées par les moteurs de recherche. Filiales immobilières : Wafa Immobilier, Bank Assafa (participatif), Wafabail.",
+   "src": [
+    "https://www.attijariwafabank.com/en/manage-your-budget/finance-your-real-estate-projects"
+   ]
+  },
+  {
+   "id": "bcp",
+   "cat": "bank",
+   "name": "Groupe Banque Populaire (BCP)",
+   "ar": "مجموعة البنك الشعبي",
+   "group": "Groupe BCP",
+   "web": "https://www.groupebcp.com",
+   "city": "Casablanca",
+   "addr": "101, boulevard Zerktouni, Casablanca",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Centre de relation clientèle",
+     "080 2002 666",
+     "v"
+    ],
+    [
+     "Assistance",
+     "2121",
+     "v"
+    ],
+    [
+     "Centre de relation client – Marocains du Monde",
+     "+212 522 585 066",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Résidentiel",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Acquérir un logement",
+     "Offre de crédit habitat adaptée au besoin (aucun taux publié).",
+     "v"
+    ],
+    [
+     "DARBLADI (Marocains du Monde)",
+     "Crédit immobilier avec accord en ligne « sans justificatifs » pour le projet d'achat au Maroc.",
+     "v"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Taux, quotité, durée",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Sites : particulier.groupebcp.com et mdm.groupebcp.com (Marocains du Monde). Filiales : Bank Al Yousr (participatif), Maroc Leasing, Chaabi Bank (Europe), Fondation Attawfiq.",
+   "src": [
+    "https://www.groupebcp.com/fr/Pages/contactez-nous.aspx",
+    "https://particulier.groupebcp.com/fr/Pages/acquerir-un-logement.aspx",
+    "https://mdm.groupebcp.com/fr/Pages/credits-immobiliers.aspx"
+   ]
+  },
+  {
+   "id": "boa",
+   "cat": "bank",
+   "name": "Bank of Africa (ex-BMCE Bank)",
+   "ar": "بنك أفريقيا",
+   "group": "Groupe Bank of Africa – O Capital",
+   "web": "https://www.bankofafrica.ma",
+   "city": "Casablanca",
+   "addr": "140, avenue Hassan II, Casablanca 20250",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Centre de Relation Clientèle – Maroc",
+     "080 100 8100",
+     "v"
+    ],
+    [
+     "Centre de Relation Clientèle – depuis l'étranger",
+     "+212 5 22 42 15 42",
+     "v"
+    ]
+   ],
+   "emails": [
+    [
+     "Relation client",
+     "relationclient@bankofafrica.ma",
+     "v"
+    ]
+   ],
+   "types": [
+    "Résidentiel",
+    "MRE",
+    "Professionnel"
+   ],
+   "products": [
+    [
+     "Crédit Immobilier MCM (Marocains Citoyens du Monde)",
+     "Conditions préférentielles, gratuité des frais de dossier et d'expertise, parcours « Fast Track ».",
+     "v"
+    ],
+    [
+     "Plateforme credithabitat.ma",
+     "Demande de crédit immobilier en ligne.",
+     "v"
+    ],
+    [
+     "Salaf Dari (MRE)",
+     "Annoncé jusqu'à 85 % du coût du bien (source secondaire) — à confirmer.",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Taux et durée",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Filiales : BTI Bank (participatif, avec Al Baraka), Maghrebail (leasing), BMCE EuroServices (Europe).",
+   "src": [
+    "https://www.bankofafrica.ma/fr/contact",
+    "https://www.bankofafrica.ma/fr/actualites/offres-accompagnement-marocains-du-monde",
+    "https://www.credithabitat.ma"
+   ]
+  },
+  {
+   "id": "cih",
+   "cat": "bank",
+   "name": "CIH Bank",
+   "ar": "القرض العقاري والسياحي",
+   "group": "Groupe CDG",
+   "web": "https://www.cihbank.ma",
+   "city": "Casablanca",
+   "addr": "187, avenue Hassan II, 20019 Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Centre de relation client (depuis le Maroc)",
+     "4747",
+     "s"
+    ],
+    [
+     "Marocains du Monde",
+     "+212 5 20 912 912",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Marocains du Monde",
+     "marocainsdumonde@cihbank.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Résidentiel",
+    "MRE",
+    "Étrangers non-résidents"
+   ],
+   "products": [
+    [
+     "Crédit Salam Acquisition",
+     "Destiné aux étrangers non-résidents : jusqu'à 70 % sur 15 ans (source secondaire) — à confirmer.",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Offres habitat résidents (taux, durée)",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Banque historiquement spécialisée dans l'immobilier. Site officiel inaccessible lors de la vérification automatique — numéros à confirmer par téléphone.",
+   "src": [
+    "https://www.cihbank.ma"
+   ]
+  },
+  {
+   "id": "bmci",
+   "cat": "bank",
+   "name": "BMCI",
+   "ar": "البنك المغربي للتجارة والصناعة",
+   "group": "Actionnaire de référence : à confirmer (cession BNP Paribas annoncée)",
+   "web": "https://www.bmci.ma",
+   "city": "Casablanca",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Centre de Relations Clients",
+     "2828",
+     "v"
+    ],
+    [
+     "MRE – France",
+     "01 70 48 07 19",
+     "v"
+    ],
+    [
+     "MRE – Espagne",
+     "09 13 75 30 17",
+     "v"
+    ],
+    [
+     "MRE – Italie",
+     "06 99 74 90 03",
+     "v"
+    ],
+    [
+     "MRE – Pays-Bas",
+     "02 07 21 91 35",
+     "v"
+    ],
+    [
+     "MRE – Belgique",
+     "026 20 03 70",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Résidentiel",
+    "Terrain",
+    "Construction",
+    "MRE",
+    "Leasing immobilier",
+    "Participatif"
+   ],
+   "products": [
+    [
+     "Logement au Maroc (MRE)",
+     "Jusqu'à 100 % du prix d'achat (résidence principale ou secondaire), taux fixe ou variable capé, jusqu'à 25 ans, différé jusqu'à 3 mois. Offre soumise à conditions.",
+     "v"
+    ],
+    [
+     "Achat de terrain (MRE)",
+     "Jusqu'à 80 %.",
+     "v"
+    ],
+    [
+     "Construction / aménagement (MRE)",
+     "Jusqu'à 80 %.",
+     "v"
+    ],
+    [
+     "Leasing immobilier (professionnels)",
+     "« Financer des locaux pro ».",
+     "v"
+    ]
+   ],
+   "mre": "oui",
+   "status": "ok",
+   "missing": [
+    "Taux en vigueur",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Fenêtre participative : Najmah (Mourabaha immobilière, Ijara Mountahia Bi Tamlik).",
+   "src": [
+    "https://www.bmci.ma/marocains-du-monde-2/",
+    "https://www.bmci.ma/professionnels/financement/"
+   ]
+  },
+  {
+   "id": "cdm",
+   "cat": "bank",
+   "name": "Crédit du Maroc",
+   "ar": "مصرف المغرب",
+   "group": "Groupe Holmarcom",
+   "web": "https://www.creditdumaroc.ma",
+   "city": "Casablanca",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Centre de Relations Clientèle – depuis le Maroc",
+     "32 32",
+     "v"
+    ],
+    [
+     "Centre de Relations Clientèle – depuis l'étranger",
+     "+212 5 22 477 477",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Résidentiel",
+    "Construction"
+   ],
+   "products": [
+    [
+     "Crédit Immobilier Sakane",
+     "Acquisition d'un logement principal ou secondaire, neuf ou ancien, et construction ; durée jusqu'à 25 ans ; taux fixe ou variable.",
+     "v"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "ok",
+   "missing": [
+    "Taux en vigueur",
+    "Offre MRE",
+    "Contact partenariats"
+   ],
+   "notes": "Fenêtre participative : Arreda.",
+   "src": [
+    "https://www.creditdumaroc.ma/particulier/credit-immobilier-sakane",
+    "https://www.creditdumaroc.ma/particulier/reclamation"
+   ]
+  },
+  {
+   "id": "saham",
+   "cat": "bank",
+   "name": "Saham Bank (ex-Société Générale Maroc)",
+   "ar": "سهام بنك",
+   "group": "Groupe Saham",
+   "web": "https://www.sahambank.com",
+   "city": "Casablanca",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Conseiller dédié Marocains du Monde",
+     "+212 522 42 42 44",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Résidentiel",
+    "Locatif",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Crédit immobilier",
+     "Solutions pour un projet personnel ou locatif, avec options de protection.",
+     "v"
+    ],
+    [
+     "Crédit immobilier Marocains du Monde",
+     "Étude personnalisée, démarches possibles depuis l'étranger.",
+     "v"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Centre de relation client général",
+    "Taux et durée",
+    "Contact partenariats"
+   ],
+   "notes": "Fenêtre participative : Dar Al Amane.",
+   "src": [
+    "https://www.sahambank.com/",
+    "https://www.sahambank.com/marocains-du-monde/"
+   ]
+  },
+  {
+   "id": "cam",
+   "cat": "bank",
+   "name": "Crédit Agricole du Maroc",
+   "ar": "القرض الفلاحي للمغرب",
+   "group": "Groupe Crédit Agricole du Maroc",
+   "web": "https://www.creditagricole.ma",
+   "city": "Rabat",
+   "addr": "Place des Alaouites, B.P. 49, 10000 Rabat",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Centre de relation client",
+     "6464",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Relation client",
+     "relationclient@creditagricole.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Résidentiel",
+    "Rural",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Financement de projets – Marocains du Monde",
+     "Page MDM « Financement de vos projets » (le logement n'y est pas détaillé).",
+     "v"
+    ]
+   ],
+   "mre": "oui",
+   "status": "missing",
+   "missing": [
+    "Offre habitat détaillée",
+    "Taux, durée",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Filiale participative : Al Akhdar Bank.",
+   "src": [
+    "https://www.creditagricole.ma/fr/marocain-du-monde"
+   ]
+  },
+  {
+   "id": "abb",
+   "cat": "bank",
+   "name": "Al Barid Bank",
+   "ar": "البريد بنك",
+   "group": "Groupe Barid Al-Maghrib",
+   "web": "https://www.albaridbank.ma",
+   "city": "Rabat",
+   "addr": "Rue Ibnou Battouta, Agdal, Rabat (réclamations)",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Centre de Relation Client (7j/7, 8h–24h)",
+     "080 200 32 32",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Centre de Relation Client",
+     "CRC@albaridbank.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Résidentiel",
+    "Social",
+    "Construction",
+    "Terrain"
+   ],
+   "products": [
+    [
+     "Barid Sakane",
+     "Acquisition, construction, terrain ou travaux (presse spécialisée) — conditions à confirmer.",
+     "s"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "partial",
+   "missing": [
+    "Taux, quotité, durée",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Banque de proximité, réseau postal national. Site officiel inaccessible lors de la vérification automatique.",
+   "src": [
+    "https://www.albaridbank.ma",
+    "https://fnh.ma/article/actualite-entreprises/al-barid-bank-complete-son-offre-avec-barid-sakane"
+   ]
+  },
+  {
+   "id": "cfg",
+   "cat": "bank",
+   "name": "CFG Bank",
+   "ar": "سي إف جي بنك",
+   "group": "CFG Group",
+   "web": "https://www.cfgbank.com",
+   "city": "Casablanca",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Centre de relation clients (Maroc ou étranger)",
+     "+212 522 776 800",
+     "v"
+    ]
+   ],
+   "emails": [
+    [
+     "Réclamations",
+     "reclamation@cfgbank.com",
+     "v"
+    ]
+   ],
+   "types": [
+    "Résidentiel",
+    "Terrain + construction"
+   ],
+   "products": [
+    [
+     "Crédit immobilier",
+     "Achat d'un bien neuf ou ancien ; construction d'une résidence principale ou secondaire sur terrain déjà acquis ; terrain avec projet de construction (18 à 24 mois).",
+     "v"
+    ],
+    [
+     "Crédit One-Shot",
+     "Prêt court terme garanti par actifs financiers ou immobiliers, à partir de 500 000 DH.",
+     "v"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "ok",
+   "missing": [
+    "Taux",
+    "Contact partenariats"
+   ],
+   "notes": "Banque orientée clientèle haut de gamme et professions libérales.",
+   "src": [
+    "https://www.cfgbank.com/particuliers/notre-offre/solution-financement/le-credit-immobilier/"
+   ]
+  },
+  {
+   "id": "amal",
+   "cat": "bank",
+   "name": "Bank Al Amal",
+   "ar": "بنك الأمل",
+   "group": "À confirmer",
+   "web": "https://www.bankalamalmre.ma",
+   "city": "Casablanca",
+   "addr": "288, boulevard Mohamed Zerktouni, Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Standard",
+     "05 22 22 69 26",
+     "s"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "MRE",
+    "Investissement"
+   ],
+   "products": [
+    [
+     "Financement des projets des MRE",
+     "Banque dédiée à l'investissement des Marocains du Monde (source secondaire).",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "missing",
+   "missing": [
+    "Confirmation de l'activité habitat",
+    "Site et coordonnées officiels",
+    "Conditions"
+   ],
+   "notes": "Informations issues de sources secondaires uniquement — à vérifier en priorité.",
+   "src": []
+  },
+  {
+   "id": "caixa",
+   "cat": "bank",
+   "name": "CaixaBank – succursale au Maroc",
+   "ar": "كايشا بنك المغرب",
+   "group": "CaixaBank (Espagne)",
+   "web": "https://www.caixabank.ma",
+   "city": "Casablanca",
+   "addr": "179, boulevard d'Anfa, 20100 Casablanca",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Head Office au Maroc",
+     "+212 522 979 340",
+     "v"
+    ]
+   ],
+   "emails": [
+    [
+     "Clientèle internationale",
+     "international.customer@caixabank.com",
+     "v"
+    ]
+   ],
+   "types": [
+    "Entreprises"
+   ],
+   "products": [],
+   "mre": "à confirmer",
+   "status": "missing",
+   "missing": [
+    "Offre de financement immobilier au Maroc (non trouvée)",
+    "Conditions"
+   ],
+   "notes": "Présence surtout orientée entreprises ; intérêt pour les clients espagnols/MRE d'Espagne à vérifier.",
+   "src": [
+    "https://www.caixabank.ma/fr"
+   ]
+  },
+  {
+   "id": "umnia",
+   "cat": "part",
+   "name": "Umnia Bank",
+   "ar": "أمنية بنك",
+   "group": "CIH Bank, CDG & QIIB (à confirmer)",
+   "web": "https://www.umniabank.ma",
+   "city": "Casablanca",
+   "addr": "397, Route El Jamia (ex-Route El Jadida), Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Centre de relation clientèle (Ucall)",
+     "05 22 64 62 64",
+     "s"
+    ],
+    [
+     "Numéro court Ucall",
+     "4626",
+     "s"
+    ],
+    [
+     "Siège",
+     "05 22 64 50 00",
+     "s"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Mourabaha immobilière",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Mourabaha immobilière",
+     "Compte courant avec revenu domicilié ; « Hamish Al Jiddiya » de 5 % du prix ; durée maximale 25 ans ; contrat d'achat banque-vendeur puis contrat Mourabaha client-banque ; accord de principe en ligne (FAQ officielle citée) — à confirmer.",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Marge en vigueur",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "La Mourabaha n'est pas un prêt à intérêt : la banque achète le bien puis le revend au client avec une marge fixée d'avance.",
+   "src": [
+    "https://www.umniabank.ma/fr/contact-2",
+    "https://www.umniabank.ma/fr/faq/financement-immobilier"
+   ]
+  },
+  {
+   "id": "assafa",
+   "cat": "part",
+   "name": "Bank Assafa",
+   "ar": "بنك الصفاء",
+   "group": "Groupe Attijariwafa bank",
+   "web": "https://www.bankassafa.com",
+   "city": "Casablanca",
+   "addr": "19, boulevard Abdelmoumen, Casablanca 20100",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Téléphone",
+     "0529 040 444",
+     "v"
+    ],
+    [
+     "Numéro court",
+     "6066",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Mourabaha immobilière",
+    "Terrain",
+    "Commercial",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Assafa Sakane (Mourabaha Sakane)",
+     "La banque acquiert le bien et le revend au client avec une marge fixée d'avance, réglée par mensualités constantes. Éligible : terrain destiné à la construction d'un logement. Pour particuliers et professionnels (dont MRE) bancarisés au Maroc.",
+     "v"
+    ],
+    [
+     "Ok'Immo",
+     "Financement participatif d'un logement, d'un local commercial ou de tout bien immobilier, avec remises négociées auprès de promoteurs partenaires.",
+     "v"
+    ],
+    [
+     "Simulateur immobilier",
+     "Simulation des redevances selon le prix et la durée.",
+     "v"
+    ]
+   ],
+   "mre": "oui",
+   "status": "ok",
+   "missing": [
+    "Marge en vigueur",
+    "Programme partenaires (Ok'Immo) pour agences"
+   ],
+   "notes": "Le programme Ok'Immo avec partenaires immobiliers est une porte d'entrée intéressante pour une convention.",
+   "src": [
+    "https://www.bankassafa.com/fr/assafa-sakane",
+    "https://www.bankassafa.com/fr/okimmo-les-deals-qui-mettent-tout-le-monde-daccord",
+    "https://www.bankassafa.com/fr/contactez-nous"
+   ]
+  },
+  {
+   "id": "yousr",
+   "cat": "part",
+   "name": "Bank Al Yousr",
+   "ar": "بنك اليسر",
+   "group": "Groupe BCP & Guidance Financial",
+   "web": "https://www.alyousr.ma",
+   "city": "Casablanca",
+   "addr": "162, angle boulevard Anfa et rue Molière, 20050 Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Centre relation client",
+     "+212 522 58 50 50",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Contact",
+     "alyousr@alyousr.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Mourabaha immobilière"
+   ],
+   "products": [
+    [
+     "Mourabaha immobilière",
+     "Contrat validé par le Comité Charia ; demande en agence ou en ligne.",
+     "s"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "partial",
+   "missing": [
+    "Marge, durée",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Site officiel inaccessible lors de la vérification automatique.",
+   "src": [
+    "https://alyousr.ma/fr/trouvez-nous"
+   ]
+  },
+  {
+   "id": "bti",
+   "cat": "part",
+   "name": "BTI Bank (Bank Al Tamweel wa Al Inmaa)",
+   "ar": "بنك التمويل والإنماء",
+   "group": "Bank of Africa & Al Baraka Banking Group",
+   "web": "https://www.btibank.ma",
+   "city": "Casablanca",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [],
+   "emails": [],
+   "types": [
+    "Mourabaha immobilière"
+   ],
+   "products": [
+    [
+     "Mourabaha immobilière",
+     "Produit annoncé (presse spécialisée) — conditions à confirmer.",
+     "s"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "missing",
+   "missing": [
+    "Téléphone officiel",
+    "Adresse du siège",
+    "Conditions",
+    "Contact partenariats"
+   ],
+   "notes": "Aucune coordonnée officielle vérifiable trouvée : à obtenir via une agence Bank of Africa.",
+   "src": []
+  },
+  {
+   "id": "akhdar",
+   "cat": "part",
+   "name": "Al Akhdar Bank",
+   "ar": "الأخضر بنك",
+   "group": "Crédit Agricole du Maroc & ICD (Groupe BID)",
+   "web": "https://www.alakhdarbank.ma",
+   "city": "Rabat",
+   "addr": "Angle avenue Alger et rue Oran, Hassan, Rabat",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Centre de relation client",
+     "0530 14 22 22",
+     "s"
+    ],
+    [
+     "Centre de relation client",
+     "0530 90 90 90",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Contact",
+     "contact@alakhdarbank.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Mourabaha immobilière",
+    "Rural",
+    "Professionnel"
+   ],
+   "products": [
+    [
+     "Sakane (particuliers)",
+     "Financement Mourabaha du logement.",
+     "s"
+    ],
+    [
+     "Al Akhdar Immo",
+     "Biens agricoles ou professionnels.",
+     "s"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "partial",
+   "missing": [
+    "Marge, durée",
+    "Contact partenariats"
+   ],
+   "notes": "Site officiel inaccessible lors de la vérification automatique.",
+   "src": [
+    "https://www.alakhdarbank.ma/contactus"
+   ]
+  },
+  {
+   "id": "najmah",
+   "cat": "window",
+   "name": "Najmah – fenêtre participative BMCI",
+   "ar": "نجمة",
+   "group": "BMCI",
+   "web": "https://www.bmci.ma/najmah/",
+   "city": "",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Centre de Relations Clients BMCI",
+     "2828",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Mourabaha immobilière",
+    "Ijara"
+   ],
+   "products": [
+    [
+     "Mourabaha Immobilière",
+     "Marge de profit fixe sur toute la durée du financement.",
+     "v"
+    ],
+    [
+     "Ijara Mountahia Bi Tamlik immobilière",
+     "Accès à la propriété en fin de contrat.",
+     "v"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "partial",
+   "missing": [
+    "Marge, durée",
+    "Contact dédié"
+   ],
+   "notes": "",
+   "src": [
+    "https://www.bmci.ma/najmah/contactez-nous/"
+   ]
+  },
+  {
+   "id": "arreda",
+   "cat": "window",
+   "name": "Arreda – fenêtre participative Crédit du Maroc",
+   "ar": "الرضا",
+   "group": "Crédit du Maroc",
+   "web": "https://www.creditdumaroc.ma",
+   "city": "",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Centre de Relations Clientèle Crédit du Maroc",
+     "32 32",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Mourabaha immobilière"
+   ],
+   "products": [],
+   "mre": "à confirmer",
+   "status": "missing",
+   "missing": [
+    "Produits immobiliers détaillés",
+    "Contact dédié"
+   ],
+   "notes": "",
+   "src": []
+  },
+  {
+   "id": "daralamane",
+   "cat": "window",
+   "name": "Dar Al Amane – fenêtre participative Saham Bank",
+   "ar": "دار الأمان",
+   "group": "Saham Bank",
+   "web": "https://www.sahambank.com",
+   "city": "",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [],
+   "emails": [],
+   "types": [
+    "Mourabaha immobilière"
+   ],
+   "products": [],
+   "mre": "à confirmer",
+   "status": "missing",
+   "missing": [
+    "Coordonnées",
+    "Produits immobiliers"
+   ],
+   "notes": "",
+   "src": []
+  },
+  {
+   "id": "wafaimmo",
+   "cat": "finco",
+   "name": "Wafa Immobilier",
+   "ar": "وفا إيموبيليي",
+   "group": "Groupe Attijariwafa bank",
+   "web": "https://www.wafaimmobilier.ma",
+   "city": "Casablanca",
+   "addr": "112, angle boulevard Abdelmoumen et rue Rembrandt, Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Relation client",
+     "+212 5 22 54 56 56",
+     "s"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Résidentiel",
+    "Construction",
+    "Terrain"
+   ],
+   "products": [
+    [
+     "Crédit immobilier",
+     "Filiale spécialisée du groupe : acquisition, construction, aménagement.",
+     "s"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "partial",
+   "missing": [
+    "Conditions",
+    "Contact partenariats",
+    "Agence de Meknès"
+   ],
+   "notes": "Site officiel inaccessible lors de la vérification automatique.",
+   "src": [
+    "https://www.attijariwafabank.com/en/brands-and-Moroccan-subsidiaries/wafa-immobilier"
+   ]
+  },
+  {
+   "id": "wafabail",
+   "cat": "finco",
+   "name": "Wafabail",
+   "ar": "وفابيل",
+   "group": "Groupe Attijariwafa bank",
+   "web": "https://www.wafabail.ma",
+   "city": "Casablanca",
+   "addr": "39-41, boulevard Moulay Youssef, 20070 Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Standard",
+     "+212 522 43 60 00",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Contact",
+     "contact@wafabail.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Leasing immobilier",
+    "Professionnel"
+   ],
+   "products": [
+    [
+     "Crédit-bail immobilier",
+     "Financement de locaux professionnels.",
+     "s"
+    ]
+   ],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Conditions",
+    "Contact partenariats"
+   ],
+   "notes": "",
+   "src": [
+    "https://www.wafabail.ma/contact"
+   ]
+  },
+  {
+   "id": "maghrebail",
+   "cat": "finco",
+   "name": "Maghrebail",
+   "ar": "مغرب بايل",
+   "group": "Groupe Bank of Africa",
+   "web": "https://www.maghrebail.ma",
+   "city": "Casablanca",
+   "addr": "45, boulevard Moulay Youssef, 20070 Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Siège",
+     "05 22 48 65 00",
+     "s"
+    ],
+    [
+     "Siège",
+     "05 22 20 33 04",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Contact",
+     "maghrebail@maghrebail.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Leasing immobilier (Immobail)",
+    "Professionnel"
+   ],
+   "products": [
+    [
+     "Immobail – crédit-bail immobilier",
+     "Financement de biens immobiliers professionnels.",
+     "s"
+    ]
+   ],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Conditions",
+    "Contact partenariats"
+   ],
+   "notes": "",
+   "src": [
+    "https://www.maghrebail.ma/siege"
+   ]
+  },
+  {
+   "id": "marocleasing",
+   "cat": "finco",
+   "name": "Maroc Leasing",
+   "ar": "المغرب ليزينغ",
+   "group": "Groupe BCP",
+   "web": "https://www.marocleasing.ma",
+   "city": "Casablanca",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Téléphone",
+     "+212 522 42 95 95",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Leasing immobilier",
+    "Professionnel"
+   ],
+   "products": [],
+   "mre": "non",
+   "status": "missing",
+   "missing": [
+    "Produits immobiliers détaillés",
+    "Adresse",
+    "Contact partenariats"
+   ],
+   "notes": "",
+   "src": [
+    "https://www.marocleasing.ma/"
+   ]
+  },
+  {
+   "id": "sofac",
+   "cat": "finco",
+   "name": "SOFAC",
+   "ar": "صوفاك",
+   "group": "À confirmer",
+   "web": "https://www.sofac.ma",
+   "city": "Casablanca",
+   "addr": "57, boulevard Abdelmoumen, Casablanca",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Standard (et WhatsApp)",
+     "0522 42 96 96",
+     "v"
+    ],
+    [
+     "Numéro ECO",
+     "0801 008 000",
+     "v"
+    ],
+    [
+     "Réclamations",
+     "0529 099 777",
+     "v"
+    ]
+   ],
+   "emails": [
+    [
+     "Réclamations",
+     "reclamations@sofac.ma",
+     "v"
+    ]
+   ],
+   "types": [
+    "Complément de crédit immobilier",
+    "Leasing immobilier"
+   ],
+   "products": [
+    [
+     "Je complète mon crédit immobilier",
+     "Prêt personnel complémentaire pour les frais liés à l'achat ou à la construction d'un logement.",
+     "v"
+    ],
+    [
+     "Crédit-bail et lease-back immobilier",
+     "Pour professionnels et entreprises (acquisition de locaux).",
+     "v"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "ok",
+   "missing": [
+    "Taux",
+    "Contact partenariats"
+   ],
+   "notes": "",
+   "src": [
+    "https://www.sofac.ma/autres-acces/nous-contacter/",
+    "https://www.sofac.ma/projet/je-complete-mon-credit-immobilier/",
+    "https://www.sofac.ma/produit/leasing/"
+   ]
+  },
+  {
+   "id": "alamana",
+   "cat": "micro",
+   "name": "Al Amana Microfinance",
+   "ar": "الأمانة للتمويل الأصغر",
+   "group": "Association",
+   "web": "https://www.alamana.org.ma",
+   "city": "Rabat",
+   "addr": "40, rue Al Fadila, Q.I. 10130 Rabat",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Numéro vert",
+     "0801 000 003",
+     "v"
+    ],
+    [
+     "Téléphone",
+     "+212 5 37 28 95 00",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Habitat (petits montants)",
+    "Terrain",
+    "Local professionnel"
+   ],
+   "products": [
+    [
+     "Crédit individuel habitat",
+     "Réparation, raccordement eau/électricité, achat d'un terrain, construction ou extension.",
+     "v"
+    ],
+    [
+     "Tamwil Milkia",
+     "Acquisition d'un logement, d'un terrain ou d'un local professionnel/commercial.",
+     "v"
+    ]
+   ],
+   "mre": "à confirmer",
+   "status": "ok",
+   "missing": [
+    "Plafonds et conditions"
+   ],
+   "notes": "Utile pour les clients à revenus modestes ou irréguliers.",
+   "src": [
+    "https://www.alamana.org.ma/ar/ar/services-financiers/tamwil-milkia"
+   ]
+  },
+  {
+   "id": "attawfiq",
+   "cat": "micro",
+   "name": "Attawfiq Micro-Finance (Fondation Banque Populaire)",
+   "ar": "التوفيق للتمويل الأصغر",
+   "group": "Groupe BCP",
+   "web": "https://www.fbpmc.ma",
+   "city": "Casablanca",
+   "addr": "79, avenue Hassan II, Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Siège",
+     "0522 43 49 49",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Contact",
+     "contact@fbpmc.ma",
+     "s"
+    ]
+   ],
+   "types": [
+    "Habitat (petits montants)"
+   ],
+   "products": [
+    [
+     "Islah Assakane",
+     "Rénovation ou extension du logement.",
+     "s"
+    ],
+    [
+     "Al Milkia",
+     "Achat d'un appartement, d'un terrain ou construction.",
+     "s"
+    ]
+   ],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Plafonds et conditions"
+   ],
+   "notes": "",
+   "src": []
+  },
+  {
+   "id": "tamwilcom",
+   "cat": "state",
+   "name": "TAMWILCOM (ex-CCG) – Damane Assakane",
+   "ar": "تمويلكم",
+   "group": "Établissement public",
+   "web": "https://www.tamwilcom.ma",
+   "city": "Rabat",
+   "addr": "Centre d'affaires, boulevard Ar Ryad, Hay Ryad, Rabat, B.P. 2031",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Contact",
+     "+212 537 71 68 68",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Garantie de crédit habitat",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Prêts habitat – garanties (Damane Assakane : FOGARIM / FOGALOGE)",
+     "Garanties facilitant l'accès à la propriété (premier logement ou construction). La demande se fait auprès d'une banque partenaire, qui sollicite la garantie.",
+     "v"
+    ]
+   ],
+   "mre": "oui",
+   "status": "ok",
+   "missing": [
+    "Liste des banques partenaires",
+    "Plafonds actuels"
+   ],
+   "notes": "Organisme de garantie : ne prête pas directement.",
+   "src": [
+    "https://www.tamwilcom.ma/"
+   ]
+  },
+  {
+   "id": "daamsakane",
+   "cat": "state",
+   "name": "Daam Sakane – aide directe au logement",
+   "ar": "دعم السكن",
+   "group": "État – mise en œuvre CDG (CNRA)",
+   "web": "https://www.daamsakane.ma",
+   "city": "Rabat",
+   "addr": "Place Moulay El Hassan, B.P. 408, Rabat (CDG)",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "CDG – standard",
+     "+212 5 37 66 90 00",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Aide de l'État à l'acquisition",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Aide directe (ADESL)",
+     "100 000 DH pour un logement ≤ 300 000 DH et 70 000 DH entre 300 000 et 700 000 DH (sources secondaires, à confirmer). Conditions : Marocain résidant au Maroc ou à l'étranger, ne pas être propriétaire, ne pas avoir bénéficié d'une aide au logement. Demande sur daamsakane.ma.",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Barème officiel en vigueur",
+    "Date de fin du programme"
+   ],
+   "notes": "Aide, pas un crédit : se combine avec un financement bancaire.",
+   "src": [
+    "https://www.cdg.ma/fr/daam-sakane"
+   ]
+  },
+  {
+   "id": "alomrane",
+   "cat": "state",
+   "name": "Groupe Al Omrane",
+   "ar": "مجموعة العمران",
+   "group": "Établissement public",
+   "web": "https://www.alomrane.gov.ma",
+   "city": "Rabat",
+   "addr": "",
+   "addr_ok": "",
+   "phones": [
+    [
+     "Numéro ECO",
+     "080 100 15 16",
+     "v"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Aménageur public (partenaire)"
+   ],
+   "products": [],
+   "mre": "à confirmer",
+   "status": "partial",
+   "missing": [
+    "Programmes en cours à Meknès"
+   ],
+   "notes": "Aménageur-promoteur public : partenaire potentiel pour l'offre de logements, pas un organisme de crédit.",
+   "src": [
+    "https://www.alomrane.gov.ma/"
+   ]
+  },
+  {
+   "id": "chaabi_fr",
+   "cat": "mre",
+   "name": "Chaabi Bank (France)",
+   "ar": "الشعبي بنك – فرنسا",
+   "group": "Groupe BCP",
+   "web": "https://www.chaabibank.fr",
+   "city": "Paris",
+   "addr": "Service Support Client, 49 avenue Kléber, 75016 Paris",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Centre Relation Clients",
+     "0 806 80 42 36",
+     "v"
+    ]
+   ],
+   "emails": [
+    [
+     "Centre relation clients",
+     "crc@banquechaabi.fr",
+     "v"
+    ],
+    [
+     "Support client",
+     "supportclient@chaabibank.fr",
+     "v"
+    ]
+   ],
+   "types": [
+    "Crédit immobilier",
+    "MRE"
+   ],
+   "products": [
+    [
+     "Crédit immobilier",
+     "Appartement neuf ou ancien, terrain, maison ou travaux ; jusqu'à 100 % du prix ; taux fixe. Pays du bien (France / Maroc) à confirmer.",
+     "v"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Financement d'un bien situé au Maroc",
+    "Conditions"
+   ],
+   "notes": "",
+   "src": [
+    "https://www.chaabibank.fr/produit/credit-immobilier/?o=258"
+   ]
+  },
+  {
+   "id": "awb_eu",
+   "cat": "mre",
+   "name": "Attijariwafa bank Europe",
+   "ar": "التجاري وفا بنك أوروبا",
+   "group": "Groupe Attijariwafa bank",
+   "web": "https://www.attijariwafa.net",
+   "city": "Paris",
+   "addr": "6-8, rue Chauchat, 75009 Paris",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Service client",
+     "+33 1 53 75 75 00",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Service client",
+     "serviceclient@attijariwafa.net",
+     "s"
+    ]
+   ],
+   "types": [
+    "MRE"
+   ],
+   "products": [
+    [
+     "Offre « Miftah Bila Houdoud » MDM",
+     "Intermédiaire pour un crédit immobilier au Maroc accordé par Attijariwafa bank Maroc (source secondaire).",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Conditions"
+   ],
+   "notes": "",
+   "src": []
+  },
+  {
+   "id": "bmce_eu",
+   "cat": "mre",
+   "name": "BMCE EuroServices (Bank of Africa)",
+   "ar": "بي إم سي إي أورو سيرفيس",
+   "group": "Groupe Bank of Africa",
+   "web": "https://www.bankofafrica.ma/fr/reseau-bank-africa-letranger",
+   "city": "Paris",
+   "addr": "175 bis, avenue de Clichy, Paris",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Agence de Paris",
+     "+33 1 44 69 96 75",
+     "s"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "MRE"
+   ],
+   "products": [
+    [
+     "Salaf Dari",
+     "Crédit immobilier au Maroc pour les MRE (source secondaire).",
+     "s"
+    ]
+   ],
+   "mre": "oui",
+   "status": "partial",
+   "missing": [
+    "Conditions"
+   ],
+   "notes": "Réseau en Europe (France, Espagne, Allemagne…).",
+   "src": [
+    "https://www.bankofafrica.ma/en/reseau-bank-africa-letranger"
+   ]
+  },
+  {
+   "id": "ifc",
+   "cat": "intl",
+   "name": "IFC – Société financière internationale (Groupe Banque mondiale)",
+   "ar": "مؤسسة التمويل الدولية",
+   "group": "Groupe Banque mondiale",
+   "web": "https://www.ifc.org",
+   "city": "Washington / Rabat",
+   "addr": "2121 Pennsylvania Avenue NW, Washington D.C. 20433",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Siège",
+     "+1 202 473 1000",
+     "v"
+    ],
+    [
+     "Bureau du Maroc (Rabat)",
+     "+212 537 65 24 79",
+     "s"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Projets (promoteurs, tourisme, logement abordable)"
+   ],
+   "products": [],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Seuils d'intervention",
+    "Interlocuteur Maroc"
+   ],
+   "notes": "Finance des entreprises et projets de grande taille, pas les particuliers.",
+   "src": [
+    "https://www.ifc.org/en/contact-directory"
+   ]
+  },
+  {
+   "id": "ebrd",
+   "cat": "intl",
+   "name": "BERD – Banque européenne pour la reconstruction et le développement",
+   "ar": "البنك الأوروبي لإعادة الإعمار والتنمية",
+   "group": "Institution multilatérale",
+   "web": "https://www.ebrd.com/morocco.html",
+   "city": "Casablanca",
+   "addr": "Immeuble Zevaco, 46 route d'Azemmour, Lotissement El Fath, lot 4, 20230 Casablanca",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Bureau de Casablanca",
+     "+212 522 64 91 50",
+     "s"
+    ]
+   ],
+   "emails": [],
+   "types": [
+    "Projets",
+    "PME"
+   ],
+   "products": [],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Lignes de crédit via banques marocaines",
+    "Seuils"
+   ],
+   "notes": "Intervient surtout via des lignes de crédit aux banques marocaines et des projets.",
+   "src": [
+    "https://www.ebrd.com/home/contacts.html"
+   ]
+  },
+  {
+   "id": "afdb",
+   "cat": "intl",
+   "name": "BAD – Banque africaine de développement",
+   "ar": "البنك الإفريقي للتنمية",
+   "group": "Institution multilatérale",
+   "web": "https://www.afdb.org",
+   "city": "Rabat",
+   "addr": "N° 30, Lotissement Al-Andalous, Hay Ryad, Rabat",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Bureau pays Maroc",
+     "+212 530 177 300",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Bureau pays",
+     "coma@afdb.org",
+     "s"
+    ]
+   ],
+   "types": [
+    "Projets",
+    "Infrastructures"
+   ],
+   "products": [],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Programmes logement"
+   ],
+   "notes": "",
+   "src": []
+  },
+  {
+   "id": "eib",
+   "cat": "intl",
+   "name": "BEI – Banque européenne d'investissement",
+   "ar": "بنك الاستثمار الأوروبي",
+   "group": "Union européenne",
+   "web": "https://www.eib.org",
+   "city": "Rabat",
+   "addr": "Riad Business Center, aile sud, immeuble S3, 4e étage, avenue Attine, 10100 Hay Riad, Rabat",
+   "addr_ok": "s",
+   "phones": [
+    [
+     "Bureau de Rabat",
+     "+212 537 56 54 60",
+     "s"
+    ]
+   ],
+   "emails": [
+    [
+     "Bureau de Rabat",
+     "rabat@eib.org",
+     "s"
+    ]
+   ],
+   "types": [
+    "Projets",
+    "Lignes de crédit"
+   ],
+   "products": [],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Programmes logement"
+   ],
+   "notes": "",
+   "src": []
+  },
+  {
+   "id": "icd",
+   "cat": "intl",
+   "name": "ICD – Société islamique pour le développement du secteur privé (Groupe BID)",
+   "ar": "المؤسسة الإسلامية لتنمية القطاع الخاص",
+   "group": "Groupe Banque islamique de développement",
+   "web": "https://icd-ps.org",
+   "city": "Djeddah",
+   "addr": "Islamic Development Bank Group Complex, 8111 King Khalid Street, Al Nuzlah Al Yamania, Djeddah",
+   "addr_ok": "v",
+   "phones": [
+    [
+     "Siège",
+     "+966 12 644 1644",
+     "v"
+    ]
+   ],
+   "emails": [
+    [
+     "Contact",
+     "icd@isdb.org",
+     "v"
+    ]
+   ],
+   "types": [
+    "Projets (finance islamique)"
+   ],
+   "products": [],
+   "mre": "non",
+   "status": "partial",
+   "missing": [
+    "Interlocuteur Maroc"
+   ],
+   "notes": "Actionnaire d'Al Akhdar Bank.",
+   "src": [
+    "https://icd-ps.org/en/contact-us"
+   ]
+  }
+ ]
+}
