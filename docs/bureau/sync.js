@@ -75,9 +75,49 @@
       st.owner = r ? r.owner : null; st.srole = r ? r.role : null; st.staffAt = Date.now(); save();
     } catch (e) { if (e && e.message === 'staff revoked') throw e; /* كنعاودو من بعد */ }
   }
+  // 🔐 التحقق بخطوتين (تطبيق Google Authenticator، فابور): الجلسة كتسنى الرمز فالذاكرة بلا ما تتحفظ
+  let pend = null;
+  async function authReq(url, key, path, tok, body, method = 'POST') {
+    const res = await fetch(url + path, { method, headers: { apikey: key, 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: body ? JSON.stringify(body) : undefined });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error_description || data.msg || data.message || data.error || ('HTTP ' + res.status));
+    return data;
+  }
+  const mfaVerify = async (url, key, tok, fid, code) => {
+    const ch = await authReq(url, key, `/auth/v1/factors/${fid}/challenge`, tok, {});
+    return authReq(url, key, `/auth/v1/factors/${fid}/verify`, tok, { challenge_id: ch.id, code: String(code || '').replace(/\D/g, '') });
+  };
   async function signIn(url, key, email, password) {
     url = cleanUrl(url); key = String(key || '').trim(); email = normEmail(email);
     const d = await authCall(url, key, '/auth/v1/token?grant_type=password', { email, password });
+    const f = ((d.user && d.user.factors) || []).find(x => x.status === 'verified' && x.factor_type === 'totp');
+    if (f) { pend = { url, key, d, fid: f.id }; return { mfa: true }; }
+    return finishSignIn(url, key, d);
+  }
+  // الرمز ديال 6 أرقام من التطبيق ← الدخول كيكمل
+  async function mfaLogin(code) {
+    if (!pend) throw new Error('عاود الدخول من الأول');
+    const { url, key, d, fid } = pend;
+    const v = await mfaVerify(url, key, d.access_token, fid, code);
+    pend = null;
+    return finishSignIn(url, key, v);
+  }
+  const mfaCancel = () => { pend = null; };
+  async function mfaFactors() {
+    const u = await (await ok(await api('/auth/v1/user'))).json();
+    return (u.factors || []).filter(f => f.factor_type === 'totp');
+  }
+  async function mfaEnroll() {
+    // كنمسحو المحاولات القديمة اللي ما تكملاتش
+    for (const f of await mfaFactors()) if (f.status !== 'verified') await api('/auth/v1/factors/' + f.id, { method: 'DELETE' });
+    return (await ok(await api('/auth/v1/factors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ factor_type: 'totp', friendly_name: 'W777 ' + Date.now() }) }))).json();
+  }
+  async function mfaConfirm(fid, code) {
+    if (st.exp * 1000 < Date.now() + 60000) await refreshToken();
+    takeSession(st.url, st.key, await mfaVerify(st.url, st.key, st.access, fid, code));
+  }
+  async function mfaRemove(fid) { await ok(await api('/auth/v1/factors/' + fid, { method: 'DELETE' })); await refreshToken(); }
+  async function finishSignIn(url, key, d) {
     takeSession(url, key, d);
     await resolveStaff(true);
     // موظف كيدخل: ما نرفعوش بيانات هاد الجهاز للمكتب (غير كنجيبو بيانات المكتب)
@@ -444,7 +484,7 @@
     isOn: () => !!st,
     account: () => st && { email: st.email, url: st.url },
     defaults,
-    signIn, signUp, signOut, syncNow, schedule, fetchFile, fetchPath, netPhotoUrl, normEmail,
+    signIn, signUp, signOut, mfaLogin, mfaCancel, mfaFactors, mfaEnroll, mfaConfirm, mfaRemove, syncNow, schedule, fetchFile, fetchPath, netPhotoUrl, normEmail,
     status: () => status,
     lastSync: () => DB.getMeta('sync_last', null),
     pending: async () => Object.keys(await DB.getMeta('sync_dirty', {})).length,

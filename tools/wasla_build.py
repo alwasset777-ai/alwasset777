@@ -21,7 +21,7 @@ def load(lang):
     out = subprocess.run(['node', '-e', 'const window={};' + js + f';process.stdout.write(JSON.stringify(window.W777_WQ.{lang}))'], capture_output=True, text=True, check=True).stdout
     return json.loads(out)
 
-def build_stage(pool, rnd):
+def build_stage(pool, rnd, target=TARGET):
     """يحاول يركب شبكة من pool (لائحة عناصر). كيرجع (placed, H, W)"""
     best = None
     for attempt in range(40):
@@ -66,7 +66,7 @@ def build_stage(pool, rnd):
 
         put(items[0], 0, 0, rnd.choice('ad'))
         for it in items[1:]:
-            if len(placed) >= TARGET:
+            if len(placed) >= target:
                 break
             cand = []
             for (r, c), x in list(cells.items()):
@@ -88,7 +88,7 @@ def build_stage(pool, rnd):
         score = len(placed) * 1000 - H * W
         if not best or score > best[0]:
             best = (score, [(it, r - b[0], c - b[2], d) for it, r, c, d in placed], H, W)
-        if len(placed) >= TARGET and attempt > 10:
+        if len(placed) >= target and attempt > 10:
             break
     return best[1], best[2], best[3]
 
@@ -114,7 +114,7 @@ def main():
                 img = rest[0] if rest else None
                 if imgs is not None and img not in imgs:
                     img = None
-                items.append({'a': a, 'q': q, 'img': img, 'L': L})
+                items.append({'a': a, 'q': q, 'img': img, 'L': L, 'g': g})
             stages = []
             left = items[:]
             while len(left) >= MIN_STAGE:
@@ -124,7 +124,7 @@ def main():
                     break
                 ids = {id(p[0]) for p in placed}
                 left = [x for x in left if id(x) not in ids]
-                stages.append({'H': H, 'W': W, 'w': [[p[0]['a'], p[0]['q'], p[0]['img'] or '', p[1], p[2], p[3], ''.join(p[0]['L'])] for p in placed]})
+                stages.append({'H': H, 'W': W, 'w': [[p[0]['a'], p[0]['q'], p[0]['img'] or '', p[1], p[2], p[3], ''.join(p[0]['L'])] for p in placed], 'its': [p[0] for p in placed]})
             groups.append({'g': g, 's': stages, 'drop': []})
             spare.extend(left)
         # الأسئلة اللي ما دخلاتش فمجموعتها كتجمع فمجموعة «منوعات» فالأخير
@@ -138,7 +138,22 @@ def main():
                 continue
             ids = {id(p[0]) for p in placed}
             left = [x for x in left if id(x) not in ids]
-            mix.append({'H': H, 'W': W, 'w': [[p[0]['a'], p[0]['q'], p[0]['img'] or '', p[1], p[2], p[3], ''.join(p[0]['L'])] for p in placed]})
+            mix.append({'H': H, 'W': W, 'w': [[p[0]['a'], p[0]['q'], p[0]['img'] or '', p[1], p[2], p[3], ''.join(p[0]['L'])] for p in placed], 'its': [p[0] for p in placed]})
+        # الأسئلة اللي بقات: كنزيدوها لشي مرحلة (المجموعة ديالها أولا، من بعد «منوعات») باش ما يضيع حتى سؤال
+        for x in left[:]:
+            cands = [st for gr in groups if gr['g'] == x['g'] for st in gr['s']] + mix
+            for st in cands:
+                its = st['its']
+                if len(its) >= 12:
+                    continue
+                for _ in range(3):
+                    placed, H, W = build_stage(its + [x], rnd, len(its) + 1)
+                    if len(placed) == len(its) + 1:
+                        break
+                if len(placed) == len(its) + 1:
+                    st.update({'H': H, 'W': W, 'w': [[p[0]['a'], p[0]['q'], p[0]['img'] or '', p[1], p[2], p[3], ''.join(p[0]['L'])] for p in placed], 'its': [p[0] for p in placed]})
+                    left.remove(x)
+                    break
         if mix:
             groups.append({'g': 'mix', 's': mix, 'drop': [x['a'] for x in left]})
         data[lang] = groups
@@ -151,6 +166,8 @@ def main():
         print('pictures', sum(1 for g in gr for st in g['s'] for w in st['w'] if w[2]))
         for g in gr:
             g.pop('drop')
+            for st in g['s']:
+                st.pop('its', None)
     with open(os.path.join(ROOT, 'wasla-levels.js'), 'w', encoding='utf-8') as f:
         f.write('/* مولّد أوتوماتيكيا بـ tools/wasla_build.py — ما تبدلوش باليد. [جواب، سؤال، صورة، صف، عمود، اتجاه، حروف] */\n')
         data['credits'] = {k: v for k, v in credits.items() if k in imgs}

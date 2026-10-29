@@ -18,7 +18,7 @@
 ## أوامر
 - فحص سريع: `node --check docs/bureau/app.js docs/bureau/wasla.js`
 - اختبارات المتصفح (Playwright، chromium فـ `/opt/pw-browsers/chromium`):
-  `cd docs && python3 -m http.server 8777 &` ثم `NODE_PATH=$(npm root -g) node tools/tests/crawl.cjs` (كل الصفحات والقوائم والصفحات العمومية)، `tools/tests/mascot.cjs` (اللعبة)، `tools/tests/custag.cjs` (وكيل المشترك فاللعبة)، `tools/tests/mounir.cjs` (منير فاللعبة).
+  `cd docs && python3 -m http.server 8777 &` ثم `NODE_PATH=$(npm root -g) node tools/tests/crawl.cjs` (كل الصفحات والقوائم والصفحات العمومية)، `tools/tests/mascot.cjs` (اللعبة)، `tools/tests/custag.cjs` (وكيل المشترك فاللعبة)، `tools/tests/mounir.cjs` (منير فاللعبة)، `tools/tests/mfa.cjs` (التحقق بخطوتين بخادم مزيف).
 - النشر: PR → دمج (squash) فـ `main` → `tools/deploy-pages.sh "Deploy: …"` (ينشر `docs/bureau` لـ gh-pages).
 - الـ Edge Function: كتنشر عبر Composio (`SUPABASE_DEPLOY_FUNCTION` بالنص ديال الملف من commit، ومن بعد `SUPABASE_UPDATE_A_FUNCTION` بـ `verify_jwt: false`)، والفحص: `POST {}` ← `401 {"error":"auth"}` و `POST {"ping":true}` ← `{"ok":true}`.
 
