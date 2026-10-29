@@ -758,7 +758,37 @@
     placeLang();
     lvPage();
     agPageMood(a);
+    fx3dPage();
   }
+  /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
+  function fx3dPage() {
+    const m = main(); if (!m || document.documentElement.classList.contains('lv-lite')) return;
+    m.classList.remove('pg-in'); void m.offsetWidth; m.classList.add('pg-in');
+  }
+  (function fx3dTilt() {
+    if (!window.matchMedia || !matchMedia('(hover: hover) and (pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const SEL = '.card.stat, a.card, .prop-card, .dir-card, .fin-card';
+    let cur = null, raf = 0, ev = null;
+    const off = el => { el.classList.remove('t3d-on'); el.style.removeProperty('--tx'); el.style.removeProperty('--ty'); };
+    document.addEventListener('pointermove', e => {
+      if (document.documentElement.classList.contains('lv-lite')) return;
+      const el = e.target.closest && e.target.closest(SEL);
+      if (cur && cur !== el) { off(cur); cur = null; }
+      if (!el) return;
+      if (!el.classList.contains('t3d')) el.classList.add('t3d');
+      cur = el; ev = e;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0; if (!cur || !ev) return;
+        const r = cur.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+        const k = r.width > 420 ? 3 : 7; // البطاقات الكبيرة كتميل أقل
+        cur.style.setProperty('--tx', ((x - .5) * k).toFixed(2) + 'deg'); cur.style.setProperty('--ty', ((.5 - y) * k).toFixed(2) + 'deg');
+        cur.style.setProperty('--gx', (x * 100).toFixed(1) + '%'); cur.style.setProperty('--gy', (y * 100).toFixed(1) + '%');
+        cur.classList.add('t3d-on');
+      });
+    }, { passive: true });
+    document.addEventListener('pointerleave', () => { if (cur) off(cur); cur = null; });
+  })();
   // زر اللغة: فالرئيسية كيتحط فشريط «دول المشتركين»، وفالصفحات الأخرى كيرجع للشريط الفوقاني
   const LANG_HOME = document.createComment('lang');
   let langBtn = null; // كنحتفظو بالزر حتى ملي كتتبدل الصفحة (innerHTML) باش ما يضيعش

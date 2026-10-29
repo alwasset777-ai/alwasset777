@@ -1487,3 +1487,78 @@ html.lv-lite .fin-orbit, html.lv-lite .fin-orbit * { animation: none !important;
 .fin-steps li:last-child .fs-n { background: #c8102e; }
 .fin-steps li div { display: flex; flex-direction: column; } .fin-steps li small { color: var(--muted); }
 .fin-disc { font-size: 12.5px; margin-top: 12px; }
+
+/* ============================================================
+   ✦ PREMIUM 3D — طبقة العمق (ضوء من الفوق، ظلال متعددة، حواف لامعة، ميلان 3D)
+   كلشي كيتطفى فالوضع الخفيف (lv-lite) وملي المستعمل كيطلب حركة أقل
+   ============================================================ */
+:root {
+  --e1: 0 1px 1px rgba(17,17,17,.04), 0 2px 4px rgba(17,17,17,.04), 0 6px 14px -4px rgba(17,17,17,.08);
+  --e2: 0 1px 1px rgba(17,17,17,.04), 0 4px 8px rgba(17,17,17,.05), 0 14px 28px -10px rgba(58,11,20,.18), 0 30px 60px -30px rgba(17,17,17,.25);
+  --e3: 0 2px 3px rgba(17,17,17,.05), 0 10px 20px rgba(17,17,17,.07), 0 28px 50px -16px rgba(58,11,20,.28);
+  --rim: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(17,17,17,.04);
+}
+:root[data-theme="dark"] { --e1: 0 1px 2px rgba(0,0,0,.5), 0 8px 18px -6px rgba(0,0,0,.6); --e2: 0 2px 4px rgba(0,0,0,.5), 0 18px 36px -12px rgba(0,0,0,.75); --e3: 0 4px 8px rgba(0,0,0,.5), 0 30px 60px -18px rgba(0,0,0,.85); --rim: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(0,0,0,.4); }
+/* البطاقات: سطح مرفوع بحافة ضوء فوقانية */
+.card { box-shadow: var(--rim), var(--e1); border-color: rgba(17,17,17,.07); background-image: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 38%); }
+:root[data-theme="dark"] .card { border-color: rgba(255,255,255,.06); background-image: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }
+/* ميلان 3D مع الفأرة (JS كيعطي --tx/--ty/--gx/--gy) */
+.t3d { transform: perspective(900px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)) translateZ(0); transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .3s; will-change: transform; }
+.t3d.t3d-on { transition: transform .08s linear, box-shadow .3s; box-shadow: var(--rim), var(--e3); transform: perspective(900px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)) translateY(-4px) !important; translate: none !important; }
+.t3d::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 0%), rgba(255,255,255,.38), transparent 45%); mix-blend-mode: soft-light; }
+.t3d.t3d-on::before { opacity: 1; }
+.t3d { position: relative; }
+/* الأزرار: ملموسة — حافة سفلية، كتغطس ملي كتضغط */
+.btn { box-shadow: var(--rim), 0 1px 0 rgba(17,17,17,.06), 0 3px 8px -3px rgba(17,17,17,.12); transition: transform .12s, box-shadow .12s, border-color .2s, filter .2s; }
+.btn:active { transform: translateY(1.5px) scale(.985); box-shadow: inset 0 2px 4px rgba(17,17,17,.12); }
+.btn.gold, .btn.primary { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18), 0 6px 16px -6px rgba(200,16,46,.55), 0 2px 4px rgba(17,17,17,.12); text-shadow: 0 1px 0 rgba(0,0,0,.18); }
+.btn.primary { box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -2px 0 rgba(0,0,0,.4), 0 8px 18px -8px rgba(17,17,17,.6); }
+.btn.gold:hover, .btn.primary:hover { filter: brightness(1.06) saturate(1.05); }
+/* حقول الكتابة: محفورة شوية */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea { box-shadow: inset 0 1.5px 3px rgba(17,17,17,.06); transition: box-shadow .2s, border-color .2s; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { box-shadow: inset 0 1.5px 3px rgba(17,17,17,.04), 0 0 0 4px rgba(200,16,46,.14); border-color: var(--gold) !important; outline: none; }
+/* أرقام الحصيلة: بارزة 3D */
+.stat .v { text-shadow: none; filter: drop-shadow(0 2px 0 rgba(255,255,255,.9)) drop-shadow(0 4px 6px rgba(200,16,46,.18)); }
+.stat .ic { box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 12px -4px rgba(200,16,46,.35); transform: translateZ(30px); }
+/* الشريط السفلي (التيليفون): كبسولة عائمة زجاجية، والزر النشيط مرفوع */
+@media (max-width: 959px) {
+  .bottomnav { inset-inline: 10px; bottom: calc(8px + var(--safe-b)); padding: 6px 4px; border-radius: 22px; border: 1px solid rgba(255,255,255,.6);
+    background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6); box-shadow: var(--rim), 0 18px 40px -14px rgba(17,17,17,.45); }
+  :root[data-theme="dark"] .bottomnav { background: rgba(22,22,22,.78); border-color: rgba(255,255,255,.08); }
+  .bottomnav a { transition: transform .25s cubic-bezier(.3,1.6,.5,1), color .2s; }
+  .bottomnav a.active { transform: translateY(-3px); background: linear-gradient(180deg, rgba(200,16,46,.12), rgba(200,16,46,.03)); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 6px 14px -8px rgba(200,16,46,.6); }
+  .bottomnav a.active svg { filter: drop-shadow(0 3px 4px rgba(200,16,46,.45)); }
+  main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 110px); }
+  .fab { bottom: calc(var(--nav-h) + var(--safe-b) + 24px); }
+}
+/* القائمة الجانبية (الحاسوب): العنصر النشيط مرفوع بخط أحمر */
+.sidenav a { transition: background .2s, transform .2s, box-shadow .2s; }
+.sidenav a:hover { transform: translateX(-3px); }
+.sidenav a.active { box-shadow: var(--rim), var(--e1); position: relative; }
+.sidenav a.active::after { content: ''; position: absolute; inset-inline-start: 0; top: 22%; bottom: 22%; width: 3px; border-radius: 3px; background: linear-gradient(var(--gold-2), var(--gold)); }
+/* دخول الصفحة: كتطلع من العمق */
+.pg-in { animation: pg-in .42s cubic-bezier(.2,.8,.2,1) both; transform-origin: 50% 0; }
+@keyframes pg-in { from { opacity: 0; transform: perspective(1200px) rotateX(5deg) translateY(16px) scale(.985); } }
+/* النوافذ: كتجي من العمق + خلفية ضبابية */
+.modal-bg { -webkit-backdrop-filter: blur(6px) saturate(1.2); backdrop-filter: blur(6px) saturate(1.2); }
+.modal { box-shadow: var(--rim), 0 -10px 60px -10px rgba(0,0,0,.45); animation: md-in .38s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes md-in { from { opacity: .4; transform: perspective(1000px) translateY(30px) rotateX(8deg) scale(.97); } }
+/* الحالات الفارغة: أيقونة كتطفو */
+.empty .ic, .empty-ic { animation: fl-bob 3.2s ease-in-out infinite; filter: drop-shadow(0 12px 10px rgba(17,17,17,.18)); }
+@keyframes fl-bob { 50% { transform: translateY(-7px) rotate(-3deg); } }
+/* عناوين الصفحات: عمق خفيف */
+.page-head h1 { letter-spacing: -.01em; text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 6px 18px rgba(200,16,46,.12); }
+:root[data-theme="dark"] .page-head h1 { text-shadow: 0 6px 18px rgba(255,77,94,.18); }
+/* الوضع الخفيف وتقليل الحركة: بلا ميلان ولا دخول متحرك */
+html.lv-lite .t3d, html.lv-lite .t3d.t3d-on { transform: none !important; } html.lv-lite .t3d::before { display: none; }
+html.lv-lite .pg-in, html.lv-lite .modal, html.lv-lite .empty .ic, html.lv-lite .empty-ic { animation: none !important; }
+html.lv-lite .bottomnav { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); }
+@media (prefers-reduced-motion: reduce) { .t3d { transform: none !important; } .pg-in, .modal, .empty .ic, .empty-ic { animation: none !important; } }
+/* ✦ لمسات 3D إضافية: الضغط على التيليفون، الأرقام المحفورة، الشارات */
+@media (hover: none) { a.card:active, .prop-card:active, .dir-card:active, .fin-card:active { transform: perspective(800px) translateZ(-14px) scale(.985); transition: transform .12s; } }
+.section-title .num { box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 0 rgba(0,0,0,.35), 0 4px 10px -4px rgba(17,17,17,.5); }
+.badge { box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
+.hub-tile .hi { filter: drop-shadow(0 10px 12px rgba(17,17,17,.18)); }
+.fin-card, .prop-card, .dir-card { transform-style: preserve-3d; }
+.fin-card .fin-pair, .prop-card .badge { transform: translateZ(18px); }

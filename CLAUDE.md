@@ -12,6 +12,7 @@
   - `app.js` (كل الصفحات + الوكيل «منير»)، `sync.js` (Supabase)، `db.js` (IndexedDB)، `styles.css`، `sw.js` (رقم الـ cache `w777-bureau-vNNN` خاصو يتزاد مع كل نشر).
   - اللعبة «وصلة العقار»: `wasla.js` + `wasla-levels.js` (مولّد بـ `python3 tools/wasla_build.py` من `tools/wasla-data/`)، الصور فـ `docs/bureau/game/img/` (+ `credits.json`)، الصفحة العمومية `game.html`.
   - نصوص نماذج العقود: `files/contrats/texts.json` (مولّد بـ `python3 tools/contracts_text.py`).
+- «التمويل العقاري» (`#/tamwil`): البيانات فـ `tools/finance/institutions.json` ← `python3 tools/finance/build_app_data.py` كيولد `docs/bureau/finance-data.js` (معلومات تعريفية فقط، بلا نسب حتى يأكدها المكتب). الشعارات فـ `docs/bureau/icons/fin/*.webp`. ملفات PDF (الدليل + طلبات الاتفاقيات) كتتولد بـ `python3 tools/finance/guide.py` و `letters.py` وما كتدخلش للتطبيق.
 - الوكيل الذكي: Supabase Edge Function `supabase/functions/w777-agent/index.ts` (Gemini فابور أولاً؛ Claude غير إلا زاد المدير مفتاحو). الأدوات كتتنفذ فالمتصفح (`agRunTool` فـ `app.js`).
 - قاعدة البيانات: `docs/bureau/supabase.sql` (كل تبديل كيتزاد هنا وكيتطبق live).
 
