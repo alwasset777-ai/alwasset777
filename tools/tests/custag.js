@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');
+(async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
+const c=await b.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});const p=await c.newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route(/googleapis|gstatic|supabase/,r=>r.abort());
+await p.addInitScript(()=>{localStorage.w777_wasla=JSON.stringify({lang:'ar',seenHow:1})});
+await p.goto('http://localhost:8777/bureau/game.html');await p.waitForTimeout(800);
+await p.evaluate(()=>{const d=document.getElementById('cw-root');d.innerHTML='';W777_CW.mount(d,{agentName:'سارة',agentPhoto:'icons/icon-192.png?v=9'})});
+await p.click('[data-g="0"]'); await p.click('[data-s="0"]'); await p.waitForTimeout(300);
+console.log('mascot', await p.getAttribute('.wl-mav','src'));
+await p.click('.wl-c.sel'); await p.waitForTimeout(200);
+console.log('ask', await p.textContent('.wl-ask'));
+await p.click('[data-ask]'); await p.waitForTimeout(200);
+console.log('title', await p.textContent('.wl-ai-h'), '|', (await p.textContent('#wl-ai-log')).slice(0,40));
+console.log(errs.join('|')||'no errors');
+await b.close();})();
