@@ -115,12 +115,12 @@ const TOOLS = [
 type GM = { m: string; th?: Record<string, unknown> | null };
 const GEMINI_MODELS: GM[] = [
   ...(Deno.env.get("W777_GEMINI_MODEL") ? [{ m: Deno.env.get("W777_GEMINI_MODEL")!, th: null }] : []),
-  // الدقة أولاً (اختيار المدير)، والجواب كيتبث مباشرة باش يبان بسرعة
-  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-3.5-flash", th: { thinkingLevel: "minimal" } },
+  // جربناهم: 3.5-flash كيجاوب فـ 2 ثواني (دقيق وسريع)؛ 3.8/3.7 كيطولو بزاف فالمستوى المجاني → فالأخير
+  { m: "gemini-3.5-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-3.1-flash-lite", th: { thinkingLevel: "minimal" } },
   { m: "gemini-3.5-flash-lite", th: { thinkingLevel: "minimal" } },
+  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
+  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-flash-latest", th: null },
   { m: "gemini-flash-lite-latest", th: null },
 ];
