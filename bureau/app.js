@@ -2046,6 +2046,7 @@
         </div>
         ${await securityBioCard()}
         ${EMBED ? '' : staffCard()}
+        ${!EMBED && S.role === 'admin' ? '<div class="card card-pad" id="mfa-card"><h3 class="section-title">🔐 التحقق بخطوتين</h3><div class="muted">⏳</div></div>' : ''}
         ${await pushCard()}
         ${EMBED ? '' : catalogCard()}
 
@@ -2078,7 +2079,7 @@
         <p class="muted" style="text-align:center;font-size:12.5px">مكتب الوسيط 777 — الإصدار 1.0 · يعمل بدون إنترنت</p>
       </div>`;
 
-    if (!EMBED) { bindCloudCard(); bindAgentCard(); if (S.role !== 'agency') renderPartners(); }
+    if (!EMBED) { bindCloudCard(); bindAgentCard(); bindMfaCard(); if (S.role !== 'agency') renderPartners(); }
     $('#sform').onsubmit = async e => {
       e.preventDefault();
       Object.assign(S.settings, collect(e.target), { updatedAt: new Date().toISOString() });
@@ -2244,6 +2245,56 @@
     return n;
   }
 
+  // 🔐 رمز 6 أرقام من تطبيق Google Authenticator (فابور)
+  function askCode(title = 'التحقق بخطوتين') {
+    return new Promise(res => {
+      let done = false;
+      modal(`<h3>🔐 ${esc(title)}</h3><p class="muted" style="margin-top:0">حل تطبيق Google Authenticator وكتب الرمز ديال 6 أرقام اللي كيبان فيه.</p>
+        <input id="mf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" style="font-size:24px;letter-spacing:8px;text-align:center;width:100%">
+        <div class="btn-row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>إلغاء</button><button class="btn gold" id="mf-ok">تأكيد</button></div>`, (m, close) => {
+        const i = $('#mf-code', m); setTimeout(() => i.focus(), 50);
+        const go = () => { const c = i.value.replace(/\D/g, ''); if (c.length !== 6) return toast('كتب 6 أرقام'); done = true; close(); res(c); };
+        $('#mf-ok', m).onclick = go; i.onkeydown = e => { if (e.key === 'Enter') go(); };
+        m.parentElement.addEventListener('click', e => { if (!done && (e.target === m.parentElement || e.target.closest('[data-close]'))) res(''); });
+      });
+    });
+  }
+  // بطاقة المدير: تفعيل/إيقاف التحقق بخطوتين (اختياري — بلا ما يتفعّل ما كيتبدل والو)
+  async function bindMfaCard() {
+    const box = $('#mfa-card'), Sy = window.W777_SYNC; if (!box || !Sy || !Sy.isOn()) return;
+    let fs = [];
+    try { fs = (await Sy.mfaFactors()).filter(f => f.status === 'verified'); } catch (e) { box.querySelector('.muted').textContent = 'تعذر التحميل — تأكد من الإنترنت'; return; }
+    const on = fs.length > 0;
+    box.innerHTML = `<h3 class="section-title">🔐 التحقق بخطوتين <span class="badge ${on ? 'green' : 'gray'}">${on ? 'مفعّل' : 'غير مفعّل'}</span></h3>
+      <p class="muted" style="margin-top:0">${on ? 'ملي كتدخل لحساب المدير من أي جهاز، التطبيق كيطلب كلمة السر + رمز من تطبيق Google Authenticator. حتى إلا عرف شي حد كلمة السر ما يقدرش يدخل.' : 'حماية زايدة لحساب المدير: من بعد كلمة السر، التطبيق كيطلب رمز من تطبيق Google Authenticator (فابور) فالتيليفون ديالك.'}</p>
+      <div class="btn-row">${on ? '<button class="btn danger" id="mfa-off">إيقاف التحقق بخطوتين</button>' : '<button class="btn gold" id="mfa-on">تفعيل التحقق بخطوتين</button>'}</div>`;
+    if (on) $('#mfa-off').onclick = async () => {
+      if (!(await confirmBox('إيقاف التحقق بخطوتين؟ الحساب غادي يولي محمي غير بكلمة السر.', 'إيقاف'))) return;
+      try { for (const f of fs) await Sy.mfaRemove(f.id); toast('توقف التحقق بخطوتين ✓'); } catch (e) { toast('تعذر: ' + e.message, 4500); }
+      bindMfaCard();
+    };
+    else $('#mfa-on').onclick = async () => {
+      let f;
+      try { f = await Sy.mfaEnroll(); } catch (e) { return toast('تعذر: ' + e.message, 4500); }
+      const qr = String((f.totp && f.totp.qr_code) || ''), svg = qr.replace(/^data:image\/svg\+xml;[^,]*,/, '');
+      const src = svg && svg !== qr ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) : qr;
+      modal(`<h3>🔐 تفعيل التحقق بخطوتين</h3>
+        <ol style="padding-inline-start:20px;line-height:1.9;margin-top:0">
+          <li>نزّل تطبيق <b>Google Authenticator</b> (فابور) فالتيليفون.</li>
+          <li>فالتطبيق ورك على <b>+</b> ← «مسح رمز QR» وصوّر هاد الرمز:</li></ol>
+        <div style="text-align:center"><img src="${esc(src)}" alt="QR" style="width:200px;height:200px;background:#fff;padding:8px;border-radius:12px"></div>
+        <p class="muted" style="font-size:12.5px">ولا كتب هاد المفتاح باليد: <b dir="ltr" style="user-select:all;word-break:break-all">${esc((f.totp && f.totp.secret) || '')}</b></p>
+        <ol start="3" style="padding-inline-start:20px;margin:0"><li>كتب الرمز ديال 6 أرقام اللي بان فالتطبيق:</li></ol>
+        <input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" style="font-size:24px;letter-spacing:8px;text-align:center;width:100%;margin-top:8px">
+        <div class="btn-row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>إلغاء</button><button class="btn gold" id="mfa-ok">تفعيل</button></div>`, (m, close) => {
+        $('#mfa-ok', m).onclick = async () => {
+          const c = $('#mfa-code', m).value.replace(/\D/g, '');
+          if (c.length !== 6) return toast('كتب 6 أرقام');
+          try { await Sy.mfaConfirm(f.id, c); close(); toast('تفعّل التحقق بخطوتين ✓'); bindMfaCard(); } catch (e) { toast('الرمز غالط — عاود', 3500); }
+        };
+      });
+    };
+  }
   function bindCloudCard() {
     const Sy = window.W777_SYNC;
     const b = id => $('#' + id);
@@ -2255,7 +2306,8 @@
     const go = async up => {
       const v = collect($('#cl-form'));
       if (!v.url || !v.key || !v.email || !v.password) return toast('املأ كل الخانات');
-      if (v.password.length < 6) return toast('كلمة السر: 6 أحرف على الأقل');
+      // حساب جديد: 8 حروف على الأقل (الحسابات القديمة ديال 6 حروف كيبقاو يدخلو عادي)
+      if (v.password.length < (up ? 8 : 6)) return toast(`كلمة السر: ${up ? 8 : 6} أحرف على الأقل`);
       // جهاز فيه بيانات حساب آخر: كل شي غادي يتزاد للحساب الجديد
       const last = localStorage.getItem('w777_last_email'), em = Sy.normEmail ? Sy.normEmail(v.email) : v.email;
       if (!up && last && last !== em && (S.props.length || S.reqs.length) &&
@@ -2265,7 +2317,18 @@
         if (up) {
           const r = await Sy.signUp(v.url, v.key, v.email, v.password);
           if (!r.confirmed) { toast('تم إنشاء الحساب ✓ افتح بريدك وأكّد الحساب ثم اضغط «دخول»', 5000); return; }
-        } else { await Sy.signIn(v.url, v.key, v.email, v.password); localStorage.setItem('w777_last_email', em); }
+        } else {
+          const r = await Sy.signIn(v.url, v.key, v.email, v.password);
+          // الحساب فيه التحقق بخطوتين: كنطلبو الرمز ديال 6 أرقام
+          if (r && r.mfa) {
+            for (;;) {
+              const c = await askCode();
+              if (!c) { Sy.mfaCancel(); return toast('تلغى الدخول'); }
+              try { await Sy.mfaLogin(c); break; } catch (e) { toast('الرمز غالط ولا سالا الوقت ديالو — عاود', 3500); }
+            }
+          }
+          localStorage.setItem('w777_last_email', em);
+        }
         toast('تم الربط ✓ جاري المزامنة…');
         viewSettings();
       } catch (e) {

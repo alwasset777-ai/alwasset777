@@ -1180,3 +1180,23 @@ create or replace function public.w777_staff_brand() returns json language sql s
 $$ select json_build_object('name', a.name, 'phone', a.phone, 'logo', a.logo) from w777_agencies a where a.uid = w777_staff_owner() and a.active $$;
 revoke all on function public.w777_staff_brand() from public, anon;
 grant execute on function public.w777_staff_brand() to authenticated;
+
+-- ============================================================
+-- 2026-10-29 — 🔐 التحقق بخطوتين (اختياري، Google Authenticator):
+-- الحساب اللي فعّلو كيخصو جلسة aal2 باش يوصل للبيانات؛ الحسابات اللي ما فعّلوهش ما كيتبدل ليهم والو
+-- ============================================================
+create or replace function public.w777_aal_ok() returns boolean language sql stable security definer set search_path = public, auth as
+$$ select coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'
+     or not exists(select 1 from auth.mfa_factors f where f.user_id = auth.uid() and f.status = 'verified') $$;
+revoke all on function public.w777_aal_ok() from public, anon;
+grant execute on function public.w777_aal_ok() to authenticated;
+create or replace function public.w777_is_admin() returns boolean language sql stable security definer set search_path=public as
+$$ select exists(select 1 from w777_admins where uid = auth.uid()) and w777_aal_ok() $$;
+do $$ declare t record; begin
+  for t in select tablename from pg_tables where schemaname = 'public' and tablename like 'w777\_%' and rowsecurity loop
+    execute format('drop policy if exists w777_mfa on public.%I', t.tablename);
+    execute format('create policy w777_mfa on public.%I as restrictive for all to authenticated using ((select public.w777_aal_ok())) with check ((select public.w777_aal_ok()))', t.tablename);
+  end loop;
+end $$;
+drop policy if exists w777_mfa on storage.objects;
+create policy w777_mfa on storage.objects as restrictive for all to authenticated using ((select public.w777_aal_ok())) with check ((select public.w777_aal_ok()));
