@@ -163,11 +163,12 @@ function toGemini(messages: Blk[], model: string) {
   return contents;
 }
 // كيرجع أول جواب صالح من لائحة النماذج (مع إعادة المحاولة بلا إعدادات التفكير إلا ما قبلهاش النموذج)
-async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true) {
+async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true, fast = false) {
   let last = { status: 0, message: "" };
   const trace: string[] = [];
   for (const [gi, g] of GEMINI_MODELS.entries()) {
-    for (const th of g.th ? [g.th, null] : [null]) {
+    const th0 = fast && g.th ? { thinkingLevel: "minimal" } : g.th;
+    for (const th of th0 ? [th0, null] : [null]) {
       const payload = JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: toGemini(messages, g.m),
@@ -225,13 +226,13 @@ async function gemini(key: string, system: string, messages: Blk[], withTools = 
   return { ...finish(content), usage: data?.usageMetadata, model, trace };
 }
 // البث المباشر (SSE): النص كيوصل للتطبيق كلمة بكلمة، والنهاية فيها البلوكات كاملين
-function geminiSSE(key: string, system: string, messages: Blk[], extra: Record<string, unknown>, cors: Record<string, string>) {
+function geminiSSE(key: string, system: string, messages: Blk[], extra: Record<string, unknown>, cors: Record<string, string>, withTools = true, fast = false) {
   const enc = new TextEncoder();
   const body = new ReadableStream({
     async start(ctl) {
       const send = (o: unknown) => ctl.enqueue(enc.encode(`data: ${JSON.stringify(o)}\n\n`));
       try {
-        const { res, model } = await geminiOpen(key, system, messages, true);
+        const { res, model } = await geminiOpen(key, system, messages, true, withTools, fast);
         const content: Blk[] = [];
         const rd = res.body!.pipeThrough(new TextDecoderStream()).getReader();
         let buf = "";
@@ -357,6 +358,8 @@ Deno.serve(async (req) => {
     if (!gm.length || gm[gm.length - 1].role !== "user") return json({ error: "empty" }, 400);
     const sys = gameSystem(LANGS[body.lang ?? "darija"] ?? LANGS.darija, body.game);
     try {
+      // البث المباشر: أول الكلمات كيبانو فثانية
+      if (geminiKey && body.stream) return geminiSSE(geminiKey, sys, gm, {}, CORS, false, true);
       if (geminiKey) {
         const r = await gemini(geminiKey, sys, gm, false);
         return json({ text: r.content.filter((b: Blk) => b.type === "text").map((b: Blk) => b.text).join("").trim(), model: r.model, trace: r.trace });
