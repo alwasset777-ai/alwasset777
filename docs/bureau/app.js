@@ -761,6 +761,15 @@
     fx3dPage();
   }
   /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
+  // بلا كود داخل HTML (onclick/onerror): كلشي هنا — باش سياسة الأمان (CSP) تمنع أي سكريبت مدسوس
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-act]'); if (!b) return;
+    if (b.dataset.act === 'print') window.print();
+    else if (b.dataset.act === 'hide-guide') { try { localStorage.setItem('w777_guide_hide', '1'); } catch (er) { /* */ } b.parentElement.remove(); }
+  });
+  // الفورمات كتخدم بالجافاسكريبت: ما نخليوهاش تبدل الصفحة (عوض onsubmit="return false")
+  document.addEventListener('submit', e => { if (!e.target.getAttribute('action')) e.preventDefault(); }, true);
+  document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.dataset.fb) t.replaceWith(document.createTextNode(t.dataset.fb)); }, true);
   function fx3dPage() {
     const m = main(); if (!m || document.documentElement.classList.contains('lv-lite')) return;
     m.classList.remove('pg-in'); void m.offsetWidth; m.classList.add('pg-in');
@@ -821,7 +830,7 @@
   // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
   const HUB_NET = ['agencies', 'brokers', 'associations', 'investors', 'contractors', 'finishing', 'notaries'];
   const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
-  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=7" alt="" decoding="async" onerror="this.replaceWith(document.createTextNode('${h[1]}'))">`, l || h[2], h[3]); };
+  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=7" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
   const hubEmo = (href, e, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo">${e}</i>`, l, s);
   // أيقونة صورة (بلاصة الإيموجي) داخل الدائرة: icons/hub/<f>.webp
   // صورة كاملة كتعمّر الدائرة: icons/hub/<f>.webp
@@ -862,7 +871,7 @@
     if (!L.length || d.size >= Math.min(5, L.length)) return '';
     try { if (localStorage.getItem('w777_guide_hide') === '1') return ''; } catch (e) { /* */ }
     return `<div class="gd-banner"><span class="big">🎓</span><div class="grow"><b>جديد فالتطبيق؟</b><small>تعلّم استعمالو فـ ${L.length} درس قصير بالصور، خطوة بخطوة.</small></div>
-      <a class="btn gold sm" href="#/guide">ابدأ الدليل</a><button class="btn sm" onclick="try{localStorage.setItem('w777_guide_hide','1')}catch(e){};this.parentElement.remove()">✕</button></div>`;
+      <a class="btn gold sm" href="#/guide">ابدأ الدليل</a><button class="btn sm" data-act="hide-guide">✕</button></div>`;
   }
   async function viewHome() {
     const avail = S.props.filter(p => p.status === 'available');
@@ -1471,7 +1480,7 @@
           <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
           ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
           ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب التمويل</a>` : ''}
-          ${EMBED ? '' : `<button class="btn" onclick="window.print()">${ic('print', 18)} طباعة / PDF</button>`}
+          ${EMBED ? '' : `<button class="btn" data-act="print">${ic('print', 18)} طباعة / PDF</button>`}
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
         </div>
       </div>
@@ -3650,7 +3659,7 @@
     const tbl = (rows, head) => `<div class="tbl-wrap"><table class="tbl"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     const H = ['الضريبة / الرسم', 'النسبة / المبلغ', 'الجهة', 'الوقت'];
     main().innerHTML = `
-      <div class="page-head"><h1>🏛️ مراحل تملك العقار</h1><button class="btn no-print" onclick="window.print()">${ic('print', 18)} طباعة</button></div>
+      <div class="page-head"><h1>🏛️ مراحل تملك العقار</h1><button class="btn no-print" data-act="print">${ic('print', 18)} طباعة</button></div>
       <p class="muted" style="margin-top:-6px">من البداية حتى تولي مالك رسمي، مع كل الضرائب والرسوم — حسب ANCFCC والمديرية العامة للضرائب وقانون المالية 2026.</p>
       <div class="chips no-print" style="margin-bottom:14px">
         <a class="chip" href="#own-steps">🪜 المراحل</a><a class="chip" href="#own-title">📐 التحفيظ</a><a class="chip" href="#own-calc">🧮 الحاسبة</a>
@@ -4407,7 +4416,7 @@
     const cities = [...new Set(rows.map(s => s.city).filter(Boolean))].sort();
     main().innerHTML = head + `
       <div class="card card-pad st-search">
-        <form id="stf" class="form-grid" onsubmit="return false">
+        <form id="stf" class="form-grid">
           ${fSelect('city', 'المدينة', cities, f.city, { empty: 'كل المدن' })}
           ${fInput('d1', 'الوصول', f.d1, { type: 'date', attrs: `min="${today()}"` })}
           ${fInput('d2', 'المغادرة', f.d2, { type: 'date', attrs: `min="${today()}"` })}
@@ -4459,7 +4468,7 @@
         <div class="card card-pad st-book">
           <div class="st-price" style="font-size:24px">${nm(s.price_night)} درهم <small>/ الليلة</small></div>
           ${num(s.cleaning_fee) ? `<small class="muted">+ ${nm(s.cleaning_fee)} درهم تنظيف</small>` : ''}
-          <form id="bkf" class="form-grid" style="margin-top:12px" onsubmit="return false">
+          <form id="bkf" class="form-grid" style="margin-top:12px">
             ${fInput('d1', 'الوصول', q.d1 || '', { type: 'date', req: true, attrs: `min="${today()}"` })}
             ${fInput('d2', 'المغادرة', q.d2 || '', { type: 'date', req: true, attrs: `min="${addDays(today(), 1)}"` })}
             ${fSelect('guests', 'الضيوف', Array.from({ length: s.max_guests || 1 }, (_, i) => String(i + 1)), (s.max_guests || 1) >= 2 ? '2' : '1', { noEmpty: true })}
@@ -4508,7 +4517,7 @@
     main().innerHTML = head + `
       <div class="card card-pad form">
         <h3 class="section-title">${id ? '✏️ تعديل العقار' : '➕ عقار جديد للحجز'}</h3>
-        <form id="stf2" class="form-grid" onsubmit="return false">
+        <form id="stf2" class="form-grid">
           ${fInput('title', 'العنوان', s.title, { req: true, cls: 'full', ph: 'مثلا: شقة مفروشة قرب البحر — 2 غرف' })}
           ${fSelect('kind', 'النوع', Object.entries(STAY_KINDS).map(([v, l]) => ({ v, l })), s.kind, { noEmpty: true })}
           ${fInput('city', 'المدينة', s.city, { req: true, list: 'dl-cities' })}
@@ -4825,7 +4834,7 @@
         <button class="btn" id="sf-toggle">${ic('filter', 18)} الفلتر <span class="badge gold" id="sf-n">${sfCount(f) || ''}</span></button></div>
       <div class="chips" style="margin-bottom:12px">${scopes.map(([k, l]) => `<span class="chip ${f.scope === k ? 'on' : ''}" data-scope="${k}">${l}</span>`).join('')}</div>
       <div class="card card-pad sf-card ${S.sfHide ? 'hidden' : ''}" id="sf-card">
-        <form id="sf" class="form-grid" onsubmit="return false">${filters}</form>
+        <form id="sf" class="form-grid">${filters}</form>
         <div class="btn-row" style="justify-content:space-between;margin-top:12px">
           <button class="btn" id="sf-reset">✕ مسح الفلتر</button>
           <span class="muted" id="sf-count"></span>
@@ -7520,7 +7529,7 @@
     main().innerHTML = `
       <div class="page-head"><div><h1>🏦 حساب التمويل</h1><div class="sub">القسط الشهري، الفوائد، والدخل اللازم باش البنك يوافق</div></div></div>
       <div class="detail-grid">
-        <div class="card card-pad form"><form id="lf" class="form-grid" onsubmit="return false">
+        <div class="card card-pad form"><form id="lf" class="form-grid">
           ${fInput('price', 'ثمن العقار (درهم)', pre.price, { money: true, cls: 'full' })}
           ${fInput('down', 'التسبيق (%)', pre.down, { type: 'number', hint: 'عادة 10% حتى 30%' })}
           ${fSelect('years', 'مدة القرض', [5, 7, 10, 12, 15, 20, 25, 30].map(y => ({ v: y, l: y + ' عام' })), pre.years, { noEmpty: true })}
@@ -7864,7 +7873,7 @@
   }
   function bindPropOffice(p, redraw) {
     const add = $('#v-add');
-    if (add) add.onclick = () => modal(`<h3>👣 تسجيل زيارة — ${esc(p.ref)}</h3><form id="vf" class="form-grid" onsubmit="return false">
+    if (add) add.onclick = () => modal(`<h3>👣 تسجيل زيارة — ${esc(p.ref)}</h3><form id="vf" class="form-grid">
         ${fInput('date', 'التاريخ', today(), { type: 'date' })}
         ${fSelect('req', 'زبون من الطلبات (اختياري)', S.reqs.filter(openReq).slice(0, 300).map(r => ({ v: r.id, l: ((r.client && r.client.name) || r.ref) + ' — ' + r.ref })), '', { empty: '— زائر جديد —' })}
         ${fInput('name', 'اسم الزائر', '')}${fInput('phone', 'الهاتف', '', { type: 'tel' })}${fInput('cin', 'رقم البطاقة (للورقة)', '')}
@@ -7890,7 +7899,7 @@
       p.visits = (p.visits || []).filter(x => x.id !== b.dataset.vdel); await DB.saveRec('properties', p); redraw();
     });
     const me = $('#md-edit');
-    if (me) me.onclick = () => { const md = p.mandate || {}; modal(`<h3>📝 التفويض — ${esc(p.ref)}</h3><form id="mdf" class="form-grid" onsubmit="return false">
+    if (me) me.onclick = () => { const md = p.mandate || {}; modal(`<h3>📝 التفويض — ${esc(p.ref)}</h3><form id="mdf" class="form-grid">
         ${fSelect('kind', 'نوع التفويض', Object.entries(MANDATE).map(([v, l]) => ({ v, l })), md.kind || (p.exclusive ? 'exclusive' : 'simple'), { noEmpty: true })}
         ${fInput('fee', 'العمولة المتفق عليها', md.fee || p.commission || '', { ph: 'مثال: 2.5%' })}
         ${fInput('start', 'من', md.start || today(), { type: 'date' })}${fInput('end', 'حتى', md.end || addMonths(ym(), 3) + '-' + today().slice(8), { type: 'date' })}</form>
@@ -7948,7 +7957,7 @@
   function leaseForm(l) {
     l = l || { id: uid(), tenant: {}, owner: {}, payments: {}, start: today(), dueDay: 1, feePct: 10 };
     const opts = S.props.filter(p => isRent(p.transaction) || p.id === l.propId).map(p => ({ v: p.id, l: p.ref + ' — ' + (p.title || typeAr(p.type)) }));
-    modal(`<h3>🔑 ${l.tenant.name ? 'تعديل' : 'عقد كراء جديد'}</h3><form id="lsf" class="form-grid" onsubmit="return false">
+    modal(`<h3>🔑 ${l.tenant.name ? 'تعديل' : 'عقد كراء جديد'}</h3><form id="lsf" class="form-grid">
       ${fSelect('propId', 'العقار', opts, l.propId || '', { empty: '— عقار ماشي فاللائحة —' })}${fInput('propLabel', 'وصف العقار / العنوان', l.propLabel || '')}
       ${fInput('tenant.name', 'اسم المكتري', l.tenant.name, { req: true })}${fInput('tenant.phone', 'هاتف المكتري', l.tenant.phone, { type: 'tel' })}${fInput('tenant.cin', 'بطاقة المكتري', l.tenant.cin)}
       ${fInput('owner.name', 'اسم المالك', l.owner.name)}${fInput('owner.phone', 'هاتف المالك', l.owner.phone, { type: 'tel' })}
@@ -7993,7 +8002,7 @@
     $('#l-edit').onclick = () => leaseForm(l);
     $('#l-end').onclick = async () => { l.ended = !l.ended; await saveListItem('leases', l); viewRental(id); };
     $('#l-del').onclick = async () => { if (!(await confirmBox('حذف عقد الكراء نهائيا؟', 'حذف'))) return; await delListItem('leases', id); location.hash = '#/rentals'; };
-    $$('[data-pay]').forEach(b => b.onclick = () => modal(`<h3>✓ أداء ${ymAr(b.dataset.pay)}</h3><form id="pf" class="form-grid" onsubmit="return false">
+    $$('[data-pay]').forEach(b => b.onclick = () => modal(`<h3>✓ أداء ${ymAr(b.dataset.pay)}</h3><form id="pf" class="form-grid">
         ${fInput('paid', 'المبلغ (د)', l.rent, { money: true })}${fInput('date', 'تاريخ الأداء', today(), { type: 'date' })}${fSelect('method', 'طريقة الأداء', ['نقدا', 'تحويل بنكي', 'شيك', 'إيداع'], 'نقدا', { noEmpty: true })}</form>
         <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="pf-ok">${ic('check', 16)} تسجيل</button><button class="btn" id="pf-rc">🧾 تسجيل + وصل</button></div>`, (box, close) => {
       bindMoney(box);
@@ -8069,7 +8078,7 @@
         ${cur.e.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(x => `<div class="list-row"><div class="avatar" style="background:${x.type === 'in' ? 'rgba(31,157,104,.15)' : 'rgba(200,16,46,.12)'}">${x.type === 'in' ? '⬇' : '⬆'}</div>
           <div class="grow"><b>${esc(x.cat || '')}</b><small class="muted">${esc(x.date || '')}${x.note ? ' · ' + esc(x.note) : ''}</small></div><b class="${x.type === 'in' ? 'txt-green' : 'txt-red'}">${x.type === 'in' ? '+' : '−'}${M0(x.amount)}</b>
           <button class="btn sm" data-fdel="${x.id}">${ic('trash', 14)}</button></div>`).join('') || '<div class="empty" style="padding:20px">ما كاين حتى عملية</div>'}</div>`;
-    const form = (type, pre = {}) => modal(`<h3>${type === 'in' ? '💰 دخل جديد' : '💸 مصروف جديد'}</h3><form id="ff" class="form-grid" onsubmit="return false">
+    const form = (type, pre = {}) => modal(`<h3>${type === 'in' ? '💰 دخل جديد' : '💸 مصروف جديد'}</h3><form id="ff" class="form-grid">
         ${fInput('amount', 'المبلغ (د)', pre.amount || '', { money: true, req: true })}${fSelect('cat', 'النوع', type === 'in' ? CAT_IN : CAT_OUT, pre.cat || '', { noEmpty: true })}
         ${fInput('date', 'التاريخ', pre.date || (k === ym() ? today() : k + '-01'), { type: 'date' })}${fInput('note', 'ملاحظة', pre.note || '')}</form>
         <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="ff-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
@@ -8445,7 +8454,7 @@
     $$('[data-sdel]', box).forEach(x => x.onclick = async () => { const s = list.find(y => y.uid === x.dataset.sdel);
       if (!(await confirmBox('حذف الحساب ديال ' + s.name + ' نهائيا؟ (البيانات ديال المكتب كتبقى)', 'حذف'))) return;
       try { await staffFn({ action: 'delete', uid: s.uid }); toast('تمسح ✓'); bindStaffCard(); } catch (e) { toast('تعذر: ' + e.message, 4000); } });
-    $('#st-add').onclick = () => modal(`<h3>👥 موظف جديد</h3><form id="stf" class="form-grid" onsubmit="return false">${fInput('name', 'اسم الموظف', '', { req: true })}
+    $('#st-add').onclick = () => modal(`<h3>👥 موظف جديد</h3><form id="stf" class="form-grid">${fInput('name', 'اسم الموظف', '', { req: true })}
         <div class="field full"><label>الصلاحية</label>${Object.entries(ROLES).map(([k, v]) => `<label class="chk" style="margin:6px 0"><input type="radio" name="role" value="${k}" ${k === 'edit' ? 'checked' : ''}> ${v[0]} <small class="muted" style="font-weight:400">— ${v[1]}</small></label>`).join('')}</div></form>
         <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="stf-ok">${ic('check', 16)} إنشاء الحساب</button></div>`, (b2, close) => {
       $('#stf-ok', b2).onclick = async () => {
