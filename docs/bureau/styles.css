@@ -1389,3 +1389,14 @@ body.st-open { overflow: hidden; }
 .hub-big .hub-tile b { font-size: 26px; line-height: 1.15; font-weight: 900; overflow-wrap: anywhere; }
 .hub-big .hub-tile small { font-size: 21px; line-height: 1.2; color: #333; overflow-wrap: anywhere; }
 @media (max-width: 639px) { .hub-big .hub-tile b { font-size: 18px; overflow-wrap: normal; } .hub-big .hub-tile small { font-size: 14px; } }
+
+/* ---------- منير: العقود والتعليم ---------- */
+.ag-teach { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; border: 2px solid var(--gold); background: linear-gradient(135deg, rgba(200,16,46,.06), rgba(0,0,0,0)); }
+.ag-teach img { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
+.ag-teach b { display: block; font-size: 16px; } .ag-teach small { display: block; margin-top: 2px; }
+@media (max-width: 560px) { .ag-teach { flex-wrap: wrap; } .ag-teach .btn { width: 100%; justify-content: center; } }
+.ag-ct { margin: 8px 0; background: #fff; color: #111; border: 1px solid #ddd; border-radius: 10px; padding: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap; font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 15px; line-height: 1.8; box-shadow: inset 0 0 0 3px #faf7ef; }
+.ag-ct-btns { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
+.ag-ct-btns button { border: 1px solid var(--gold); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ag-attc { margin: 0 10px; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.ag-attc button { margin-inline-start: auto; border: 0; background: none; cursor: pointer; color: var(--red); font-weight: 800; }

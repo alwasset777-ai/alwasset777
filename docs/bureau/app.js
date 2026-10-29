@@ -2563,6 +2563,20 @@
   function agHide() {
     agHush();
     if (agRec) { try { agRec.abort(); } catch (e) { /* */ } agRec = null; } AG.open = false; const p = $('#agent-panel'); if (p) p.remove(); }
+  function agAttShow() {
+    const c = $('#ag-attc'); if (!c) return;
+    c.classList.toggle('hidden', !AG.att);
+    c.innerHTML = AG.att ? `📎 ${esc(AG.att.name)} <button type="button" aria-label="✕">✕</button>` : '';
+    const x = $('button', c); if (x) x.onclick = () => { AG.att = null; agAttShow(); };
+  }
+  // تسخين السيرفر ملي كيتحل المساعد (أول جواب كيجي أسرع)
+  let agPinged = 0;
+  function agPing() {
+    const Sy = window.W777_SYNC;
+    if (!agAI() || !Sy || !Sy.isOn() || Date.now() - agPinged < 240000) return;
+    agPinged = Date.now();
+    Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ping: true }) }).catch(() => {});
+  }
   function agOpen() {
     AG.open = true;
     if (!(history.state && history.state.ag)) { try { history.pushState({ ag: 1 }, ''); } catch (e) { /* */ } }
@@ -2580,7 +2594,8 @@
         <div class="ag-wave"><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
-      <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
+      <div class="ag-attc hidden" id="ag-attc"></div>
+      <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<button type="button" class="ag-mic" id="ag-att" title="📎 صورة / PDF / Word" aria-label="📎">📎</button><input type="file" id="ag-file" hidden accept="image/*,application/pdf,.pdf,.docx,.txt"><textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
     document.body.appendChild(p);
     $('#ag-close').onclick = agClose;
     $('#ag-back').onclick = agClose;
@@ -2588,7 +2603,19 @@
     $('#ag-lang').onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } agHide(); agOpen(); };
     const ta = $('#ag-text');
     ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
-    $('#ag-form').onsubmit = e => { e.preventDefault(); agUnlockTTS(); const v = ta.value.trim(); if (v && !AG.busy) { ta.value = ''; agSend(v); } };
+    $('#ag-form').onsubmit = e => {
+      e.preventDefault(); agUnlockTTS(); const v = ta.value.trim(), att = AG.att;
+      if ((v || att) && !AG.busy) { ta.value = ''; AG.att = null; agAttShow(); agSend(v || (agLang() === 'fr' ? 'Lis ce document et corrige-le si nécessaire.' : agLang() === 'en' ? 'Read this document and fix it if needed.' : 'قرا هاد العقد وقول ليا شنو فيه من مشاكل، وصلحو.'), att); }
+    };
+    const fi = $('#ag-file');
+    $('#ag-att').onclick = () => fi.click();
+    fi.onchange = async () => {
+      const f = fi.files && fi.files[0]; fi.value = ''; if (!f) return;
+      try { AG.att = { name: f.name, block: await agReadFile(f) }; agAttShow(); ta.focus(); }
+      catch (er) { toast(/big/.test(er.message) ? 'الملف كبير بزاف (الحد 8 ميغا)' : 'هاد النوع ديال الملفات ما مقبولش — صورة، PDF، Word ولا TXT'); }
+    };
+    agAttShow();
+    agPing();
     const mic = $('#ag-mic'); if (mic) mic.onclick = () => { agUnlockTTS(); agHush(); agListen(); };
     const vb = $('#ag-voice');
     if (vb) vb.onclick = () => { const on = !agVoiceOn(); try { localStorage.setItem('w777_agent_voice', on ? '1' : '0'); } catch (e) { /* */ } vb.textContent = on ? '🔊' : '🔇'; if (!on) agHush(); };
@@ -2600,16 +2627,91 @@
   }
   // نص بسيط: **عريض** + سطور
   const agFmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+  // العقد اللي كيكتبو منير (بين العلامتين) كيبان فورقة، مع تحميل Word / PDF / نسخ
+  const CT_A = '=== بداية العقد ===', CT_B = '=== نهاية العقد ===';
+  const agCtParts = txt => { const i = txt.indexOf(CT_A); if (i < 0) return null; const j = txt.indexOf(CT_B, i); return { before: txt.slice(0, i), body: txt.slice(i + CT_A.length, j < 0 ? undefined : j).trim(), after: j < 0 ? '' : txt.slice(j + CT_B.length), done: j >= 0 }; };
+  function agMsgHtml(m) {
+    const p = m.who === 'bot' && agCtParts(m.text || '');
+    if (!p) return agFmt(m.text || '');
+    const i = AG.view.indexOf(m), ltr = (p.body.match(/[A-Za-z]/g) || []).length > (p.body.match(/[\u0600-\u06FF]/g) || []).length;
+    return agFmt(p.before.trim()) + `<div class="ag-ct" dir="${ltr ? 'ltr' : 'rtl'}">${esc(p.body)}</div>`
+      + (p.done ? `<div class="ag-ct-btns"><button type="button" data-ct="doc" data-i="${i}">⬇️ Word</button><button type="button" data-ct="pdf" data-i="${i}">🖨️ PDF</button><button type="button" data-ct="copy" data-i="${i}">📋 نسخ</button></div>` : '')
+      + agFmt(p.after.trim());
+  }
+  function agContractOut(kind, i) {
+    const m = AG.view[i], p = m && agCtParts(m.text || ''); if (!p) return;
+    if (kind === 'copy') { (navigator.clipboard ? navigator.clipboard.writeText(p.body) : Promise.reject()).then(() => toast('تنسخ العقد ✓')).catch(() => toast('ما قدرتش ننسخ')); return; }
+    const ltr = (p.body.match(/[A-Za-z]/g) || []).length > (p.body.match(/[\u0600-\u06FF]/g) || []).length;
+    const html = `<!DOCTYPE html><html lang="${ltr ? 'fr' : 'ar'}" dir="${ltr ? 'ltr' : 'rtl'}"><head><meta charset="utf-8"><title>${esc(S.settings.officeName || 'Al Wasset 777')}</title><style>body{font-family:'Traditional Arabic','Amiri','Times New Roman',serif;font-size:15pt;line-height:1.8;margin:2cm;direction:${ltr ? 'ltr' : 'rtl'}}p{margin:0 0 6pt}</style></head><body>${p.body.split('\n').map(l => `<p>${esc(l) || '&nbsp;'}</p>`).join('')}</body></html>`;
+    if (kind === 'doc') {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(['\ufeff' + html], { type: 'application/msword' }));
+      a.download = 'AlWasset777-contrat-' + new Date().toISOString().slice(0, 10) + '.doc';
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    } else {
+      const w = window.open('', '_blank'); if (!w) { toast('السماح بالنوافذ المنبثقة باش يطبع'); return; }
+      w.document.write(html + '<script>setTimeout(function(){print()},400)<\/script>'); w.document.close();
+    }
+  }
+  // اقتراحات حسب الصفحة (العقود، التعليم…)
+  function agChips(t) {
+    const h = location.hash || '', L = agLang();
+    const pick = (ar, fr, en) => (L === 'fr' ? fr : L === 'en' ? en : ar);
+    if (/^#\/contracts/.test(h)) return pick(['صلح ليا عقد (لصق النص ولا 📎 صورة/ملف)', 'عمّر ليا عقد كراء سكني', 'شنو خاص يكون فعقد الوعد بالبيع؟'], ['Corrige mon contrat (collez le texte ou 📎)', 'Remplis un bail d’habitation', 'Que doit contenir une promesse de vente ?'], ['Fix my contract (paste it or 📎)', 'Fill a residential lease', 'What must a sale promise contain?']);
+    if (/^#\/(learn|guide)/.test(h)) return pick(['علمني التطبيق من الأول', 'شرح ليا الوحدة 1 ديال التكوين', 'دير ليا اختبار صغير'], ['Apprends-moi l’application', 'Explique-moi le module 1', 'Fais-moi un petit quiz'], ['Teach me the app', 'Explain module 1', 'Give me a short quiz']);
+    return t.s;
+  }
+  // كيحل المساعد (إلا كان مسدود) وكيصيفط سؤال واجد (الدروس، العقود…)
+  function agStart(text) { if (!AG.open) agOpen(); if (text) agSend(text); }
+  // قراية ملف مرفق: صورة (مصغرة)، PDF، Word (النص)، TXT
+  const agB64 = buf => { const u = new Uint8Array(buf); let s2 = ''; for (let i = 0; i < u.length; i += 0x8000) s2 += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s2); };
+  async function agUnzip(buf, want) {
+    const dv = new DataView(buf); let e = buf.byteLength - 22;
+    while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) throw new Error('zip');
+    let p2 = dv.getUint32(e + 16, true); const n = dv.getUint16(e + 10, true);
+    for (let k = 0; k < n; k++) {
+      const meth = dv.getUint16(p2 + 10, true), csz = dv.getUint32(p2 + 20, true), nl = dv.getUint16(p2 + 28, true), xl = dv.getUint16(p2 + 30, true), cl = dv.getUint16(p2 + 32, true), off = dv.getUint32(p2 + 42, true);
+      const name = new TextDecoder().decode(new Uint8Array(buf, p2 + 46, nl));
+      if (name === want) {
+        const ds = off + 30 + dv.getUint16(off + 26, true) + dv.getUint16(off + 28, true), raw = new Uint8Array(buf, ds, csz);
+        if (meth === 0) return new TextDecoder().decode(raw);
+        return await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+      }
+      p2 += 46 + nl + xl + cl;
+    }
+    throw new Error('nofile');
+  }
+  async function agReadFile(f) {
+    if (/^image\//.test(f.type)) {
+      const bmp = await createImageBitmap(f), sc = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: c.toDataURL('image/jpeg', 0.85).split(',')[1] } };
+    }
+    if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+      if (f.size > 8e6) throw new Error('big');
+      return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: agB64(await f.arrayBuffer()) } };
+    }
+    if (/\.docx$/i.test(f.name)) {
+      const xml = await agUnzip(await f.arrayBuffer(), 'word/document.xml');
+      const txt = xml.replace(/<\/w:p>/g, '\n').replace(/<w:tab\/>/g, '\t').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+      return { type: 'text', text: `📄 ${f.name}:\n${txt.trim().slice(0, 60000)}` };
+    }
+    if (/^text\//.test(f.type) || /\.txt$/i.test(f.name)) return { type: 'text', text: `📄 ${f.name}:\n${(await f.text()).slice(0, 60000)}` };
+    throw new Error('type');
+  }
   function agRender() {
     const body = $('#ag-body'); if (!body) return;
     const t = agT();
     const items = AG.view.length ? AG.view : [{ who: 'bot', text: agAI() ? t.hi : lx().hi }];
     body.innerHTML = items.map(m => m.who === 'tool'
       ? `<div class="ag-tool">⚙️ ${esc(m.text)}</div>`
-      : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div${m === AG.live ? ' id="ag-live"' : ''}>${m.html || agFmt(m.text)}</div></div>`).join('')
-      + (!AG.view.length && agAI() ? `<div class="ag-sugg">${t.s.map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
+      : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div${m === AG.live ? ' id="ag-live"' : ''}>${m.html || agMsgHtml(m)}</div></div>`).join('')
+      + (!AG.view.length && agAI() ? `<div class="ag-sugg">${agChips(t).map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
       + (AG.busy && !AG.live ? `<div class="ag-msg bot"><img src="${agPhoto()}" alt=""><div class="ag-dots">${esc(t.think)}<span>.</span><span>.</span><span>.</span></div></div>` : '');
     $$('.ag-sugg button', body).forEach(b => b.onclick = () => agSend(b.textContent));
+    $$('[data-ct]', body).forEach(b => b.onclick = () => agContractOut(b.dataset.ct, +b.dataset.i));
     $$('a.ag-card, a.ag-more', body).forEach(a => a.addEventListener('click', () => { if (window.innerWidth < 960) agHide(); }));
     const acts = $('#ag-acts');
     if (acts) {
@@ -2647,16 +2749,23 @@
   }
   const AG_HOWTO = /كيف|كيفاش|فين|أين|وين|طريق|نستعمل|استعمل|أستعمل|نزيد|أضيف|اضيف|نضيف|نبدل|أغير|نغير|شرح|اشرح|علمني|دليل|زر|صفحة|الإعدادات|الاعدادات|ميزة|خاصية|comment|how|o[uù] |where|utiliser|ajouter|tutorial/i;
   // كنصيفطو غير آخر جزء من المحادثة (أسرع وأرخص)، وكنبداو ديما من سؤال ديال المستعمل
+  const agIsQ = m => m.role === 'user' && (typeof m.content === 'string' || (Array.isArray(m.content) && m.content.some(b => b.type === 'text')));
+  const agQText = m => typeof m.content === 'string' ? m.content : m.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
   function agTrim(h) {
     let i = Math.max(0, h.length - 24);
-    while (i > 0 && !(h[i].role === 'user' && typeof h[i].content === 'string')) i--;
-    return h.slice(i);
+    while (i > 0 && !agIsQ(h[i])) i--;
+    const out = h.slice(i);
+    // الملفات (صور/PDF) كتمشي غير مع آخر سؤال فيه ملف — الباقي كيتعوض بإشارة صغيرة (أسرع)
+    let last = -1;
+    out.forEach((m, k) => { if (m.role === 'user' && Array.isArray(m.content) && m.content.some(b => b.type === 'image' || b.type === 'document')) last = k; });
+    return out.map((m, k) => (k !== last && m.role === 'user' && Array.isArray(m.content) && m.content.some(b => b.type === 'image' || b.type === 'document'))
+      ? { ...m, content: m.content.map(b => (b.type === 'image' || b.type === 'document' ? { type: 'text', text: '[ملف مرفق قبل]' } : b)) } : m);
   }
   async function agCall(onText) {
     const Sy = window.W777_SYNC;
-    const lastQ = [...AG.history].reverse().find(m => m.role === 'user' && typeof m.content === 'string');
+    const lastQ = [...AG.history].reverse().find(agIsQ);
     const ctx = { today: today(), agency: S.role === 'agency' ? myAgencyName() : S.settings.officeName, role: S.role || 'office', page: location.hash || '#/', snap: agSnap() };
-    if (lastQ && AG_HOWTO.test(lastQ.content)) { const h = agGuide(lastQ.content, 2); if (h.length) ctx.help = h; }
+    if (lastQ && AG_HOWTO.test(agQText(lastQ))) { const h = agGuide(agQText(lastQ), 2); if (h.length) ctx.help = h; }
     const res = await Sy.request('/functions/v1/w777-agent', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: agTrim(AG.history), lang: agLang(), ctx, stream: true }),
@@ -2681,13 +2790,13 @@
     }
     return fin;
   }
-  async function agSend(text) {
+  async function agSend(text, att) {
     const Sy = window.W777_SYNC, t = agT();
-    AG.view.push({ who: 'me', text });
+    AG.view.push({ who: 'me', text: att ? `📎 ${att.name}\n${text}` : text });
     if (!agAI()) { agLocal(text); return; }
     if (!Sy || !Sy.isOn()) { AG.view.push({ who: 'bot', text: t.login }); agRender(); return; }
     const base = AG.history.length; // إلا وقع مشكل كنرجعو المحادثة كيف كانت (باش ما تخسرش)
-    AG.history.push({ role: 'user', content: text });
+    AG.history.push({ role: 'user', content: att ? [att.block, { type: 'text', text }] : text });
     AG.busy = true; AG.live = null; agRender();
     agSayStart();
     let paint = 0;
@@ -2697,7 +2806,7 @@
       agSayFeed(d);
       if (!paint) paint = requestAnimationFrame(() => {
         paint = 0; const el = $('#ag-live'), body = $('#ag-body');
-        if (el && AG.live) el.innerHTML = agFmt(AG.live.text); else agRender();
+        if (el && AG.live) el.innerHTML = agMsgHtml(AG.live); else agRender();
         if (body) body.scrollTop = body.scrollHeight;
       });
     };
@@ -2957,7 +3066,7 @@
     matches_for_request: 'كنقلب على العقارات المناسبة…', matches_for_property: 'كنقلب على الزبناء المناسبين…', create_request: 'كنزيد الطلب…',
     list_appointments: 'كنشوف المواعيد…', create_appointment: 'كنزيد الموعد…', update_property_status: 'كنبدل حالة العقار…', market_price: 'كنقارن مع ثمن السوق…',
     office_stats: 'كنحسب الأرقام ديال المكتب…', network_search: 'كنقلب فالشبكة…', app_help: 'كنقلب فدليل التطبيق…', finance_summary: 'كنحسب المالية…',
-    rentals_summary: 'كنشوف الكراء…', open_page: 'كنحل الصفحة…',
+    rentals_summary: 'كنشوف الكراء…', open_page: 'كنحل الصفحة…', get_contract_template: 'كنقرا نموذج العقد…',
   };
   async function agRunTool(name, a) {
     const lim = Math.min(num(a.limit) || 10, 25);
@@ -3045,6 +3154,14 @@
         return { total: list.length, results: list.slice(0, lim).map(x => ({ agency: x.agency, agency_phone: x.phone, ref: (x.data || {}).ref, type: typeAr(x.type), city: x.city, district: (x.data || {}).district, price: priceText(netAsProp(x)) })) };
       }
       case 'app_help': return { lessons: agGuide(a.query || '', 3) };
+      case 'get_contract_template': {
+        if (!a.id) return { templates: CONTRACTS.map(c => ({ id: c.f, title: c.ar, fr: c.fr, law: c.law || '' })) };
+        const T = AG.ctTexts || (AG.ctTexts = await (await fetch('files/contrats/texts.json?v=1')).json());
+        const q = String(a.id).toLowerCase(), id = T[q] ? q : Object.keys(T).find(k => k.includes(q) || q.includes(k.slice(0, 2) + '-'));
+        if (!id) return { error: 'unknown id', ids: Object.keys(T) };
+        const c = CONTRACTS.find(x => x.f === id) || {};
+        return { id, title: c.ar, fr: c.fr, law: c.law || '', text: T[id] };
+      }
       case 'finance_summary': {
         const k = /^\d{4}-\d{2}$/.test(a.month || '') ? a.month : ym(), all = live('ledger'), m = monthSums(all, k);
         const yr = all.filter(x => String(x.date || '').slice(0, 4) === k.slice(0, 4)), sum = t2 => yr.filter(x => x.type === t2).reduce((q, x) => q + (num(x.amount) || 0), 0);
@@ -3382,16 +3499,21 @@
       <a class="btn sm gold" href="${url}" download="${esc(name)}">${ic('download', 15)} تحميل</a>
       <button class="btn sm" data-print="${url}">${ic('print', 15)} طباعة</button></div>`;
   function bindPrint(root) { $$('[data-print]', root).forEach(b => b.onclick = () => printPdf(b.dataset.print)); }
+  // بطاقة «منير» فالصفحات: الأستاذ (التعليم) ولا مراجع العقود
+  const agCard = (title, sub, btn, k) => `<div class="card card-pad ag-teach"><img src="${esc(agPhoto())}" alt=""><div class="grow"><b>${title}</b><small class="muted">${sub}</small></div><button class="btn gold" data-agk="${k}">${btn}</button></div>`;
+  function bindAgCard(root, prompts) { $$('[data-agk]', root).forEach(b => b.onclick = () => agStart(prompts[b.dataset.agk] || '')); }
   function viewContracts() {
     const card = (c) => `
         <div class="card card-pad doc-card">
           <div class="doc-ic">${c.ic}</div>
           <div class="grow"><small class="muted">${c.f.slice(0, 2)}${c.law ? ' · ' + esc(c.law) : ''}</small><b>${esc(c.ar)}</b><small class="muted" dir="ltr" style="text-align:right">${esc(c.fr)}</small>
           ${docBtns(`files/contrats/${c.f}.pdf`, `AlWasset777-${c.f}.pdf`)}
+          <button class="btn sm ag-fill" data-agfill="${c.f}" style="margin-top:6px;align-self:flex-start">🤖 عمّرو مع منير</button>
           ${c.docx ? `<a class="btn sm" style="margin-top:6px;align-self:flex-start;border-color:#2b579a;color:#2b579a" href="files/contrats/${c.f}.docx" download="AlWasset777-${c.f}.docx">📝 تحميل Word للتعديل</a>` : ''}</div>
         </div>`;
     main().innerHTML = `
       <div class="page-head"><h1>📄 طباعة العقود</h1><span class="badge gold">${CONTRACTS.length} نموذج</span></div>
+      ${agCard('🤖 منير كيقرا ويصلح ليك العقود', 'لصق العقد ولا صيفط تصويرة / PDF / Word، ولا ختار نموذج: كيعمّرو، كيصلحو وكيعطيك نسخة Word ولا PDF.', '✍️ صلح ولا عمّر عقد', 'ct')}
       <p class="muted" style="margin-top:-6px">نماذج عقود جاهزة بالعربية (والعنوان بالفرنسية) ديال وكالة الوسيط 777. حمّل، عمّر الفراغات، وطبع.</p>
       <div class="doc-grid" style="margin-bottom:14px">
         <div class="card card-pad doc-card" style="border-color:var(--gold)"><div class="doc-ic">📚</div>
@@ -3402,6 +3524,8 @@
       ${CT_GROUPS.map(([g, t]) => `<h2 class="sec-h">${t}</h2>${g === 'deed' ? '<p class="muted" style="margin:-4px 0 10px;font-size:13px">نماذج كاملة كيخدمو بيها الموثقين والعدول والمحامين: حمّل نسخة Word، بدّل حسب الحالة، وعطيها للمحرر.</p>' : ''}<div class="doc-grid">${CONTRACTS.filter(c => (c.g || 'base') === g).map(card).join('')}</div>`).join('')}
       <p class="muted" style="font-size:12.5px;margin-top:14px">⚠️ نماذج إرشادية: العقود المهمة (البيع النهائي، الهبة، المبادلة، الرهن) خاصهم يتحرّرو عند موثق أو عدول أو محامي مقبول لدى محكمة النقض.</p>`;
     bindPrint(main());
+    bindAgCard(main(), { ct: '' });
+    $$('[data-agfill]').forEach(b => b.onclick = () => { const c = CONTRACTS.find(x => x.f === b.dataset.agfill) || {}; agStart(`بغيت نعمّر نموذج «${c.ar}» (${c.f}). قرا النموذج وسولني على المعلومات اللي خاصاك وحدة بوحدة، ومن بعد عطيني العقد كامل معمّر.`); });
   }
   function viewLearn() {
     let done = {};
@@ -3409,6 +3533,7 @@
     const n = MODULES.filter(x => done[x.m]).length;
     main().innerHTML = `
       <div class="page-head"><h1>🎓 تعلم مهنة الوكيل العقاري</h1></div>
+      ${agCard('🎓 تعلم مع منير — الأستاذ ديالك', 'كيشرح ليك المهنة والتطبيق خطوة بخطوة، بأمثلة من مكناس، وكيدير ليك اختبارات صغيرة.', '▶ بدا الدرس', 'learn')}
       <div class="card card-pad" style="margin-bottom:14px">
         <b>برنامج تكوين الوكيل العقاري المحترف — وكالة الوسيط 777، مكناس</b>
         <p class="muted" style="margin:6px 0 10px">6 وحدات · 17 يوم · 119 ساعة. حل كل وحدة، قراها، ومن بعد علّم عليها ✓.</p>
@@ -3425,6 +3550,7 @@
           </div>
         </div>`).join('')}</div>`;
     bindPrint(main());
+    bindAgCard(main(), { learn: 'سلام أستاذ منير! بغيت نتعلم مهنة الوكيل العقاري. بدا معايا من الوحدة اللي كتناسبني وشرح ليا خطوة بخطوة.' });
     $$('[data-done-m]').forEach(cb => cb.onchange = () => {
       done[cb.dataset.doneM] = cb.checked ? Date.now() : undefined;
       try { localStorage.setItem('w777_learn', JSON.stringify(done)); } catch (e) { /* */ }
@@ -4550,6 +4676,7 @@
         </div>
         <img class="gd-phone" src="guide/b01b-hub.webp" alt="" loading="lazy">
       </div>
+      ${agCard('🎓 تعلم التطبيق مع منير', 'سولو على أي زر ولا صفحة، ولا خليه يعلمك التطبيق من الأول بحال أستاذ.', '▶ علمني التطبيق', 'guide')}
       ${G.parts.map((P, pi) => {
         const ls = L.filter(l => l.p === pi);
         if (!ls.length) return '';
@@ -4558,6 +4685,7 @@
             <img src="guide/${l.img[0]}.webp" alt="" loading="lazy">
             <div class="gd-body"><span class="gd-n">${done.has(l.n) ? '✓' : String(l.n).padStart(2, '0')}</span><b>${esc(l.t)}</b><small>${esc(l.tag)}</small></div></a>`).join('')}</div>`;
       }).join('')}`;
+    bindAgCard(main(), { guide: 'سلام منير! علمني كيفاش نستعمل تطبيق الوسيط 777 من الأول، خطوة بخطوة.' });
     const r = $('#gd-reset'); if (r) r.onclick = async () => { if (await confirmBox('إعادة الدليل من الأول؟', 'إعادة', false)) { gdSave(new Set()); viewGuide(); } };
   }
   function viewGuideLesson(l, L, done) {

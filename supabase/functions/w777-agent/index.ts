@@ -67,7 +67,18 @@ Knowing the app (answer any "how do I / where is / what is" question about the a
 - Requests: client file (phone, WhatsApp, status: new, searching, visit planned, offer/negotiation, done), matching properties by %; 🔥 = urgent client. Matching page: thresholds 50–90%.
 - «تدبير الكراء» (rentals): leases, monthly payments (paid / due / late), receipts, WhatsApp reminder to tenant; management fee goes to finance automatically. «المحفظة المالية» (finance): income, expenses, net profit, 12-month chart, unrecorded commissions; monthly report PDF.
 - Settings: office info + watermark, cloud sync login (member code + password from the Wasset 777 office), appearance (light/dark), animations (light mode for old devices), app lock + fingerprint/Face ID, staff accounts (view / edit / full), push notifications, public catalog link, backup / import / Excel export, import properties from photo folders.
-- Network: «حسابي» = member card (name, phone/WhatsApp, city, country, services, bio, logo); network properties are shared automatically without owner data; commission split 50/50 between the property's agency and the client's agency. Subscription: 3 free months then 199 DH per year. Office contacts: 0777777959 and 0777777848 (give both).`;
+- Network: «حسابي» = member card (name, phone/WhatsApp, city, country, services, bio, logo); network properties are shared automatically without owner data; commission split 50/50 between the property's agency and the client's agency. Subscription: 3 free months then 199 DH per year. Office contacts: 0777777959 and 0777777848 (give both).
+
+Contracts (العقود) — you read, fill, check and correct contracts:
+- The user may paste a contract, attach a photo / PDF / Word file of it, or ask for one of the app's templates (call get_contract_template; without id it lists them).
+- To CHECK a contract: read it fully, then give (1) a 2–3 sentence verdict, (2) the problems found as a short numbered list (missing parties' ID numbers, missing property title number (الرسم العقاري), unclear price/payment schedule, missing dates, clauses contrary to Moroccan law — cite the law: 67.12 residential rent, 49.16 commercial lease, ظهير الالتزامات والعقود, 39.08 real rights, 18.00 co-ownership, 44.00/107.12 off-plan, 32.09 notaries, 16.03 adouls), (3) then offer to write the corrected version.
+- To CORRECT or FILL a contract (or when the user asks for the corrected version): write the COMPLETE contract text, ready to print, in the contract's own language (usually Modern Standard Arabic, even if you chat in Darija), keeping its articles (المادة 1، المادة 2…), filling every blank you know and leaving [....] for unknown data. Put the full text between a line "=== بداية العقد ===" and a line "=== نهاية العقد ===" (exactly these markers), with nothing else inside. The app turns it into a Word/PDF document. Outside the markers keep only one short sentence listing what you changed.
+- For long contracts you may use the full length needed; the "short answers" rule does not apply inside the markers. End with a reminder that important deeds (final sale, donation, exchange, mortgage) must be signed before a notary or adouls.
+
+Teacher mode — when the current page is #/learn or #/guide, or the user asks you to teach / explain / train them:
+- Be a warm human teacher (أستاذ), not a robot: greet by encouraging, explain ONE idea at a time in 2–4 short sentences, with a concrete example from a real-estate office in Meknès, then ask ONE small question to check understanding ("واش واضح؟ عطيني مثال…" / a mini quiz with 2–3 choices).
+- Correct mistakes kindly, praise good answers (برافو! / ممتاز!), and propose the next step. Teach both how to use the app (use the relevant lessons / app_help, exact button names, offer open_page) and the real-estate agent profession (prospecting, mandates, visits, negotiation, Moroccan law, fees, ethics, the 6 academy modules).
+- When the user asks for a test, give a short quiz (3–5 questions, one at a time) and a score at the end with a congratulation.`;
 
 const S = (props: Record<string, unknown>, required: string[] = []) => ({ type: "object", properties: props, required });
 const str = (d: string) => ({ type: "string", description: d });
@@ -93,6 +104,7 @@ const TOOLS = [
   { name: "app_help", description: "Search the app's user guide (how to use any feature, where a button is, what a page does). Returns the most relevant lessons with steps.", input_schema: S({ query: str("keywords of the question, e.g. 'add property photos', 'watermark', 'staff account'") }, ["query"]) },
   { name: "finance_summary", description: "The office finances for a month: income, expenses, net profit, year profit, rentals collected.", input_schema: S({ month: str("YYYY-MM, default current month") }) },
   { name: "rentals_summary", description: "Rental management: active leases, late tenants with months due, collected this month.", input_schema: S({}) },
+  { name: "get_contract_template", description: "The app's contract templates (Moroccan law, AR + FR titles). Without `id`: list of all templates (id, title, law). With `id` (e.g. '01-bail-habitation'): the full text of that template with its blanks, to fill or check it.", input_schema: S({ id: str("template id from the list, e.g. 01-bail-habitation") }) },
   { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | brokers | contractors | finishing | investors | notaries | associations | projects | events | news | stays | search | guide | terms | donations | disputes | contracts | learn | ownership | estimate | settings | new_property | new_request | new_appointment | rentals | finance | report | loan | map | ad_maker | messages"), ref: str("ref when page is property or request") }, ["page"]) },
 ];
 
@@ -103,10 +115,11 @@ const TOOLS = [
 type GM = { m: string; th?: Record<string, unknown> | null };
 const GEMINI_MODELS: GM[] = [
   ...(Deno.env.get("W777_GEMINI_MODEL") ? [{ m: Deno.env.get("W777_GEMINI_MODEL")!, th: null }] : []),
+  // الدقة أولاً (اختيار المدير)، والجواب كيتبث مباشرة باش يبان بسرعة
+  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
+  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-3.5-flash", th: { thinkingLevel: "minimal" } },
   { m: "gemini-3.1-flash-lite", th: { thinkingLevel: "minimal" } },
-  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-3.5-flash-lite", th: { thinkingLevel: "minimal" } },
   { m: "gemini-flash-latest", th: null },
   { m: "gemini-flash-lite-latest", th: null },
@@ -134,6 +147,7 @@ function toGemini(messages: Blk[], model: string) {
     for (const b of blocks) {
       const same = b.sig && b.mdl === model;
       if (b.type === "text" && b.text) parts.push({ text: b.text, ...(same ? { thoughtSignature: b.sig } : {}) });
+      else if ((b.type === "image" || b.type === "document") && b.source?.type === "base64") parts.push({ inlineData: { mimeType: b.source.media_type, data: b.source.data } });
       else if (b.type === "tool_use") {
         names.set(b.id, b.name);
         parts.push({ functionCall: { name: b.name, args: b.input ?? {} }, thoughtSignature: same ? b.sig : "skip_thought_signature_validator" });
@@ -157,7 +171,7 @@ async function geminiOpen(key: string, system: string, messages: Blk[], stream: 
         systemInstruction: { parts: [{ text: system }] },
         contents: toGemini(messages, g.m),
         ...(withTools ? { tools: G_TOOLS, toolConfig: { functionCallingConfig: { mode: "AUTO" } } } : {}),
-        generationConfig: { maxOutputTokens: withTools ? 4096 : 900, temperature: 0.6, ...(th ? { thinkingConfig: th } : {}) },
+        generationConfig: { maxOutputTokens: withTools ? 8192 : 900, temperature: 0.6, ...(th ? { thinkingConfig: th } : {}) },
       });
       const ac = new AbortController();
       // Google أحياناً كيتعطل بزاف فالمستوى المجاني: إلا ما بدا الجواب فـ 10 ثواني كنمشيو للنموذج اللي من بعد
@@ -301,8 +315,10 @@ Deno.serve(async (req) => {
   const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
   if (req.method !== "POST") return json({ error: "method" }, 405);
 
-  let body: { messages?: unknown[]; lang?: string; ctx?: Record<string, unknown>; stream?: boolean; tts?: string; game?: GameCtx };
+  let body: { messages?: unknown[]; lang?: string; ctx?: Record<string, unknown>; stream?: boolean; tts?: string; game?: GameCtx; ping?: boolean };
   try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400); }
+  // تسخين: التطبيق كيصيفطها ملي كيتحل المساعد باش أول جواب يجي بسرعة
+  if (body.ping) return json({ ok: true });
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const service = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -375,6 +391,8 @@ Deno.serve(async (req) => {
   const turnInfo = [
     `Reply in ${lang}. Today is ${String(ctx.today ?? "")}. Agency: ${String(ctx.agency ?? "")}. Role: ${String(ctx.role ?? "")}. Current page: ${String(ctx.page ?? "")}.`,
     ctx.snap ? `Live snapshot of the office right now (use it directly, no tool call needed for these numbers): ${JSON.stringify(ctx.snap).slice(0, 3000)}` : "",
+    /^#\/(learn|guide)/.test(String(ctx.page ?? "")) ? "The user is on a learning page: use Teacher mode." : "",
+    /^#\/contracts/.test(String(ctx.page ?? "")) ? "The user is on the contracts page: be ready to read, check, fill or correct contracts (Contracts rules)." : "",
     ctx.help ? `Relevant lessons from the app's user guide (use them to explain how to use the app): ${JSON.stringify(ctx.help).slice(0, 5000)}` : "",
   ].filter(Boolean).join("\n");
 
