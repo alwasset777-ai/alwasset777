@@ -753,6 +753,7 @@
     if (a !== 'properties') $('#q').value = '';
     placeLang();
     lvPage();
+    agPageMood(a);
   }
   // زر اللغة: فالرئيسية كيتحط فشريط «دول المشتركين»، وفالصفحات الأخرى كيرجع للشريط الفوقاني
   const LANG_HOME = document.createComment('lang');
@@ -2344,6 +2345,34 @@
       agFaceVars();
     }
   }
+  /* ---------- منير فالأيقونة: حالات قصيرة حسب الصفحة والحدث (الأيقونة نفسها ما كتبدلش) ----------
+     think 💭 (العقود، ملي كيخدم) · teach 🎓 (التعليم) · prize 🏆 (درس مكمل) · happy ✨ · sad 💧 · hi 👋 · page (إيموجي الصفحة).
+     إلا تزادو فيديوهات قصيرة (W777_MOOD_VIDEOS = { think: 'game/mounir/think.mp4', … }) كيتلعبو بلاصة الحركة. */
+  const AG_MOOD_FX = { think: '💭', teach: '🎓', prize: '🏆', happy: '✨', sad: '💧', hi: '👋' };
+  const PAGE_MOOD = {
+    '': ['hi'], contracts: ['think'], learn: ['teach'], guide: ['teach'], properties: ['page', '🏠'], property: ['page', '🏠'], requests: ['page', '🤝'], request: ['page', '🤝'],
+    appointments: ['page', '📅'], appointment: ['page', '📅'], finance: ['page', '💰'], rentals: ['page', '🔑'], rental: ['page', '🔑'], news: ['page', '📰'], map: ['page', '🗺️'],
+    estimate: ['page', '📊'], loan: ['page', '🏦'], events: ['page', '🎉'], donations: ['page', '🎁'], disputes: ['think'], matching: ['page', '💞'], search: ['page', '🔍'],
+    stays: ['page', '🏨'], projects: ['page', '🏗️'], investors: ['page', '💼'], notaries: ['page', '📜'], ownership: ['page', '🏡'], settings: ['page', '⚙️'], chat: ['page', '💬'],
+    inbox: ['page', '💬'], 'ad-maker': ['page', '📸'], report: ['page', '📈'], agencies: ['page', '🏢'], brokers: ['page', '🤝'], contractors: ['page', '👷'], finishing: ['page', '🎨'],
+    associations: ['page', '🏛️'], terms: ['page', '📜'],
+  };
+  let agMoodT = 0;
+  function agMood(m, fx, ms = 3600) {
+    const b = $('#agent-fab'); if (!b || document.documentElement.classList.contains('lv-lite')) return;
+    clearTimeout(agMoodT);
+    const vids = window.W777_MOOD_VIDEOS || {};
+    let v = $('video', b);
+    if (vids[m]) {
+      if (!v) { v = document.createElement('video'); v.muted = true; v.playsInline = true; v.className = 'ag-mv'; b.appendChild(v); }
+      v.src = vids[m]; v.currentTime = 0; v.play().catch(() => {});
+    } else if (v) v.remove();
+    b.dataset.mood = m; b.dataset.fx = fx || AG_MOOD_FX[m] || '';
+    b.classList.remove('mood-on'); void b.offsetWidth; b.classList.add('mood-on');
+    if (ms) agMoodT = setTimeout(agMoodOff, ms);
+  }
+  function agMoodOff() { const b = $('#agent-fab'); if (!b) return; b.classList.remove('mood-on'); delete b.dataset.mood; const v = $('video', b); if (v) v.remove(); }
+  function agPageMood(a) { const pm = PAGE_MOOD[a || '']; if (pm && !AG.open) setTimeout(() => agMood(pm[0], pm[1]), 450); }
   function setupAgent() {
     if (EMBED) return;
     const b = document.createElement('button');
@@ -2798,6 +2827,7 @@
     const base = AG.history.length; // إلا وقع مشكل كنرجعو المحادثة كيف كانت (باش ما تخسرش)
     AG.history.push({ role: 'user', content: att ? [att.block, { type: 'text', text }] : text });
     AG.busy = true; AG.live = null; agRender();
+    agMood('think', null, 0);
     agSayStart();
     let paint = 0;
     const onText = d => {
@@ -2843,7 +2873,7 @@
         }));
         AG.history.push({ role: 'user', content: results });
       }
-    } finally { AG.busy = false; AG.live = null; agRender(); }
+    } finally { AG.busy = false; AG.live = null; agRender(); agMood('happy', null, 2200); }
   }
   /* ---------- المساعد المحلي (فابور، بلا AI): أزرار + كلمات مفتاحية فـ 6 لغات ---------- */
   const LX = {
@@ -3553,6 +3583,7 @@
     bindAgCard(main(), { learn: 'سلام أستاذ منير! بغيت نتعلم مهنة الوكيل العقاري. بدا معايا من الوحدة اللي كتناسبني وشرح ليا خطوة بخطوة.' });
     $$('[data-done-m]').forEach(cb => cb.onchange = () => {
       done[cb.dataset.doneM] = cb.checked ? Date.now() : undefined;
+      if (cb.checked) agMood('prize', null, 4200);
       try { localStorage.setItem('w777_learn', JSON.stringify(done)); } catch (e) { /* */ }
       viewLearn();
     });
@@ -4712,7 +4743,7 @@
         ${prev ? `<a class="btn" href="#/guide/${prev.n}">→ ${esc(prev.t)}</a>` : '<span></span>'}
         ${next ? `<a class="btn primary" href="#/guide/${next.n}" id="gd-next">${esc(next.t)} ←</a>` : `<a class="btn primary" href="#/guide">🏆 النهاية</a>`}
       </div>`;
-    const mark = () => { done.add(l.n); gdSave(done); };
+    const mark = () => { if (!done.has(l.n)) agMood('prize', null, 4200); done.add(l.n); gdSave(done); };
     $('#gd-ok').onclick = () => { mark(); location.hash = next ? '#/guide/' + next.n : '#/guide'; };
     const nx = $('#gd-next'); if (nx) nx.addEventListener('click', mark);
     $('#gd-try').onclick = () => { mark(); if (l.go === 'agent') { location.hash = '#/'; setTimeout(() => { if (!AG.open) agOpen(); }, 300); } else location.hash = l.go; };
