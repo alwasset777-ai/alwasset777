@@ -12,14 +12,14 @@
   const T = {
     ar: {
       title: 'وصلة العقار', play: 'العب', groups: 'المجموعات', stage: 'المرحلة', helps: 'مساعدات', stars: 'نجوم', pts: 'نقطة',
-      settings: 'الإعدادات', lang: 'اللغة', close: 'إغلاق', back: 'رجوع', remove: 'حذف حرف', reveal: 'كشف حرف', clear: 'مسح',
+      settings: 'الإعدادات', lang: 'اللغة', close: 'إغلاق', back: 'رجوع', remove: 'إحذف حرف', reveal: 'إكشف حرف', clear: 'مسح',
       locked: 'كمل المجموعة اللي قبل باش تتفتح', lockedStage: 'حل المرحلة اللي قبل أولاً', noHelps: 'ما بقاتش مساعدات — حل مراحل باش تربح مساعدات جديدة',
       wrong: 'جواب غالط، عاود', good: 'برافو!', stageDone: 'كملتي المرحلة', next: 'المرحلة الموالية', toGroup: 'لائحة المراحل', earned: 'ربحتي',
       board: 'ترتيب المشتركين', noBoard: 'الترتيب كيبان غير للمشتركين فتطبيق الوسيط 777.', empty: 'حتى واحد ما لعب مازال — كون الأول!', me: 'أنت',
       share: 'شارك اللعبة', shareTxt: 'جرب «وصلة العقار» — لعبة الأسئلة العقارية ديال مكتب الوسيط 777 🧩🏠', saved: 'تسجلات النقط فالترتيب ✓',
       credits: 'حقوق الصور', pick: 'ختار سؤال من الشبكة', picQ: 'سؤال بالصورة', how: 'كيفاش تلعب؟',
       howTxt: 'ختار خانات كلمة فالشبكة باش يبان السؤال (بالصورة أحياناً)، ومن بعد ركّب الجواب بالحروف المقترحة. الحروف المشتركة مع كلمات محلولة كتبان بالأصفر. «حذف حرف» كيحيد حرف زايد، و«كشف حرف» كيعطيك حرف من الجواب. حل المرحلة بلا مساعدات = 3 نجوم.',
-      allDone: 'سالييتي جميع المراحل! 🏆',
+      allDone: 'سالييتي جميع المراحل! 🏆', puzzle: 'لغز رقم', whatIs: 'ما هذا؟', info: 'معلومات عقارية', helpsInfo: 'كتربح مساعدة مع كل لغز كتحلو، وزوج إلا حليتيه بلا مساعدات ⭐⭐⭐',
     },
     fr: {
       title: 'Wasla Immo', play: 'Jouer', groups: 'Groupes', stage: 'Étape', helps: 'Aides', stars: 'étoiles', pts: 'points',
@@ -30,7 +30,7 @@
       share: 'Partager le jeu', shareTxt: 'Essayez « Wasla Immo », le jeu de questions immobilières d’Al Wasset 777 🧩🏠', saved: 'Points enregistrés au classement ✓',
       credits: 'Crédits photos', pick: 'Choisissez une question dans la grille', picQ: 'Question en image', how: 'Comment jouer ?',
       howTxt: 'Touchez un mot dans la grille pour voir sa question (parfois en image), puis composez la réponse avec les lettres proposées. Les lettres partagées avec des mots déjà trouvés apparaissent en jaune. « Retirer une lettre » enlève une lettre inutile, « Révéler une lettre » en donne une. Sans aide = 3 étoiles.',
-      allDone: 'Vous avez terminé toutes les étapes ! 🏆',
+      allDone: 'Vous avez terminé toutes les étapes ! 🏆', puzzle: 'Énigme n°', whatIs: 'Qu’est-ce que c’est ?', info: 'Culture immobilière', helpsInfo: 'Chaque énigme résolue rapporte 1 aide, 2 si vous la résolvez sans aide ⭐⭐⭐',
     },
     en: {
       title: 'Real-Estate Wasla', play: 'Play', groups: 'Groups', stage: 'Stage', helps: 'Helps', stars: 'stars', pts: 'points',
@@ -41,7 +41,7 @@
       share: 'Share the game', shareTxt: 'Try “Real-Estate Wasla”, the property quiz game by Al Wasset 777 🧩🏠', saved: 'Points saved to the ranking ✓',
       credits: 'Photo credits', pick: 'Pick a question in the grid', picQ: 'Picture question', how: 'How to play?',
       howTxt: 'Tap a word in the grid to see its question (sometimes a picture), then build the answer with the suggested letters. Letters shared with solved words show in yellow. “Remove a letter” takes out a wrong letter, “Reveal a letter” gives you one. No help = 3 stars.',
-      allDone: 'You finished every stage! 🏆',
+      allDone: 'You finished every stage! 🏆', puzzle: 'Puzzle', whatIs: 'What is this?', info: 'Real-estate knowledge', helpsInfo: 'Each solved puzzle gives 1 help, 2 if solved with no help ⭐⭐⭐',
     },
   };
   const LANG_NAMES = { ar: 'العربية', en: 'English', fr: 'Français' };
@@ -126,6 +126,32 @@
 .wl-lng{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.wl-lng button{padding:10px 14px;border-radius:12px;border:2px solid var(--k);background:#fff;font-weight:800;cursor:pointer}
 .wl-lng button.on{background:var(--r);border-color:var(--r);color:#fff}
 .wl-btn{padding:11px 14px;border-radius:12px;border:0;background:var(--r);color:#fff;font-weight:800;cursor:pointer;font-size:15px}.wl-btn.k{background:var(--k)}.wl-btn.w{background:#fff;color:var(--k);border:2px solid var(--k)}
+.wl-pl{max-width:640px}
+.wl-pbar{display:flex;align-items:center;gap:8px;background:var(--k);color:#fff;border-radius:16px;padding:8px;border-bottom:4px solid var(--r)}
+.wl-pbar b{flex:1;text-align:center;font-size:17px;line-height:1.2}.wl-pbar b small{display:block;font-size:11px;opacity:.7;font-weight:600}
+.wl-pb{background:#fff;color:var(--k);border:0;border-radius:12px;padding:8px 12px;font-weight:800;cursor:pointer;white-space:nowrap;font-size:14px}
+.wl-pb.hp{background:var(--r);color:#fff}.wl-pb.hp i{font-style:normal;margin-inline-start:2px}
+.wl-pl .wl-board{margin-top:12px;background:repeating-linear-gradient(45deg,#f7f7f7 0 14px,#efefef 14px 28px);border:2px solid #e3e3e3;border-radius:18px;padding:14px 8px;min-height:300px;align-items:center}
+.wl-pl .wl-grid{gap:4px}
+.wl-pl .wl-c{background:var(--k);border-radius:5px;cursor:pointer;color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.wl-pl .wl-c.ok{background:#fff;color:var(--k);border:2px solid var(--k)}.wl-pl .wl-c.rv{background:var(--y);color:var(--k)}
+.wl-pl .wl-c.sel{background:var(--r)!important;color:#fff}.wl-pl .wl-c.fl{animation:wl-fl 1.1s}
+@keyframes wl-fl{0%,60%{background:#2ecc71;color:#fff;transform:scale(1.1)}}
+.wl-pl .wl-c .pic{font-size:9px;top:1px}
+.wl-hint{text-align:center;font-weight:800;margin-top:10px;color:#444}
+.wl-card{margin:14px auto 0;max-width:420px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.18);border:2px solid var(--k)}
+.wl-card-h{background:var(--k);color:#fff;text-align:center;font-weight:800;padding:8px;font-size:15px;border-bottom:3px solid var(--r)}
+.wl-card-img{position:relative;background:#eee}.wl-card-img img{display:block;width:100%;height:230px;object-fit:cover;cursor:zoom-in}
+.wl-card-img .wl-cred{position:absolute;bottom:0;left:0;right:0;margin:0;padding:2px 6px;background:rgba(0,0,0,.45);color:#fff;font-size:10px;direction:ltr}
+.wl-card-q{padding:10px 12px;font-weight:800;font-size:17px;text-align:center;line-height:1.5}
+.wl-card-t{background:var(--r);color:#fff;min-height:170px;display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;font-size:21px;font-weight:800;line-height:1.6}
+.wl-card-f{display:flex;border-top:2px solid var(--k)}.wl-card-f button{flex:1;border:0;background:#fff;padding:11px 6px;font-weight:800;cursor:pointer;font-size:14px;color:var(--k)}
+.wl-card-f button+button{border-inline-start:2px solid var(--k)}.wl-card-f button:active{background:#ffe9ec}
+.wl-pl .wl-slots{margin:16px 0 4px}.wl-pl .wl-slot{background:var(--k);color:#fff;border:0;border-radius:8px;width:44px;height:46px}
+.wl-pl .wl-slot.in{background:#fff;color:var(--k);border:3px solid var(--k)}.wl-pl .wl-slot.lk,.wl-pl .wl-slot.rv{background:var(--y);color:var(--k)}
+.wl-pl .wl-slot.ok{background:#0a7a2f}
+.wl-pl .wl-bank{max-width:520px;margin:6px auto 0;gap:6px}.wl-pl .wl-t{background:var(--r);box-shadow:0 3px 0 #7a0a1c;height:46px;border-radius:9px}
+@media(max-width:520px){.wl-pl .wl-slot{width:36px;height:42px}.wl-pl .wl-t{height:42px;font-size:19px;padding:0}.wl-card-img img{height:200px}.wl-pb{padding:7px 9px;font-size:13px}.wl-card-t{font-size:19px;min-height:150px}}
 .wl-credits{text-align:start;font-size:12px;direction:ltr}.wl-credits div{padding:4px 0;border-bottom:1px solid #eee}
 .wl-sub{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
 @media(max-width:520px){.wl-top{gap:6px;padding:8px}.wl-top img.lg{width:42px;height:42px}.wl-chip{padding:4px 7px;font-size:12px}.wl-ib{min-width:36px;height:36px;padding:0 6px}.wl-slot{width:34px;height:42px;font-size:19px}.wl-t{height:44px;font-size:19px}.wl-top h2{font-size:16px}.wl-g{min-height:118px}}
@@ -276,7 +302,7 @@
     function startStage(gi, si) {
       view = { name: 'play', gi, si };
       const st = stateOf(gi, si);
-      play = { gi, si, sel: -1 };
+      play = { gi, si, sel: -1, open: false };
       const stage = groups()[gi].s[si];
       const first = stage.w.findIndex((_, i) => !st.sol[i]);
       if (first >= 0 && !st.done) select(first, true);
@@ -294,7 +320,7 @@
     }
     function bankOf(i) {
       const w = stageObj().w[i], word = Array.from(w[6]);
-      const n = word.length, size = Math.min(18, Math.max(12, n + 4 + ((n + 4) % 2)));
+      const n = word.length, size = n <= 10 ? 14 : n <= 12 ? 16 : 18;
       const r = rng(S.lang + key(play.gi, play.si) + ':' + i + w[6]);
       const pool = Array.from(ALPHA[S.lang]);
       const out = word.slice();
@@ -304,7 +330,7 @@
     }
     function select(i, silent) {
       const st = stateOf(play.gi, play.si), w = stageObj().w[i];
-      play.sel = i; play.msg = '';
+      play.sel = i; play.msg = ''; play.open = !silent;
       const kn = known(), cs = cells(w);
       const bank = bankOf(i), used = new Array(bank.length).fill(false);
       (st.rm[i] || []).forEach(b => { used[b] = 'gone'; });
@@ -346,13 +372,13 @@
         play.msg = '✓ ' + L().good;
         play.msgCls = 'okm';
         const stg = stageObj();
-        if (stg.w.every((_, i) => st.sol[i])) { render(); return finishStage(); }
+        if (stg.w.every((_, i) => st.sol[i])) { play.open = false; play.flash = play.sel; render(); return finishStage(); }
         // السؤال الموالي اللي باقي
         const nxt = stg.w.findIndex((_, i) => i > play.sel && !st.sol[i]);
         const pick = nxt >= 0 ? nxt : stg.w.findIndex((_, i) => !st.sol[i]);
-        const msg = play.msg;
+        const msg = play.msg, done = play.sel;
         select(pick, true);
-        play.msg = msg; play.msgCls = 'okm';
+        play.msg = msg; play.msgCls = 'okm'; play.flash = done;
         render();
         return;
       }
@@ -420,7 +446,7 @@
       flush();
       const g = groups()[play.gi];
       const hasNext = play.si + 1 < g.s.length || play.gi + 1 < groups().length;
-      modal(`<h3>🎉 ${esc(L().stageDone)} — ${esc(L().stage)} ${play.si + 1}</h3>
+      modal(`<h3>🎉 ${esc(L().stageDone)} — ${esc(L().puzzle)} ${play.si + 1}</h3>
         <div class="wl-big">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
         ${first ? `<p style="font-weight:800">${esc(L().earned)}: +${pts} ${esc(L().pts)} · +${bonus} 💡</p>` : ''}
         <div class="row"><button class="wl-btn w" data-gl>${esc(L().toGroup)}</button>${hasNext ? `<button class="wl-btn" data-nx>${esc(L().next)} ➜</button>` : ''}</div>`, m => {
@@ -453,54 +479,70 @@
     function playView() {
       const st = stateOf(play.gi, play.si), stg = stageObj();
       const kn = known(), H = stg.H, W = stg.W, rtl = S.lang === 'ar';
-      const selCells = new Set(play.sel >= 0 ? cells(stg.w[play.sel]).map(([r, c]) => r + ',' + c) : []);
-      const picAt = new Map();
-      stg.w.forEach((w, i) => { if (w[2] && !st.sol[i]) picAt.set(w[3] + ',' + w[4], 1); });
-      const all = new Map();
-      stg.w.forEach(w => cells(w).forEach(([r, c]) => all.set(r + ',' + c, 1)));
-      const maxW = Math.min(root.clientWidth || 360, 980) - 28;
-      const cs = Math.max(20, Math.min(42, Math.floor(((window.innerWidth >= 860 ? maxW * 0.52 : maxW) - W * 3) / W)));
-      let grid = '';
-      for (let r = 0; r < H; r++) for (let vc = 0; vc < W; vc++) {
-        const c = rtl ? W - 1 - vc : vc, k = r + ',' + c;
-        if (!all.has(k)) { grid += `<div class="wl-c"></div>`; continue; }
-        const kk = kn.get(k);
-        grid += `<div class="wl-c on ${kk && kk.ok ? 'ok' : ''} ${selCells.has(k) ? 'sel' : ''}" data-k="${k}" style="font-size:${Math.round(cs * 0.55)}px">${picAt.has(k) ? '<span class="pic">📷</span>' : ''}${kk ? esc(kk.ch) : ''}</div>`;
-      }
-      const w = play.sel >= 0 ? stg.w[play.sel] : null;
-      const C = (DATA.credits || {})[w && w[2]];
-      const solved = w && st.sol[play.sel];
-      const half = Math.ceil(play.bank ? play.bank.length / 2 : 6);
-      root.innerHTML = `<div class="wl" dir="${dir()}">${top(gName(groups()[play.gi].g, S.lang) + ' · ' + L().stage + ' ' + (play.si + 1) + ' · ' + Object.keys(st.sol).length + '/' + stg.w.length, true)}
-        <div class="wl-play">
+      const nSol = Object.keys(st.sol).length;
+      const bar = `<div class="wl-pbar"><button class="wl-pb" data-pback>${S.lang === 'ar' ? '' : '↩ '}${esc(L().back)}${S.lang === 'ar' ? ' ↪' : ''}</button>
+        <b>${esc(L().puzzle)} ${play.si + 1}<small>${esc(gName(groups()[play.gi].g, S.lang))} · ${nSol}/${stg.w.length}</small></b>
+        <button class="wl-pb hp" data-hinfo title="${esc(L().helps)}">💡 ${S.helps} <i>⊕</i></button></div>`;
+      const w = play.open && play.sel >= 0 ? stg.w[play.sel] : null;
+      if (!w) {
+        // الشبكة فالشاشة كاملة (بحال وصلة)
+        const selCells = new Set(play.sel >= 0 && !st.sol[play.sel] ? cells(stg.w[play.sel]).map(([r, c]) => r + ',' + c) : []);
+        const flash = new Set(play.flash != null ? cells(stg.w[play.flash]).map(([r, c]) => r + ',' + c) : []);
+        const picAt = new Map();
+        stg.w.forEach((x, i) => { if (x[2] && !st.sol[i]) picAt.set(x[3] + ',' + x[4], 1); });
+        const all = new Set();
+        stg.w.forEach(x => cells(x).forEach(([r, c]) => all.add(r + ',' + c)));
+        const maxW = Math.min(root.clientWidth || 360, 760) - 24;
+        const cs = Math.max(22, Math.min(46, Math.floor((maxW - W * 4) / W)));
+        let grid = '';
+        for (let r = 0; r < H; r++) for (let vc = 0; vc < W; vc++) {
+          const c = rtl ? W - 1 - vc : vc, k = r + ',' + c;
+          if (!all.has(k)) { grid += '<div></div>'; continue; }
+          const kk = kn.get(k);
+          grid += `<div class="wl-c ${kk && kk.ok ? 'ok' : ''} ${kk && kk.rv ? 'rv' : ''} ${selCells.has(k) ? 'sel' : ''} ${flash.has(k) ? 'fl' : ''}" data-k="${k}" style="font-size:${Math.round(cs * 0.56)}px">${picAt.has(k) ? '<span class="pic">📷</span>' : ''}${kk ? esc(kk.ch) : ''}</div>`;
+        }
+        play.flash = null;
+        root.innerHTML = `<div class="wl wl-pl" dir="${dir()}">${bar}
           <div class="wl-board"><div class="wl-grid" style="grid-template-columns:repeat(${W},${cs}px);grid-auto-rows:${cs}px" dir="ltr">${grid}</div></div>
-          <div class="wl-q">${!w ? `<div class="wl-qt">${esc(L().pick)}</div>` : `
-            ${w[2] ? `<img class="wl-qimg" src="${IMG}${esc(w[2])}.webp" alt="" data-zoom onerror="this.style.display='none'">${C && C.page ? `<div class="wl-cred">© ${esc(C.by || '')} · ${esc(C.lic || '')} · Wikimedia Commons</div>` : ''}` : ''}
-            <div class="wl-qt">${w[2] ? `<span class="tag">📷 ${esc(L().picQ)}</span>` : ''}${esc(w[1])}</div>
-            ${solved ? `<div class="wl-slots">${Array.from(w[6]).map(ch => `<span class="wl-slot ok">${esc(ch)}</span>`).join('')}</div><div class="wl-msg okm">✓ ${esc(w[0])}</div>` : `
-            <div class="wl-slots" dir="${dir()}">${play.slots.map((s, p) => `<span class="wl-slot ${s && s.lock ? s.lock : ''}" data-p="${p}">${s ? esc(s.ch) : ''}</span>`).join('')}</div>
-            <div class="wl-bank" style="--n:${half}" dir="${dir()}">${play.bank.map((ch, bi) => `<button class="wl-t ${play.used[bi] === 'gone' ? 'gone' : play.used[bi] ? 'used' : ''}" data-b="${bi}">${esc(ch)}</button>`).join('')}</div>
-            <div class="wl-acts"><button class="h" data-h="rm">✂️ ${esc(L().remove)}</button><button class="h" data-h="rv">💡 ${esc(L().reveal)}</button><button data-clr>⌫ ${esc(L().clear)}</button></div>`}
-            <div class="wl-msg ${play.msgCls || ''}">${esc(play.msg || '')}</div>`}
-          </div></div></div>`;
-      bindTop();
-      root.querySelectorAll('.wl-c.on').forEach(el => el.onclick = () => {
-        const k = el.dataset.k;
-        const hits = stg.w.map((x, i) => [x, i]).filter(([x]) => cells(x).some(([r, c]) => r + ',' + c === k)).map(([, i]) => i);
-        if (!hits.length) return;
-        let i = hits.find(h => !st.sol[h] && h !== play.sel);
-        if (i == null) i = hits.find(h => h !== play.sel);
-        if (i == null) i = hits[0];
-        select(i);
-        if (window.innerWidth < 860) { const q = root.querySelector('.wl-q'); if (q) q.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-      });
-      root.querySelectorAll('[data-b]').forEach(b => b.onclick = () => tap(+b.dataset.b));
-      root.querySelectorAll('[data-p]').forEach(b => b.onclick = () => untap(+b.dataset.p));
-      root.querySelectorAll('[data-h]').forEach(b => b.onclick = () => useHelp(b.dataset.h));
-      const clr = root.querySelector('[data-clr]');
-      if (clr) clr.onclick = () => { play.slots.forEach((s, p) => { if (s && !s.lock) { play.used[s.b] = false; play.slots[p] = null; } }); render(); };
-      const z = root.querySelector('[data-zoom]');
-      if (z) z.onclick = () => modal(`<img class="full" src="${z.src}" alt=""><div class="row"><button class="wl-btn k" data-x>${esc(L().close)}</button></div>`);
+          <div class="wl-hint">${esc(play.msg || L().pick)}</div></div>`;
+        root.querySelectorAll('.wl-c').forEach(el => el.onclick = () => {
+          const k = el.dataset.k;
+          const hits = stg.w.map((x, i) => i).filter(i => cells(stg.w[i]).some(([r, c]) => r + ',' + c === k));
+          if (!hits.length) return;
+          let i = hits.find(h => !st.sol[h] && h !== play.sel);
+          if (i == null) i = hits.find(h => !st.sol[h]);
+          if (i == null) i = hits[0];
+          select(i);
+        });
+      } else {
+        // بطاقة السؤال: العنوان + الصورة/النص + كشف/حذف حرف، ومن تحت الخانات والحروف
+        const C = (DATA.credits || {})[w[2]];
+        const solved = st.sol[play.sel];
+        const cols = play.bank ? play.bank.length / 2 : 7;
+        root.innerHTML = `<div class="wl wl-pl" dir="${dir()}">${bar}
+          <div class="wl-card">
+            <div class="wl-card-h">${esc(w[2] ? L().whatIs : L().info)}</div>
+            ${w[2] ? `<div class="wl-card-img"><img src="${IMG}${esc(w[2])}.webp" alt="" data-zoom onerror="this.parentNode.style.display='none'">${C && C.page ? `<span class="wl-cred">© ${esc(C.by || '')} · ${esc(C.lic || '')}</span>` : ''}</div><div class="wl-card-q">${esc(w[1])}</div>`
+              : `<div class="wl-card-t">${esc(w[1])}</div>`}
+            ${solved ? '' : `<div class="wl-card-f"><button data-h="rv">✏️ ${esc(L().reveal)}</button><button data-h="rm">🧽 ${esc(L().remove)}</button></div>`}
+          </div>
+          ${solved ? `<div class="wl-slots">${Array.from(w[6]).map(ch => `<span class="wl-slot ok">${esc(ch)}</span>`).join('')}</div>` : `
+          <div class="wl-slots" dir="${dir()}">${play.slots.map((s, p) => `<span class="wl-slot ${s ? (s.lock ? s.lock : 'in') : ''}" data-p="${p}">${s ? esc(s.ch) : ''}</span>`).join('')}</div>
+          <div class="wl-msg ${play.msgCls || ''}">${esc(play.msg || '')}</div>
+          <div class="wl-bank" style="--n:${cols}" dir="${dir()}">${play.bank.map((ch, bi) => `<button class="wl-t ${play.used[bi] === 'gone' ? 'gone' : play.used[bi] ? 'used' : ''}" data-b="${bi}">${esc(ch)}</button>`).join('')}</div>`}
+        </div>`;
+        root.querySelectorAll('[data-b]').forEach(b => b.onclick = () => tap(+b.dataset.b));
+        root.querySelectorAll('[data-p]').forEach(b => b.onclick = () => untap(+b.dataset.p));
+        root.querySelectorAll('[data-h]').forEach(b => b.onclick = () => useHelp(b.dataset.h));
+        const z = root.querySelector('[data-zoom]');
+        if (z) z.onclick = () => modal(`<img class="full" src="${z.src}" alt=""><div class="row"><button class="wl-btn k" data-x>${esc(L().close)}</button></div>`);
+      }
+      root.querySelector('[data-pback]').onclick = () => {
+        if (play.open) { play.open = false; play.msg = ''; render(); return; }
+        view = { name: 'group', gi: play.gi }; render();
+      };
+      root.querySelector('[data-hinfo]').onclick = () => toast(L().helpsInfo);
+      if (root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'start' });
     }
 
     let toastT;
