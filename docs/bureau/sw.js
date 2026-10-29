@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v148';
+const CACHE = 'w777-bureau-v149';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
@@ -36,6 +36,8 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (url.origin !== location.origin) return;
+  // فيديوهات الدليل: من الشبكة مباشرة (ثقيلة، والفيديو كيحتاج طلبات جزئية)
+  if (url.pathname.includes('/tuto/')) return;
   // ملفات التطبيق: من الذاكرة فورا (فتح سريع)، والتحديث كيتجاب فالخلفية للمرة الجاية.
   // كل نشر جديد كيبدل CACHE ← كيتثبت Service Worker جديد والصفحة كتتجدد مرة وحدة.
   const nav = req.mode === 'navigate';
