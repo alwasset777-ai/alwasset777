@@ -1122,3 +1122,23 @@ language sql security definer set search_path = public stable as $$
 $$;
 revoke execute on function public.w777_game_submit(integer, integer), public.w777_game_top() from public, anon;
 grant execute on function public.w777_game_submit(integer, integer), public.w777_game_top() to authenticated;
+
+-- ============================================================
+-- مساعد لعبة «وصلة العقار» للزوار بلا حساب: حد يومي لكل IP (مشفّر) وللمجموع — كيستعملو غير السيرفر
+-- ============================================================
+create table if not exists public.w777_game_ai_hits (k text not null, day date not null default current_date, n integer not null default 0, primary key (k, day));
+alter table public.w777_game_ai_hits enable row level security;
+revoke all on public.w777_game_ai_hits from anon, authenticated;
+create or replace function public.w777_game_ai_hit(k text, lim int, glim int) returns int language plpgsql security definer set search_path = public as $$
+declare c int; g int;
+begin
+  insert into w777_game_ai_hits(k, day, n) values ('*', current_date, 1)
+  on conflict (k, day) do update set n = w777_game_ai_hits.n + 1 returning n into g;
+  if g > glim then return -1; end if;
+  insert into w777_game_ai_hits(k, day, n) values (left(k, 64), current_date, 1)
+  on conflict (k, day) do update set n = w777_game_ai_hits.n + 1 returning n into c;
+  if c > lim then return -1; end if;
+  delete from w777_game_ai_hits where day < current_date - 7;
+  return c;
+end $$;
+revoke execute on function public.w777_game_ai_hit(text, int, int) from public, anon, authenticated;

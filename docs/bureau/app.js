@@ -7000,6 +7000,8 @@
       shareUrl: location.href.split('#')[0].replace(/index\.html$/, '') + 'game.html',
       onFinish: on ? r => rpc('w777_game_submit', { p: r.points, n: r.words }) : null,
       loadBoard: on ? () => rpc('w777_game_top') : null,
+      // منير فاللعبة: المشترك كيتحسب فالحصة ديالو؛ بلا حساب كيستعمل المدخل العمومي (بحد يومي)
+      askAI: on ? async (game, messages, lang) => (await Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game, messages, lang }) })).json() : null,
     });
   }
   function viewLoan(query) {

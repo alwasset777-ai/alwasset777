@@ -11,6 +11,9 @@ const CORS = {
 };
 const DAILY_LIMIT = Number(Deno.env.get("W777_AGENT_DAILY_LIMIT") ?? "150");
 const MODEL = "claude-opus-5-5";
+// لعبة «وصلة العقار»: مساعد اللعبة (بلا أدوات) — حد يومي للزوار بلا حساب (لكل IP وللمجموع)
+const GAME_ANON_LIMIT = Number(Deno.env.get("W777_GAME_ANON_LIMIT") ?? "25");
+const GAME_ANON_GLOBAL = Number(Deno.env.get("W777_GAME_ANON_GLOBAL") ?? "1500");
 
 const LANGS: Record<string, string> = {
   darija: `Moroccan Darija (الدارجة المغربية) written in Arabic script — fluent, natural and warm, exactly like a Moroccan real-estate agent from Meknès talks to a colleague.
@@ -146,16 +149,15 @@ function toGemini(messages: Blk[], model: string) {
   return contents;
 }
 // كيرجع أول جواب صالح من لائحة النماذج (مع إعادة المحاولة بلا إعدادات التفكير إلا ما قبلهاش النموذج)
-async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean) {
+async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true) {
   let last = { status: 0, message: "" };
   for (const [gi, g] of GEMINI_MODELS.entries()) {
     for (const th of g.th ? [g.th, null] : [null]) {
       const payload = JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: toGemini(messages, g.m),
-        tools: G_TOOLS,
-        toolConfig: { functionCallingConfig: { mode: "AUTO" } },
-        generationConfig: { maxOutputTokens: 4096, temperature: 0.6, ...(th ? { thinkingConfig: th } : {}) },
+        ...(withTools ? { tools: G_TOOLS, toolConfig: { functionCallingConfig: { mode: "AUTO" } } } : {}),
+        generationConfig: { maxOutputTokens: withTools ? 4096 : 900, temperature: 0.6, ...(th ? { thinkingConfig: th } : {}) },
       });
       const ac = new AbortController();
       // Google أحياناً كيتعطل بزاف فالمستوى المجاني: إلا ما بدا الجواب فـ 10 ثواني كنمشيو للنموذج اللي من بعد
@@ -198,8 +200,8 @@ const finish = (content: Blk[]) => {
   if (!content.length) content.push({ type: "text", text: "" });
   return { content, stop_reason: hasTool ? "tool_use" : content.some((b) => b.text) ? "end_turn" : "refusal" };
 };
-async function gemini(key: string, system: string, messages: Blk[]) {
-  const { res, model } = await geminiOpen(key, system, messages, false);
+async function gemini(key: string, system: string, messages: Blk[], withTools = true) {
+  const { res, model } = await geminiOpen(key, system, messages, false, withTools);
   const data = await res.json().catch(() => ({}));
   const content: Blk[] = [];
   pushParts(content, data?.candidates?.[0]?.content?.parts ?? [], model);
@@ -274,12 +276,32 @@ async function tts(key: string, text: string, lang = "darija") {
   throw Object.assign(new Error("tts"), { status: last });
 }
 
+// مساعد اللعبة: كيشرح الكلمات العقارية ويعطي الجواب (المدير سمح بإعطاء الجواب مباشرة)
+type GameCtx = { q?: string; a?: string; group?: string; solved?: boolean; name?: string };
+const clip = (v: unknown, n: number) => String(v ?? "").replace(/[\u0000-\u001f]/g, " ").slice(0, n);
+function gameSystem(lang: string, g: GameCtx) {
+  const name = clip(g.name, 40) || "منير";
+  return `You are ${name}, the friendly real-estate tutor inside «وصلة العقار» (Real-Estate Wasla), the real-estate word quiz of the Al Wasset 777 agency (مكتب الوسيط 777) in Meknès, Morocco.
+The player is looking at this question: "${clip(g.q, 300)}". Its answer is "${clip(g.a, 60)}" (category: ${clip(g.group, 60)}). The player ${g.solved ? "has already solved it" : "has not solved it yet"}.
+Rules:
+- The agency allows giving answers freely: when the player asks for the answer, give it clearly, then explain it in one or two sentences.
+- Help the player learn: explain the meaning of real-estate words, how they are used in Morocco (practice, law, notaries/adouls, land titles, renting, construction, prices in Meknès…), synonyms in Arabic and French, and a short concrete example.
+- Only talk about real estate, housing, construction, decoration, Moroccan property law and practice, Moroccan cities, and this game. Politely decline any other topic in one sentence.
+- Be short: 2 to 5 sentences, plain text, no tables, no markdown.
+- If you are not sure of a precise legal figure, say it is approximate and advise checking with a notary, an adoul or the Al Wasset 777 agency (0777777959).
+Reply in ${lang}.`;
+}
+async function sha(s: string) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
   if (req.method !== "POST") return json({ error: "method" }, 405);
 
-  let body: { messages?: unknown[]; lang?: string; ctx?: Record<string, unknown>; stream?: boolean; tts?: string };
+  let body: { messages?: unknown[]; lang?: string; ctx?: Record<string, unknown>; stream?: boolean; tts?: string; game?: GameCtx };
   try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400); }
 
   const url = Deno.env.get("SUPABASE_URL")!;
@@ -292,12 +314,44 @@ Deno.serve(async (req) => {
     userDb.auth.getUser(),
     userDb.rpc("w777_can_use"),
   ]);
-  if (!user) return json({ error: "auth" }, 401);
-  if (!allowed) return json({ error: "forbidden" }, 403);
   // Claude إلا كان المفتاح ديالو، وإلا Gemini (فابور)
   const sec = (n: string) => (secs ?? []).find((r: { name: string }) => r.name === n)?.value as string | undefined;
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY") || sec("anthropic_api_key");
   const geminiKey = Deno.env.get("GEMINI_API_KEY") || sec("gemini_api_key");
+
+  // ---------- مساعد لعبة «وصلة العقار»: للمشتركين وحتى للزوار (بحد يومي) ----------
+  if (body.game && typeof body.game === "object") {
+    if (!apiKey && !geminiKey) return json({ error: "no_key" }, 503);
+    if (user && allowed) {
+      const { data: n } = await service.rpc("w777_agent_hit", { u: user.id, lim: DAILY_LIMIT });
+      if (n === -1) return json({ error: "quota" }, 429);
+    } else {
+      const ip = req.headers.get("cf-connecting-ip") || (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "?";
+      const { data: n, error } = await service.rpc("w777_game_ai_hit", { k: await sha("w777g:" + ip), lim: GAME_ANON_LIMIT, glim: GAME_ANON_GLOBAL });
+      if (error) return json({ error: "server" }, 500);
+      if (n === -1) return json({ error: "quota" }, 429);
+    }
+    // غير نصوص بسيطة (بلا أدوات)، آخر 12 رسالة
+    const gm = (Array.isArray(body.messages) ? body.messages : [])
+      .filter((m: Blk) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
+      .slice(-12).map((m: Blk) => ({ role: m.role, content: clip(m.content, 1500) }));
+    if (!gm.length || gm[gm.length - 1].role !== "user") return json({ error: "empty" }, 400);
+    const sys = gameSystem(LANGS[body.lang ?? "darija"] ?? LANGS.darija, body.game);
+    try {
+      if (geminiKey) {
+        const r = await gemini(geminiKey, sys, gm, false);
+        return json({ text: r.content.filter((b: Blk) => b.type === "text").map((b: Blk) => b.text).join("").trim() });
+      }
+      const resp = await new Anthropic({ apiKey }).messages.create({ model: MODEL, max_tokens: 1200, system: sys, messages: gm });
+      return json({ text: resp.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("").trim() });
+    } catch (e) {
+      const st = (e as { status?: number }).status ?? 0;
+      return json({ error: st === 429 ? "busy" : "server" }, st === 429 ? 429 : 502);
+    }
+  }
+
+  if (!user) return json({ error: "auth" }, 401);
+  if (!allowed) return json({ error: "forbidden" }, 403);
 
   // الصوت: ما كيتحسبش فالحصة ديال الرسائل
   if (typeof body.tts === "string") {

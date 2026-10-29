@@ -19,7 +19,7 @@
       share: 'شارك اللعبة', shareTxt: 'جرب «وصلة العقار» — لعبة الأسئلة العقارية ديال مكتب الوسيط 777 🧩🏠', saved: 'تسجلات النقط فالترتيب ✓',
       credits: 'حقوق الصور', pick: 'ختار سؤال من الشبكة', picQ: 'سؤال بالصورة', how: 'كيفاش تلعب؟',
       howTxt: 'ختار خانات كلمة فالشبكة باش يبان السؤال (بالصورة أحياناً)، ومن بعد ركّب الجواب بالحروف المقترحة. الحروف المشتركة مع كلمات محلولة كتبان بالأصفر. «حذف حرف» كيحيد حرف زايد، و«كشف حرف» كيعطيك حرف من الجواب. حل المرحلة بلا مساعدات = 3 نجوم.',
-      allDone: 'سالييتي جميع المراحل! 🏆', puzzle: 'لغز رقم', whatIs: 'ما هذا؟', info: 'معلومات عقارية', helpsInfo: 'كتربح مساعدة مع كل لغز كتحلو، وزوج إلا حليتيه بلا مساعدات ⭐⭐⭐',
+      allDone: 'سالييتي جميع المراحل! 🏆', puzzle: 'لغز رقم', ask: 'إسأل منير', askT: 'منير — مساعد اللعبة', askPh: 'سول منير على أي حاجة فالعقار…', chips: ['شنو الجواب؟', 'شرح ليا هاد الكلمة', 'عطيني مثال من المغرب'], thinking: 'منير كيفكر…', aiErr: 'وقع مشكل فالاتصال، عاود من بعد شوية.', aiQuota: 'وصلتي للحد ديال الأسئلة اليوم، رجع غدا إن شاء الله.', send: 'صيفط', aiHi: 'مرحبا! أنا منير 🤖 سولني على هاد السؤال ولا على أي كلمة عقارية بغيتي تفهمها.', whatIs: 'ما هذا؟', info: 'معلومات عقارية', helpsInfo: 'كتربح مساعدة مع كل لغز كتحلو، وزوج إلا حليتيه بلا مساعدات ⭐⭐⭐',
     },
     fr: {
       title: 'Wasla Immo', play: 'Jouer', groups: 'Groupes', stage: 'Étape', helps: 'Aides', stars: 'étoiles', pts: 'points',
@@ -30,7 +30,7 @@
       share: 'Partager le jeu', shareTxt: 'Essayez « Wasla Immo », le jeu de questions immobilières d’Al Wasset 777 🧩🏠', saved: 'Points enregistrés au classement ✓',
       credits: 'Crédits photos', pick: 'Choisissez une question dans la grille', picQ: 'Question en image', how: 'Comment jouer ?',
       howTxt: 'Touchez un mot dans la grille pour voir sa question (parfois en image), puis composez la réponse avec les lettres proposées. Les lettres partagées avec des mots déjà trouvés apparaissent en jaune. « Retirer une lettre » enlève une lettre inutile, « Révéler une lettre » en donne une. Sans aide = 3 étoiles.',
-      allDone: 'Vous avez terminé toutes les étapes ! 🏆', puzzle: 'Énigme n°', whatIs: 'Qu’est-ce que c’est ?', info: 'Culture immobilière', helpsInfo: 'Chaque énigme résolue rapporte 1 aide, 2 si vous la résolvez sans aide ⭐⭐⭐',
+      allDone: 'Vous avez terminé toutes les étapes ! 🏆', puzzle: 'Énigme n°', ask: 'Demander à Mounir', askT: 'Mounir — l’assistant du jeu', askPh: 'Posez votre question sur l’immobilier…', chips: ['Quelle est la réponse ?', 'Explique-moi ce mot', 'Un exemple au Maroc'], thinking: 'Mounir réfléchit…', aiErr: 'Problème de connexion, réessayez dans un instant.', aiQuota: 'Limite de questions atteinte pour aujourd’hui, revenez demain.', send: 'Envoyer', aiHi: 'Bonjour ! Je suis Mounir 🤖 Posez-moi une question sur cette énigme ou sur n’importe quel mot de l’immobilier.', whatIs: 'Qu’est-ce que c’est ?', info: 'Culture immobilière', helpsInfo: 'Chaque énigme résolue rapporte 1 aide, 2 si vous la résolvez sans aide ⭐⭐⭐',
     },
     en: {
       title: 'Real-Estate Wasla', play: 'Play', groups: 'Groups', stage: 'Stage', helps: 'Helps', stars: 'stars', pts: 'points',
@@ -41,7 +41,7 @@
       share: 'Share the game', shareTxt: 'Try “Real-Estate Wasla”, the property quiz game by Al Wasset 777 🧩🏠', saved: 'Points saved to the ranking ✓',
       credits: 'Photo credits', pick: 'Pick a question in the grid', picQ: 'Picture question', how: 'How to play?',
       howTxt: 'Tap a word in the grid to see its question (sometimes a picture), then build the answer with the suggested letters. Letters shared with solved words show in yellow. “Remove a letter” takes out a wrong letter, “Reveal a letter” gives you one. No help = 3 stars.',
-      allDone: 'You finished every stage! 🏆', puzzle: 'Puzzle', whatIs: 'What is this?', info: 'Real-estate knowledge', helpsInfo: 'Each solved puzzle gives 1 help, 2 if solved with no help ⭐⭐⭐',
+      allDone: 'You finished every stage! 🏆', puzzle: 'Puzzle', ask: 'Ask Mounir', askT: 'Mounir — game assistant', askPh: 'Ask anything about real estate…', chips: ['What is the answer?', 'Explain this word', 'An example in Morocco'], thinking: 'Mounir is thinking…', aiErr: 'Connection problem, please try again shortly.', aiQuota: 'Daily question limit reached, come back tomorrow.', send: 'Send', aiHi: 'Hi! I’m Mounir 🤖 Ask me about this puzzle or any real-estate word you want to understand.', whatIs: 'What is this?', info: 'Real-estate knowledge', helpsInfo: 'Each solved puzzle gives 1 help, 2 if solved with no help ⭐⭐⭐',
     },
   };
   const LANG_NAMES = { ar: 'العربية', en: 'English', fr: 'Français' };
@@ -152,6 +152,13 @@
 .wl-pl .wl-slot.ok{background:#0a7a2f}
 .wl-pl .wl-bank{max-width:520px;margin:6px auto 0;gap:6px}.wl-pl .wl-t{background:var(--r);box-shadow:0 3px 0 #7a0a1c;height:46px;border-radius:9px}
 @media(max-width:520px){.wl-pl .wl-slot{width:36px;height:42px}.wl-pl .wl-t{height:42px;font-size:19px;padding:0}.wl-card-img img{height:200px}.wl-pb{padding:7px 9px;font-size:13px}.wl-card-t{font-size:19px;min-height:150px}}
+.wl-ask{margin-top:12px;background:var(--k);color:#fff;border:0;border-radius:999px;padding:10px 18px;font-weight:800;cursor:pointer;font-size:15px;box-shadow:0 3px 0 var(--r)}
+.wl-mod>div.wl-ai{max-width:520px;text-align:start}.wl-ai-q{background:#f4f4f4;border-radius:10px;padding:8px 10px;font-weight:700;font-size:14px}
+.wl-ai-log{height:min(46vh,340px);overflow:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;padding:4px}
+.wl-ai-log>div{max-width:86%;padding:9px 12px;border-radius:14px;line-height:1.6;white-space:pre-wrap;font-size:15px}
+.wl-ai-log .b{background:#111;color:#fff;align-self:flex-start;border-end-start-radius:4px}.wl-ai-log .u{background:#ffe9ec;color:#111;align-self:flex-end;border-end-end-radius:4px}
+.wl-ai-log .dots{opacity:.7}.wl-ai-chips{display:flex;gap:6px;flex-wrap:wrap}.wl-ai-chips button{border:2px solid var(--r);background:#fff;color:var(--r);border-radius:999px;padding:6px 10px;font-weight:800;cursor:pointer;font-size:13px}
+.wl-ai-f{display:flex;gap:6px;margin-top:8px}.wl-ai-f input{flex:1;min-width:0;border:2px solid #111;border-radius:12px;padding:10px;font:inherit}
 .wl-credits{text-align:start;font-size:12px;direction:ltr}.wl-credits div{padding:4px 0;border-bottom:1px solid #eee}
 .wl-sub{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
 @media(max-width:520px){.wl-top{gap:6px;padding:8px}.wl-top img.lg{width:42px;height:42px}.wl-chip{padding:4px 7px;font-size:12px}.wl-ib{min-width:36px;height:36px;padding:0 6px}.wl-slot{width:34px;height:42px;font-size:19px}.wl-t{height:44px;font-size:19px}.wl-top h2{font-size:16px}.wl-g{min-height:118px}}
@@ -526,6 +533,7 @@
               : `<div class="wl-card-t">${esc(w[1])}</div>`}
             ${solved ? '' : `<div class="wl-card-f"><button data-h="rv">✏️ ${esc(L().reveal)}</button><button data-h="rm">🧽 ${esc(L().remove)}</button></div>`}
           </div>
+          <div style="text-align:center"><button class="wl-ask" data-ask>🤖 ${esc(L().ask)}</button></div>
           ${solved ? `<div class="wl-slots">${Array.from(w[6]).map(ch => `<span class="wl-slot ok">${esc(ch)}</span>`).join('')}</div>` : `
           <div class="wl-slots" dir="${dir()}">${play.slots.map((s, p) => `<span class="wl-slot ${s ? (s.lock ? s.lock : 'in') : ''}" data-p="${p}">${s ? esc(s.ch) : ''}</span>`).join('')}</div>
           <div class="wl-msg ${play.msgCls || ''}">${esc(play.msg || '')}</div>
@@ -534,6 +542,7 @@
         root.querySelectorAll('[data-b]').forEach(b => b.onclick = () => tap(+b.dataset.b));
         root.querySelectorAll('[data-p]').forEach(b => b.onclick = () => untap(+b.dataset.p));
         root.querySelectorAll('[data-h]').forEach(b => b.onclick = () => useHelp(b.dataset.h));
+        root.querySelector('[data-ask]').onclick = () => askMounir(play.sel);
         const z = root.querySelector('[data-zoom]');
         if (z) z.onclick = () => modal(`<img class="full" src="${z.src}" alt=""><div class="row"><button class="wl-btn k" data-x>${esc(L().close)}</button></div>`);
       }
@@ -544,6 +553,51 @@
       root.querySelector('[data-hinfo]').onclick = () => toast(L().helpsInfo);
       if (root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'start' });
     }
+
+    /* ---------- منير: مساعد اللعبة بالذكاء الاصطناعي (كيشرح ويعطي الجواب) ---------- */
+    const CHATS = {};
+    async function aiCall(game, messages) {
+      if (host.askAI) return host.askAI(game, messages, S.lang === 'ar' ? 'darija' : S.lang);
+      const C = window.__ALWASSET_SUPABASE__ || {};
+      if (!C.url || !C.anonKey) throw new Error('cfg');
+      const r = await fetch(C.url.replace(/\/+$/, '') + '/functions/v1/w777-agent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: C.anonKey, Authorization: 'Bearer ' + C.anonKey },
+        body: JSON.stringify({ game, messages, lang: S.lang === 'ar' ? 'darija' : S.lang }),
+      });
+      return r.json();
+    }
+    function askMounir(i) {
+      const st = stateOf(play.gi, play.si), w = stageObj().w[i], ck = S.lang + key2(i);
+      const chat = CHATS[ck] = CHATS[ck] || [];
+      let busy = false;
+      const game = { q: w[1], a: w[0], group: gName(groups()[play.gi].g, S.lang), solved: !!st.sol[i] };
+      const m = modal(`<h3 style="margin:0 0 6px">🤖 ${esc(L().askT)}</h3><div class="wl-ai-q">❓ ${esc(w[1])}</div>
+        <div class="wl-ai-log" id="wl-ai-log"></div><div class="wl-ai-chips">${L().chips.map(c => `<button type="button">${esc(c)}</button>`).join('')}</div>
+        <form class="wl-ai-f" id="wl-ai-f"><input id="wl-ai-in" maxlength="400" placeholder="${esc(L().askPh)}" autocomplete="off"><button class="wl-btn">${esc(L().send)}</button></form>
+        <div class="row"><button class="wl-btn k" data-x>${esc(L().close)}</button></div>`);
+      m.firstElementChild.classList.add('wl-ai');
+      const log = m.querySelector('#wl-ai-log');
+      const paint = () => {
+        log.innerHTML = `<div class="b">${esc(L().aiHi)}</div>` + chat.map(x => `<div class="${x.role === 'user' ? 'u' : 'b'}">${esc(x.content)}</div>`).join('') + (busy ? `<div class="b dots">${esc(L().thinking)}</div>` : '');
+        log.scrollTop = log.scrollHeight;
+      };
+      const send = async txt => {
+        txt = String(txt || '').trim();
+        if (!txt || busy) return;
+        chat.push({ role: 'user', content: txt });
+        busy = true; paint();
+        try {
+          const r = await aiCall(game, chat.slice(-12));
+          if (r && r.text) chat.push({ role: 'assistant', content: r.text });
+          else { chat.pop(); toast(r && r.error === 'quota' ? L().aiQuota : L().aiErr); }
+        } catch (e) { chat.pop(); toast(L().aiErr); }
+        busy = false; paint();
+      };
+      m.querySelectorAll('.wl-ai-chips button').forEach(b => b.onclick = () => send(b.textContent));
+      m.querySelector('#wl-ai-f').onsubmit = e => { e.preventDefault(); const inp = m.querySelector('#wl-ai-in'); const v = inp.value; inp.value = ''; send(v); };
+      paint();
+    }
+    const key2 = i => key(play.gi, play.si) + ':' + i;
 
     let toastT;
     function toast(msg) {
