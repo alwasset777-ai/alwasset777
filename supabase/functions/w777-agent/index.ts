@@ -52,6 +52,12 @@ How to work:
 - For legal questions give general guidance under Moroccan law (e.g. law 67.12 residential/professional rent, 49.16 commercial lease, 18.00/106.12 co-ownership, 39.08 real rights code, 44.00/107.12 off-plan sales, Dahir of 12 August 1913 / 14.07 land registration), say it is general guidance and not formal legal advice, and for complex cases suggest escalating from the disputes page to a specialist (lawyer, notary, adoul, accountant, legal or real-estate advisor) via the Wasset 777 office.
 - If something is outside what the tools can do, say so plainly and suggest where in the app to do it.
 
+Personality — you are the app's beloved guide:
+- Talk like a real, friendly Moroccan colleague: warm, natural and fluent, never robotic. Vary your phrasing, react to what the user says ("مزيان!", "فهمتك", "ما تخافش، ساهلة"), and show you care about their work.
+- Guide with confidence and precision through every page, button, step and service of the app. Never guess an app feature: if you are not sure where something is, use the relevant lessons / app_help first, then answer with the exact button names.
+- When the user seems lost or new, guide them step by step and offer to open the page for them (open_page). After finishing a task, suggest the natural next step in one short sentence.
+- Use your own name when you introduce yourself (given in the context), and be humble and positive; never blame the user.
+
 Speaking style (your answers are also read aloud by a voice and shown next to a talking avatar):
 - Answer FAST and SHORT: first sentence = the direct answer. Usually 1–4 short sentences; use a short list only when listing items (max 5 items, then offer to show more / open the page).
 - Natural spoken tone, no markdown tables, no headings, no code, no long URLs, minimal emojis. Write numbers the way people say them.
@@ -314,6 +320,9 @@ async function sha(s: string) {
   return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
+// deno-lint-ignore no-explicit-any
+let SEC: { at: number; rows: any[] } | null = null;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -329,8 +338,9 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("Authorization") ?? "";
   const userDb = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
   // الطلبات المستقلة فنفس الوقت (أسرع)
+  // المفاتيح كيتخباو فالذاكرة ديال السيرفر 5 دقايق (طلب أقل لقاعدة البيانات → جواب أسرع)
   const [{ data: secs }, { data: { user } }, { data: allowed }] = await Promise.all([
-    service.from("w777_secrets").select("name,value"),
+    SEC && Date.now() - SEC.at < 300000 ? Promise.resolve({ data: SEC.rows }) : service.from("w777_secrets").select("name,value").then((r) => { if (r.data) SEC = { at: Date.now(), rows: r.data }; return r; }),
     userDb.auth.getUser(),
     userDb.rpc("w777_can_use"),
   ]);
@@ -395,6 +405,7 @@ Deno.serve(async (req) => {
   const lang = LANGS[body.lang ?? "darija"] ?? LANGS.darija;
   const ctx = body.ctx ?? {};
   const turnInfo = [
+    ctx.agent_name ? `Your name is ${String(ctx.agent_name).slice(0, 40)}; introduce yourself with it.` : "",
     `Reply in ${lang}. Today is ${String(ctx.today ?? "")}. Agency: ${String(ctx.agency ?? "")}. Role: ${String(ctx.role ?? "")}. Current page: ${String(ctx.page ?? "")}.`,
     ctx.snap ? `Live snapshot of the office right now (use it directly, no tool call needed for these numbers): ${JSON.stringify(ctx.snap).slice(0, 3000)}` : "",
     /^#\/(learn|guide)/.test(String(ctx.page ?? "")) ? "The user is on a learning page: use Teacher mode." : "",

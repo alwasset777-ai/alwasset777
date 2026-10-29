@@ -202,7 +202,15 @@
     S.pts = S.pts || 0;
     let view = { name: 'home' };
     let play = null; // { gi, si, sel, cur:{slots, used}, msg }
-    const L = () => T[S.lang];
+    // الوكيل: منير بلباس اللعبة، ولا الوكيل اللي ختارو المشترك (الاسم والصورة) داخل التطبيق
+    const AV = host.agentPhoto || MOUNIR;
+    const AGN = host.agentName ? String(host.agentName).slice(0, 40) : '';
+    const TX = {};
+    const L = () => {
+      if (!AGN) return T[S.lang];
+      if (!TX[S.lang]) { TX[S.lang] = {}; Object.entries(T[S.lang]).forEach(([k, v]) => { TX[S.lang][k] = typeof v === 'string' ? v.replace(/منير|Mounir/g, AGN) : v; }); }
+      return TX[S.lang];
+    };
     const lang = () => S.lang;
     const groups = () => DATA[S.lang] || [];
     const prog = () => (S.prog[S.lang] = S.prog[S.lang] || {});
@@ -536,7 +544,7 @@
         play.flash = null;
         root.innerHTML = `<div class="wl wl-pl" dir="${dir()}">${bar}
           <div class="wl-board"><div class="wl-grid" style="grid-template-columns:repeat(${W},${cs}px);grid-auto-rows:${cs}px" dir="ltr">${grid}</div></div>
-          <div class="wl-mascot"><span class="wl-mwrap m-${play.mood || 'idle'}"><img class="wl-mav" src="${MOUNIR}" alt="" data-askg></span>
+          <div class="wl-mascot"><span class="wl-mwrap m-${play.mood || 'idle'}"><img class="wl-mav" src="${esc(AV)}" alt="" data-askg></span>
             <div class="wl-bub">${esc(play.mood === 'happy' ? L().cheers[Object.keys(st.sol).length % L().cheers.length] : play.mood === 'win' ? L().stageDone + ' 🏆' : play.msg || L().pick)}<small>${esc(L().tapMe)}</small></div></div></div>`;
         play.mood = '';
         root.querySelector('[data-askg]').onclick = () => askMounir(play.sel >= 0 ? play.sel : 0);
@@ -561,7 +569,7 @@
               : `<div class="wl-card-t">${esc(w[1])}</div>`}
             ${solved ? '' : `<div class="wl-card-f"><button data-h="rv">✏️ ${esc(L().reveal)}</button><button data-h="rm">🧽 ${esc(L().remove)}</button></div>`}
           </div>
-          <div style="text-align:center"><button class="wl-ask" data-ask><span class="wl-mwrap sm m-${play.mood || 'idle'}"><img src="${MOUNIR}" alt=""></span>${esc(play.mood === 'sad' ? L().sad : L().ask)}</button></div>
+          <div style="text-align:center"><button class="wl-ask" data-ask><span class="wl-mwrap sm m-${play.mood || 'idle'}"><img src="${esc(AV)}" alt=""></span>${esc(play.mood === 'sad' ? L().sad : L().ask)}</button></div>
           ${solved ? `<div class="wl-slots">${Array.from(w[6]).map(ch => `<span class="wl-slot ok">${esc(ch)}</span>`).join('')}</div>` : `
           <div class="wl-slots" dir="${dir()}">${play.slots.map((s, p) => `<span class="wl-slot ${s ? (s.lock ? s.lock : 'in') : ''}" data-p="${p}">${s ? esc(s.ch) : ''}</span>`).join('')}</div>
           <div class="wl-msg ${play.msgCls || ''}">${esc(play.msg || '')}</div>
@@ -618,16 +626,16 @@
       const st = stateOf(play.gi, play.si), w = stageObj().w[i], ck = S.lang + key2(i);
       const chat = CHATS[ck] = CHATS[ck] || [];
       let busy = false;
-      const game = { q: w[1], a: w[0], group: gName(groups()[play.gi].g, S.lang), solved: !!st.sol[i] };
-      const m = modal(`<h3 class="wl-ai-h"><img src="${MOUNIR}" alt="">${esc(L().askT)}</h3><div class="wl-ai-q">❓ ${esc(w[1])}</div>
+      const game = { q: w[1], a: w[0], group: gName(groups()[play.gi].g, S.lang), solved: !!st.sol[i], ...(AGN ? { name: AGN } : {}) };
+      const m = modal(`<h3 class="wl-ai-h"><img src="${esc(AV)}" alt="">${esc(L().askT)}</h3><div class="wl-ai-q">❓ ${esc(w[1])}</div>
         <div class="wl-ai-log" id="wl-ai-log"></div><div class="wl-ai-chips">${L().chips.map(c => `<button type="button">${esc(c)}</button>`).join('')}</div>
         <form class="wl-ai-f" id="wl-ai-f"><input id="wl-ai-in" maxlength="400" placeholder="${esc(L().askPh)}" autocomplete="off"><button class="wl-btn">${esc(L().send)}</button></form>
         <div class="row"><button class="wl-btn k" data-x>${esc(L().close)}</button></div>`);
       m.firstElementChild.classList.add('wl-ai');
       const log = m.querySelector('#wl-ai-log');
       const paint = () => {
-        const bot = t => `<div class="bw"><img src="${MOUNIR}" alt=""><div class="b">${t}</div></div>`;
-        log.innerHTML = bot(esc(L().aiHi)) + chat.map(x => x.role === 'user' ? `<div class="u">${esc(x.content)}</div>` : bot(esc(String(x.content).replace(/\*\*?([^*]+)\*\*?/g, '$1')))).join('') + (busy ? `<div class="bw"><img src="${MOUNIR}" alt=""><div class="b dots">${esc(L().thinking)}</div></div>` : '');
+        const bot = t => `<div class="bw"><img src="${esc(AV)}" alt=""><div class="b">${t}</div></div>`;
+        log.innerHTML = bot(esc(L().aiHi)) + chat.map(x => x.role === 'user' ? `<div class="u">${esc(x.content)}</div>` : bot(esc(String(x.content).replace(/\*\*?([^*]+)\*\*?/g, '$1')))).join('') + (busy ? `<div class="bw"><img src="${esc(AV)}" alt=""><div class="b dots">${esc(L().thinking)}</div></div>` : '');
         log.scrollTop = log.scrollHeight;
       };
       const send = async txt => {
