@@ -798,7 +798,7 @@
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
-        hubPic('#/game', 'games', 'الكلمات المتقاطعة', 'لعبة عقارية', '#c8102e'),
+        hubPic('#/game', 'games', 'وصلة العقار', 'لعبة أسئلة عقارية', '#c8102e'),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
       net: ['✦ شبكة الوسيط 777', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
@@ -5548,7 +5548,7 @@
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الكلمات المتقاطعة" aria-label="الكلمات المتقاطعة"><img src="icons/hub/games.webp?v=1" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="وصلة العقار" aria-label="وصلة العقار"><img src="icons/hub/games.webp?v=1" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -6989,7 +6989,7 @@
       $('#stp-q', box).oninput = paint; paint();
     });
   }
-  /* ---------- 🧩 الكلمات المتقاطعة العقارية (crossword.js) + ترتيب مشترك بين المشتركين ---------- */
+  /* ---------- 🧩 وصلة العقار (wasla.js) + ترتيب مشترك بين المشتركين ---------- */
   function viewGame() {
     main().innerHTML = '<div id="cw-root"></div>';
     if (!window.W777_CW) { main().innerHTML = '<div class="card card-pad">تعذر تحميل اللعبة — عاود حل التطبيق.</div>'; return; }
