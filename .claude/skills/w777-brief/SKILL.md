@@ -25,7 +25,7 @@ description: Turn any request from the Al Wasset 777 owner (usually Darija, some
 
 ## 4) الفحص قبل النشر (إلزامي)
 - `node --check` للملفات المبدلة.
-- `tools/tests/crawl.js` = 0 أخطاء، + اختبار خاص بالميزة الجديدة، + صورة شاشة كتشوفها بعينيك.
+- `tools/tests/crawl.cjs` = 0 أخطاء، + اختبار خاص بالميزة الجديدة، + صورة شاشة كتشوفها بعينيك.
 
 ## 5) النشر والتقرير
 - commit → push للفرع → PR (عنوان + ملخص) → squash merge → `tools/deploy-pages.sh`.
