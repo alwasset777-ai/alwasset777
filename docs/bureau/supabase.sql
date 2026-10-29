@@ -1013,7 +1013,7 @@ create table if not exists public.w777_stories (
   kind text not null check (kind in ('text','image')),
   body text check (body is null or char_length(body) <= 500),
   bg text check (bg is null or char_length(bg) <= 40),
-  img text check (img is null or char_length(img) <= 450000),
+  img text check (img is null or (img like 'data:image/%' and char_length(img) <= 450000)),
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default now() + interval '24 hours'
 );
@@ -1022,18 +1022,26 @@ create index if not exists w777_stories_owner on public.w777_stories (owner);
 alter table public.w777_stories enable row level security;
 revoke all on public.w777_stories from anon;
 grant select, insert, delete on public.w777_stories to authenticated;
+drop policy if exists w777_st_sel on public.w777_stories;
 create policy w777_st_sel on public.w777_stories for select to authenticated using ((select w777_can_use()) and expires_at > now());
+drop policy if exists w777_st_ins on public.w777_stories;
 create policy w777_st_ins on public.w777_stories for insert to authenticated with check (owner = (select auth.uid()) and (select w777_can_use()) and expires_at <= now() + interval '25 hours' and (kind = 'text' and body is not null or kind = 'image' and img is not null));
+drop policy if exists w777_st_del on public.w777_stories;
 create policy w777_st_del on public.w777_stories for delete to authenticated using (owner = (select auth.uid()) or (select w777_is_admin()));
 create or replace function public.w777_story_limit() returns trigger language plpgsql set search_path = public as $$
 begin
   if (select count(*) from public.w777_stories where owner = new.owner and expires_at > now()) >= 10 then
     raise exception 'وصلتي للحد: 10 ستوريات فـ 24 ساعة';
   end if;
+  -- الوقت ديما من الخادم (ما يقدرش المشترك يحط تاريخ فالمستقبل باش يبقى الأول)
+  new.created_at := now();
+  new.expires_at := now() + interval '24 hours';
   return new;
 end $$;
 revoke execute on function public.w777_story_limit() from public, anon, authenticated;
+drop trigger if exists w777_story_limit on public.w777_stories;
 create trigger w777_story_limit before insert on public.w777_stories for each row execute function public.w777_story_limit();
+select cron.unschedule('w777-stories-clean') where exists (select 1 from cron.job where jobname = 'w777-stories-clean');
 select cron.schedule('w777-stories-clean', '17 * * * *', $$delete from public.w777_stories where expires_at < now()$$);
 
 -- ============================================================
@@ -1133,12 +1141,13 @@ create or replace function public.w777_game_ai_hit(k text, lim int, glim int) re
 #variable_conflict use_column
 declare c int; g int;
 begin
-  insert into w777_game_ai_hits(k, day, n) values ('*', current_date, 1)
-  on conflict (k, day) do update set n = w777_game_ai_hits.n + 1 returning n into g;
-  if g > glim then return -1; end if;
+  -- حد كل IP قبل العداد العام: اللي فات الحد ديالو ما ياكلش من حصة الزوار كاملين
   insert into w777_game_ai_hits(k, day, n) values (left(w777_game_ai_hit.k, 64), current_date, 1)
   on conflict (k, day) do update set n = w777_game_ai_hits.n + 1 returning n into c;
   if c > lim then return -1; end if;
+  insert into w777_game_ai_hits(k, day, n) values ('*', current_date, 1)
+  on conflict (k, day) do update set n = w777_game_ai_hits.n + 1 returning n into g;
+  if g > glim then return -1; end if;
   delete from w777_game_ai_hits where day < current_date - 7;
   return c;
 end $$;
@@ -1159,3 +1168,15 @@ drop policy if exists w777_agent_prefs_own on public.w777_agent_prefs;
 create policy w777_agent_prefs_own on public.w777_agent_prefs for all to authenticated using (uid = auth.uid()) with check (uid = auth.uid());
 revoke all on public.w777_agent_prefs from anon;
 grant select, insert, update, delete on public.w777_agent_prefs to authenticated;
+
+-- ============================================================
+-- 2026-10-29 — مراجعة شاملة: صور الستوري غير data:image (بلا روابط خارجية)
+-- ============================================================
+alter table public.w777_stories drop constraint if exists w777_stories_img_data;
+alter table public.w777_stories add constraint w777_stories_img_data check (img is null or img like 'data:image/%') not valid;
+
+-- الموظف ديال وكالة مشتركة: الهوية (الاسم، الهاتف، الشعار) ديال الوكالة ديالو باش العلامة المائية تكون صحيحة
+create or replace function public.w777_staff_brand() returns json language sql stable security definer set search_path = public as
+$$ select json_build_object('name', a.name, 'phone', a.phone, 'logo', a.logo) from w777_agencies a where a.uid = w777_staff_owner() and a.active $$;
+revoke all on function public.w777_staff_brand() from public, anon;
+grant execute on function public.w777_staff_brand() to authenticated;

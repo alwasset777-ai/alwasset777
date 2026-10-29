@@ -65,8 +65,10 @@
   // مولد أرقام عشوائية ثابت (نفس الحروف لنفس السؤال)
   function rng(seed) { let h = 2166136261; for (const ch of String(seed)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; }; }
 
-  const load = () => { try { return JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { return {}; } };
-  const store = s => { try { localStorage.setItem(LS, JSON.stringify(s)); } catch (e) { /* */ } };
+  const load = k => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } };
+  const store = (k, s) => { try { localStorage.setItem(k, JSON.stringify(s)); } catch (e) { /* */ } };
+  // غير نسخة وحدة ديال اللعبة خدامة: ملي كنرجعو لـ #/game، النسخة القديمة كتوقف (ما تعاودش تصيفط النقط)
+  let GEN = 0, onResize = null;
 
   function css() {
     if (document.getElementById('wl-css')) return;
@@ -195,7 +197,13 @@
     host = host || {};
     css();
     const DATA = window.W777_WL || {};
-    let S = load();
+    const gen = ++GEN;
+    const alive = () => gen === GEN && root.isConnected;
+    // التقدم والنقط ديال كل حساب بوحدو (جوج مشتركين فنفس التيليفون ما يتخلطوش)
+    const SK = host.uid ? LS + ':' + host.uid : LS;
+    let S = load(SK);
+    if (host.uid && !Object.keys(S).length) { const o = load(LS); if (!o.owner || o.owner === host.uid) S = o; }
+    if (host.uid) S.owner = host.uid;
     S.lang = S.lang && DATA[S.lang] ? S.lang : 'ar';
     if (S.helps == null) S.helps = START_HELPS;
     S.prog = S.prog || {};
@@ -208,14 +216,14 @@
     const TX = {};
     const L = () => {
       if (!AGN) return T[S.lang];
-      if (!TX[S.lang]) { TX[S.lang] = {}; Object.entries(T[S.lang]).forEach(([k, v]) => { TX[S.lang][k] = typeof v === 'string' ? v.replace(/منير|Mounir/g, AGN) : v; }); }
+      if (!TX[S.lang]) { TX[S.lang] = {}; Object.entries(T[S.lang]).forEach(([k, v]) => { TX[S.lang][k] = typeof v === 'string' ? v.replace(/منير|Mounir/g, () => AGN) : v; }); }
       return TX[S.lang];
     };
     const lang = () => S.lang;
     const groups = () => DATA[S.lang] || [];
     const prog = () => (S.prog[S.lang] = S.prog[S.lang] || {});
     const key = (gi, si) => gi + '-' + si;
-    const save = () => store(S);
+    const save = () => { if (gen === GEN) store(SK, S); };
     const dir = () => (S.lang === 'ar' ? 'rtl' : 'ltr');
 
     const stageDone = (gi, si) => !!(prog()[key(gi, si)] || {}).done;
@@ -500,9 +508,9 @@
       });
     }
     // النقط كتتصيفط للترتيب بلا ما نفوتو حد السيرفر (45 ثانية بين كل إرسال)
-    let flushT = null;
+    let flushT = null, flushE = 0;
     async function flush() {
-      if (!host.onFinish || !S.pend) return;
+      if (!host.onFinish || !S.pend || !alive()) return;
       const wait = 47000 - (Date.now() - (S.lastSub || 0));
       if (wait > 0) { clearTimeout(flushT); flushT = setTimeout(flush, wait); return; }
       const p = Math.min(300, S.pend), n = S.pendN || 1;
@@ -510,10 +518,10 @@
         S.lastSub = Date.now(); save();
         const r = await host.onFinish({ points: p, words: n });
         if (r && (r.code || r.message) && !r.points) throw new Error(r.message || 'x');
-        S.pend -= p; S.pendN = 0; save();
+        S.pend -= p; S.pendN = 0; flushE = 0; save();
         toast(L().saved);
         if (S.pend > 0) { flushT = setTimeout(flush, 47000); }
-      } catch (e) { flushT = setTimeout(flush, 60000); }
+      } catch (e) { flushE++; flushT = setTimeout(flush, Math.min(600000, 60000 * flushE)); } // كل مرة كنتسناو كثر (حتى 10 دقايق)
     }
 
     function playView() {
@@ -635,7 +643,7 @@
       const log = m.querySelector('#wl-ai-log');
       const paint = () => {
         const bot = t => `<div class="bw"><img src="${esc(AV)}" alt=""><div class="b">${t}</div></div>`;
-        log.innerHTML = bot(esc(L().aiHi)) + chat.map(x => x.role === 'user' ? `<div class="u">${esc(x.content)}</div>` : bot(esc(String(x.content).replace(/\*\*?([^*]+)\*\*?/g, '$1')))).join('') + (busy ? `<div class="bw"><img src="${esc(AV)}" alt=""><div class="b dots">${esc(L().thinking)}</div></div>` : '');
+        log.innerHTML = bot(esc(L().aiHi)) + chat.map(x => x.role === 'user' ? `<div class="u">${esc(x.content)}</div>` : bot(esc(String(x.content).replace(/\*\*?([^*]+)\*\*?/g, '$1')))).join('') + (busy && !(chat.length && chat[chat.length - 1].role === 'assistant') ? `<div class="bw"><img src="${esc(AV)}" alt=""><div class="b dots">${esc(L().thinking)}</div></div>` : '');
         log.scrollTop = log.scrollHeight;
       };
       const send = async txt => {
@@ -645,17 +653,18 @@
         chat.push(um);
         busy = true; paint();
         const hist = chat.slice(-12);
+        while (hist.length && hist[0].role !== 'user') hist.shift(); // المحادثة ديما كتبدا بسؤال
         const drop = () => { [live, um].forEach(x => { const k = chat.indexOf(x); if (k >= 0) chat.splice(k, 1); }); };
         let live = null, raf = 0;
         try {
           const r = await aiCall(game, hist, d => {
-            if (!live) { live = { role: 'assistant', content: '' }; chat.push(live); busy = false; }
+            if (!live) { live = { role: 'assistant', content: '' }; chat.push(live); }
             live.content += d;
             if (!raf) raf = requestAnimationFrame(() => { raf = 0; paint(); });
           });
           if (r && r.text) { if (!live) chat.push({ role: 'assistant', content: r.text }); else live.content = r.text; }
           else { drop(); toast(r && r.error === 'quota' ? L().aiQuota : L().aiErr); }
-        } catch (e) { drop(); toast(L().aiErr); }
+        } catch (e) { drop(); toast(/quota|429/.test(String(e && e.message)) ? L().aiQuota : L().aiErr); }
         busy = false; paint();
       };
       m.querySelectorAll('.wl-ai-chips button').forEach(b => b.onclick = () => send(b.textContent));
@@ -679,7 +688,9 @@
       else home();
     }
     let rz;
-    window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (view.name === 'play' && root.isConnected) render(); }, 200); });
+    if (onResize) window.removeEventListener('resize', onResize);
+    onResize = () => { clearTimeout(rz); rz = setTimeout(() => { if (view.name === 'play' && alive()) render(); }, 200); };
+    window.addEventListener('resize', onResize);
     render();
     flush();
   }
