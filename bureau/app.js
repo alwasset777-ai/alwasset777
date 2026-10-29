@@ -770,6 +770,42 @@
   // الفورمات كتخدم بالجافاسكريبت: ما نخليوهاش تبدل الصفحة (عوض onsubmit="return false")
   document.addEventListener('submit', e => { if (!e.target.getAttribute('action')) e.preventDefault(); }, true);
   document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.dataset.fb) t.replaceWith(document.createTextNode(t.dataset.fb)); }, true);
+  /* ============================================================
+     الأيقونات الجديدة: كل إيموجي قديم (فالعناوين، الأرقام، اللوائح، الأزرار الصغار) كيتبدل
+     بالصورة 3D اللي اختار المدير فـ icons/hub — فكل بلاصة فالتطبيق، حتى الصفحات اللي كتتزاد من بعد
+     ============================================================ */
+  const EMO_ICO = { '🏢': 'agencies', '🤝': 'brokers', '🏗': 'contractors', '🎨': 'finishing', '💼': 'investors', '🖋': 'notaries', '🏘': 'associations',
+    '🏖': 'stays', '🚀': 'projects-ico', '🎪': 'events', '📰': 'news-ico', '🤲': 'donations-ico', '⚖': 'disputes-ico', '📜': 'terms', '🗺': 'map-ico',
+    '💹': 'finance-ico', '💸': 'finance-ico', '🔑': 'rentals', '🎓': 'guide', '🧩': 'games', '🏦': 'loan-ico', '🎯': 'matching', '📊': 'chart', '📈': 'chart',
+    '🔔': 'bell', '💬': 'chat', '👥': 'groups', '✨': 'opp', '📅': 'add-appointment', '🗓': 'add-appointment', '💰': 'projects-ico', '🏠': 'add-property',
+    '🏡': 'add-property', '📚': 'academy', '🏷': 'estimate', '🧰': 'toolbox', '🌍': 'globe', '✦': '@logo' };
+  // نفس الإيموجي بمعنى آخر حسب البلاصة
+  const ICO_CTX = [['.btn', { '✨': 'ad-maker' }], ['.big', { '🎓': 'academy' }]];
+  // نفس الإيموجي بمعنى آخر حسب الصفحة
+  const ICO_OVER = { terms: { '⚖': 'terms' }, 'ad-maker': { '✨': 'ad-maker' }, learn: { '🎓': 'academy' } };
+  const ICO_PH = new Set(['@logo', 'ad-maker', 'agencies', 'associations', 'brokers', 'contractors', 'disputes-ico', 'estimate', 'events', 'finishing', 'investors', 'matching', 'notaries', 'rentals', 'stays', 'terms']);
+  const ICO_RE = new RegExp('^(\\s*)(' + Object.keys(EMO_ICO).join('|') + ')\\uFE0F?\\s*', 'u');
+  const ICO_SEL = 'h1, h2, h3, .section-title, .nav-group, .em, .hst-ic, .opp-ic, .stat .ic, .chip, .seg > *, .btn, b, .big, .gd-k, .fl-title, .badge, .fab-menu a, .fab-menu button';
+  const ICO_SOLO = '.em, .hst-ic, .opp-ic, .stat .ic';
+  const icoImg = f => `<img class="xi${ICO_PH.has(f) ? ' ph' : ''}" src="${f === '@logo' ? 'icons/logo.png' : `icons/hub/${f}.webp?v=1`}" alt="" decoding="async">`;
+  function iconize(root) {
+    if (!root || root.nodeType !== 1) return;
+    const over = ICO_OVER[(location.hash.split('/')[1] || '').split('?')[0]] || {};
+    const els = root.matches(ICO_SEL) ? [root] : [];
+    els.push(...root.querySelectorAll(ICO_SEL));
+    for (const el of els) {
+      const t = el.firstChild;
+      if (!t || t.nodeType !== 3) continue;
+      const m = t.nodeValue.match(ICO_RE);
+      if (!m) continue;
+      t.nodeValue = t.nodeValue.slice(m[0].length);
+      const cx = ICO_CTX.find(([q, o]) => o[m[2]] && el.matches(q));
+      el.insertAdjacentHTML('afterbegin', icoImg(over[m[2]] || (cx && cx[1][m[2]]) || EMO_ICO[m[2]]) + (el.matches(ICO_SOLO) ? '' : ' '));
+    }
+  }
+  iconize(document.body);
+  new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) iconize(n); }).observe(document.body, { childList: true, subtree: true });
+
   function fx3dPage() {
     const m = main(); if (!m || document.documentElement.classList.contains('lv-lite')) return;
     m.classList.remove('pg-in'); void m.offsetWidth; m.classList.add('pg-in');
