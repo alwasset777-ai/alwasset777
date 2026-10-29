@@ -1,5 +1,5 @@
 const {chromium}=require('playwright');
-const routes=['','ad-maker','agencies','appointment/new','appointments','associations','brokers','chat','contractors','contracts','disputes','donations','estimate','events','finance','finishing','game','guide','inbox','investors','learn','loan','map','matching','news','notaries','ownership','projects','properties','property/new','rentals','report','request/new','requests','search','settings','stays','terms','terms/groups','zzz-unknown'];
+const routes=['','ad-maker','agencies','appointment/new','appointments','associations','brokers','chat','contractors','contracts','disputes','donations','estimate','events','finance','finishing','game','guide','inbox','investors','learn','loan','map','matching','news','notaries','ownership','projects','properties','property/new','rentals','report','request/new','requests','search','settings','stays','tamwil','tamwil/awb','tamwil/najmah','terms','terms/groups','zzz-unknown'];
 (async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const all=[];
 for (const vw of [{width:1200,height:900},{width:390,height:844}]) {

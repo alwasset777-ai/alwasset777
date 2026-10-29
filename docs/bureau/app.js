@@ -726,6 +726,7 @@
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
+    else if (a === 'tamwil') { nav = 'loan'; await viewTamwil(parts, query); }
     else if (a === 'game') { nav = 'game'; viewGame(); }
     else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(query); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
@@ -757,7 +758,37 @@
     placeLang();
     lvPage();
     agPageMood(a);
+    fx3dPage();
   }
+  /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
+  function fx3dPage() {
+    const m = main(); if (!m || document.documentElement.classList.contains('lv-lite')) return;
+    m.classList.remove('pg-in'); void m.offsetWidth; m.classList.add('pg-in');
+  }
+  (function fx3dTilt() {
+    if (!window.matchMedia || !matchMedia('(hover: hover) and (pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const SEL = '.card.stat, a.card, .prop-card, .dir-card, .fin-card';
+    let cur = null, raf = 0, ev = null;
+    const off = el => { el.classList.remove('t3d-on'); el.style.removeProperty('--tx'); el.style.removeProperty('--ty'); };
+    document.addEventListener('pointermove', e => {
+      if (document.documentElement.classList.contains('lv-lite')) return;
+      const el = e.target.closest && e.target.closest(SEL);
+      if (cur && cur !== el) { off(cur); cur = null; }
+      if (!el) return;
+      if (!el.classList.contains('t3d')) el.classList.add('t3d');
+      cur = el; ev = e;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0; if (!cur || !ev) return;
+        const r = cur.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+        const k = r.width > 420 ? 3 : 7; // البطاقات الكبيرة كتميل أقل
+        cur.style.setProperty('--tx', ((x - .5) * k).toFixed(2) + 'deg'); cur.style.setProperty('--ty', ((.5 - y) * k).toFixed(2) + 'deg');
+        cur.style.setProperty('--gx', (x * 100).toFixed(1) + '%'); cur.style.setProperty('--gy', (y * 100).toFixed(1) + '%');
+        cur.classList.add('t3d-on');
+      });
+    }, { passive: true });
+    document.addEventListener('pointerleave', () => { if (cur) off(cur); cur = null; });
+  })();
   // زر اللغة: فالرئيسية كيتحط فشريط «دول المشتركين»، وفالصفحات الأخرى كيرجع للشريط الفوقاني
   const LANG_HOME = document.createComment('lang');
   let langBtn = null; // كنحتفظو بالزر حتى ملي كتتبدل الصفحة (innerHTML) باش ما يضيعش
@@ -796,6 +827,9 @@
   // صورة كاملة كتعمّر الدائرة: icons/hub/<f>.webp
   const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=1" alt="" decoding="async">`, l, s);
   const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=3" alt="" decoding="async"></i>`, l, s);
+  // زر «التمويل العقاري»: شعارات الجهات كتدوز داخل الدائرة (CSS فقط)
+  const FIN_HUB = ['awb', 'bcp', 'boa', 'cih', 'bmci', 'cdm', 'saham', 'cam', 'abb', 'cfg', 'assafa', 'yousr'];
+  const finHub = () => hubTile('#/tamwil', '#c8102e', `<i class="emo fin-rot" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}<b class="fin-777">٪</b></i>`, 'التمويل العقاري', 'البنوك وجهات التمويل');
   function homeMenu(kind, nAppts) {
     const M = {
       add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=3" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
@@ -803,7 +837,7 @@
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
-        hubPic('#/game', 'games', 'وصلة العقار', 'لعبة أسئلة عقارية', '#c8102e'),
+        hubPic('#/game', 'games', 'وصلة العقار', 'لعبة أسئلة عقارية', '#c8102e'), finHub(),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
       net: ['✦ شبكة الوسيط 777', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
@@ -2431,7 +2465,7 @@
   const PAGE_MOOD = {
     '': ['hi'], contracts: ['think'], learn: ['teach'], guide: ['teach'], properties: ['page', '🏠'], property: ['page', '🏠'], requests: ['page', '🤝'], request: ['page', '🤝'],
     appointments: ['page', '📅'], appointment: ['page', '📅'], finance: ['page', '💰'], rentals: ['page', '🔑'], rental: ['page', '🔑'], news: ['page', '📰'], map: ['page', '🗺️'],
-    estimate: ['page', '📊'], loan: ['page', '🏦'], events: ['page', '🎉'], donations: ['page', '🎁'], disputes: ['think'], matching: ['page', '💞'], search: ['page', '🔍'],
+    estimate: ['page', '📊'], loan: ['page', '🏦'], tamwil: ['page', '🏦'], events: ['page', '🎉'], donations: ['page', '🎁'], disputes: ['think'], matching: ['page', '💞'], search: ['page', '🔍'],
     stays: ['page', '🏨'], projects: ['page', '🏗️'], investors: ['page', '💼'], notaries: ['page', '📜'], ownership: ['page', '🏡'], settings: ['page', '⚙️'], chat: ['page', '💬'],
     inbox: ['page', '💬'], 'ad-maker': ['page', '📸'], report: ['page', '📈'], agencies: ['page', '🏢'], brokers: ['page', '🤝'], contractors: ['page', '👷'], finishing: ['page', '🎨'],
     associations: ['page', '🏛️'], terms: ['page', '📜'],
@@ -2473,6 +2507,8 @@
     const C = window.AudioContext || window.webkitAudioContext;
     if (!C) return null;
     if (!AGV.ctx) {
+      // iPhone: بلا هادي، الصوت ديال Web Audio كيتسكت ملي يكون التيليفون فوضع «صامت»
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* */ }
       try { AGV.ctx = new C(); AGV.an = AGV.ctx.createAnalyser(); AGV.an.fftSize = 512; AGV.an.smoothingTimeConstant = 0.35; AGV.an.connect(AGV.ctx.destination); AGV.buf = new Uint8Array(AGV.an.fftSize); }
       catch (e) { AGV.ctx = null; return null; }
     }
@@ -2530,11 +2566,20 @@
     if (!AGV.playing) agPlayNext();
   }
   const agCloudOK = () => !!(agAudio() && AG.cfg && AG.cfg.ai_enabled && window.W777_SYNC && window.W777_SYNC.isOn() && Date.now() > AGV.cloudOff);
+  // الصوت كيتخبى فالتيليفون: نفس الجملة (التحية، الأجوبة المحفوظة) كتتقرا فالحين بلا انتظار
+  const agTTSKey = txt => 'https://tts.w777.local/' + agLang() + '/' + encodeURIComponent(txt.slice(0, 300));
   async function agFetchVoice(txt) {
+    let ab = null, cache = null;
+    try { cache = await caches.open('w777-tts'); const hit = await cache.match(agTTSKey(txt)); if (hit) ab = await hit.arrayBuffer(); } catch (e) { /* */ }
+    if (!ab) ab = await agFetchVoiceNet(txt, cache);
+    return await new Promise((ok, ko) => { const p = AGV.ctx.decodeAudioData(ab, ok, ko); if (p && p.then) p.then(ok, ko); });
+  }
+  async function agFetchVoiceNet(txt, cache) {
     const res = await window.W777_SYNC.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tts: txt, lang: agLang() }) });
     if (!/audio/.test(res.headers.get('content-type') || '')) throw new Error('tts');
     const ab = await res.arrayBuffer();
-    return await new Promise((ok, ko) => { const p = AGV.ctx.decodeAudioData(ab, ok, ko); if (p && p.then) p.then(ok, ko); });
+    if (cache && txt.length <= 300) { try { await cache.put(agTTSKey(txt), new Response(ab.slice(0), { headers: { 'Content-Type': 'audio/wav' } })); } catch (e) { /* */ } }
+    return ab;
   }
   async function agPlayNext() {
     const it = AGV.q.shift();
@@ -2542,7 +2587,9 @@
     AGV.playing = true; agStage(true);
     const buf = await it.audio;
     if (it.gen !== AGV.gen) return;
-    if (buf && AGV.ctx) {
+    // الصوت ديال المتصفح كيبقى «موقف» إلا تخلق بلا ضغطة: كنحاولو نشعلوه، وإلا ما تشعلش كنقراو بصوت المتصفح
+    if (buf && AGV.ctx && AGV.ctx.state !== 'running') { try { await Promise.race([AGV.ctx.resume(), new Promise(r => setTimeout(r, 600))]); } catch (e) { /* */ } }
+    if (buf && AGV.ctx && AGV.ctx.state === 'running') {
       const src = AGV.ctx.createBufferSource(); src.buffer = buf; src.connect(AGV.an);
       AGV.src = src; src.onended = () => { if (AGV.src === src) AGV.src = null; agPlayNext(); };
       try { src.start(0); return; } catch (e) { /* نكملو بصوت المتصفح */ }
@@ -2591,27 +2638,49 @@
     if (img) { if (img.complete && img.naturalWidth) skin(); else img.onload = skin; }
   }
   let agRaf = 0;
+  // حركة الفم بحال إنسان: كل مقطع صوتي (syllable) كيحل ويسد الفم بنعومة، والفم كيضيق مع الحروف الحادة (س، ي) وكيتدوّر مع (و، ا)،
+  // والراس كيتحرك شوية مع النبرة — ماشي حركة آلية متكررة.
   function agAnimate() {
     cancelAnimationFrame(agRaf);
     const face = $('#ag-face'), stage = $('#ag-stage');
     if (!face || !AG.open) return;
-    let open = 0, nextBlink = performance.now() + 1800, blinkT = 0;
+    let open = 0, wide = 0, env = 0, nextBlink = performance.now() + 1800, blinkT = 0;
+    const syl = { t0: 0, dur: 0, amp: 0, w: 0 };
+    let fbuf = null;
     const tick = now => {
       if (!AG.open || !face.isConnected) return;
-      let target = 0;
+      let target = 0, wideT = 0;
       if (AGV.src && AGV.an) {
+        // الصوت الطبيعي: قوة الصوت (RMS) + لون الصوت (الترددات العالية = فم ضيق)
         AGV.an.getByteTimeDomainData(AGV.buf);
         let sum = 0; for (let i = 0; i < AGV.buf.length; i++) { const v = (AGV.buf[i] - 128) / 128; sum += v * v; }
-        target = Math.min(1, Math.sqrt(sum / AGV.buf.length) * 4.5);
+        const rms = Math.sqrt(sum / AGV.buf.length);
+        target = Math.sqrt(Math.max(0, Math.min(1, (rms - 0.012) * 5.2))) * 0.92;
+        if (!fbuf || fbuf.length !== AGV.an.frequencyBinCount) fbuf = new Uint8Array(AGV.an.frequencyBinCount);
+        AGV.an.getByteFrequencyData(fbuf);
+        let lo = 0, hi = 0; const n = fbuf.length, cut = n >> 3;
+        for (let i = 1; i < n >> 1; i++) { if (i < cut) lo += fbuf[i]; else hi += fbuf[i]; }
+        wideT = lo + hi > 0 ? Math.max(-1, Math.min(1, (hi / (lo + hi) - 0.35) * 3)) : 0;
       } else if (AGV.synth) {
-        // صوت المتصفح ما كيعطيش الموجة: حركة طبيعية تقريبية + نبضة مع كل كلمة
-        const w = 0.45 + 0.35 * Math.sin(now / 70) * Math.sin(now / 190 + 1.3);
-        target = Math.max(0, w) + (now - AGV.pulse < 120 ? 0.3 : 0);
+        // صوت المتصفح ما كيعطيش الموجة: مقاطع صوتية عشوائية بإيقاع الكلام (4–6 فالثانية) + سدّة صغيرة بين الكلمات
+        if (now >= syl.t0 + syl.dur) { syl.t0 = now; syl.dur = 140 + Math.random() * 120; syl.amp = 0.35 + Math.random() * 0.5; syl.w = Math.random() * 2 - 1; }
+        const ph = (now - syl.t0) / syl.dur;
+        target = syl.amp * Math.pow(Math.sin(Math.PI * Math.min(1, ph)), 0.8);
+        if (now - AGV.pulse < 70) target *= 0.15;
+        wideT = syl.w * 0.6;
       }
-      open += (target - open) * (target > open ? 0.55 : 0.3);
-      if (open < 0.02) open = 0;
+      // فتح سريع، سدّان أبطأ شوية (بحال العضلات)
+      open += (target - open) * (target > open ? 0.42 : 0.2);
+      if (open < 0.015) open = 0;
+      wide += (wideT - wide) * 0.15;
+      env += (open - env) * 0.06;
       face.style.setProperty('--open', open.toFixed(3));
-      if (stage) stage.style.setProperty('--nod', (open * 2.2).toFixed(2) + 'deg');
+      face.style.setProperty('--wide', wide.toFixed(3));
+      if (stage) {
+        // الراس: إيماءة خفيفة مع النبرة + ميلان بطيء طبيعي
+        stage.style.setProperty('--nod', (open * 1.6 + env * 1.2).toFixed(2) + 'deg');
+        stage.style.setProperty('--sway', (Math.sin(now / 1900) * (0.5 + env * 2.2) + Math.sin(now / 730) * env * 0.8).toFixed(2) + 'deg');
+      }
       // رمشة كل 2–6 ثواني
       if (now > nextBlink) { blinkT = now; nextBlink = now + 2000 + Math.random() * 4000; }
       const bt = now - blinkT, blink = bt < 160 ? Math.sin((bt / 160) * Math.PI) : 0;
@@ -2685,8 +2754,10 @@
     agPinged = Date.now();
     Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ping: true }) }).catch(() => {});
   }
+  let agGreeted = 0;
   function agOpen() {
     AG.open = true;
+    agUnlockTTS(); // الفتح كيكون بضغطة: كنشعلو الصوت من دابا باش أول جملة تخرج
     if (!(history.state && history.state.ag)) { try { history.pushState({ ag: 1 }, ''); } catch (e) { /* */ } }
     const t = agT(), L = AG_LANGS.find(x => x.id === agLang()) || AG_LANGS[0];
     const p = document.createElement('div');
@@ -2732,6 +2803,8 @@
     agLoadCfg(); // ديما آخر صورة واسم حطهم المدير
     agRender();
     setTimeout(() => ta.focus(), 50);
+    // التحية بالصوت مرة فكل جلسة (كتتخبى، المرة الجاية كتخرج فالحين)
+    if (!AG.view.length && !agGreeted && agVoiceOn()) { agGreeted = 1; setTimeout(() => { if (AG.open && !AG.view.length) agSpeak(agAI() ? t.hi : lx().hi); }, 250); }
   }
   // نص بسيط: **عريض** + سطور
   const agFmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
@@ -2770,7 +2843,7 @@
     return t.s;
   }
   // كيحل المساعد (إلا كان مسدود) وكيصيفط سؤال واجد (الدروس، العقود…)
-  function agStart(text) { if (!AG.open) agOpen(); if (text && !AG.busy) agSend(text); }
+  function agStart(text) { agUnlockTTS(); if (!AG.open) agOpen(); if (text && !AG.busy) agSend(text); }
   // قراية ملف مرفق: صورة (مصغرة)، PDF، Word (النص)، TXT
   const agB64 = buf => { const u = new Uint8Array(buf); let s2 = ''; for (let i = 0; i < u.length; i += 0x8000) s2 += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s2); };
   async function agUnzip(buf, want) {
@@ -2818,7 +2891,7 @@
       : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div${m === AG.live ? ' id="ag-live"' : ''}>${m.html || agMsgHtml(m)}</div></div>`).join('')
       + (!AG.view.length && agAI() ? `<div class="ag-sugg">${agChips(t).map(x => `<button type="button">${esc(x)}</button>`).join('')}</div>` : '')
       + (AG.busy && !AG.live ? `<div class="ag-msg bot"><img src="${agPhoto()}" alt=""><div class="ag-dots">${esc(t.think)}<span>.</span><span>.</span><span>.</span></div></div>` : '');
-    $$('.ag-sugg button', body).forEach(b => b.onclick = () => agSend(b.textContent));
+    $$('.ag-sugg button', body).forEach(b => b.onclick = () => { agUnlockTTS(); agSend(b.textContent); });
     $$('[data-ct]', body).forEach(b => b.onclick = () => agContractOut(b.dataset.ct, +b.dataset.i));
     $$('a.ag-card, a.ag-more', body).forEach(a => a.addEventListener('click', () => { if (window.innerWidth < 960) agHide(); }));
     const acts = $('#ag-acts');
@@ -5760,6 +5833,7 @@
     };
     const run = ms => { left = ms; t0 = Date.now(); const bar = $('.st-bars i.on b', ov); if (bar) { bar.style.transition = 'none'; bar.style.width = (100 - ms / DUR * 100) + '%'; void bar.offsetWidth; bar.style.transition = `width ${ms}ms linear`; bar.style.width = '100%'; } timer = setTimeout(() => go(1), ms); };
     async function show() {
+      paused = false;
       const g = groups[gi], x = g.items[ii];
       stMarkSeen(x.id);
       const mine = x.owner === window.W777_SYNC.uid() || S.role === 'admin';
@@ -5770,8 +5844,13 @@
           ${mine ? `<button class="st-btn" data-del title="حذف">🗑</button>` : ''}<button class="st-btn" data-x title="إغلاق">✕</button></div>
         <div class="st-body">${x.kind === 'text' ? `<div class="${stTextCls(x.bg)}" style="background:${stBgOk(x.bg)}"><p>${esc(x.body || '').replace(/\n/g, '<br>')}</p></div>`
           : `<div class="st-img"><div class="st-spin"></div><img alt="">${x.body ? `<p class="st-cap">${esc(x.body)}</p>` : ''}</div>`}</div>
-        <button class="st-nav st-prev" aria-label="السابق"></button><button class="st-nav st-next" aria-label="التالي"></button></div>`;
+        <button class="st-nav st-prev" aria-label="السابق"></button><button class="st-nav st-next" aria-label="التالي"></button>
+        <div class="st-foot"><form class="st-say" data-say><input maxlength="300" placeholder="كتب تعليق…" aria-label="تعليق"><button aria-label="صيفط">➤</button></form>
+          <button type="button" class="st-act" data-like aria-label="إعجاب"><i class="st-heart">♡</i><b data-lc></b></button>
+          <button type="button" class="st-act" data-cm aria-label="التعليقات">💬<b data-cc></b></button></div>
+        <div class="st-cms hidden" data-cms></div><i class="st-pop">❤</i></div>`;
       $('[data-x]', ov).onclick = close;
+      stSocial(x, ov, { pause: () => { if (!paused) { paused = 'ui'; clearTimeout(timer); left = Math.max(300, left - (Date.now() - t0)); const b = $('.st-bars i.on b', ov); if (b) { b.style.width = getComputedStyle(b).width; b.style.transition = 'none'; } } }, resume: () => { if (paused === 'ui') { paused = false; run(left); } }, mine });
       const del = $('[data-del]', ov);
       if (del) del.onclick = async () => {
         clearTimeout(timer);
@@ -5785,8 +5864,8 @@
       $('.st-prev', ov).onclick = () => go(-1);
       $('.st-next', ov).onclick = () => go(1);
       const body = $('.st-card', ov);
-      body.onpointerdown = e => { if (e.target.closest('.st-btn')) return; paused = true; clearTimeout(timer); left = Math.max(300, left - (Date.now() - t0)); const b = $('.st-bars i.on b', ov); if (b) { b.style.width = getComputedStyle(b).width; b.style.transition = 'none'; } };
-      body.onpointerup = body.onpointercancel = () => { if (paused) { paused = false; run(left); } };
+      body.onpointerdown = e => { if (e.target.closest('.st-btn, .st-foot, .st-cms') || paused === 'ui') return; paused = true; clearTimeout(timer); left = Math.max(300, left - (Date.now() - t0)); const b = $('.st-bars i.on b', ov); if (b) { b.style.width = getComputedStyle(b).width; b.style.transition = 'none'; } };
+      body.onpointerup = body.onpointercancel = () => { if (paused === true) { paused = false; run(left); } };
       if (x.kind === 'image') {
         const img = $('.st-img img', ov);
         try {
@@ -5798,6 +5877,58 @@
       run(DUR);
     }
     show();
+  }
+  /* ❤️ الإعجابات و💬 التعليقات على الستوري (بحال الشبكات الاجتماعية) */
+  const stWho = uid => { const a = (S.dir || []).find(d => d.uid === uid); return a ? a.name : (uid === (window.W777_SYNC && window.W777_SYNC.uid()) ? 'أنا' : 'مجموعة الوسيط 777'); };
+  async function stSocial(x, ov, ui) {
+    const Sy = window.W777_SYNC, me = Sy.uid(), q = encodeURIComponent(x.id);
+    const like = $('[data-like]', ov), lc = $('[data-lc]', ov), cc = $('[data-cc]', ov), box = $('[data-cms]', ov), say = $('[data-say]', ov), inp = $('input', say);
+    let likes = [], cms = [];
+    const paint = () => {
+      const on = likes.includes(me);
+      like.classList.toggle('on', on); $('.st-heart', like).textContent = on ? '❤' : '♡';
+      lc.textContent = likes.length || ''; cc.textContent = cms.length || '';
+      box.innerHTML = `<div class="st-cms-h"><b>💬 التعليقات (${cms.length})</b><button type="button" class="st-btn" data-cx aria-label="إغلاق">✕</button></div>`
+        + (cms.length ? cms.map(c => `<div class="st-cm"><b>${esc(stWho(c.uid))}</b><span>${esc(c.body)}</span><small>${stAgo(c.created_at)}${c.uid === me || ui.mine ? ` · <a href="#" data-cd="${esc(c.id)}">حذف</a>` : ''}</small></div>`).join('') : '<div class="muted st-cm-0">كون أول واحد يعلّق 🙂</div>');
+      $('[data-cx]', box).onclick = () => { box.classList.add('hidden'); ui.resume(); };
+      $$('[data-cd]', box).forEach(a => a.onclick = async e => {
+        e.preventDefault();
+        try { await Sy.request('/rest/v1/w777_story_comments?id=eq.' + encodeURIComponent(a.dataset.cd), { method: 'DELETE' }); cms = cms.filter(c => c.id !== a.dataset.cd); paint(); } catch (er) { toast('تعذر الحذف'); }
+      });
+    };
+    const toggle = async () => {
+      const on = likes.includes(me);
+      likes = on ? likes.filter(u => u !== me) : likes.concat(me); paint();
+      if (!on) { const pop = $('.st-pop', ov); if (pop) { pop.classList.remove('go'); void pop.offsetWidth; pop.classList.add('go'); } }
+      try {
+        if (on) await Sy.request(`/rest/v1/w777_story_likes?story_id=eq.${q}&uid=eq.${me}`, { method: 'DELETE' });
+        else await Sy.request('/rest/v1/w777_story_likes', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal,resolution=ignore-duplicates' }, body: JSON.stringify({ story_id: x.id }) });
+      } catch (e) { likes = on ? likes.concat(me) : likes.filter(u => u !== me); paint(); toast('تعذر: ' + e.message, 3500); }
+    };
+    like.onclick = toggle;
+    // ضغطتين على الستوري = إعجاب
+    const bd = $('.st-body', ov); if (bd) bd.ondblclick = () => { if (!likes.includes(me)) toggle(); else { const pop = $('.st-pop', ov); if (pop) { pop.classList.remove('go'); void pop.offsetWidth; pop.classList.add('go'); } } };
+    $('[data-cm]', ov).onclick = () => { box.classList.toggle('hidden'); if (box.classList.contains('hidden')) ui.resume(); else ui.pause(); };
+    inp.onfocus = ui.pause;
+    inp.onblur = () => { if (box.classList.contains('hidden')) setTimeout(ui.resume, 150); };
+    say.onsubmit = async e => {
+      e.preventDefault();
+      const body = inp.value.trim(); if (!body) return;
+      inp.value = '';
+      try {
+        const r = await (await Sy.request('/rest/v1/w777_story_comments', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ story_id: x.id, body }) })).json();
+        if (r && r[0]) cms.push(r[0]);
+        paint(); box.classList.remove('hidden'); ui.pause();
+      } catch (er) { inp.value = body; toast(/limit|حد/.test(er.message) ? er.message : 'تعذر التعليق: ' + er.message, 4000); }
+    };
+    paint();
+    try {
+      [likes, cms] = await Promise.all([
+        Sy.request(`/rest/v1/w777_story_likes?story_id=eq.${q}&select=uid`).then(r => r.json()).then(a => a.map(o => o.uid)),
+        Sy.request(`/rest/v1/w777_story_comments?story_id=eq.${q}&select=id,uid,body,created_at&order=created_at.asc&limit=200`).then(r => r.json()),
+      ]);
+      if (like.isConnected) paint();
+    } catch (e) { /* بلا إنترنت */ }
   }
   function storyComposer() {
     const Sy = window.W777_SYNC;
@@ -7318,6 +7449,71 @@
       agentPhoto: AG.my && AG.my.photo ? AG.my.photo : null,
       askAI: on ? body => Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) : null,
     });
+  }
+  /* ============================================================
+     🏦 التمويل العقاري: الجهات المموّلة (شعار + معلومات تعريفية + مراحل بشعارين)
+     الشروط والنسب كيتزادو غير ملي يأكدهم المكتب بعد الاتصال بكل جهة
+     ============================================================ */
+  const FIN_ST = { ok: ['✅', 'معلومات كافية', 'green'], partial: ['🟡', 'معلومات جزئية — تُستكمل', 'amber'], missing: ['🔴', 'معلومات ناقصة — تواصل مباشر', 'red'] };
+  const FIN_STEPS = [['📝', 'استقبال الطلب', 'عند مكتب الوسيط 777: المشروع، الدخل، العقار'], ['🗂️', 'تجميع الوثائق', 'لائحة الوثائق حسب فئتك'], ['🔍', 'دراسة الملف', 'لدى الجهة المموّلة'], ['📄', 'العرض والموافقة', 'الشروط النهائية مكتوبة'], ['✍️', 'التوقيع', 'عند الموثق أو العدول'], ['🔑', 'الصرف والمفاتيح', 'مبروك السكن!']];
+  const finLogo = (k, cls = '') => k ? `<img class="${cls}" src="icons/fin/${k}.webp" alt="" loading="lazy" decoding="async">` : '';
+  const finPair = (x, big) => `<span class="fin-pair${big ? ' big' : ''}"><img src="${LOGO}" alt=""><i>×</i><span class="fp-i">${x.logo ? finLogo(x.logo) : x.glogo ? finLogo(x.glogo) : `<b>${esc((x.ar || '؟').trim()[0])}</b>`}</span></span>`;
+  async function viewTamwil(parts, query) {
+    main().innerHTML = '<div class="card card-pad muted">⏳</div>';
+    if (!window.W777_FIN) { try { await loadScript('finance-data.js'); } catch (e) { /* */ } }
+    if (!/^#\/tamwil/.test(location.hash)) return;
+    const F = window.W777_FIN;
+    if (!F) { main().innerHTML = '<div class="card card-pad">تعذر التحميل — تأكد من الإنترنت.</div>'; return; }
+    const id = parts[1];
+    if (id) return viewTamwilOne(F, F.inst.find(x => x.id === id));
+    const st = { cat: query.cat || '', q: query.q || '', mre: query.mre === '1' };
+    main().innerHTML = `
+      <div class="fin-hero card">
+        <div class="fin-hero-t"><h1>🏦 التمويل العقاري</h1><p>البنوك والبنوك التشاركية وشركات التمويل والضمانات العمومية — بالمغرب وللمغاربة المقيمين بالخارج.</p>
+          <div class="btn-row"><a class="btn gold" href="#/loan">🧮 احسب القسط الشهري</a></div></div>
+        <div class="fin-orbit" aria-hidden="true"><img class="fo-c" src="${LOGO}" alt="">${F.inst.filter(x => x.logo).slice(0, 12).map((x, i, a) => `<span style="--a:${(360 / a.length) * i}deg"><img src="icons/fin/${x.logo}.webp" alt=""></span>`).join('')}</div>
+      </div>
+      <div class="fin-tools"><input id="fin-q" type="search" placeholder="🔍 قلب على بنك أو جهة…" value="${esc(st.q)}">
+        <label class="fin-mre"><input type="checkbox" id="fin-mre" ${st.mre ? 'checked' : ''}> 🌍 مغاربة العالم</label></div>
+      <div class="fin-chips" id="fin-chips"><button data-c="" class="${st.cat ? '' : 'on'}">الكل <small>${F.inst.length}</small></button>${F.cats.map(c => `<button data-c="${c[0]}" class="${st.cat === c[0] ? 'on' : ''}">${esc(c[2])} <small>${F.inst.filter(x => x.cat === c[0]).length}</small></button>`).join('')}</div>
+      <div id="fin-list" class="fin-grid"></div>
+      <p class="muted fin-disc">ℹ️ معلومات تعريفية مأخوذة من المواقع الرسمية للجهات (تحقق: ${esc(F.date)}). النسب والشروط كتبان هنا غير بعد ما يأكدها مكتب الوسيط 777 مع كل جهة. المرجع النهائي هو الجهة المموّلة. الشعارات للتعريف فقط ولا تعني شراكة.</p>`;
+    const paint = () => {
+      const q = norm(st.q);
+      const list = F.inst.filter(x => (!st.cat || x.cat === st.cat) && (!st.mre || x.mre === 'oui') && (!q || norm(x.ar + ' ' + x.name + ' ' + x.group + ' ' + x.types.join(' ')).includes(q)));
+      $('#fin-list').innerHTML = list.length ? list.map(x => {
+        const S0 = FIN_ST[x.status], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
+        return `<a class="fin-card card" href="#/tamwil/${x.id}">
+          <div class="fc-top">${finPair(x)}<span class="badge ${S0[2]}" title="${esc(S0[1])}">${S0[0]}</span></div>
+          <b class="fc-n">${esc(x.ar)}</b><small class="fc-f" dir="ltr">${esc(x.name)}</small>
+          <div class="fc-tags"><span>${esc(cat)}</span>${x.mre === 'oui' ? '<span>🌍 MRE</span>' : ''}${x.web ? '<span>🌐 موقع رسمي</span>' : ''}</div></a>`;
+      }).join('') : '<div class="card card-pad muted">ما لقينا والو — جرب كلمة أخرى.</div>';
+    };
+    paint();
+    $('#fin-q').oninput = e => { st.q = e.target.value; paint(); };
+    $('#fin-mre').onchange = e => { st.mre = e.target.checked; paint(); };
+    $('#fin-chips').onclick = e => { const b = e.target.closest('button'); if (!b) return; st.cat = b.dataset.c; $$('#fin-chips button').forEach(x => x.classList.toggle('on', x === b)); paint(); };
+  }
+  function viewTamwilOne(F, x) {
+    if (!x) { main().innerHTML = '<div class="card card-pad">هاد الجهة ما كايناش. <a href="#/tamwil">رجوع</a></div>'; return; }
+    const S0 = FIN_ST[x.status], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
+    const tel = n => String(n).replace(/[^\d+]/g, '');
+    main().innerHTML = `
+      <div class="page-head"><div><a class="muted" href="#/tamwil">→ التمويل العقاري</a><h1>${esc(x.ar)}</h1><div class="sub" dir="ltr">${esc(x.name)}</div></div></div>
+      <div class="fin-one card card-pad">
+        <div class="fo-head">${finPair(x, true)}<div><span class="badge ${S0[2]}">${S0[0]} ${esc(S0[1])}</span><div class="muted" style="margin-top:6px">${esc(cat)}${x.group ? ' · ' + esc(x.group) : ''}</div>
+          ${x.glogo && x.logo ? `<div class="fo-group">المجموعة الأم: ${finLogo(x.glogo)}</div>` : ''}</div></div>
+        <div class="fc-tags">${x.types.map(t => `<span dir="ltr">${esc(t)}</span>`).join('')}${x.mre === 'oui' ? '<span>🌍 مغاربة العالم</span>' : ''}</div>
+        <h3 class="section-title">📞 الاتصال</h3>
+        <div class="fo-ph">${x.phones.length ? x.phones.map(([l, n, s]) => `<a class="fo-call" href="tel:${esc(tel(n))}"><span>${esc(l)}${s === 's' ? ' <em>يُؤكَّد</em>' : ''}</span><b dir="ltr">${esc(n)}</b></a>`).join('') : '<div class="muted">الهاتف الرسمي غير منشور — كيتأكد من بعد الاتصال.</div>'}</div>
+        ${x.web ? `<a class="btn" href="${esc(x.web)}" target="_blank" rel="noopener">🌐 الموقع الرسمي</a>` : ''}
+        ${x.products.length ? `<h3 class="section-title">🏠 العروض المنشورة</h3><div class="fc-tags">${x.products.map(p => `<span dir="ltr">${esc(p)}</span>`).join('')}</div>` : ''}
+        <div class="fo-wait">⏳ النسب، المدة، نسبة التمويل والوثائق المطلوبة: <b>كتتزاد قريباً بعد تأكيدها مع ${esc(x.ar)}</b>.</div>
+      </div>
+      <div class="card card-pad"><h3 class="section-title">🧭 مراحل التمويل مع الوسيط 777</h3><p class="muted" style="margin-top:0">مراحل مرجعية — كتتحدّث حسب مسطرة كل جهة.</p>
+        <ol class="fin-steps">${FIN_STEPS.map(([ic, t, d], k) => `<li><span class="fs-n">${k + 1}</span>${finPair(x)}<div><b>${ic} ${t}</b><small>${d}</small></div></li>`).join('')}</ol>
+        <div class="btn-row"><a class="btn gold" href="#/loan">🧮 احسب القسط</a><a class="btn" href="https://wa.me/212777777848?text=${encodeURIComponent('السلام عليكم، بغيت معلومات على التمويل العقاري مع ' + x.ar)}" target="_blank" rel="noopener">💬 اسأل الوسيط 777</a></div></div>
+      <p class="muted fin-disc">ℹ️ المعلومات إرشادية؛ المرجع النهائي هو الجهة المموّلة. الشعار للتعريف فقط.</p>`;
   }
   function viewLoan(query) {
     const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };

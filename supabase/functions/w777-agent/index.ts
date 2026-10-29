@@ -281,22 +281,30 @@ async function tts(key: string, text: string, lang = "darija") {
     contents: [{ parts: [{ text: (TTS_STYLE[lang] ?? "") + text }] }],
     generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } } },
   });
-  let last = 0;
-  for (const m of TTS_MODELS) {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 20000);
+  // النماذج كتبدا بالتتابع (كل 2.5 ثانية واحد جديد) وأول جواب صحيح كيربح: إلا كان الأول بطيء ولا مسدود، ما كنتسناوش 20 ثانية
+  let last = 0, done = false;
+  const ctrls: AbortController[] = [];
+  const one = async (m: string, delay: number): Promise<Uint8Array> => {
+    if (delay) await new Promise((r) => setTimeout(r, delay));
+    if (done) throw new Error("skip");
+    const ac = new AbortController(); ctrls.push(ac);
+    const timer = setTimeout(() => ac.abort(), 15000);
     try {
       const res = await fetch(`${GBASE}${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload, signal: ac.signal });
-      if (!res.ok) { last = res.status; continue; }
+      if (!res.ok) { last = res.status; throw new Error("http"); }
       const d = await res.json();
       const inl = (d?.candidates?.[0]?.content?.parts ?? []).find((p: Blk) => p.inlineData)?.inlineData;
-      if (!inl?.data) { last = 502; continue; }
+      if (!inl?.data) { last = 502; throw new Error("empty"); }
       const bytes = Uint8Array.from(atob(inl.data), (c) => c.charCodeAt(0));
       const mime = String(inl.mimeType || "");
-      if (/wav/i.test(mime)) return bytes;
-      return wav(bytes, Number((mime.match(/rate=(\d+)/) || [])[1]) || 24000);
-    } catch { last = 504; } finally { clearTimeout(timer); }
-  }
+      return /wav/i.test(mime) ? bytes : wav(bytes, Number((mime.match(/rate=(\d+)/) || [])[1]) || 24000);
+    } catch (e) { if ((e as Error).name === "AbortError") last = last || 504; throw e; } finally { clearTimeout(timer); }
+  };
+  try {
+    const out = await Promise.any(TTS_MODELS.map((m, i) => one(m, i * 2500)));
+    done = true; ctrls.forEach((c) => c.abort());
+    return out;
+  } catch { done = true; }
   throw Object.assign(new Error("tts"), { status: last });
 }
 
