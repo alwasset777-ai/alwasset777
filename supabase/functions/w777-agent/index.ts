@@ -165,6 +165,7 @@ function toGemini(messages: Blk[], model: string) {
 // كيرجع أول جواب صالح من لائحة النماذج (مع إعادة المحاولة بلا إعدادات التفكير إلا ما قبلهاش النموذج)
 async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true) {
   let last = { status: 0, message: "" };
+  const trace: string[] = [];
   for (const [gi, g] of GEMINI_MODELS.entries()) {
     for (const th of g.th ? [g.th, null] : [null]) {
       const payload = JSON.stringify({
@@ -177,13 +178,15 @@ async function geminiOpen(key: string, system: string, messages: Blk[], stream: 
       // Google أحياناً كيتعطل بزاف فالمستوى المجاني: إلا ما بدا الجواب فـ 10 ثواني كنمشيو للنموذج اللي من بعد
       const timer = setTimeout(() => ac.abort(), gi < GEMINI_MODELS.length - 1 ? 10000 : 25000);
       let res: Response;
+      const t0 = Date.now();
       try {
         res = await fetch(`${GBASE}${g.m}:${stream ? "streamGenerateContent?alt=sse" : "generateContent"}`, {
           method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload, signal: ac.signal,
         });
-      } catch (e) { clearTimeout(timer); last = { status: 504, message: String(e) }; break; }
+      } catch (e) { clearTimeout(timer); last = { status: 504, message: String(e) }; trace.push(`${g.m}:timeout:${Date.now() - t0}`); break; }
       clearTimeout(timer);
-      if (res.ok) return { res, model: g.m };
+      trace.push(`${g.m}:${res.status}:${Date.now() - t0}`);
+      if (res.ok) return { res, model: g.m, trace };
       const data = await res.json().catch(() => ({}));
       last = { status: res.status, message: String(data?.error?.message ?? `gemini ${res.status}`) };
       // إعدادات التفكير ما مقبولاش: نعاودو نفس النموذج بلاها
@@ -215,11 +218,11 @@ const finish = (content: Blk[]) => {
   return { content, stop_reason: hasTool ? "tool_use" : content.some((b) => b.text) ? "end_turn" : "refusal" };
 };
 async function gemini(key: string, system: string, messages: Blk[], withTools = true) {
-  const { res, model } = await geminiOpen(key, system, messages, false, withTools);
+  const { res, model, trace } = await geminiOpen(key, system, messages, false, withTools);
   const data = await res.json().catch(() => ({}));
   const content: Blk[] = [];
   pushParts(content, data?.candidates?.[0]?.content?.parts ?? [], model);
-  return { ...finish(content), usage: data?.usageMetadata, model };
+  return { ...finish(content), usage: data?.usageMetadata, model, trace };
 }
 // البث المباشر (SSE): النص كيوصل للتطبيق كلمة بكلمة، والنهاية فيها البلوكات كاملين
 function geminiSSE(key: string, system: string, messages: Blk[], extra: Record<string, unknown>, cors: Record<string, string>) {
@@ -356,7 +359,7 @@ Deno.serve(async (req) => {
     try {
       if (geminiKey) {
         const r = await gemini(geminiKey, sys, gm, false);
-        return json({ text: r.content.filter((b: Blk) => b.type === "text").map((b: Blk) => b.text).join("").trim() });
+        return json({ text: r.content.filter((b: Blk) => b.type === "text").map((b: Blk) => b.text).join("").trim(), model: r.model, trace: r.trace });
       }
       const resp = await new Anthropic({ apiKey }).messages.create({ model: MODEL, max_tokens: 1200, system: sys, messages: gm });
       return json({ text: resp.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("").trim() });
