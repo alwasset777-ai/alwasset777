@@ -32,6 +32,15 @@ EXTRA = {
 }
 
 
+
+def still(T, c):
+    """أوضح صورة فخطوة: آخر لقطة ثابتة (أطول مدة) — ماشي وسط حركة"""
+    t, best = 0, None
+    for x in T['frames']:
+        if c['a'] - .01 <= t < c['b'] and (best is None or x['d'] >= best['d'] - .02): best = x
+        t += x['d']
+    return (best or T['frames'][-1])['f']
+
 def data():
     js = ("global.window={};require(process.argv[1]);const S=require(process.argv[2]);"
           "console.log(JSON.stringify({L:window.W777_GUIDE.lessons,S:S.map(s=>({n:s.n,t:s.t,tag:s.tag,intro:s.intro,lessons:s.lessons}))}))")
@@ -46,12 +55,7 @@ def qr(url, color=INK):
 def shots(raw, vid, n, tmp):
     """صورتين من التصوير (آخر لقطة من أول وآخر خطوة) + صورة الفيديو، مصغرة"""
     d = os.path.join(raw, f'{n:02d}'); T = json.load(open(os.path.join(d, 'timeline.json')))
-    t, at = 0, []
-    for c in (T['caps'][0], T['caps'][-1]):
-        t = 0
-        for fr in T['frames']:
-            t += fr['d']
-            if t >= c['b'] - .05: at.append(fr['f']); break
+    at = [still(T, c) for c in (T['caps'][0], T['caps'][-1])]
     out = []
     for i, f in enumerate(at):
         o = os.path.join(tmp, f's{n:02d}_{i}.jpg')
@@ -121,7 +125,7 @@ aside {{ float: left; width: 60mm; margin: 0 0 4mm 7mm; }}
 .vc .bt .qr {{ width: 17mm; height: 17mm; background: #fff; padding: 1mm; border-radius: 1.5mm; flex: none; }}
 .vc .bt b {{ display: block; font-size: 10pt; }}
 .vc .bt small {{ font-size: 7.5pt; color: #bbb; line-height: 1.4; display: block; }}
-.ls {{ margin-bottom: 4mm; break-inside: avoid; }}
+.ls {{ margin-bottom: 4mm; break-inside: avoid; overflow: hidden; }}
 .ls h3 {{ font-size: 11.5pt; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 1mm; }}
 .ls h3::before {{ content: ''; width: 3px; height: 13px; background: {RED}; border-radius: 2px; }}
 .ls ol {{ margin: 0; padding-inline-start: 5.5mm; font-size: 9.6pt; line-height: 1.7; }}
@@ -201,7 +205,7 @@ def build(raw, vid, out_pdf):
       <div class="ct"><b>📞 الهاتف</b><span class="ltr">{OFFICE['tel1']} · {OFFICE['tel2']}</span><b>✉️ البريد</b><span class="ltr">{OFFICE['mail']}</span><b>📍 العنوان</b><span>{OFFICE['city_ar']}</span></div>
       <div class="sl">{OFFICE['slogan']}</div></section></body></html>""")
     hp = os.path.join(tmp, 'guide.html'); open(hp, 'w').write(''.join(H))
-    render_pdf(hp, os.path.abspath(out_pdf), 'AL WASSET 777 — Guide de l\\'application')
+    render_pdf(hp, os.path.abspath(out_pdf), 'AL WASSET 777 — Guide de l’application')
 
 
 if __name__ == '__main__':
