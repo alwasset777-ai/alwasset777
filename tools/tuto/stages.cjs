@@ -135,10 +135,10 @@ module.exports = [
     n: 15, t: 'الستوري والرسائل والتقييم', tag: 'تواصل كالشبكات الاجتماعية', lessons: [45, 46, 47], go: '#/inbox',
     intro: 'انشر ستوري لعروضك، واجمع الإعجابات والتعليقات، وراسل أي عضو داخل التطبيق، وقيّم تعاملك مع الشركاء.',
     async film(E) {
-      await E.cap('الستوري: انشر عروضك اليومية', async () => { await E.go('#/', 1200); await E.tap('[data-st]:not([data-st=""]) >> nth=1', 2200); await E.live(1200); });
-      await E.cap('إعجاب ❤️ وتعليق مثل الشبكات الاجتماعية', async () => { await E.tap('.st-foot button >> nth=0', 900); await E.hold(1200); });
+      await E.cap('الستوري: انشر عروضك اليومية', async () => { await E.go('#/', 1200); await E.tap('.pr-item.has-st >> nth=1', 1600); await E.live(900); });
+      await E.cap('إعجاب ❤️ وتعليق مثل الشبكات الاجتماعية', async () => { await E.tap('.st-view [data-like]', 900); await E.tap('.st-view [data-cm]', 1200); await E.hold(900); });
       await E.cap('الرسائل بين الأعضاء داخل التطبيق', async () => {
-        await E.page.keyboard.press('Escape'); await E.eval(() => document.querySelectorAll('.st-ov, .st-view, .story-ov').forEach(x => x.remove()));
+        await E.page.keyboard.press('Escape'); await E.eval(() => document.querySelectorAll('.st-view').forEach(x => x.remove()));
         await E.go('#/inbox', 1500); await E.hold(1200); await E.tap('#main a, main a.card, main .row >> nth=0', 1400); await E.hold(1000);
       });
     },

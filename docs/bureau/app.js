@@ -4966,6 +4966,7 @@
           <div class="gd-bar"><span style="width:${pct}%"></span></div>
           <small>${pct}% · ${L.filter(l => done.has(l.n)).length} / ${L.length} درس</small>
           <div class="btn-row" style="margin-top:12px">${next ? `<a class="btn gold" href="#/guide/${next.n}">▶ ${done.size ? 'كمّل' : 'ابدأ'}: ${esc(next.t)}</a>` : '<span class="badge green">🏆 كمّلتي كل الدروس — مبروك!</span>'}
+            <a class="btn" href="tuto/" target="_blank" rel="noopener">🎬 فيديوهات الدليل (19)</a>
             ${done.size ? '<button class="btn" id="gd-reset">↺ إعادة من الأول</button>' : ''}</div>
         </div>
         <img class="gd-phone" src="guide/b01b-hub.webp" alt="" loading="lazy">

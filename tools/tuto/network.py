@@ -57,6 +57,26 @@ G = {
 }
 
 
+
+def still(T, c):
+    """أوضح صورة فخطوة: آخر لقطة ثابتة (أطول مدة) — ماشي وسط حركة"""
+    t, best = 0, None
+    for x in T['frames']:
+        if c['a'] - .01 <= t < c['b'] and (best is None or x['d'] >= best['d'] - .02): best = x
+        t += x['d']
+    return (best or T['frames'][-1])['f']
+# الجملة تحت الهاتف لكل مشهد (نفس ترتيب scenes)
+SCAP = {
+    'agency': ['عقارات الوكالات من كل المدن لزبنائك: بِع أكثر بشراكة واضحة.', 'صفحة لكل عقار بالصور، العرض للزبون، والملصق مع QR.', 'التطبيق يربط كل زبون بالعقار المناسب تلقائيا.', 'وجّه زبونك لجهة التمويل المناسبة بمراحل ملفها.'],
+    'broker': ['ملصق جاهز مع QR وزر واتساب: إعلانك في ثوان.', 'نظّم الزيارات وسجّلها بتوقيع الزبون لتحمي عمولتك.', 'عقارات الوكالات والوسطاء في مدينتك وخارجها.', 'انشر عروضك اليومية واجمع الإعجابات والتعليقات.'],
+    'contractor': ['اعرض مشروعك للتمويل أو الشراكة أمام المستثمرين.', 'خدماتك ومدينتك ومشاريعك أمام كل الشبكة.', 'لا تفوّت أي صالون أو ملتقى عقاري.', 'وكالات وجمعيات ومستثمرون يبحثون عن مقاول موثوق.'],
+    'finishing': ['زليج، صباغة، جبس، نجارة، ألومنيوم، مطابخ… خدماتك في بطاقتك.', 'اعرض أعمالك قبل/بعد كل يوم.', 'بعد كل صفقة: الوكالات توجه لك الملاك الجدد.', 'شراكة دائمة مع المقاولين والوكالات.'],
+    'investor': ['مشاريع يراجعها المكتب قبل النشر: تمويل أو شراكة.', 'عروض من كل المدن في مكان واحد.', 'قارن بالأثمان المرجعية قبل أي قرار.', 'البنوك وشركات التمويل ومراحل الملف.'],
+    'notary': ['نماذج عقود جاهزة ومراحل التملك للزبناء.', 'ملفات تحتاج رأي المختص تصلك منظمة.', 'الشبكة تقترحك حسب مدينتك وموقع العقار.', 'من دراسة الملف حتى التوقيع عندك.'],
+    'association': ['عروض الأراضي والتجزئات من الوكالات في كل المدن.', 'شركات بناء وتشطيب مع التقييمات.', 'جهات التمويل ومراحل الملف لأعضائكم.', 'التضامن داخل الشبكة: ساعدوا أسرة على السكن.'],
+}
+
+
 def qr(url, color=INK):
     s = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage, border=1).to_string().decode()
     return s.replace('<svg ', f'<svg style="width:100%;height:100%;display:block" fill="{color}" ', 1)
@@ -110,8 +130,7 @@ def video(raw, out, k):
     g = G[k]; w = os.path.join(out, 'build', k); os.makedirs(w, exist_ok=True)
     jobs = [(card_hook(g), f'{w}/hook.png', False), (card_seats(g), f'{w}/seats.png', False), (card_cta(g), f'{w}/cta.png', False)]
     for i, (st, ci, title) in enumerate(g['scenes']):
-        b = g['ben'][i]
-        jobs += [(scene_bg(g, title), f'{w}/bg{i}.png', False), (C.page_cap(i + 1, len(g['scenes']), b[2]), f'{w}/cap{i}.png', True)]
+        jobs += [(scene_bg(g, title), f'{w}/bg{i}.png', False), (C.page_cap(i + 1, len(g['scenes']), SCAP[k][i]), f'{w}/cap{i}.png', True)]
     C.render(jobs, os.path.join(w, 'html'))
     parts = []
     subprocess.run(['convert', '-size', f'{C.W}x{C.H}', 'xc:white', '-fill', 'black', '-draw', f'roundrectangle {C.SX},{C.SY} {C.SX + C.SW - 1},{C.SY + C.SH - 1} 50,50', f'{w}/mask.png'], check=True)
@@ -222,15 +241,12 @@ def pdf(raw, out, k, tmp):
     shots = []
     for i, (st, ci, title) in enumerate(g['scenes']):
         d = os.path.join(raw, f'{st:02d}'); T = json.load(open(os.path.join(d, 'timeline.json')))
-        cap = T['caps'][min(ci, len(T['caps']) - 1)]; t, pick = 0, T['frames'][0]['f']
-        for x in T['frames']:
-            t += x['d']
-            if t >= cap['b'] - .05: pick = x['f']; break
+        pick = still(T, T['caps'][min(ci, len(T['caps']) - 1)])
         o = os.path.join(tmp, f'{k}_{i}.jpg'); subprocess.run(['convert', os.path.join(d, pick), '-resize', '420x', '-quality', '82', o], check=True)
         shots.append((o, title))
     used |= {'building', 'salon', 'kitchen', 'bedroom', 'villa', 'pool', 'garden', 'riad', 'courtyard', 'fountain', 'zellige', 'sea', 'balcony', 'bathroom', 'shop', 'street', 'chalet', 'plot', 'site', 'farm', 'olive', 'well'}
     vurl = f'{VID_URL}net-{k}.mp4'
-    code = f'رمز الدخول ديالك (مثلا <b class="ltr">{g["code"]}</b>) وكلمة السر' if g['code'] else 'رمز الدخول ديالك وكلمة السر'
+    code = f'رمز الدخول ديالك (مثلا <strong class="ltr">{g["code"]}</strong>) وكلمة السر' if g['code'] else 'رمز الدخول ديالك وكلمة السر'
     H = [f'<html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>{CSS}</style></head><body>']
     H.append(f"""<section class="cover"><div class="ph" style="background-image:url(file://{APP}/game/img/{g['img']}.webp)"></div>
       <div class="field">{roof_field(794, 600, seed=7 + KINDS.index(k), cols=19, rows=14, stroke='#ffffff', op=.45)}</div>
@@ -267,5 +283,7 @@ if __name__ == '__main__':
     tmp = os.path.join(out, 'build'); os.makedirs(tmp, exist_ok=True)
     for k in KINDS:
         if only and k not in only: continue
-        v = video(raw, out, k); p = pdf(raw, out, k, tmp)
+        mp = os.path.join(out, f'net-{k}.mp4')
+        v = mp if os.environ.get('PDF_ONLY') and os.path.exists(mp) else video(raw, out, k)
+        p = pdf(raw, out, k, tmp)
         print(k, os.path.getsize(v) // 1024, 'KB', p)

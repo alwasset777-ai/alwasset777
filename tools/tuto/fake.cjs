@@ -105,7 +105,7 @@ const invest = [{ id: u(101), owner: u(41), owner_name: 'مجموعة الاست
 
 const T = { w777_agencies: agencies, w777_shared_props: shared, w777_projects: projects, w777_events: events, w777_news: news, w777_donations: donations,
   w777_disputes: disputes, w777_stories: stories, w777_stays: stays, w777_msgs: msgs, w777_ratings: ratings, w777_invest: invest,
-  w777_agent_config: [{ id: 1, name: 'منير', ai_enabled: true }], w777_story_likes: [{ story_id: u(401), uid: u(1) }, { story_id: u(401), uid: u(2) }, { story_id: u(402), uid: ME }],
+  w777_agent_config: [{ id: 1, name: 'منير', ai_enabled: true }], w777_story_likes: [{ story_id: u(401), uid: u(1) }, { story_id: u(401), uid: u(2) }, { story_id: u(402), uid: u(4) }],
   w777_story_comments: [{ id: u(151), story_id: u(401), uid: u(2), body: 'رائع 😍', created_at: ago(2) }] };
 
 // فلترة بسيطة ديال PostgREST: col=eq.x / neq / in.(…) / is.true
