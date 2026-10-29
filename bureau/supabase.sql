@@ -1035,3 +1035,90 @@ end $$;
 revoke execute on function public.w777_story_limit() from public, anon, authenticated;
 create trigger w777_story_limit before insert on public.w777_stories for each row execute function public.w777_story_limit();
 select cron.schedule('w777-stories-clean', '17 * * * *', $$delete from public.w777_stories where expires_at < now()$$);
+
+-- ============================================================
+-- حماية إضافية (مراجعة الأمان): حقول ما خاصهاش تتبدل + حد للطلبات
+-- ============================================================
+-- الرسائل: اللي توصلو الرسالة يقدر غير يعلّمها «مقروءة»، ما يبدلش النص ولا المرسل
+create or replace function public.w777_msg_guard() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then
+    new.id := old.id; new.sender := old.sender; new.recipient := old.recipient; new.body := old.body; new.created_at := old.created_at;
+  end if;
+  return new; end $$;
+drop trigger if exists w777_msg_guard on public.w777_msgs;
+create trigger w777_msg_guard before update on public.w777_msgs for each row execute function public.w777_msg_guard();
+
+-- الموظفين: مول المكتب يبدل غير السمية والدور والتفعيل (ماشي الحساب المربوط)
+create or replace function public.w777_staff_guard() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then
+    new.uid := old.uid; new.owner := old.owner; new.login := old.login; new.created_at := old.created_at;
+    if new.role not in ('view', 'edit', 'full') then new.role := old.role; end if;
+  end if;
+  return new; end $$;
+drop trigger if exists w777_staff_guard on public.w777_staff;
+create trigger w777_staff_guard before update on public.w777_staff for each row execute function public.w777_staff_guard();
+
+-- الحجز من الصفحة العمومية: حد لكل عقار فالنهار وحد عام (ضد الإغراق بطلبات وهمية)
+create or replace function public.w777_book_limit() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then
+    if (select count(*) from w777_bookings where stay_id = new.stay_id and created_at > now() - interval '1 day') >= 20 then
+      raise exception 'بزاف ديال الطلبات على هاد العقار اليوم، تواصل مع المكتب'; end if;
+    if (select count(*) from w777_bookings where created_at > now() - interval '1 hour') >= 120 then
+      raise exception 'الخدمة مشغولة، عاود من بعد شوية'; end if;
+  end if;
+  return new; end $$;
+drop trigger if exists w777_book_limit on public.w777_bookings;
+create trigger w777_book_limit before insert on public.w777_bookings for each row execute function public.w777_book_limit();
+
+-- دوال المنبهات ما خاصهاش تتنادى مباشرة من الخارج
+revoke execute on function public.w777_msg_guard(), public.w777_staff_guard(), public.w777_book_limit() from public, anon, authenticated;
+
+-- ============================================================
+-- لعبة الكلمات المتقاطعة العقارية: ترتيب مشترك بين المشتركين
+-- النقط كتتسجل غير عبر الدالة (حد لكل شبكة، وتيرة، وحد يومي) — ما كاينش كتابة مباشرة فالجدول
+-- ============================================================
+create table if not exists public.w777_game_scores (
+  uid uuid primary key references auth.users(id) on delete cascade,
+  name text not null default '',
+  points integer not null default 0,
+  solved integer not null default 0,
+  last_at timestamptz,
+  day date,
+  day_n integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.w777_game_scores enable row level security;
+revoke all on public.w777_game_scores from anon, authenticated;
+
+create or replace function public.w777_game_submit(p integer, n integer) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); nm text; r w777_game_scores;
+begin
+  if me is null or not (w777_can_use() or w777_staff_owner() is not null) then raise exception 'forbidden'; end if;
+  p := greatest(0, least(coalesce(p, 0), 300));
+  select * into r from w777_game_scores where uid = me;
+  if found and r.last_at > now() - interval '45 seconds' then raise exception 'too_fast'; end if;
+  if found and r.day = current_date and r.day_n >= 40 then raise exception 'daily_limit'; end if;
+  nm := coalesce((select name from w777_agencies where uid = me),
+                 (select s.name || ' — ' || coalesce(a.name, '') from w777_staff s left join w777_agencies a on a.uid = s.owner where s.uid = me),
+                 'مكتب الوسيط 777');
+  insert into w777_game_scores as g (uid, name, points, solved, last_at, day, day_n, updated_at)
+  values (me, left(nm, 80), p, 1, now(), current_date, 1, now())
+  on conflict (uid) do update set name = excluded.name, points = g.points + p, solved = g.solved + 1, last_at = now(),
+    day_n = case when g.day = current_date then g.day_n + 1 else 1 end, day = current_date, updated_at = now()
+  returning * into r;
+  return json_build_object('points', r.points, 'solved', r.solved);
+end $$;
+
+create or replace function public.w777_game_top() returns table(rank bigint, name text, points integer, solved integer, me boolean)
+language sql security definer set search_path = public stable as $$
+  with t as (select g.uid, g.name, g.points, g.solved, rank() over (order by g.points desc, g.updated_at) rk from w777_game_scores g)
+  select t.rk, t.name, t.points, t.solved, t.uid = auth.uid()
+  from t where (w777_can_use() or w777_staff_owner() is not null) and (t.rk <= 20 or t.uid = auth.uid())
+  order by t.rk limit 21
+$$;
+revoke execute on function public.w777_game_submit(integer, integer), public.w777_game_top() from public, anon;
+grant execute on function public.w777_game_submit(integer, integer), public.w777_game_top() to authenticated;
