@@ -7,6 +7,7 @@
   'use strict';
   const LS = 'w777_wasla';
   const IMG = 'game/img/';
+  const MOUNIR = 'game/mounir.webp?v=1'; // منير بلباس اللعبة
   const START_HELPS = 6;
 
   const T = {
@@ -153,10 +154,13 @@
 .wl-pl .wl-slot.ok{background:#0a7a2f}
 .wl-pl .wl-bank{max-width:520px;margin:6px auto 0;gap:6px}.wl-pl .wl-t{background:var(--r);box-shadow:0 3px 0 #7a0a1c;height:46px;border-radius:9px}
 @media(max-width:520px){.wl-pl .wl-slot{width:36px;height:42px}.wl-pl .wl-t{height:42px;font-size:19px;padding:0}.wl-card-img img{height:200px}.wl-pb{padding:7px 9px;font-size:13px}.wl-card-t{font-size:19px;min-height:150px}}
-.wl-ask{margin-top:12px;background:var(--k);color:#fff;border:0;border-radius:999px;padding:10px 18px;font-weight:800;cursor:pointer;font-size:15px;box-shadow:0 3px 0 var(--r)}
+.wl-ask{margin-top:12px;background:var(--k);color:#fff;border:0;border-radius:999px;padding:5px 18px;padding-inline-start:6px;font-weight:800;cursor:pointer;font-size:15px;box-shadow:0 3px 0 var(--r);display:inline-flex;align-items:center;gap:8px}
+.wl-ask img{width:38px;height:38px;border-radius:50%;border:2px solid var(--r);object-fit:cover;background:#fff}
+.wl-ai-h{margin:0 0 8px;display:flex;align-items:center;gap:10px}.wl-ai-h img{width:58px;height:58px;border-radius:50%;border:3px solid var(--r);object-fit:cover}
+.wl-ai-log .bw{display:flex;gap:6px;align-items:flex-end;align-self:flex-start;max-width:92%}.wl-ai-log .bw img{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:0 0 30px;border:2px solid var(--r)}.wl-ai-log .bw .b{max-width:none}
 .wl-mod>div.wl-ai{max-width:520px;text-align:start}.wl-ai-q{background:#f4f4f4;border-radius:10px;padding:8px 10px;font-weight:700;font-size:14px}
 .wl-ai-log{height:min(46vh,340px);overflow:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;padding:4px}
-.wl-ai-log>div{max-width:86%;padding:9px 12px;border-radius:14px;line-height:1.6;white-space:pre-wrap;font-size:15px}
+.wl-ai-log .u,.wl-ai-log .b{max-width:86%;padding:9px 12px;border-radius:14px;line-height:1.6;white-space:pre-wrap;font-size:15px}
 .wl-ai-log .b{background:#111;color:#fff;align-self:flex-start;border-end-start-radius:4px}.wl-ai-log .u{background:#ffe9ec;color:#111;align-self:flex-end;border-end-end-radius:4px}
 .wl-ai-log .dots{opacity:.7}.wl-ai-chips{display:flex;gap:6px;flex-wrap:wrap}.wl-ai-chips button{border:2px solid var(--r);background:#fff;color:var(--r);border-radius:999px;padding:6px 10px;font-weight:800;cursor:pointer;font-size:13px}
 .wl-ai-f{display:flex;gap:6px;margin-top:8px}.wl-ai-f input{flex:1;min-width:0;border:2px solid #111;border-radius:12px;padding:10px;font:inherit}
@@ -534,7 +538,7 @@
               : `<div class="wl-card-t">${esc(w[1])}</div>`}
             ${solved ? '' : `<div class="wl-card-f"><button data-h="rv">✏️ ${esc(L().reveal)}</button><button data-h="rm">🧽 ${esc(L().remove)}</button></div>`}
           </div>
-          <div style="text-align:center"><button class="wl-ask" data-ask>🤖 ${esc(L().ask)}</button></div>
+          <div style="text-align:center"><button class="wl-ask" data-ask><img src="${MOUNIR}" alt="">${esc(L().ask)}</button></div>
           ${solved ? `<div class="wl-slots">${Array.from(w[6]).map(ch => `<span class="wl-slot ok">${esc(ch)}</span>`).join('')}</div>` : `
           <div class="wl-slots" dir="${dir()}">${play.slots.map((s, p) => `<span class="wl-slot ${s ? (s.lock ? s.lock : 'in') : ''}" data-p="${p}">${s ? esc(s.ch) : ''}</span>`).join('')}</div>
           <div class="wl-msg ${play.msgCls || ''}">${esc(play.msg || '')}</div>
@@ -572,14 +576,15 @@
       const chat = CHATS[ck] = CHATS[ck] || [];
       let busy = false;
       const game = { q: w[1], a: w[0], group: gName(groups()[play.gi].g, S.lang), solved: !!st.sol[i] };
-      const m = modal(`<h3 style="margin:0 0 6px">🤖 ${esc(L().askT)}</h3><div class="wl-ai-q">❓ ${esc(w[1])}</div>
+      const m = modal(`<h3 class="wl-ai-h"><img src="${MOUNIR}" alt="">${esc(L().askT)}</h3><div class="wl-ai-q">❓ ${esc(w[1])}</div>
         <div class="wl-ai-log" id="wl-ai-log"></div><div class="wl-ai-chips">${L().chips.map(c => `<button type="button">${esc(c)}</button>`).join('')}</div>
         <form class="wl-ai-f" id="wl-ai-f"><input id="wl-ai-in" maxlength="400" placeholder="${esc(L().askPh)}" autocomplete="off"><button class="wl-btn">${esc(L().send)}</button></form>
         <div class="row"><button class="wl-btn k" data-x>${esc(L().close)}</button></div>`);
       m.firstElementChild.classList.add('wl-ai');
       const log = m.querySelector('#wl-ai-log');
       const paint = () => {
-        log.innerHTML = `<div class="b">${esc(L().aiHi)}</div>` + chat.map(x => `<div class="${x.role === 'user' ? 'u' : 'b'}">${esc(String(x.content).replace(/\*\*?([^*]+)\*\*?/g, '$1'))}</div>`).join('') + (busy ? `<div class="b dots">${esc(L().thinking)}</div>` : '');
+        const bot = t => `<div class="bw"><img src="${MOUNIR}" alt=""><div class="b">${t}</div></div>`;
+        log.innerHTML = bot(esc(L().aiHi)) + chat.map(x => x.role === 'user' ? `<div class="u">${esc(x.content)}</div>` : bot(esc(String(x.content).replace(/\*\*?([^*]+)\*\*?/g, '$1')))).join('') + (busy ? `<div class="bw"><img src="${MOUNIR}" alt=""><div class="b dots">${esc(L().thinking)}</div></div>` : '');
         log.scrollTop = log.scrollHeight;
       };
       const send = async txt => {
