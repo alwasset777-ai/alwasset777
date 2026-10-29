@@ -1143,3 +1143,19 @@ begin
   return c;
 end $$;
 revoke execute on function public.w777_game_ai_hit(text, int, int) from public, anon, authenticated;
+
+-- ============================================================
+-- الوكيل الذكي ديال كل مشترك: الاسم والصورة اللي ختار (كيبانو غير عندو، فكل الأجهزة ديالو)
+-- ============================================================
+create table if not exists public.w777_agent_prefs (
+  uid uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  name text check (name is null or char_length(name) between 1 and 40),
+  photo text check (photo is null or (photo like 'data:image/%' and length(photo) < 400000)),
+  face jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.w777_agent_prefs enable row level security;
+drop policy if exists w777_agent_prefs_own on public.w777_agent_prefs;
+create policy w777_agent_prefs_own on public.w777_agent_prefs for all to authenticated using (uid = auth.uid()) with check (uid = auth.uid());
+revoke all on public.w777_agent_prefs from anon;
+grant select, insert, update, delete on public.w777_agent_prefs to authenticated;

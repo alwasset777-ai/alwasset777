@@ -1422,3 +1422,7 @@ body.st-open { overflow: hidden; }
 @keyframes ag-sad { 30% { transform: rotate(-8deg) translateY(2px); } 60% { transform: rotate(6deg) translateY(3px); } 100% { transform: translateY(3px); } }
 @keyframes ag-wave { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 50% { transform: rotate(8deg); } 75% { transform: rotate(-4deg); } }
 html.lv-lite .agent-fab.mood-on::after, html.lv-lite .agent-fab.mood-on img { animation: none !important; }
+/* الوكيل حي: تنفس خفيف + نظرة كل شوية (الأيقونة نفسها ما كتبدلش) */
+.agent-fab:not(.mood-on) img { animation: ag-breathe 5s ease-in-out infinite; }
+@keyframes ag-breathe { 0%, 100% { transform: scale(1) rotate(0); } 45% { transform: scale(1.035) rotate(0); } 70% { transform: scale(1.02) rotate(-3deg); } 80% { transform: scale(1.02) rotate(2deg); } }
+html.lv-lite .agent-fab img { animation: none !important; }

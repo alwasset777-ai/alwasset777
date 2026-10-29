@@ -304,6 +304,8 @@
      واجهة: رسائل، نوافذ، تأكيد
      ============================================================ */
   function toast(msg, ms = 2400) {
+    // الوكيل كيتفاعل: فرحان مع النجاح، حزين شوية مع الخطأ
+    try { if (/✓|✅/.test(msg)) agMood('happy', null, 2200); else if (/^تعذر|خطأ|⚠️|❌/.test(msg)) agMood('sad', null, 2400); } catch (e) { /* */ }
     const t = document.createElement('div');
     t.className = 'toast'; t.textContent = msg;
     document.body.appendChild(t);
@@ -2247,7 +2249,7 @@
     if (b('cl-sync')) b('cl-sync').onclick = async () => { await Sy.syncNow(); viewSettings(); };
     if (b('cl-out')) b('cl-out').onclick = async () => {
       if (!(await confirmBox('تسجيل الخروج من المزامنة؟ البيانات تبقى على هذا الجهاز.', 'خروج', false))) return;
-      Sy.signOut(); S.role = null; S.kind = null; S.dir = null; S.agency = null; S.roleFor = null; S.net = null; localStorage.removeItem('w777_role'); viewSettings();
+      Sy.signOut(); S.role = null; S.kind = null; S.dir = null; S.agency = null; S.roleFor = null; S.net = null; localStorage.removeItem('w777_role'); localStorage.removeItem('w777_agent_my'); AG.my = null; agPaintButton(); viewSettings();
     };
     const go = async up => {
       const v = collect($('#cl-form'));
@@ -2321,18 +2323,31 @@
   const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'darija'; } catch (e) { return 'darija'; } };
   const agT = () => AG_T[agLang()] || AG_T.darija;
   function agCfgCached() { try { return JSON.parse(localStorage.getItem('w777_agent_cfg') || 'null'); } catch (e) { return null; } }
+  // الوكيل ديال المشترك (الاسم/الصورة اللي ختار) — محفوظ فالحساب ديالو
+  function agMyCached() { try { const m = JSON.parse(localStorage.getItem('w777_agent_my') || 'null'), Sy = window.W777_SYNC; return m && Sy && Sy.isOn() && m.u === Sy.uid() ? m : null; } catch (e) { return null; } }
   async function agLoadCfg() {
     const Sy = window.W777_SYNC;
     AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد الوسيط 777', photo: null };
+    if (AG.my === undefined) AG.my = agMyCached();
     if (!Sy || !Sy.isOn()) return AG.cfg;
     try {
-      const r = (await (await Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,face,ai_enabled,wa_group,tg_group,fb_group,updated_at')).json())[0];
+      const [rc, rm] = await Promise.all([
+        Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,face,ai_enabled,wa_group,tg_group,fb_group,updated_at').then(x => x.json()),
+        Sy.request('/rest/v1/w777_agent_prefs?select=name,photo,face').then(x => (x.ok ? x.json() : null)).catch(() => null),
+      ]);
+      const r = rc[0];
       if (r) { AG.cfg = r; try { localStorage.setItem('w777_agent_cfg', JSON.stringify(r)); } catch (e) { /* */ } }
+      if (Array.isArray(rm)) {
+        AG.my = rm[0] ? Object.assign({ u: Sy.uid() }, rm[0]) : null;
+        try { if (AG.my) localStorage.setItem('w777_agent_my', JSON.stringify(AG.my)); else localStorage.removeItem('w777_agent_my'); } catch (e) { /* */ }
+      }
     } catch (e) { /* بدون إنترنت */ }
     agPaintButton();
     return AG.cfg;
   }
-  const agPhoto = () => (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=9';
+  const agMine = () => !!(AG.my && (AG.my.photo || AG.my.name));
+  const agName = () => (AG.my && AG.my.name) || (AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777';
+  const agPhoto = () => (AG.my && AG.my.photo) || (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=9';
   function agPaintButton() {
     const b = $('#agent-fab'); if (!b) return;
     b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
@@ -2491,7 +2506,7 @@
   // مكان الفم والعينين (نسبة من الصورة) كيحددو المدير مرة وحدة من الإعدادات.
   const AG_FACE_DEF = { mx: 0.5, my: 0.64, ex1: 0.4, ex2: 0.6, ey: 0.43 };
   function agFace() {
-    const f = Object.assign({}, AG_FACE_DEF, (AG.cfg && AG.cfg.face) || {});
+    const f = Object.assign({}, AG_FACE_DEF, (AG.my && AG.my.photo ? AG.my.face : AG.cfg && AG.cfg.face) || {});
     const d = Math.max(0.08, (f.ex2 - f.ex1));
     f.mw = f.mw || d * 0.85; f.ew = f.ew || d * 0.32;
     return f;
@@ -2615,7 +2630,7 @@
     p.style.setProperty('--ag-photo', `url("${agPhoto().replace(/"/g, '%22')}")`);
     p.innerHTML = `
        <div class="ag-head"><button class="ag-x ag-back" id="ag-back" title="رجوع للصفحة السابقة" aria-label="رجوع">${L.dir === 'rtl' ? '→' : '←'}</button><img id="agent-head-img" src="${agPhoto()}" alt="">
-        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b><small>${agAI() ? 'AI' : '🆓 ' + esc(lx().limited.split(':')[0].split('：')[0])}</small></div>
+        <div class="grow"><b>${esc(agName())}</b><small>${agAI() ? 'AI' : '🆓 ' + esc(lx().limited.split(':')[0].split('：')[0])}</small></div>
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
         ${agTTS() ? `<button class="ag-x" id="ag-voice" title="🔊">${agVoiceOn() ? '🔊' : '🔇'}</button>` : ''}<button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
       <div class="ag-stage" id="ag-stage">
@@ -2793,7 +2808,7 @@
   async function agCall(onText) {
     const Sy = window.W777_SYNC;
     const lastQ = [...AG.history].reverse().find(agIsQ);
-    const ctx = { today: today(), agency: S.role === 'agency' ? myAgencyName() : S.settings.officeName, role: S.role || 'office', page: location.hash || '#/', snap: agSnap() };
+    const ctx = { today: today(), agency: S.role === 'agency' ? myAgencyName() : S.settings.officeName, role: S.role || 'office', page: location.hash || '#/', snap: agSnap(), agent_name: agName() };
     if (lastQ && AG_HOWTO.test(agQText(lastQ))) { const h = agGuide(agQText(lastQ), 2); if (h.length) ctx.help = h; }
     const res = await Sy.request('/functions/v1/w777-agent', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2819,11 +2834,30 @@
     }
     return fin;
   }
+  // ذاكرة الأجوبة (شرح التطبيق فقط) — 3 أيام، 60 جواب على الأكثر
+  const AGC = 'w777_agc1', agCacheKey = q => agLang() + ':' + norm(q).replace(/[^\p{L}\p{N} ]/gu, '').replace(/\s+/g, ' ').trim();
+  const agCacheAll = () => { try { return JSON.parse(localStorage.getItem(AGC) || '{}') || {}; } catch (e) { return {}; } };
+  function agCacheGet(k) { const c = agCacheAll()[k]; return c && Date.now() - c.t < 3 * 864e5 ? c.a : ''; }
+  function agCachePut(k, a) {
+    const all = agCacheAll(); all[k] = { a, t: Date.now() };
+    const keys = Object.keys(all).sort((x, y) => all[y].t - all[x].t);
+    keys.slice(60).forEach(x => delete all[x]);
+    try { localStorage.setItem(AGC, JSON.stringify(all)); } catch (e) { /* */ }
+  }
   async function agSend(text, att) {
     const Sy = window.W777_SYNC, t = agT();
     AG.view.push({ who: 'me', text: att ? `📎 ${att.name}\n${text}` : text });
     if (!agAI()) { agLocal(text); return; }
     if (!Sy || !Sy.isOn()) { AG.view.push({ who: 'bot', text: t.login }); agRender(); return; }
+    // أسئلة «كيفاش نستعمل التطبيق»: الجواب كيتخبى فالتيليفون → نفس السؤال كيتجاوب فالحين
+    const ck = !att && AG_HOWTO.test(text) && agGuide(text, 1).length ? agCacheKey(text) : '';
+    const hit = ck && agCacheGet(ck);
+    if (hit) {
+      AG.history.push({ role: 'user', content: text }, { role: 'assistant', content: [{ type: 'text', text: hit }] });
+      AG.view.push({ who: 'bot', text: hit }); agRender(); agSayStart(); agSayFeed(hit + ' '); agSayFlush(); agMood('happy', null, 2200);
+      return;
+    }
+    let usedTools = false, finalTxt = '';
     const base = AG.history.length; // إلا وقع مشكل كنرجعو المحادثة كيف كانت (باش ما تخسرش)
     AG.history.push({ role: 'user', content: att ? [att.block, { type: 'text', text }] : text });
     AG.busy = true; AG.live = null; agRender();
@@ -2861,7 +2895,8 @@
         } else if (AG.live) { AG.view.splice(AG.view.indexOf(AG.live), 1); }
         agSayFlush();
         if (r.stop_reason === 'refusal' && !txt) AG.view.push({ who: 'bot', text: t.err });
-        if (r.stop_reason !== 'tool_use') break;
+        if (r.stop_reason !== 'tool_use') { finalTxt = txt; break; }
+        usedTools = true;
         // الأدوات كتخدم كاملين فنفس الوقت (أسرع)، والسمية ديالها كتبان بالعربية
         const uses = r.content.filter(x => x.type === 'tool_use');
         uses.forEach(b => AG.view.push({ who: 'tool', text: AG_TOOL_AR[b.name] || '⏳ كنخدم…' }));
@@ -2874,6 +2909,7 @@
         AG.history.push({ role: 'user', content: results });
       }
     } finally { AG.busy = false; AG.live = null; agRender(); agMood('happy', null, 2200); }
+    if (ck && finalTxt && !usedTools && finalTxt.length > 20) agCachePut(ck, finalTxt);
   }
   /* ---------- المساعد المحلي (فابور، بلا AI): أزرار + كلمات مفتاحية فـ 6 لغات ---------- */
   const LX = {
@@ -3251,13 +3287,20 @@
   // بطاقة الإعدادات: الصورة كيبدلها غير المدير
   function agentSettingsCard() {
     if (EMBED) return '';
-    const isAdmin = S.role === 'admin';
+    const isAdmin = S.role === 'admin', Sy0 = window.W777_SYNC, mine = !isAdmin && !!(Sy0 && Sy0.isOn());
     return `<div class="card card-pad" id="agent-card">
       <h3 class="section-title">🤖 الوكيل الذكي (AI)</h3>
       <div style="display:flex;gap:14px;align-items:center">
         <img src="${agPhoto()}" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--gold)">
-        <div class="grow"><b>${esc((AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777')}</b>
-          <div class="muted" style="font-size:13px">الزر ديالو لتحت على اليسار، كيبان لجميع الوكالات.</div></div></div>
+        <div class="grow"><b>${esc(agName())}</b>
+          <div class="muted" style="font-size:13px">الزر ديالو لتحت على اليسار${agMine() ? ' — هادا الوكيل ديالك (ختاريتيه نتا)' : ''}.</div></div></div>
+      ${mine ? `<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:12px"><b>🎨 الوكيل ديالي</b>
+        <div class="btn-row" style="margin-top:8px">
+          <label class="btn gold sm">${ic('camera', 15)} بدّل الصورة<input type="file" id="ag-my-photo" accept="image/*" hidden></label>
+          <button class="btn sm" id="ag-my-name">${ic('edit', 15)} بدّل الاسم</button>
+          ${AG.my && AG.my.photo ? `<button class="btn sm" id="ag-my-face">🎯 مكان الفم والعينين${AG.my.face ? ' ✓' : ''}</button>` : ''}
+          ${agMine() ? '<button class="btn sm" id="ag-my-reset">↺ رجّع الوكيل الأصلي</button>' : ''}</div>
+        <p class="muted" style="font-size:12.5px;margin-bottom:0">الصورة والاسم اللي ختاريتي كيبانو غير عندك (فكل الأجهزة ديالك)، وما كيبدلو والو عند باقي المشتركين.</p></div>` : ''}
       <label style="display:flex;gap:10px;align-items:center;margin-top:12px"><b>🌐 لغة المساعد</b>
         <select id="ag-lang-set" style="flex:1;max-width:220px">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === agLang() ? 'selected' : ''}>${x.l}</option>`).join('')}</select></label>
       ${isAdmin ? `<div class="btn-row" style="margin-top:12px">
@@ -3304,6 +3347,34 @@
   }
   function bindAgentCard() {
     const Sy = window.W777_SYNC;
+    // الوكيل ديال المشترك: كيتسجل فالحساب ديالو (w777_agent_prefs)، ما كيأثرش على الآخرين
+    const saveMy = async patch => {
+      const r = await Sy.request('/rest/v1/w777_agent_prefs', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(Object.assign({ uid: Sy.uid() }, patch, { updated_at: new Date().toISOString() })) });
+      if (!r.ok) throw new Error((await r.text()).slice(0, 120));
+      await agLoadCfg(); toast('تم ✓'); viewSettings();
+    };
+    const mp = $('#ag-my-photo');
+    if (mp) mp.onchange = async e => {
+      const file = e.target.files[0]; if (!file) return;
+      try {
+        const out = await compressImage(file, 512, 0.85);
+        const blob = out.blob || out;
+        const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+        await saveMy({ photo: dataUrl, face: null });
+        agFaceCalib(saveMy);
+      } catch (er) { toast('تعذر: ' + er.message, 4000); }
+    };
+    const mn = $('#ag-my-name');
+    if (mn) mn.onclick = () => modal(`<h3>سمية الوكيل ديالك</h3><form id="agmn" class="form-grid">${fInput('name', 'الاسم (مثلا: سارة، يوسف…)', agName())}</form><div class="btn-row" style="margin-top:12px"><button class="btn gold" id="agmn-ok">حفظ</button></div>`, (box, close) => {
+      $('#agmn-ok', box).onclick = async () => { const v = String(collect($('#agmn', box)).name || '').trim().slice(0, 40); if (!v) return; close(); try { await saveMy({ name: v }); } catch (er) { toast('تعذر: ' + er.message, 4000); } };
+    });
+    const mf = $('#ag-my-face'); if (mf) mf.onclick = () => agFaceCalib(saveMy);
+    const mr = $('#ag-my-reset');
+    if (mr) mr.onclick = async () => {
+      if (!(await confirmBox('نرجعو الوكيل الأصلي (الصورة والاسم ديال مكتب الوسيط 777)؟', 'رجّع', false))) return;
+      try { await Sy.request('/rest/v1/w777_agent_prefs?uid=eq.' + encodeURIComponent(Sy.uid()), { method: 'DELETE' }); AG.my = null; try { localStorage.removeItem('w777_agent_my'); } catch (er) { /* */ } await agLoadCfg(); toast('رجع الوكيل الأصلي ✓'); viewSettings(); }
+      catch (er) { toast('تعذر: ' + er.message, 4000); }
+    };
     const save = async patch => {
       await Sy.request('/rest/v1/w777_agent_config?id=eq.1', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(patch, { updated_at: new Date().toISOString() })) });
       await agLoadCfg(); toast('تم ✓'); viewSettings();
@@ -7161,6 +7232,8 @@
       onFinish: on ? r => rpc('w777_game_submit', { p: r.points, n: r.words }) : null,
       loadBoard: on ? () => rpc('w777_game_top') : null,
       // منير فاللعبة: المشترك كيتحسب فالحصة ديالو؛ بلا حساب كيستعمل المدخل العمومي (بحد يومي)
+      agentName: agMine() && AG.my.name ? AG.my.name : null,
+      agentPhoto: AG.my && AG.my.photo ? AG.my.photo : null,
       askAI: on ? body => Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) : null,
     });
   }
