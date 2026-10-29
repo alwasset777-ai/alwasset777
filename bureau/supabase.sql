@@ -1200,3 +1200,54 @@ do $$ declare t record; begin
 end $$;
 drop policy if exists w777_mfa on storage.objects;
 create policy w777_mfa on storage.objects as restrictive for all to authenticated using ((select public.w777_aal_ok())) with check ((select public.w777_aal_ok()));
+
+-- ============================================================
+-- 2026-10-29 — ❤️ الإعجابات و💬 التعليقات على الستوري (غير للأعضاء المفعّلين)
+-- ============================================================
+create table if not exists public.w777_story_likes (
+  story_id uuid not null references public.w777_stories(id) on delete cascade,
+  uid uuid not null default auth.uid(),
+  created_at timestamptz not null default now(),
+  primary key (story_id, uid)
+);
+create table if not exists public.w777_story_comments (
+  id uuid primary key default gen_random_uuid(),
+  story_id uuid not null references public.w777_stories(id) on delete cascade,
+  uid uuid not null default auth.uid(),
+  body text not null check (char_length(btrim(body)) between 1 and 300),
+  created_at timestamptz not null default now()
+);
+create index if not exists w777_story_comments_story on public.w777_story_comments (story_id, created_at);
+alter table public.w777_story_likes enable row level security;
+alter table public.w777_story_comments enable row level security;
+revoke all on public.w777_story_likes, public.w777_story_comments from anon;
+grant select, insert, delete on public.w777_story_likes, public.w777_story_comments to authenticated;
+drop policy if exists w777_sl_sel on public.w777_story_likes;
+create policy w777_sl_sel on public.w777_story_likes for select to authenticated using ((select w777_can_use()));
+drop policy if exists w777_sl_ins on public.w777_story_likes;
+create policy w777_sl_ins on public.w777_story_likes for insert to authenticated with check (uid = (select auth.uid()) and (select w777_can_use()) and exists (select 1 from public.w777_stories s where s.id = story_id and s.expires_at > now()));
+drop policy if exists w777_sl_del on public.w777_story_likes;
+create policy w777_sl_del on public.w777_story_likes for delete to authenticated using (uid = (select auth.uid()));
+drop policy if exists w777_sc_sel on public.w777_story_comments;
+create policy w777_sc_sel on public.w777_story_comments for select to authenticated using ((select w777_can_use()));
+drop policy if exists w777_sc_ins on public.w777_story_comments;
+create policy w777_sc_ins on public.w777_story_comments for insert to authenticated with check (uid = (select auth.uid()) and (select w777_can_use()) and exists (select 1 from public.w777_stories s where s.id = story_id and s.expires_at > now()));
+-- كيحذف التعليق: مولاه، مول الستوري، ولا المدير
+drop policy if exists w777_sc_del on public.w777_story_comments;
+create policy w777_sc_del on public.w777_story_comments for delete to authenticated using (uid = (select auth.uid()) or (select w777_is_admin()) or exists (select 1 from public.w777_stories s where s.id = story_id and s.owner = (select auth.uid())));
+-- الوقت من الخادم + حد 20 تعليق لكل عضو فكل ستوري (ضد الإزعاج)
+create or replace function public.w777_story_comment_guard() returns trigger language plpgsql set search_path = public as $$
+begin
+  if (select count(*) from public.w777_story_comments where story_id = new.story_id and uid = new.uid) >= 20 then
+    raise exception 'وصلتي للحد ديال التعليقات على هاد الستوري';
+  end if;
+  new.created_at := now(); new.body := btrim(new.body);
+  return new;
+end $$;
+revoke execute on function public.w777_story_comment_guard() from public, anon, authenticated;
+drop trigger if exists w777_story_comment_guard on public.w777_story_comments;
+create trigger w777_story_comment_guard before insert on public.w777_story_comments for each row execute function public.w777_story_comment_guard();
+drop policy if exists w777_mfa on public.w777_story_likes;
+create policy w777_mfa on public.w777_story_likes as restrictive for all to authenticated using ((select public.w777_aal_ok())) with check ((select public.w777_aal_ok()));
+drop policy if exists w777_mfa on public.w777_story_comments;
+create policy w777_mfa on public.w777_story_comments as restrictive for all to authenticated using ((select public.w777_aal_ok())) with check ((select public.w777_aal_ok()));

@@ -587,24 +587,27 @@ a.chip { text-decoration: none; }
 .ag-body { position: relative; background:
   linear-gradient(color-mix(in srgb, var(--bg) 88%, transparent), color-mix(in srgb, var(--bg) 93%, transparent)),
   var(--ag-photo) center 20% / cover no-repeat; }
-.ag-stage { --nod: 0deg; position: relative; flex: none; height: 196px; overflow: hidden; display: grid; place-items: center; perspective: 700px; cursor: pointer;
+.ag-stage { --nod: 0deg; --sway: 0deg; position: relative; flex: none; height: 196px; overflow: hidden; display: grid; place-items: center; perspective: 700px; cursor: pointer;
   background: #0b0b0b; border-bottom: 1px solid #000; transition: height .35s ease; touch-action: pan-y; }
 .ag-stage::before { content: ''; position: absolute; inset: -20px; background: var(--ag-photo) center 25% / cover no-repeat; filter: blur(18px) brightness(.45) saturate(1.2); transform: scale(1.1); }
 .ag-stage::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 120%, rgba(212,160,23,.35), transparent 60%); pointer-events: none; }
 .ag-3d { --rx: 0deg; --ry: 0deg; position: relative; z-index: 1; width: 156px; height: 156px; border-radius: 50%;
-  transform-style: preserve-3d; transform: rotateX(calc(var(--rx) + var(--nod))) rotateY(var(--ry)) translateZ(0);
-  transition: transform .25s ease-out, width .35s, height .35s;
+  transform-style: preserve-3d; transform: rotateX(calc(var(--rx) + var(--nod))) rotateY(var(--ry)) rotateZ(var(--sway)) translateZ(0);
+  transition: transform .12s ease-out, width .35s, height .35s;
   box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 0 3px var(--gold), 0 0 0 7px rgba(212,160,23,.25);
   animation: agbreath 4.5s ease-in-out infinite; }
 /* الوجه الحي: صورة أساسية + فم (تجويف) + فك سفلي كيتحرك + جفون للرمشة */
-.ag-face { --open: 0; --blink: 0; --mx: 50%; --my: 64%; --mw: 17%; --ex1: 40%; --ex2: 60%; --ey: 43%; --ew: 6.4%; --skin: #d9a58a;
+.ag-face { --open: 0; --wide: 0; --blink: 0; --mx: 50%; --my: 64%; --mw: 17%; --ex1: 40%; --ex2: 60%; --ey: 43%; --ew: 6.4%; --skin: #d9a58a;
   position: absolute; inset: 0; border-radius: 50%; overflow: hidden; background: #fff; transform: translateZ(18px) scale(1.02); }
 .ag-face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 0; }
-.ag-mouth { position: absolute; left: calc(var(--mx) - var(--mw) * .4); width: calc(var(--mw) * .8); top: calc(var(--my) - var(--mw) * .03);
-  height: calc(var(--mw) * .06 + var(--open) * var(--mw) * .34); border-radius: 30% 30% 50% 50% / 25% 25% 75% 75%;
-  background: linear-gradient(#f3efe6 0 18%, transparent 30%), radial-gradient(ellipse at 50% 40%, #6b1f22, #2a0707 70%);
-  opacity: min(1, calc(var(--open) * 6)); }
-.ag-jaw { transform: translateY(calc(var(--open) * var(--mw) * .3));
+/* الفم: كيتحل للتحت (بحال الفك) وكيضيق/كيتوسع حسب الحرف، بحواف ناعمة */
+.ag-mouth { position: absolute; --mwd: calc(var(--mw) * (.74 + var(--wide) * .1 - var(--open) * .1));
+  left: calc(var(--mx) - var(--mwd) / 2); width: var(--mwd); top: calc(var(--my) - var(--mw) * .02);
+  height: calc(var(--mw) * .03 + var(--open) * var(--mw) * .3); border-radius: 42% 42% 50% 50% / 30% 30% 70% 70%;
+  background: linear-gradient(#f1ece2 0 14%, transparent 26%), radial-gradient(ellipse at 50% 35%, #5e1a1d, #220505 72%);
+  box-shadow: 0 0 0 .5px rgba(80,30,25,.5), 0 1px 2px rgba(0,0,0,.25) inset;
+  opacity: min(1, calc(var(--open) * 3.5)); }
+.ag-jaw { transform: translateY(calc(var(--open) * var(--mw) * .24));
   -webkit-mask-image: radial-gradient(ellipse calc(var(--mw) * 1.35) calc(var(--mw) * 1.15) at var(--mx) calc(var(--my) + var(--mw) * .62), #000 52%, transparent 74%), linear-gradient(to bottom, transparent calc(var(--my) - .2%), #000 calc(var(--my) + 1.2%));
   -webkit-mask-composite: source-in;
   mask-image: radial-gradient(ellipse calc(var(--mw) * 1.35) calc(var(--mw) * 1.15) at var(--mx) calc(var(--my) + var(--mw) * .62), #000 52%, transparent 74%), linear-gradient(to bottom, transparent calc(var(--my) - .2%), #000 calc(var(--my) + 1.2%));
@@ -624,7 +627,7 @@ a.chip { text-decoration: none; }
 .ag-stage.talk .ag-wave span:nth-child(2) { animation-delay: .1s; } .ag-stage.talk .ag-wave span:nth-child(3) { animation-delay: .25s; }
 .ag-stage.talk .ag-wave span:nth-child(4) { animation-delay: .05s; } .ag-stage.talk .ag-wave span:nth-child(5) { animation-delay: .18s; }
 @keyframes agwave { 0%, 100% { height: 4px; } 50% { height: 18px; } }
-.ag-stage.talk .ag-3d { animation: agtalk .9s ease-in-out infinite; box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 0 3px var(--gold), 0 0 22px 8px rgba(212,160,23,.55); }
+.ag-stage.talk .ag-3d { box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 0 3px var(--gold), 0 0 22px 8px rgba(212,160,23,.55); }
 @keyframes agtalk { 0%, 100% { translate: 0 0; rotate: 0deg; } 30% { translate: 0 -2px; rotate: -1.2deg; } 70% { translate: 0 1px; rotate: 1deg; } }
 @keyframes agbeat { 0% { transform: translateZ(18px) scale(1.02); } 45% { transform: translateZ(24px) scale(1.05, 1.035); } 100% { transform: translateZ(18px) scale(1.02); } }
 .ag-stage.mini { height: 72px; } .ag-stage.mini .ag-3d { width: 56px; height: 56px; } .ag-stage.mini .ag-wave { bottom: 4px; }
@@ -1335,7 +1338,7 @@ body.st-open { overflow: hidden; }
 .st-cap { position: absolute; bottom: 24px; left: 16px; right: 16px; margin: 0; padding: 10px 14px; border-radius: 12px; background: rgba(0,0,0,.55); color: #fff; font-size: 16px; font-weight: 700; text-align: center; }
 .st-spin { position: absolute; width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.25); border-top-color: #fff; animation: st-rot .8s linear infinite; }
 @keyframes st-rot { to { transform: rotate(360deg); } }
-.st-nav { position: absolute; top: 80px; bottom: 0; width: 35%; background: none; border: 0; z-index: 2; cursor: pointer; }
+.st-nav { position: absolute; top: 80px; bottom: 70px; width: 35%; background: none; border: 0; z-index: 2; cursor: pointer; }
 .st-prev { right: 0; } .st-next { left: 0; }
 .st-seg { display: flex; gap: 6px; margin-bottom: 10px; }
 .st-seg button { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-weight: 700; cursor: pointer; color: var(--ink); }
@@ -1415,3 +1418,147 @@ html.lv-lite .agent-fab img { animation: none !important; }
 /* الوضع الخفيف وتقليل الحركة: الشعار والأيقونات ما كيدوروش (البطارية) */
 html.lv-lite .coin, html.lv-lite .hub-tile .hi { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .coin, .hub-tile .hi { animation: none !important; } }
+/* ❤️ 💬 الإعجابات والتعليقات على الستوري */
+.st-foot { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 10px 10px calc(var(--safe-b, 0px) + 12px); background: linear-gradient(transparent, rgba(0,0,0,.65)); }
+.st-say { flex: 1; display: flex; align-items: center; border: 1.5px solid rgba(255,255,255,.65); border-radius: 999px; padding: 0 6px 0 14px; background: rgba(0,0,0,.25); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.st-say input { flex: 1; min-width: 0; background: none; border: 0; color: #fff; font: inherit; font-size: 15px; padding: 10px 0; outline: none; }
+.st-say input::placeholder { color: rgba(255,255,255,.75); }
+.st-say button { background: none; border: 0; color: #fff; font-size: 18px; cursor: pointer; padding: 6px; }
+.st-act { display: flex; flex-direction: column; align-items: center; gap: 1px; background: none; border: 0; color: #fff; cursor: pointer; font-size: 26px; line-height: 1; min-width: 42px; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
+.st-act b { font-size: 12px; font-weight: 800; min-height: 14px; }
+.st-act .st-heart { font-style: normal; transition: transform .2s cubic-bezier(.3,1.8,.5,1); }
+.st-act.on .st-heart { color: #ff2d55; transform: scale(1.18); }
+.st-pop { position: absolute; z-index: 5; left: 50%; top: 45%; font-style: normal; font-size: 110px; color: #ff2d55; pointer-events: none; opacity: 0; transform: translate(-50%, -50%) scale(.2); text-shadow: 0 8px 30px rgba(255,45,85,.6); }
+.st-pop.go { animation: st-pop .9s cubic-bezier(.2,1.6,.4,1) forwards; }
+@keyframes st-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(.95); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(1); } }
+.st-cms { position: absolute; z-index: 6; left: 0; right: 0; bottom: 70px; max-height: 55%; overflow: auto; background: rgba(18,18,18,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 18px 18px 0 0; color: #fff; padding: 6px 14px 12px; animation: st-up .22s ease; }
+@keyframes st-up { from { transform: translateY(30px); opacity: 0; } }
+.st-cms-h { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: inherit; padding: 6px 0; }
+.st-cm { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+.st-cm b { font-size: 13px; color: var(--gold); } .st-cm span { font-size: 14.5px; overflow-wrap: anywhere; } .st-cm small { font-size: 11px; opacity: .65; } .st-cm a { color: #ff8a8a; }
+.st-cm-0 { padding: 14px 0; text-align: center; }
+/* 🏦 التمويل العقاري */
+.hub-tile .hi .emo.fin-rot { background: #fff; overflow: hidden; }
+.fin-rot img { position: absolute !important; inset: 18% !important; width: 64% !important; height: 64% !important; object-fit: contain !important; border-radius: 0 !important; opacity: 0;
+  animation: fin-cycle calc(var(--n) * 1.4s) infinite; animation-delay: calc(var(--i) * 1.4s); }
+.fin-rot .fin-777 { position: absolute; bottom: 6%; inset-inline-end: 10%; width: 26%; height: 26%; border-radius: 50%; background: #c8102e; color: #fff; font-size: 13px; display: grid; place-items: center; font-weight: 900; z-index: 3; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+@keyframes fin-cycle { 0% { opacity: 0; transform: scale(.85) rotateY(70deg); } 3% { opacity: 1; transform: none; } 10% { opacity: 1; transform: none; } 14% { opacity: 0; transform: scale(.9) rotateY(-70deg); } 100% { opacity: 0; } }
+html.lv-lite .fin-rot img { animation: none; } html.lv-lite .fin-rot img:first-child { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .fin-rot img { animation: none; } .fin-rot img:first-child { opacity: 1; } }
+.fin-hero { display: flex; align-items: center; gap: 18px; padding: 20px 22px; overflow: hidden; background: radial-gradient(ellipse at 15% 30%, rgba(200,16,46,.08), transparent 55%), var(--surface); }
+.fin-hero-t { flex: 1; } .fin-hero h1 { margin: 0 0 6px; font-size: 24px; } .fin-hero p { margin: 0 0 12px; color: var(--muted); }
+.fin-orbit { position: relative; width: 190px; height: 190px; flex: none; animation: fin-spin 40s linear infinite; }
+.fin-orbit .fo-c { position: absolute; inset: 34%; width: 32%; height: 32%; border-radius: 50%; box-shadow: 0 6px 18px rgba(0,0,0,.18); animation: fin-spin 40s linear infinite reverse; }
+.fin-orbit span { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; transform: rotate(var(--a)) translateY(-78px) rotate(calc(-1 * var(--a))); }
+.fin-orbit span img { width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 12px; padding: 4px; box-shadow: 0 3px 10px rgba(0,0,0,.14); animation: fin-spin 40s linear infinite reverse; }
+@keyframes fin-spin { to { rotate: 360deg; } }
+html.lv-lite .fin-orbit, html.lv-lite .fin-orbit * { animation: none !important; }
+@media (max-width: 640px) { .fin-hero { flex-direction: column-reverse; text-align: center; } .fin-hero .btn-row { justify-content: center; } .fin-orbit { width: 160px; height: 160px; } .fin-orbit span { transform: rotate(var(--a)) translateY(-64px) rotate(calc(-1 * var(--a))); width: 34px; height: 34px; margin: -17px; } }
+.fin-tools { display: flex; gap: 10px; align-items: center; margin: 14px 0 8px; flex-wrap: wrap; }
+.fin-tools input[type=search] { flex: 1; min-width: 200px; }
+.fin-mre { display: flex; align-items: center; gap: 6px; font-weight: 700; white-space: nowrap; }
+.fin-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; scrollbar-width: none; }
+.fin-chips button { flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 12px; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; }
+.fin-chips button small { opacity: .6; } .fin-chips button.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.fin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.fin-card { display: flex; flex-direction: column; gap: 4px; padding: 14px; text-decoration: none; color: inherit; transition: transform .2s, box-shadow .2s; }
+.fin-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.fc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.fc-n { font-size: 15.5px; line-height: 1.35; } .fc-f { color: var(--muted); font-size: 12px; text-align: start; }
+.fc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.fc-tags span { font-size: 11.5px; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
+.fin-pair { display: inline-flex; align-items: center; gap: 5px; background: #fff; border-radius: 14px; padding: 5px 8px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 3px 10px rgba(0,0,0,.08); }
+.fin-pair > img { width: 30px; height: 30px; border-radius: 50%; }
+.fin-pair i { font-style: normal; color: #c8102e; font-weight: 300; }
+.fin-pair .fp-i { height: 30px; min-width: 30px; max-width: 86px; display: grid; place-items: center; }
+.fin-pair .fp-i img { max-height: 30px; max-width: 86px; object-fit: contain; }
+.fin-pair .fp-i b { width: 30px; height: 30px; border-radius: 8px; background: #111; color: #fff; display: grid; place-items: center; }
+.fin-pair.big > img { width: 52px; height: 52px; } .fin-pair.big .fp-i, .fin-pair.big .fp-i img { height: 52px; max-height: 52px; max-width: 150px; } .fin-pair.big { padding: 8px 12px; border-radius: 18px; }
+.fin-one .fo-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.fo-group { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--muted); } .fo-group img { height: 22px; max-width: 70px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
+.fo-ph { display: grid; gap: 6px; margin-bottom: 12px; }
+.fo-call { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); color: inherit; text-decoration: none; }
+.fo-call b { color: #c8102e; white-space: nowrap; } .fo-call em { font-style: normal; font-size: 11px; color: #8a5a00; background: #fff4d6; border-radius: 6px; padding: 0 5px; }
+.fo-wait { margin-top: 14px; padding: 12px; border-radius: 12px; border: 1px dashed #c8102e; font-size: 13.5px; }
+.fin-steps { list-style: none; margin: 0 0 14px; padding: 0; position: relative; }
+.fin-steps::before { content: ''; position: absolute; top: 18px; bottom: 18px; inset-inline-start: 15px; width: 2px; background: linear-gradient(#c8102e, #111); opacity: .35; }
+.fin-steps li { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.fs-n { width: 32px; height: 32px; flex: none; border-radius: 50%; background: #111; color: #fff; display: grid; place-items: center; font-weight: 900; z-index: 1; box-shadow: 0 0 0 4px var(--surface); }
+.fin-steps li:last-child .fs-n { background: #c8102e; }
+.fin-steps li div { display: flex; flex-direction: column; } .fin-steps li small { color: var(--muted); }
+.fin-disc { font-size: 12.5px; margin-top: 12px; }
+
+/* ============================================================
+   ✦ PREMIUM 3D — طبقة العمق (ضوء من الفوق، ظلال متعددة، حواف لامعة، ميلان 3D)
+   كلشي كيتطفى فالوضع الخفيف (lv-lite) وملي المستعمل كيطلب حركة أقل
+   ============================================================ */
+:root {
+  --e1: 0 1px 1px rgba(17,17,17,.04), 0 2px 4px rgba(17,17,17,.04), 0 6px 14px -4px rgba(17,17,17,.08);
+  --e2: 0 1px 1px rgba(17,17,17,.04), 0 4px 8px rgba(17,17,17,.05), 0 14px 28px -10px rgba(58,11,20,.18), 0 30px 60px -30px rgba(17,17,17,.25);
+  --e3: 0 2px 3px rgba(17,17,17,.05), 0 10px 20px rgba(17,17,17,.07), 0 28px 50px -16px rgba(58,11,20,.28);
+  --rim: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(17,17,17,.04);
+}
+:root[data-theme="dark"] { --e1: 0 1px 2px rgba(0,0,0,.5), 0 8px 18px -6px rgba(0,0,0,.6); --e2: 0 2px 4px rgba(0,0,0,.5), 0 18px 36px -12px rgba(0,0,0,.75); --e3: 0 4px 8px rgba(0,0,0,.5), 0 30px 60px -18px rgba(0,0,0,.85); --rim: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(0,0,0,.4); }
+/* البطاقات: سطح مرفوع بحافة ضوء فوقانية */
+.card { box-shadow: var(--rim), var(--e1); border-color: rgba(17,17,17,.07); background-image: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 38%); }
+:root[data-theme="dark"] .card { border-color: rgba(255,255,255,.06); background-image: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }
+/* ميلان 3D مع الفأرة (JS كيعطي --tx/--ty/--gx/--gy) */
+.t3d { transform: perspective(900px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)) translateZ(0); transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .3s; will-change: transform; }
+.t3d.t3d-on { transition: transform .08s linear, box-shadow .3s; box-shadow: var(--rim), var(--e3); transform: perspective(900px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)) translateY(-4px) !important; translate: none !important; }
+.t3d::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 0%), rgba(255,255,255,.38), transparent 45%); mix-blend-mode: soft-light; }
+.t3d.t3d-on::before { opacity: 1; }
+.t3d { position: relative; }
+/* الأزرار: ملموسة — حافة سفلية، كتغطس ملي كتضغط */
+.btn { box-shadow: var(--rim), 0 1px 0 rgba(17,17,17,.06), 0 3px 8px -3px rgba(17,17,17,.12); transition: transform .12s, box-shadow .12s, border-color .2s, filter .2s; }
+.btn:active { transform: translateY(1.5px) scale(.985); box-shadow: inset 0 2px 4px rgba(17,17,17,.12); }
+.btn.gold, .btn.primary { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18), 0 6px 16px -6px rgba(200,16,46,.55), 0 2px 4px rgba(17,17,17,.12); text-shadow: 0 1px 0 rgba(0,0,0,.18); }
+.btn.primary { box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -2px 0 rgba(0,0,0,.4), 0 8px 18px -8px rgba(17,17,17,.6); }
+.btn.gold:hover, .btn.primary:hover { filter: brightness(1.06) saturate(1.05); }
+/* حقول الكتابة: محفورة شوية */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea { box-shadow: inset 0 1.5px 3px rgba(17,17,17,.06); transition: box-shadow .2s, border-color .2s; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { box-shadow: inset 0 1.5px 3px rgba(17,17,17,.04), 0 0 0 4px rgba(200,16,46,.14); border-color: var(--gold) !important; outline: none; }
+/* أرقام الحصيلة: بارزة 3D */
+.stat .v { text-shadow: none; filter: drop-shadow(0 2px 0 rgba(255,255,255,.9)) drop-shadow(0 4px 6px rgba(200,16,46,.18)); }
+.stat .ic { box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 6px 12px -4px rgba(200,16,46,.35); transform: translateZ(30px); }
+/* الشريط السفلي (التيليفون): كبسولة عائمة زجاجية، والزر النشيط مرفوع */
+@media (max-width: 959px) {
+  .bottomnav { inset-inline: 10px; bottom: calc(8px + var(--safe-b)); padding: 6px 4px; border-radius: 22px; border: 1px solid rgba(255,255,255,.6);
+    background: rgba(255,255,255,.78); -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6); box-shadow: var(--rim), 0 18px 40px -14px rgba(17,17,17,.45); }
+  :root[data-theme="dark"] .bottomnav { background: rgba(22,22,22,.78); border-color: rgba(255,255,255,.08); }
+  .bottomnav a { transition: transform .25s cubic-bezier(.3,1.6,.5,1), color .2s; }
+  .bottomnav a.active { transform: translateY(-3px); background: linear-gradient(180deg, rgba(200,16,46,.12), rgba(200,16,46,.03)); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 6px 14px -8px rgba(200,16,46,.6); }
+  .bottomnav a.active svg { filter: drop-shadow(0 3px 4px rgba(200,16,46,.45)); }
+  main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 110px); }
+  .fab { bottom: calc(var(--nav-h) + var(--safe-b) + 24px); }
+}
+/* القائمة الجانبية (الحاسوب): العنصر النشيط مرفوع بخط أحمر */
+.sidenav a { transition: background .2s, transform .2s, box-shadow .2s; }
+.sidenav a:hover { transform: translateX(-3px); }
+.sidenav a.active { box-shadow: var(--rim), var(--e1); position: relative; }
+.sidenav a.active::after { content: ''; position: absolute; inset-inline-start: 0; top: 22%; bottom: 22%; width: 3px; border-radius: 3px; background: linear-gradient(var(--gold-2), var(--gold)); }
+/* دخول الصفحة: كتطلع من العمق */
+.pg-in { animation: pg-in .42s cubic-bezier(.2,.8,.2,1) both; transform-origin: 50% 0; }
+@keyframes pg-in { from { opacity: 0; transform: perspective(1200px) rotateX(5deg) translateY(16px) scale(.985); } }
+/* النوافذ: كتجي من العمق + خلفية ضبابية */
+.modal-bg { -webkit-backdrop-filter: blur(6px) saturate(1.2); backdrop-filter: blur(6px) saturate(1.2); }
+.modal { box-shadow: var(--rim), 0 -10px 60px -10px rgba(0,0,0,.45); animation: md-in .38s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes md-in { from { opacity: .4; transform: perspective(1000px) translateY(30px) rotateX(8deg) scale(.97); } }
+/* الحالات الفارغة: أيقونة كتطفو */
+.empty .ic, .empty-ic { animation: fl-bob 3.2s ease-in-out infinite; filter: drop-shadow(0 12px 10px rgba(17,17,17,.18)); }
+@keyframes fl-bob { 50% { transform: translateY(-7px) rotate(-3deg); } }
+/* عناوين الصفحات: عمق خفيف */
+.page-head h1 { letter-spacing: -.01em; text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 6px 18px rgba(200,16,46,.12); }
+:root[data-theme="dark"] .page-head h1 { text-shadow: 0 6px 18px rgba(255,77,94,.18); }
+/* الوضع الخفيف وتقليل الحركة: بلا ميلان ولا دخول متحرك */
+html.lv-lite .t3d, html.lv-lite .t3d.t3d-on { transform: none !important; } html.lv-lite .t3d::before { display: none; }
+html.lv-lite .pg-in, html.lv-lite .modal, html.lv-lite .empty .ic, html.lv-lite .empty-ic { animation: none !important; }
+html.lv-lite .bottomnav { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); }
+@media (prefers-reduced-motion: reduce) { .t3d { transform: none !important; } .pg-in, .modal, .empty .ic, .empty-ic { animation: none !important; } }
+/* ✦ لمسات 3D إضافية: الضغط على التيليفون، الأرقام المحفورة، الشارات */
+@media (hover: none) { a.card:active, .prop-card:active, .dir-card:active, .fin-card:active { transform: perspective(800px) translateZ(-14px) scale(.985); transition: transform .12s; } }
+.section-title .num { box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 0 rgba(0,0,0,.35), 0 4px 10px -4px rgba(17,17,17,.5); }
+.badge { box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
+.hub-tile .hi { filter: drop-shadow(0 10px 12px rgba(17,17,17,.18)); }
+.fin-card, .prop-card, .dir-card { transform-style: preserve-3d; }
+.fin-card .fin-pair, .prop-card .badge { transform: translateZ(18px); }
