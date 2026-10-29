@@ -1400,3 +1400,25 @@ body.st-open { overflow: hidden; }
 .ag-ct-btns button { border: 1px solid var(--gold); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .ag-attc { margin: 0 10px; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-size: 13px; display: flex; align-items: center; gap: 8px; }
 .ag-attc button { margin-inline-start: auto; border: 0; background: none; cursor: pointer; color: var(--red); font-weight: 800; }
+
+/* ---------- منير: الحالات داخل الأيقونة (كتلعب شوية وكترجع الأيقونة كيف كانت) ---------- */
+.agent-fab.mood-on::after { content: attr(data-fx); position: absolute; top: -14px; inset-inline-start: -10px; font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); animation: ag-fx-pop 3.4s ease forwards; pointer-events: none; }
+.agent-fab .ag-mv { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.agent-fab.mood-on[data-mood="think"] img { animation: ag-think 1.6s ease-in-out infinite; }
+.agent-fab.mood-on[data-mood="think"]::after { animation: ag-fx-float 1.6s ease-in-out infinite; }
+.agent-fab.mood-on[data-mood="teach"] img { animation: ag-nod 1.1s ease-in-out 3; }
+.agent-fab.mood-on[data-mood="teach"]::after { top: -20px; inset-inline-start: 14px; font-size: 30px; animation: ag-fx-hat 3.4s ease forwards; }
+.agent-fab.mood-on[data-mood="prize"] img { animation: ag-jump .8s ease 4; }
+.agent-fab.mood-on[data-mood="prize"] { box-shadow: 0 0 0 4px rgba(255,213,74,.6), 0 10px 30px rgba(0,0,0,.35); }
+.agent-fab.mood-on[data-mood="happy"] img { animation: ag-jump .7s ease 2; }
+.agent-fab.mood-on[data-mood="sad"] img { animation: ag-sad 1.3s ease forwards; filter: saturate(.6); }
+.agent-fab.mood-on[data-mood="hi"] img, .agent-fab.mood-on[data-mood="page"] img { animation: ag-wave 1s ease 2; }
+@keyframes ag-fx-pop { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 12% { transform: scale(1.3); opacity: 1; } 22%, 85% { transform: scale(1); opacity: 1; } 100% { transform: translateY(-8px) scale(.8); opacity: 0; } }
+@keyframes ag-fx-float { 0%, 100% { transform: translateY(0); opacity: .9; } 50% { transform: translateY(-6px); opacity: 1; } }
+@keyframes ag-fx-hat { 0% { transform: translateY(-20px); opacity: 0; } 15%, 85% { transform: translateY(0) rotate(-12deg); opacity: 1; } 100% { opacity: 0; } }
+@keyframes ag-think { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-8deg) translateY(-1px); } 60% { transform: rotate(-6deg); } }
+@keyframes ag-nod { 0%, 100% { transform: rotate(0); } 40% { transform: rotate(6deg) translateY(2px); } }
+@keyframes ag-jump { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-10px) scale(1.08); } }
+@keyframes ag-sad { 30% { transform: rotate(-8deg) translateY(2px); } 60% { transform: rotate(6deg) translateY(3px); } 100% { transform: translateY(3px); } }
+@keyframes ag-wave { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 50% { transform: rotate(8deg); } 75% { transform: rotate(-4deg); } }
+html.lv-lite .agent-fab.mood-on::after, html.lv-lite .agent-fab.mood-on img { animation: none !important; }
