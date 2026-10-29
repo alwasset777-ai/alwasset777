@@ -561,15 +561,34 @@
 
     /* ---------- منير: مساعد اللعبة بالذكاء الاصطناعي (كيشرح ويعطي الجواب) ---------- */
     const CHATS = {};
-    async function aiCall(game, messages) {
-      if (host.askAI) return host.askAI(game, messages, S.lang === 'ar' ? 'darija' : S.lang);
-      const C = window.__ALWASSET_SUPABASE__ || {};
-      if (!C.url || !C.anonKey) throw new Error('cfg');
-      const r = await fetch(C.url.replace(/\/+$/, '') + '/functions/v1/w777-agent', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: C.anonKey, Authorization: 'Bearer ' + C.anonKey },
-        body: JSON.stringify({ game, messages, lang: S.lang === 'ar' ? 'darija' : S.lang }),
-      });
-      return r.json();
+    // كيرجع النص كامل؛ onText كيتعيط مع كل جزء (البث المباشر: الكلمات كيبانو فثانية)
+    async function aiCall(game, messages, onText) {
+      const body = { game, messages, lang: S.lang === 'ar' ? 'darija' : S.lang, stream: true };
+      let res;
+      if (host.askAI) res = await host.askAI(body);
+      else {
+        const C = window.__ALWASSET_SUPABASE__ || {};
+        if (!C.url || !C.anonKey) throw new Error('cfg');
+        res = await fetch(C.url.replace(/\/+$/, '') + '/functions/v1/w777-agent', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', apikey: C.anonKey, Authorization: 'Bearer ' + C.anonKey }, body: JSON.stringify(body),
+        });
+      }
+      if (!/event-stream/.test(res.headers.get('content-type') || '') || !res.body) { const j = await res.json().catch(() => ({})); if (j.text) onText(j.text); return j; }
+      const rd = res.body.getReader(), dec = new TextDecoder();
+      let buf = '', text = '';
+      for (;;) {
+        const { value, done } = await rd.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n\n')) >= 0) {
+          const line = buf.slice(0, i).split('\n').find(l => l.startsWith('data:')); buf = buf.slice(i + 2);
+          if (!line) continue;
+          let j; try { j = JSON.parse(line.slice(5)); } catch (e) { continue; }
+          if (j.t) { text += j.t; onText(j.t); } else if (j.error) return { error: j.error };
+        }
+      }
+      return { text };
     }
     function askMounir(i) {
       const st = stateOf(play.gi, play.si), w = stageObj().w[i], ck = S.lang + key2(i);
@@ -590,13 +609,21 @@
       const send = async txt => {
         txt = String(txt || '').trim();
         if (!txt || busy) return;
-        chat.push({ role: 'user', content: txt });
+        const um = { role: 'user', content: txt };
+        chat.push(um);
         busy = true; paint();
+        const hist = chat.slice(-12);
+        const drop = () => { [live, um].forEach(x => { const k = chat.indexOf(x); if (k >= 0) chat.splice(k, 1); }); };
+        let live = null, raf = 0;
         try {
-          const r = await aiCall(game, chat.slice(-12));
-          if (r && r.text) chat.push({ role: 'assistant', content: r.text });
-          else { chat.pop(); toast(r && r.error === 'quota' ? L().aiQuota : L().aiErr); }
-        } catch (e) { chat.pop(); toast(L().aiErr); }
+          const r = await aiCall(game, hist, d => {
+            if (!live) { live = { role: 'assistant', content: '' }; chat.push(live); busy = false; }
+            live.content += d;
+            if (!raf) raf = requestAnimationFrame(() => { raf = 0; paint(); });
+          });
+          if (r && r.text) { if (!live) chat.push({ role: 'assistant', content: r.text }); else live.content = r.text; }
+          else { drop(); toast(r && r.error === 'quota' ? L().aiQuota : L().aiErr); }
+        } catch (e) { drop(); toast(L().aiErr); }
         busy = false; paint();
       };
       m.querySelectorAll('.wl-ai-chips button').forEach(b => b.onclick = () => send(b.textContent));
