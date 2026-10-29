@@ -1130,12 +1130,13 @@ create table if not exists public.w777_game_ai_hits (k text not null, day date n
 alter table public.w777_game_ai_hits enable row level security;
 revoke all on public.w777_game_ai_hits from anon, authenticated;
 create or replace function public.w777_game_ai_hit(k text, lim int, glim int) returns int language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
 declare c int; g int;
 begin
   insert into w777_game_ai_hits(k, day, n) values ('*', current_date, 1)
   on conflict (k, day) do update set n = w777_game_ai_hits.n + 1 returning n into g;
   if g > glim then return -1; end if;
-  insert into w777_game_ai_hits(k, day, n) values (left(k, 64), current_date, 1)
+  insert into w777_game_ai_hits(k, day, n) values (left(w777_game_ai_hit.k, 64), current_date, 1)
   on conflict (k, day) do update set n = w777_game_ai_hits.n + 1 returning n into c;
   if c > lim then return -1; end if;
   delete from w777_game_ai_hits where day < current_date - 7;

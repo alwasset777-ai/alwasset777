@@ -701,6 +701,7 @@
     navTrack();
     const { parts, query } = parseHash();
     document.body.classList.toggle('in-studio', parts[0] === 'ad-maker');
+    document.body.classList.toggle('in-game', parts[0] === 'game'); // اللعبة: الأزرار العائمة كيغطيو الحروف
     const [a, b, c] = parts;
     let nav = 'home';
     window.scrollTo(0, 0);

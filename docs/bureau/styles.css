@@ -1262,6 +1262,7 @@ html.lv-lite .card, html.lv-lite a.card:hover, html.lv-lite .dir-card:hover, htm
 .studio-frame { display: block; width: 100%; height: calc(100vh - 230px); height: calc(100dvh - 230px); min-height: 560px; border: 0; border-radius: 18px; background: #f6f6f6; box-shadow: 0 10px 30px -14px rgba(0,0,0,.35); }
 /* صفحة الاستوديو: بلا زر + وبلا فقاعة المساعد باش ما يغطيوش الاستوديو */
 body.in-studio #fab, body.in-studio #fab-menu, body.in-studio .agent-fab { display: none !important; }
+body.in-game #fab, body.in-game #fab-menu, body.in-game .agent-fab { display: none !important; }
 @media (max-width: 700px) {
   .studio-head { margin-bottom: 8px; } .studio-head h1 { font-size: 18px; } .studio-head .sub { font-size: 12px; }
   .studio-head .sub .muted { display: none; }

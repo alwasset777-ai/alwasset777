@@ -72,7 +72,8 @@
     const st = document.createElement('style');
     st.id = 'wl-css';
     st.textContent = `
-.wl{--r:#c8102e;--k:#111;--w:#fff;--y:#ffd54a;max-width:980px;margin:0 auto;font-family:inherit;color:var(--k)}
+.wl,.wl-mod{--r:#c8102e;--k:#111;--w:#fff;--y:#ffd54a}
+.wl{max-width:980px;margin:0 auto;font-family:inherit;color:var(--k)}
 .wl *{box-sizing:border-box}
 .wl-top{display:flex;align-items:center;gap:10px;background:var(--k);color:#fff;border-radius:18px;padding:10px 12px;border-bottom:4px solid var(--r)}
 .wl-top img.lg{width:52px;height:52px;border-radius:50%;background:#fff;border:2px solid var(--r);object-fit:cover}
@@ -578,7 +579,7 @@
       m.firstElementChild.classList.add('wl-ai');
       const log = m.querySelector('#wl-ai-log');
       const paint = () => {
-        log.innerHTML = `<div class="b">${esc(L().aiHi)}</div>` + chat.map(x => `<div class="${x.role === 'user' ? 'u' : 'b'}">${esc(x.content)}</div>`).join('') + (busy ? `<div class="b dots">${esc(L().thinking)}</div>` : '');
+        log.innerHTML = `<div class="b">${esc(L().aiHi)}</div>` + chat.map(x => `<div class="${x.role === 'user' ? 'u' : 'b'}">${esc(String(x.content).replace(/\*\*?([^*]+)\*\*?/g, '$1'))}</div>`).join('') + (busy ? `<div class="b dots">${esc(L().thinking)}</div>` : '');
         log.scrollTop = log.scrollHeight;
       };
       const send = async txt => {
