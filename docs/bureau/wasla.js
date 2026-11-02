@@ -16,11 +16,11 @@
       settings: 'الإعدادات', lang: 'اللغة', close: 'إغلاق', back: 'رجوع', remove: 'إحذف حرف', reveal: 'إكشف حرف', clear: 'مسح',
       locked: 'كمل المجموعة اللي قبل باش تتفتح', lockedStage: 'حل المرحلة اللي قبل أولاً', noHelps: 'ما بقاتش مساعدات — حل مراحل باش تربح مساعدات جديدة',
       wrong: 'جواب غالط، عاود', good: 'برافو!', stageDone: 'كملتي المرحلة', next: 'المرحلة الموالية', toGroup: 'لائحة المراحل', earned: 'ربحتي',
-      board: 'ترتيب المشتركين', noBoard: 'الترتيب كيبان غير للمشتركين فتطبيق الوسيط 777.', empty: 'حتى واحد ما لعب مازال — كون الأول!', me: 'أنت',
+      board: 'ترتيب المشتركين', noBoard: 'الترتيب كيبان غير للمشتركين فتطبيق مجموعة الوسيط.', empty: 'حتى واحد ما لعب مازال — كون الأول!', me: 'أنت',
       share: 'شارك اللعبة', shareTxt: 'جرب «وصلة العقار» — لعبة الأسئلة العقارية ديال مكتب الوسيط 777 🧩🏠', saved: 'تسجلات النقط فالترتيب ✓',
       credits: 'حقوق الصور', pick: 'ختار سؤال من الشبكة', picQ: 'سؤال بالصورة', how: 'كيفاش تلعب؟',
       howTxt: 'ختار خانات كلمة فالشبكة باش يبان السؤال (بالصورة أحياناً)، ومن بعد ركّب الجواب بالحروف المقترحة. الحروف المشتركة مع كلمات محلولة كتبان بالأصفر. «حذف حرف» كيحيد حرف زايد، و«كشف حرف» كيعطيك حرف من الجواب. حل المرحلة بلا مساعدات = 3 نجوم.',
-      allDone: 'سالييتي جميع المراحل! 🏆', puzzle: 'لغز رقم', cheers: ['برافو! 🎉', 'ممتاز! 👏', 'واعر بزاف! 🔥', 'زيد هكا! 💪'], sad: 'ماشي مشكل، عاود مرة أخرى 💪', tapMe: 'ورك عليا إلا بغيتي شي مساعدة 😉', ask: 'إسأل منير', askT: 'منير — مساعد اللعبة', askPh: 'سول منير على أي حاجة فالعقار…', chips: ['شنو الجواب؟', 'شرح ليا هاد الكلمة', 'عطيني مثال من المغرب'], thinking: 'منير كيفكر…', aiErr: 'وقع مشكل فالاتصال، عاود من بعد شوية.', aiQuota: 'وصلتي للحد ديال الأسئلة اليوم، رجع غدا إن شاء الله.', send: 'صيفط', aiHi: 'مرحبا! أنا منير 🤖 سولني على هاد السؤال ولا على أي كلمة عقارية بغيتي تفهمها.', whatIs: 'ما هذا؟', info: 'معلومات عقارية', helpsInfo: 'كتربح مساعدة مع كل لغز كتحلو، وزوج إلا حليتيه بلا مساعدات ⭐⭐⭐',
+      allDone: 'سالييتي جميع المراحل! 🏆', puzzle: 'لغز رقم', cheers: ['برافو! 🎉', 'ممتاز! 👏', 'واعر بزاف! 🔥', 'زيد هكا! 💪'], sad: 'ماشي مشكل، عاود مرة أخرى 💪', tapMe: 'ورك عليا إلا بغيتي شي مساعدة 😉', ask: 'إسأل منير', askT: 'منير — مساعد اللعبة', askPh: 'سول منير على أي حاجة فالعقار…', chips: ['شنو الجواب؟', 'شرح ليا هاد الكلمة', 'عطيني مثال من المغرب'], ansIs: 'الجواب هو', ansMore: 'إلا بغيتي نشرح ليك الكلمة ضغط «شرح ليا هاد الكلمة».', voiceOn: 'الصوت مشعول', voiceOff: 'الصوت مطفي', thinking: 'منير كيفكر…', aiErr: 'وقع مشكل فالاتصال، عاود من بعد شوية.', aiQuota: 'وصلتي للحد ديال الأسئلة اليوم، رجع غدا إن شاء الله.', send: 'صيفط', aiHi: 'مرحبا! أنا منير 🤖 سولني على هاد السؤال ولا على أي كلمة عقارية بغيتي تفهمها.', whatIs: 'ما هذا؟', info: 'معلومات عقارية', helpsInfo: 'كتربح مساعدة مع كل لغز كتحلو، وزوج إلا حليتيه بلا مساعدات ⭐⭐⭐',
     },
     fr: {
       title: 'Wasla Immo', play: 'Jouer', groups: 'Groupes', stage: 'Étape', helps: 'Aides', stars: 'étoiles', pts: 'points',
@@ -31,7 +31,7 @@
       share: 'Partager le jeu', shareTxt: 'Essayez « Wasla Immo », le jeu de questions immobilières d’Al Wasset 777 🧩🏠', saved: 'Points enregistrés au classement ✓',
       credits: 'Crédits photos', pick: 'Choisissez une question dans la grille', picQ: 'Question en image', how: 'Comment jouer ?',
       howTxt: 'Touchez un mot dans la grille pour voir sa question (parfois en image), puis composez la réponse avec les lettres proposées. Les lettres partagées avec des mots déjà trouvés apparaissent en jaune. « Retirer une lettre » enlève une lettre inutile, « Révéler une lettre » en donne une. Sans aide = 3 étoiles.',
-      allDone: 'Vous avez terminé toutes les étapes ! 🏆', puzzle: 'Énigme n°', cheers: ['Bravo ! 🎉', 'Excellent ! 👏', 'Super ! 🔥', 'Continue ! 💪'], sad: 'Pas grave, réessayez 💪', tapMe: 'Touchez-moi si vous avez besoin d’aide 😉', ask: 'Demander à Mounir', askT: 'Mounir — l’assistant du jeu', askPh: 'Posez votre question sur l’immobilier…', chips: ['Quelle est la réponse ?', 'Explique-moi ce mot', 'Un exemple au Maroc'], thinking: 'Mounir réfléchit…', aiErr: 'Problème de connexion, réessayez dans un instant.', aiQuota: 'Limite de questions atteinte pour aujourd’hui, revenez demain.', send: 'Envoyer', aiHi: 'Bonjour ! Je suis Mounir 🤖 Posez-moi une question sur cette énigme ou sur n’importe quel mot de l’immobilier.', whatIs: 'Qu’est-ce que c’est ?', info: 'Culture immobilière', helpsInfo: 'Chaque énigme résolue rapporte 1 aide, 2 si vous la résolvez sans aide ⭐⭐⭐',
+      allDone: 'Vous avez terminé toutes les étapes ! 🏆', puzzle: 'Énigme n°', cheers: ['Bravo ! 🎉', 'Excellent ! 👏', 'Super ! 🔥', 'Continue ! 💪'], sad: 'Pas grave, réessayez 💪', tapMe: 'Touchez-moi si vous avez besoin d’aide 😉', ask: 'Demander à Mounir', askT: 'Mounir — l’assistant du jeu', askPh: 'Posez votre question sur l’immobilier…', chips: ['Quelle est la réponse ?', 'Explique-moi ce mot', 'Un exemple au Maroc'], ansIs: 'La réponse est', ansMore: 'Pour comprendre le mot, appuie sur « Explique-moi ce mot ».', voiceOn: 'Son activé', voiceOff: 'Son coupé', thinking: 'Mounir réfléchit…', aiErr: 'Problème de connexion, réessayez dans un instant.', aiQuota: 'Limite de questions atteinte pour aujourd’hui, revenez demain.', send: 'Envoyer', aiHi: 'Bonjour ! Je suis Mounir 🤖 Posez-moi une question sur cette énigme ou sur n’importe quel mot de l’immobilier.', whatIs: 'Qu’est-ce que c’est ?', info: 'Culture immobilière', helpsInfo: 'Chaque énigme résolue rapporte 1 aide, 2 si vous la résolvez sans aide ⭐⭐⭐',
     },
     en: {
       title: 'Real-Estate Wasla', play: 'Play', groups: 'Groups', stage: 'Stage', helps: 'Helps', stars: 'stars', pts: 'points',
@@ -42,7 +42,7 @@
       share: 'Share the game', shareTxt: 'Try “Real-Estate Wasla”, the property quiz game by Al Wasset 777 🧩🏠', saved: 'Points saved to the ranking ✓',
       credits: 'Photo credits', pick: 'Pick a question in the grid', picQ: 'Picture question', how: 'How to play?',
       howTxt: 'Tap a word in the grid to see its question (sometimes a picture), then build the answer with the suggested letters. Letters shared with solved words show in yellow. “Remove a letter” takes out a wrong letter, “Reveal a letter” gives you one. No help = 3 stars.',
-      allDone: 'You finished every stage! 🏆', puzzle: 'Puzzle', cheers: ['Well done! 🎉', 'Excellent! 👏', 'Awesome! 🔥', 'Keep going! 💪'], sad: 'No worries, try again 💪', tapMe: 'Tap me if you need help 😉', ask: 'Ask Mounir', askT: 'Mounir — game assistant', askPh: 'Ask anything about real estate…', chips: ['What is the answer?', 'Explain this word', 'An example in Morocco'], thinking: 'Mounir is thinking…', aiErr: 'Connection problem, please try again shortly.', aiQuota: 'Daily question limit reached, come back tomorrow.', send: 'Send', aiHi: 'Hi! I’m Mounir 🤖 Ask me about this puzzle or any real-estate word you want to understand.', whatIs: 'What is this?', info: 'Real-estate knowledge', helpsInfo: 'Each solved puzzle gives 1 help, 2 if solved with no help ⭐⭐⭐',
+      allDone: 'You finished every stage! 🏆', puzzle: 'Puzzle', cheers: ['Well done! 🎉', 'Excellent! 👏', 'Awesome! 🔥', 'Keep going! 💪'], sad: 'No worries, try again 💪', tapMe: 'Tap me if you need help 😉', ask: 'Ask Mounir', askT: 'Mounir — game assistant', askPh: 'Ask anything about real estate…', chips: ['What is the answer?', 'Explain this word', 'An example in Morocco'], ansIs: 'The answer is', ansMore: 'To understand the word, tap “Explain this word”.', voiceOn: 'Sound on', voiceOff: 'Sound off', thinking: 'Mounir is thinking…', aiErr: 'Connection problem, please try again shortly.', aiQuota: 'Daily question limit reached, come back tomorrow.', send: 'Send', aiHi: 'Hi! I’m Mounir 🤖 Ask me about this puzzle or any real-estate word you want to understand.', whatIs: 'What is this?', info: 'Real-estate knowledge', helpsInfo: 'Each solved puzzle gives 1 help, 2 if solved with no help ⭐⭐⭐',
     },
   };
   const LANG_NAMES = { ar: 'العربية', en: 'English', fr: 'Français' };
@@ -178,7 +178,7 @@
 @media(max-width:520px){.wl-pl .wl-slot{width:36px;height:42px}.wl-pl .wl-t{height:42px;font-size:19px;padding:0}.wl-card-img img{height:200px}.wl-pb{padding:7px 9px;font-size:13px}.wl-card-t{font-size:19px;min-height:150px}}
 .wl-ask{margin-top:12px;background:var(--k);color:#fff;border:0;border-radius:999px;padding:5px 18px;padding-inline-start:6px;font-weight:800;cursor:pointer;font-size:15px;box-shadow:0 3px 0 var(--r);display:inline-flex;align-items:center;gap:8px}
 .wl-ask img{width:38px;height:38px;border-radius:50%;border:2px solid var(--r);object-fit:cover;background:#fff}
-.wl-ai-h{margin:0 0 8px;display:flex;align-items:center;gap:10px}.wl-ai-h img{width:58px;height:58px;border-radius:50%;border:3px solid var(--r);object-fit:cover}
+.wl-ai-h{margin:0 0 8px;display:flex;align-items:center;gap:10px}.wl-ai-h img{width:58px;height:58px;border-radius:50%;border:3px solid var(--r);object-fit:cover}.wl-ai-snd{margin-inline-start:auto;border:0;background:#f3f3f3;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer;flex:none}.wl-ai-h img.talk{animation:wl-talk .5s ease-in-out infinite alternate;box-shadow:0 0 0 4px rgba(200,16,46,.25)}@keyframes wl-talk{from{transform:scale(1)}to{transform:scale(1.07)}}
 .wl-ai-log .bw{display:flex;gap:6px;align-items:flex-end;align-self:flex-start;max-width:92%}.wl-ai-log .bw img{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:0 0 30px;border:2px solid var(--r)}.wl-ai-log .bw .b{max-width:none}
 .wl-mod>div.wl-ai{max-width:520px;text-align:start}.wl-ai-q{background:#f4f4f4;border-radius:10px;padding:8px 10px;font-weight:700;font-size:14px}
 .wl-ai-log{height:min(46vh,340px);overflow:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0;padding:4px}
@@ -601,6 +601,32 @@
 
     /* ---------- منير: مساعد اللعبة بالذكاء الاصطناعي (كيشرح ويعطي الجواب) ---------- */
     const CHATS = {};
+    // الصوت: منير كيتكلم فـ 2 ثواني على الأكثر من الضغطة (فالتطبيق: نفس صوت المساعد؛ فالصفحة العمومية: صوت الجهاز)
+    const VKEY = 'w777_game_voice';
+    const voiceOn = () => { try { return localStorage.getItem(VKEY) !== '0'; } catch (e) { return true; } };
+    const SR = { ar: 'ar-SA', fr: 'fr-FR', en: 'en-US' };
+    const local = (() => {
+      const ok = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+      let pend = '', gen = 0, talk = null, idle = null, n = 0;
+      const voice = tag => { const vs = speechSynthesis.getVoices(), b = tag.split('-')[0]; const f = vs.filter(v => v.lang.replace('_', '-').startsWith(b)); return f.find(v => /maged|majed|tarik|hamed|thomas|daniel|male/i.test(v.name) && !/female/i.test(v.name)) || f[0] || null; };
+      const clean = t => String(t).replace(/\*\*/g, '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, ' ').replace(/[#*_`>|•]/g, ' ').replace(/\s+/g, ' ').trim();
+      const say = (t, g) => {
+        t = clean(t); if (!ok || !t || g !== gen) return;
+        const tag = SR[S.lang] || 'ar-SA', u = new SpeechSynthesisUtterance(t); u.lang = tag; const v = voice(tag); if (v) u.voice = v; u.rate = 1.03;
+        n++; u.onstart = () => talk && talk(); u.onend = u.onerror = () => { if (--n <= 0 && g === gen && idle) idle(); };
+        speechSynthesis.speak(u);
+      };
+      const cut = force => { for (;;) { const re = /[.!?؟؛:](?=\s)|\n/g; let m, c = -1; while ((m = re.exec(pend))) { if (m.index >= 15) { c = m.index + 1; break; } } if (c < 0) { if (force) { c = pend.length; } else break; } if (!c) break; say(pend.slice(0, c), gen); pend = pend.slice(c); if (force) break; } };
+      if (ok) { try { speechSynthesis.getVoices(); } catch (e) { /* */ } }
+      return {
+        unlock: () => { if (!ok) return; try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) { /* */ } },
+        start: () => { gen++; pend = ''; n = 0; if (ok) { try { speechSynthesis.cancel(); } catch (e) { /* */ } try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) { /* */ } } },
+        feed: d => { pend += d; cut(false); }, flush: () => cut(true),
+        stop: () => { gen++; pend = ''; if (ok) try { speechSynthesis.cancel(); } catch (e) { /* */ } },
+        on: (t, i) => { talk = t; idle = i; },
+      };
+    })();
+    const V = () => host.voice || local;
     // كيرجع النص كامل؛ onText كيتعيط مع كل جزء (البث المباشر: الكلمات كيبانو فثانية)
     async function aiCall(game, messages, onText) {
       const body = { game, messages, lang: S.lang === 'ar' ? 'darija' : S.lang, stream: true };
@@ -630,16 +656,30 @@
       }
       return { text };
     }
+    function warm() {
+      try {
+        if (host.askAI) return; // فالتطبيق: التسخين كيدار ملي كيتحل التطبيق
+        const C = window.__ALWASSET_SUPABASE__ || {};
+        if (C.url && C.anonKey) fetch(C.url.replace(/\/+$/, '') + '/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: C.anonKey, Authorization: 'Bearer ' + C.anonKey }, body: '{"ping":true}' }).catch(() => {});
+      } catch (e) { /* */ }
+    }
     function askMounir(i) {
+      warm();
       const st = stateOf(play.gi, play.si), w = stageObj().w[i], ck = S.lang + key2(i);
       const chat = CHATS[ck] = CHATS[ck] || [];
       let busy = false;
       const game = { q: w[1], a: w[0], group: gName(groups()[play.gi].g, S.lang), solved: !!st.sol[i], ...(AGN ? { name: AGN } : {}) };
-      const m = modal(`<h3 class="wl-ai-h"><img src="${esc(AV)}" alt="">${esc(L().askT)}</h3><div class="wl-ai-q">❓ ${esc(w[1])}</div>
+      const m = modal(`<h3 class="wl-ai-h"><img src="${esc(AV)}" alt="">${esc(L().askT)}<button type="button" class="wl-ai-snd" data-snd aria-label="voice">${voiceOn() ? '🔊' : '🔇'}</button></h3><div class="wl-ai-q">❓ ${esc(w[1])}</div>
         <div class="wl-ai-log" id="wl-ai-log"></div><div class="wl-ai-chips">${L().chips.map(c => `<button type="button">${esc(c)}</button>`).join('')}</div>
         <form class="wl-ai-f" id="wl-ai-f"><input id="wl-ai-in" maxlength="400" placeholder="${esc(L().askPh)}" autocomplete="off"><button class="wl-btn">${esc(L().send)}</button></form>
         <div class="row"><button class="wl-btn k" data-x>${esc(L().close)}</button></div>`);
       m.firstElementChild.classList.add('wl-ai');
+      const face = m.querySelector('.wl-ai-h img');
+      V().on(() => face && face.classList.add('talk'), () => face && face.classList.remove('talk'));
+      const snd = m.querySelector('[data-snd]');
+      snd.onclick = () => { const on = !voiceOn(); try { localStorage.setItem(VKEY, on ? '1' : '0'); } catch (e) { /* */ } snd.textContent = on ? '🔊' : '🔇'; if (!on) V().stop(); toast(on ? L().voiceOn : L().voiceOff); };
+      // ملي كتسد النافذة: الصوت كيسكت
+      new MutationObserver((r, ob) => { if (!document.body.contains(m)) { V().stop(); ob.disconnect(); } }).observe(document.body, { childList: true });
       const log = m.querySelector('#wl-ai-log');
       const paint = () => {
         const bot = t => `<div class="bw"><img src="${esc(AV)}" alt=""><div class="b">${t}</div></div>`;
@@ -649,8 +689,17 @@
       const send = async txt => {
         txt = String(txt || '').trim();
         if (!txt || busy) return;
+        const vo = voiceOn();
+        if (vo) V().start();
         const um = { role: 'user', content: txt };
         chat.push(um);
+        // «شنو الجواب؟»: الجواب عندنا فاللعبة ← فوري (بلا انتظار السيرفر)
+        if (txt === L().chips[0]) {
+          const a = `${L().ansIs} «${w[0]}». ${L().ansMore}`;
+          chat.push({ role: 'assistant', content: a }); paint();
+          if (vo) { if (V().now) V().now(); V().feed(a + ' '); V().flush(); }
+          return;
+        }
         busy = true; paint();
         const hist = chat.slice(-12);
         while (hist.length && hist[0].role !== 'user') hist.shift(); // المحادثة ديما كتبدا بسؤال
@@ -660,9 +709,10 @@
           const r = await aiCall(game, hist, d => {
             if (!live) { live = { role: 'assistant', content: '' }; chat.push(live); }
             live.content += d;
+            if (vo) V().feed(d);
             if (!raf) raf = requestAnimationFrame(() => { raf = 0; paint(); });
           });
-          if (r && r.text) { if (!live) chat.push({ role: 'assistant', content: r.text }); else live.content = r.text; }
+          if (r && r.text) { if (!live) { chat.push({ role: 'assistant', content: r.text }); if (vo) V().feed(r.text + ' '); } else live.content = r.text; if (vo) V().flush(); }
           else { drop(); toast(r && r.error === 'quota' ? L().aiQuota : L().aiErr); }
         } catch (e) { drop(); toast(/quota|429/.test(String(e && e.message)) ? L().aiQuota : L().aiErr); }
         busy = false; paint();
