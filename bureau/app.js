@@ -1010,15 +1010,16 @@
   /* ============================================================
      قائمة العقارات
      ============================================================ */
-  function propCard(p) {
+  function propCard(p, tools) {
     const cv = coverOf(p);
     const nPh = (p.media || []).filter(m => m.kind === 'photo').length;
     const nV = (p.media || []).filter(m => m.kind === 'video').length;
     const st = PSTATUS[p.status] || PSTATUS.available;
     const sp = p.specs || {};
     const a = areaOf(p);
-    return `<a class="card prop-card" href="#/property/${p.id}">
-      <div class="prop-cover">
+    const on = tools === true && S.psel && S.psel.has(p.id);
+    return `<a class="card prop-card${on ? ' psel-on' : ''}" href="#/property/${p.id}" data-pid="${p.id}">
+      <div class="prop-cover">${tools === true ? `<button type="button" class="pc-sel" data-psel="${p.id}" aria-label="تحديد" title="تحديد">${ic('check', 16)}</button><button type="button" class="pc-del" data-pdel="${p.id}" aria-label="مسح" title="مسح">${ic('trash', 16)}</button>` : ''}
         ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
         <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${mktBadge(p)}</div>
         <span class="ref">${esc(p.ref)}</span>
@@ -1037,6 +1038,60 @@
         </div>
       </div></a>`;
   }
+
+  /* ---------- التحديد والمسح فوق صورة كل عقار (واحد ولا بزاف دفعة وحدة) ---------- */
+  S.psel = new Set();
+  async function deleteProps(ids) {
+    const ps = ids.map(id => S.props.find(p => p.id === id)).filter(Boolean);
+    if (!ps.length) return;
+    const msg = ps.length === 1 ? 'حذف العقار ' + ps[0].ref + ' وكل صوره وملفاته نهائيا؟' : `حذف ${ps.length} عقارات وكل الصور والملفات ديالهم نهائيا؟`;
+    if (!(await confirmBox(msg, 'حذف نهائي'))) return;
+    let n = 0;
+    for (const p of ps) {
+      try {
+        await DB.delRec('properties', p.id);
+        await DB.delFilesOf(p.id);
+        for (const m of (p.media || [])) await DB.markDirty('file', m.id);
+        S.psel.delete(p.id); n++;
+      } catch (e) { if (e && e.message === 'staff-perm') break; }
+    }
+    await loadAll();
+    if (n) toast(n === 1 ? 'تم حذف العقار ✓' : `تم حذف ${n} عقارات ✓`);
+    if (location.hash.startsWith('#/properties')) viewProps(parseHash().query); else route();
+  }
+  function pselBar() {
+    let bar = $('#psel-bar');
+    const n = S.psel.size, onList = location.hash.startsWith('#/properties');
+    if (!n || !onList) { if (bar) bar.remove(); document.body.classList.remove('psel-mode'); return; }
+    document.body.classList.add('psel-mode');
+    if (!bar) { bar = document.createElement('div'); bar.id = 'psel-bar'; bar.className = 'psel-bar'; document.body.appendChild(bar); }
+    const all = (S.pselList || []).length && (S.pselList || []).every(id => S.psel.has(id));
+    bar.innerHTML = `<b>${n} محدد</b><button class="btn sm" data-pb="all">${all ? 'إلغاء الكل' : 'تحديد الكل'}</button><button class="btn sm danger" data-pb="del">${ic('trash', 15)} حذف المحدد</button><button class="btn sm" data-pb="x" aria-label="إغلاق">✕</button>`;
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-psel], [data-pdel], [data-pb]');
+    if (!t) {
+      // فوضع التحديد: الضغط على البطاقة كيحدد بلاصة ما يحلها
+      const c = S.psel.size && location.hash.startsWith('#/properties') && e.target.closest && e.target.closest('#plist .prop-card[data-pid]');
+      if (!c) return;
+      e.preventDefault(); e.stopPropagation();
+      const id = c.dataset.pid; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id); c.classList.toggle('psel-on', S.psel.has(id)); pselBar(); return;
+    }
+    e.preventDefault(); e.stopPropagation();
+    if (t.dataset.pdel) return deleteProps([t.dataset.pdel]);
+    if (t.dataset.psel) {
+      const id = t.dataset.psel; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id);
+      const c = t.closest('.prop-card'); if (c) c.classList.toggle('psel-on', S.psel.has(id));
+      return pselBar();
+    }
+    const k = t.dataset.pb;
+    if (k === 'del') return deleteProps([...S.psel]);
+    if (k === 'x') S.psel.clear();
+    if (k === 'all') { const ids = S.pselList || [], all = ids.every(id => S.psel.has(id)); ids.forEach(id => all ? S.psel.delete(id) : S.psel.add(id)); }
+    $$('#plist .prop-card[data-pid]').forEach(c => c.classList.toggle('psel-on', S.psel.has(c.dataset.pid)));
+    pselBar();
+  }, true);
+  window.addEventListener('hashchange', () => { if (!location.hash.startsWith('#/properties')) { S.psel.clear(); pselBar(); } });
 
   function filterProps(q) {
     const f = S.propFilters;
@@ -1101,7 +1156,9 @@
         `<div class="card empty"><div class="big">🔎</div><h3>لا توجد عقارات مطابقة</h3><p>غيّر كلمات البحث أو الفلاتر، أو أضف عقارا جديدا.</p>
         <a class="btn primary" href="#/property/new">${ic('plus', 18)} إضافة عقار</a></div>`}
     `;
-    lazyFill($('#plist'), list, propCard, () => hydrateThumbs($('#plist')));
+    lazyFill($('#plist'), list, p => propCard(p, true), () => hydrateThumbs($('#plist')));
+    S.pselList = list.map(p => p.id);
+    pselBar();
     const rerender = () => viewProps(parseHash().query);
     $$('[data-trx]').forEach(el => el.onclick = () => { f.trx = el.dataset.trx; rerender(); });
     $$('[data-st]').forEach(el => el.onclick = () => { f.status = el.dataset.st; rerender(); });
