@@ -13,13 +13,15 @@ module.exports = [
         await E.type('#cl-form [name=email]', 'agence001'); await E.type('#cl-form [name=password]', '••••••••');
       });
       await E.cap('اضغط «دخول» — حسابك محمي ومنفصل عن الجميع', async () => { await E.tap('#cl-in', 1800); await E.hold(900); });
+      await E.cap('«تحديث كامل للتطبيق»: آخر نسخة فضغطة', async () => { await E.go('#/settings', 1000); await E.eval(() => { const v = document.getElementById('upd-ver'); if (v) v.textContent = 'v153'; }); await E.scrollTo('#upd-full', 1300); await E.hold(1500); });
     },
   },
   {
     n: 2, t: 'الشاشة الرئيسية وزر «+»', tag: 'يومك كله في نظرة واحدة', lessons: [3, 4], go: '#/',
     intro: 'الشاشة الرئيسية هي لوحة القيادة: الأرقام المهمة، مواعيد اليوم، الأخبار، والدخول السريع لكل الأقسام.',
     async film(E) {
-      await E.cap('لوحة القيادة: كل أرقام المكتب أمامك', async () => { await E.go('#/'); await E.hold(1400); await E.scroll(700, 2400); await E.hold(600); });
+      await E.cap('فوق: بحث · إعلانات فورية · التمويل العقاري', async () => { await E.go('#/'); await E.scrollTo('.hs-three', 900); await E.hold(1800); });
+      await E.cap('لوحة القيادة: كل أرقام المكتب أمامك', async () => { await E.scroll(600, 2200); await E.hold(600); });
       await E.cap('زر «+» الأحمر: أي عملية في ضغطتين', async () => { await E.tap('#fab', 1500); await E.hold(900); });
       await E.cap('أزرار «خدمات المجموعة» و«شبكة الوسيط 777» تفتح كل الأقسام', async () => {
         await E.page.keyboard.press('Escape'); await E.go('#/'); await E.scrollTo('[data-hm="svc"]', 900); await E.tap('[data-hm="svc"]', 1500); await E.hold(800);
@@ -42,6 +44,7 @@ module.exports = [
       await E.cap('قائمة العقارات: فلترة حسب العملية والحالة والثمن', async () => { await E.go('#/properties', 1300); await E.hold(1200); await E.scroll(600, 2000); });
       await E.cap('افتح العقار: الصور، التفاصيل، والمشاركة', async () => { await E.go('#/properties', 900); await E.tap('a[href^="#/property/"]:not([href$="/new"])', 1500); await E.hold(700); await E.scroll(800, 2400); });
       await E.cap('أزرار العرض للزبون، الملصق + QR، وواتساب', async () => { await E.scroll(700, 2000); await E.hold(1000); });
+      await E.cap('✓ للتحديد و🗑 للمسح فوق كل صورة', async () => { await E.go('#/properties', 1200); await E.tap('#plist .prop-card >> nth=0 >> .pc-sel', 700); await E.tap('#plist .prop-card >> nth=1 >> .pc-sel', 900); await E.hold(1200); await E.eval(() => { const x = document.querySelector('#psel-bar [data-pb=x]'); if (x) x.click(); }); });
     },
   },
   {
@@ -82,7 +85,7 @@ module.exports = [
     intro: 'احسب القسط الشهري في ثوان، وتعرّف على جهات التمويل السكني والتجاري بالمغرب وخارجه، مع مراحل الملف خطوة بخطوة.',
     async film(E) {
       await E.cap('حساب القسط الشهري والدخل اللازم', async () => { await E.go('#/loan', 1300); await E.hold(1200); await E.scroll(500, 1800); });
-      await E.cap('«التمويل العقاري»: كل الجهات بشعاراتها', async () => { await E.go('#/tamwil', 1500); await E.hold(1300); await E.scroll(900, 2600); });
+      await E.cap('«التمويل العقاري» من الرئيسية: كل الجهات بشعاراتها', async () => { await E.go('#/', 900); await E.scrollTo('.hs-three', 700); await E.tap('.fin-cta', 1600); await E.hold(900); await E.scroll(900, 2400); });
       await E.cap('بطاقة الجهة: الموقع، المعلومات، ومراحل الملف', async () => { await E.go('#/tamwil/awb', 1500); await E.hold(1000); await E.scroll(900, 2600); await E.hold(600); });
     },
   },

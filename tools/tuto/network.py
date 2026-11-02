@@ -123,7 +123,7 @@ img{{width:220px;height:220px;border-radius:50%;box-shadow:0 30px 60px -20px rgb
 def scene_bg(g, title):
     s = {'n': 0, 't': title}
     h = C.page_bg(s, 0)
-    return h.replace('دليل تطبيق الوسيط 777 · المرحلة', f'شبكة الوسيط 777 · {e(g["ar"])}').replace('<div class="num">00<small> / 0</small></div>', f'<div class="num" style="font-size:96px;top:40px">{g["ic"]}</div>')
+    return h.replace('دليل تطبيق مجموعة الوسيط · المرحلة', f'شبكة الوسيط 777 · {e(g["ar"])}').replace('<div class="num">00<small> / 0</small></div>', f'<div class="num" style="font-size:96px;top:40px">{g["ic"]}</div>')
 
 
 def video(raw, out, k):
