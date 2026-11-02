@@ -583,7 +583,8 @@
       v = propsForCity(r.city).map(p => ({ p, m: matchScore(p, r) })).filter(x => x.m && x.m.score >= MIN_SCORE).sort((a, b) => b.m.score - a.m.score);
       MATCH_LIST.set(k, v);
     }
-    return v;
+    // الاقتراحات اللي مسحها المكتب من «المطابقة الذكية» ما كتبانش (العقار والطلب كيبقاو)
+    return r.hiddenMatches && r.hiddenMatches.length ? v.filter(x => !r.hiddenMatches.includes(x.p.id)) : v;
   }
   function matchesForProp(p) {
     return S.reqs.filter(openReq).map(r => ({ r, m: matchScore(p, r) })).filter(x => x.m && x.m.score >= MIN_SCORE).sort((a, b) => b.m.score - a.m.score);
@@ -1017,9 +1018,8 @@
     const st = PSTATUS[p.status] || PSTATUS.available;
     const sp = p.specs || {};
     const a = areaOf(p);
-    const on = tools === true && S.psel && S.psel.has(p.id);
-    return `<a class="card prop-card${on ? ' psel-on' : ''}" href="#/property/${p.id}" data-pid="${p.id}">
-      <div class="prop-cover">${tools === true ? `<button type="button" class="pc-sel" data-psel="${p.id}" aria-label="تحديد" title="تحديد">${ic('check', 16)}</button><button type="button" class="pc-del" data-pdel="${p.id}" aria-label="مسح" title="مسح">${ic('trash', 16)}</button>` : ''}
+    return `<a class="card prop-card${tools === true ? selOn(p.id) : ''}" href="#/property/${p.id}"${tools === true ? ` data-sid="${p.id}"` : ''}>
+      <div class="prop-cover">${tools === true ? selTools(p.id, 'on-cover') : ''}
         ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
         <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${mktBadge(p)}</div>
         <span class="ref">${esc(p.ref)}</span>
@@ -1039,59 +1039,94 @@
       </div></a>`;
   }
 
-  /* ---------- التحديد والمسح فوق صورة كل عقار (واحد ولا بزاف دفعة وحدة) ---------- */
+  /* ---------- التحديد والمسح: العقارات، الطلبات، المواعيد، المطابقة الذكية (واحد ولا بزاف دفعة وحدة) ----------
+     كل بطاقة فيها data-sid + زرين (data-psel / data-pdel). فالمطابقة «المسح» كيحيد غير الاقتراح (العقار والطلب كيبقاو). */
   S.psel = new Set();
-  async function deleteProps(ids) {
-    const ps = ids.map(id => S.props.find(p => p.id === id)).filter(Boolean);
-    if (!ps.length) return;
-    const msg = ps.length === 1 ? 'حذف العقار ' + ps[0].ref + ' وكل صوره وملفاته نهائيا؟' : `حذف ${ps.length} عقارات وكل الصور والملفات ديالهم نهائيا؟`;
-    if (!(await confirmBox(msg, 'حذف نهائي'))) return;
+  const selKind = () => (location.hash.split('/')[1] || '').split('?')[0];
+  const SEL_CARDS = { properties: '#plist .prop-card[data-sid]', requests: '#rlist [data-sid]', appointments: '.appt-list [data-sid]', matching: '#mlist [data-sid]' };
+  const selTools = (id, cls = '') => `<span class="sel-tools ${cls}"><button type="button" class="pc-sel" data-psel="${esc(id)}" aria-label="تحديد" title="تحديد">${ic('check', 16)}</button><button type="button" class="pc-del" data-pdel="${esc(id)}" aria-label="مسح" title="مسح">${ic('trash', 16)}</button></span>`;
+  const selOn = id => S.psel.has(id) ? ' psel-on' : '';
+  async function delFrom(store, ids, label, one) {
+    const items = ids.map(id => (store === 'requests' ? S.reqs : S.appts).find(x => x.id === id)).filter(Boolean);
+    if (!items.length) return 0;
+    if (!(await confirmBox(items.length === 1 ? one(items[0]) : `حذف ${items.length} ${label} نهائيا؟`, 'حذف نهائي'))) return -1;
     let n = 0;
-    for (const p of ps) {
+    for (const x of items) {
       try {
-        await DB.delRec('properties', p.id);
-        await DB.delFilesOf(p.id);
-        for (const m of (p.media || [])) await DB.markDirty('file', m.id);
-        S.psel.delete(p.id); n++;
-      } catch (e) { if (e && e.message === 'staff-perm') break; }
+        await DB.delRec(store, x.id);
+        if (store === 'requests') { await DB.delFilesOf(x.id); for (const m of (x.media || [])) await DB.markDirty('file', m.id); }
+        n++;
+      } catch (er) { if (er && er.message === 'staff-perm') break; }
     }
+    return n;
+  }
+  async function delSelected(kind, ids) {
+    let n = 0, msg = '';
+    if (kind === 'properties') {
+      const ps = ids.map(id => S.props.find(p => p.id === id)).filter(Boolean);
+      if (!ps.length) return;
+      if (!(await confirmBox(ps.length === 1 ? 'حذف العقار ' + ps[0].ref + ' وكل صوره وملفاته نهائيا؟' : `حذف ${ps.length} عقارات وكل الصور والملفات ديالهم نهائيا؟`, 'حذف نهائي'))) return;
+      for (const p of ps) {
+        try { await DB.delRec('properties', p.id); await DB.delFilesOf(p.id); for (const m of (p.media || [])) await DB.markDirty('file', m.id); n++; } catch (er) { if (er && er.message === 'staff-perm') break; }
+      }
+      msg = n === 1 ? 'تم حذف العقار ✓' : `تم حذف ${n} عقارات ✓`;
+    } else if (kind === 'requests') {
+      n = await delFrom('requests', ids, 'طلبات (مع الوثائق ديالهم)', r => 'حذف طلب ' + ((r.client || {}).name || r.ref || '') + ' نهائيا؟'); if (n < 0) return;
+      msg = n === 1 ? 'تم حذف الطلب ✓' : `تم حذف ${n} طلبات ✓`;
+    } else if (kind === 'appointments') {
+      n = await delFrom('appointments', ids, 'مواعيد', a => 'حذف الموعد ديال ' + ((a.client || {}).name || 'الزبون') + ' (' + (a.date || '') + ' ' + (a.time || '') + ')؟'); if (n < 0) return;
+      msg = n === 1 ? 'تم حذف الموعد ✓' : `تم حذف ${n} مواعيد ✓`;
+    } else if (kind === 'matching') {
+      const pairs = ids.map(id => id.split('|')).filter(x => x.length === 2);
+      if (!pairs.length) return;
+      if (!(await confirmBox(pairs.length === 1 ? 'مسح هاد الاقتراح من المطابقة؟ (العقار والطلب كيبقاو)' : `مسح ${pairs.length} اقتراحات من المطابقة؟ (العقارات والطلبات كيبقاو)`, 'مسح'))) return;
+      const byReq = {};
+      pairs.forEach(([rid, pid]) => (byReq[rid] = byReq[rid] || []).push(pid));
+      for (const [rid, pids] of Object.entries(byReq)) {
+        const r = S.reqs.find(x => x.id === rid); if (!r) continue;
+        r.hiddenMatches = [...new Set([...(r.hiddenMatches || []), ...pids])];
+        try { await DB.saveRec('requests', r); n += pids.length; } catch (er) { if (er && er.message === 'staff-perm') break; }
+      }
+      msg = n === 1 ? 'تمسح الاقتراح ✓' : `تمسحو ${n} اقتراحات ✓`;
+    }
+    ids.forEach(id => S.psel.delete(id));
     await loadAll();
-    if (n) toast(n === 1 ? 'تم حذف العقار ✓' : `تم حذف ${n} عقارات ✓`);
-    if (location.hash.startsWith('#/properties')) viewProps(parseHash().query); else route();
+    if (n) toast(msg);
+    route();
   }
   function pselBar() {
     let bar = $('#psel-bar');
-    const n = S.psel.size, onList = location.hash.startsWith('#/properties');
-    if (!n || !onList) { if (bar) bar.remove(); document.body.classList.remove('psel-mode'); return; }
+    const n = S.psel.size, kind = selKind();
+    if (!n || !SEL_CARDS[kind]) { if (bar) bar.remove(); document.body.classList.remove('psel-mode'); return; }
     document.body.classList.add('psel-mode');
     if (!bar) { bar = document.createElement('div'); bar.id = 'psel-bar'; bar.className = 'psel-bar'; document.body.appendChild(bar); }
     const all = (S.pselList || []).length && (S.pselList || []).every(id => S.psel.has(id));
-    bar.innerHTML = `<b>${n} محدد</b><button class="btn sm" data-pb="all">${all ? 'إلغاء الكل' : 'تحديد الكل'}</button><button class="btn sm danger" data-pb="del">${ic('trash', 15)} حذف المحدد</button><button class="btn sm" data-pb="x" aria-label="إغلاق">✕</button>`;
+    bar.innerHTML = `<b>${n} محدد</b><button class="btn sm" data-pb="all">${all ? 'إلغاء الكل' : 'تحديد الكل'}</button><button class="btn sm danger" data-pb="del">${ic('trash', 15)} ${kind === 'matching' ? 'مسح المحدد' : 'حذف المحدد'}</button><button class="btn sm" data-pb="x" aria-label="إغلاق">✕</button>`;
   }
+  // كل صفحة كتعطي لائحة العناصر اللي بانو (باش «تحديد الكل» ياخدهم كاملين، حتى اللي مازال ما تعرضوش)
+  function selReady(ids) { S.pselList = ids; pselBar(); }
+  const selPaint = () => { const q = SEL_CARDS[selKind()]; if (q) $$(q).forEach(c => c.classList.toggle('psel-on', S.psel.has(c.dataset.sid))); };
   document.addEventListener('click', e => {
     const t = e.target.closest && e.target.closest('[data-psel], [data-pdel], [data-pb]');
+    const kind = selKind();
     if (!t) {
-      // فوضع التحديد: الضغط على البطاقة كيحدد بلاصة ما يحلها
-      const c = S.psel.size && location.hash.startsWith('#/properties') && e.target.closest && e.target.closest('#plist .prop-card[data-pid]');
+      // فوضع التحديد: الضغط على البطاقة كيحددها بلاصة ما يحلها
+      const q = SEL_CARDS[kind], c = S.psel.size && q && e.target.closest && e.target.closest(q);
       if (!c) return;
       e.preventDefault(); e.stopPropagation();
-      const id = c.dataset.pid; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id); c.classList.toggle('psel-on', S.psel.has(id)); pselBar(); return;
+      const id = c.dataset.sid; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id); selPaint(); pselBar(); return;
     }
     e.preventDefault(); e.stopPropagation();
-    if (t.dataset.pdel) return deleteProps([t.dataset.pdel]);
-    if (t.dataset.psel) {
-      const id = t.dataset.psel; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id);
-      const c = t.closest('.prop-card'); if (c) c.classList.toggle('psel-on', S.psel.has(id));
-      return pselBar();
-    }
+    if (t.dataset.pdel) return delSelected(kind, [t.dataset.pdel]);
+    if (t.dataset.psel) { const id = t.dataset.psel; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id); selPaint(); return pselBar(); }
     const k = t.dataset.pb;
-    if (k === 'del') return deleteProps([...S.psel]);
+    if (k === 'del') return delSelected(kind, [...S.psel]);
     if (k === 'x') S.psel.clear();
     if (k === 'all') { const ids = S.pselList || [], all = ids.every(id => S.psel.has(id)); ids.forEach(id => all ? S.psel.delete(id) : S.psel.add(id)); }
-    $$('#plist .prop-card[data-pid]').forEach(c => c.classList.toggle('psel-on', S.psel.has(c.dataset.pid)));
-    pselBar();
+    selPaint(); pselBar();
   }, true);
-  window.addEventListener('hashchange', () => { if (!location.hash.startsWith('#/properties')) { S.psel.clear(); pselBar(); } });
+  let selPage = '';
+  window.addEventListener('hashchange', () => { const k = selKind(); if (k !== selPage) { selPage = k; S.psel.clear(); pselBar(); } });
 
   function filterProps(q) {
     const f = S.propFilters;
@@ -1157,8 +1192,7 @@
         <a class="btn primary" href="#/property/new">${ic('plus', 18)} إضافة عقار</a></div>`}
     `;
     lazyFill($('#plist'), list, p => propCard(p, true), () => hydrateThumbs($('#plist')));
-    S.pselList = list.map(p => p.id);
-    pselBar();
+    selReady(list.map(p => p.id));
     const rerender = () => viewProps(parseHash().query);
     $$('[data-trx]').forEach(el => el.onclick = () => { f.trx = el.dataset.trx; rerender(); });
     $$('[data-st]').forEach(el => el.onclick = () => { f.status = el.dataset.st; rerender(); });
@@ -1722,11 +1756,11 @@
   /* ============================================================
      الطلبات
      ============================================================ */
-  function reqCard(r) {
+  function reqCard(r, tools) {
     const st = RSTATUS[r.status] || RSTATUS.new;
     const n = openReq(r) ? matchesForReq(r).length : 0;
     const c = r.client || {};
-    return `<a class="list-row" href="#/request/${r.id}">
+    return `<a class="list-row${tools === true ? selOn(r.id) : ''}" href="#/request/${r.id}"${tools === true ? ` data-sid="${r.id}"` : ''}>
       <div class="avatar">${esc((c.name || '؟').trim()[0])}</div>
       <div class="grow">
         <b>${esc(c.name || 'زبون')} ${r.priority === 'high' ? '🔥' : ''}${r.imported && !r.transaction ? ' <span class="badge amber">📥 للإكمال</span>' : ''}</b>
@@ -1736,7 +1770,7 @@
           ${n ? `<span class="badge green">🎯 ${n} مطابق</span>` : ''}
           ${r.followUp ? `<span class="badge ${r.followUp <= today() && openReq(r) ? 'amber' : ''}">${ic('calendar', 12)} ${esc(r.followUp)}</span>` : ''}</div>
       </div>
-      ${ic('chevL', 18)}</a>`;
+      ${tools === true ? selTools(r.id, 'in-row') : ''}${ic('chevL', 18)}</a>`;
   }
   function viewReqs(query) {
     const f = S.reqFilters;
@@ -1757,7 +1791,8 @@
       ${list.length ? `<div class="card" style="overflow:hidden" id="rlist"></div>` :
         `<div class="card empty"><div class="big">🧾</div><h3>لا توجد طلبات</h3><p>سجّل طلب زبون ليقترح عليك التطبيق العقارات المناسبة تلقائيا.</p>
         <a class="btn primary" href="#/request/new">${ic('plus', 18)} إضافة طلب</a></div>`}`;
-    lazyFill($('#rlist'), list, reqCard, null, 40, 40);
+    lazyFill($('#rlist'), list, r => reqCard(r, true), null, 40, 40);
+    selReady(list.map(r => r.id));
     $$('[data-st]').forEach(el => el.onclick = () => { f.status = el.dataset.st; viewReqs(query); });
     $$('[data-trx]').forEach(el => el.onclick = () => { f.trx = el.dataset.trx; viewReqs(query); });
   }
@@ -1961,10 +1996,11 @@
     await DB.saveRec('requests', r);
   }
 
-  function matchCard(p, m, r) {
+  function matchCard(p, m, r, tools) {
     const cv = coverOf(p);
     const pr = (r.proposals || {})[p.id];
-    return `<div class="card match-card">
+    const sid = r.id + '|' + p.id;
+    return `<div class="card match-card${tools === true ? selOn(sid) : ''}"${tools === true ? ` data-sid="${sid}"` : ''}>${tools === true ? selTools(sid, 'on-corner') : ''}
       ${scoreRing(m.score)}
       <a class="match-thumb" href="#/property/${p.id}">${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="">` : ic('home', 28)}</a>
       <div class="grow" style="min-width:0">
@@ -2092,9 +2128,20 @@
             </a>
             <span class="badge ${ms.length ? 'green' : ''}">${ms.length} عقار</span>
           </div>
-          <div style="padding:12px" class="match-list">${ms.length ? ms.slice(0, 4).map(x => matchCard(x.p, x.m, r)).join('') + (ms.length > 4 ? `<a class="btn block" href="#/request/${r.id}">عرض الكل (${ms.length})</a>` : '') : '<div class="muted" style="padding:6px">لا يوجد عقار بهذه النسبة</div>'}</div>
+          <div style="padding:12px" class="match-list">${ms.length ? ms.slice(0, 4).map(x => matchCard(x.p, x.m, r, true)).join('') + (ms.length > 4 ? `<a class="btn block" href="#/request/${r.id}">عرض الكل (${ms.length})</a>` : '') : '<div class="muted" style="padding:6px">لا يوجد عقار بهذه النسبة</div>'}</div>
         </div>`;
     lazyFill($('#mlist'), rows, pairCard, () => { hydrateThumbs($('#mlist')); bindProposalButtons($('#mlist'), () => viewMatching(query)); }, 8, 8);
+    selReady(rows.flatMap(({ r, ms }) => ms.slice(0, 4).map(x => r.id + '|' + x.p.id)));
+    const nHid = S.reqs.reduce((q, r) => q + ((r.hiddenMatches || []).length), 0);
+    if (nHid) {
+      const head = $('.page-head', main());
+      head.insertAdjacentHTML('beforeend', `<button class="btn sm" id="m-unhide">↺ رجّع الاقتراحات الممسوحة (${nHid})</button>`);
+      $('#m-unhide').onclick = async () => {
+        if (!(await confirmBox(`ترجّع ${nHid} اقتراحات للمطابقة؟`, 'رجّع', false))) return;
+        for (const r of S.reqs.filter(x => (x.hiddenMatches || []).length)) { r.hiddenMatches = []; await DB.saveRec('requests', r); }
+        await loadAll(); toast('رجعو الاقتراحات ✓'); viewMatching(query);
+      };
+    }
   }
 
   /* ============================================================
@@ -4131,12 +4178,12 @@
     const lbl = a.date === today() ? 'اليوم' : a.date === tm ? 'غدا' : days[d.getDay()] + ' ' + a.date;
     return `${lbl} · ${a.time || ''}`;
   };
-  function apptCard(a) {
+  function apptCard(a, tools) {
     const st = APPT_STATUS[a.status] || APPT_STATUS.planned;
     const late = a.status === 'planned' && apptStart(a) < new Date();
     const c = a.client || {};
     const p = a.propId && S.props.find(x => x.id === a.propId);
-    return `<div class="card card-pad appt ${late ? 'late' : ''}" data-appt="${a.id}">
+    return `<div class="card card-pad appt ${late ? 'late' : ''}${tools === true ? selOn(a.id) : ''}" data-appt="${a.id}"${tools === true ? ` data-sid="${a.id}"` : ''}>
       <div class="appt-when"><b>${esc(a.time || '—')}</b><small>${esc(apptWhen(a).split(' · ')[0])}</small></div>
       <div class="grow">
         <b>${esc(c.name || 'زبون')}</b> <span class="badge ${st.c}">${esc(st.ar)}</span>${late ? ' <span class="badge amber">فات الوقت</span>' : ''}
@@ -4149,7 +4196,7 @@
           <a class="btn sm" href="#/appointment/${a.id}">${ic('edit', 15)}</a>
           ${a.reqId ? `<a class="btn sm" href="#/request/${a.reqId}">الطلب</a>` : ''}${p ? `<a class="btn sm" href="#/property/${p.id}">العقار</a>` : ''}
         </div>
-      </div></div>`;
+      </div>${tools === true ? selTools(a.id, 'in-row') : ''}</div>`;
   }
   function apptMsg(a) {
     const p = a.propId && S.props.find(x => x.id === a.propId);
@@ -4191,10 +4238,11 @@
       ${perm === 'default' ? `<div class="card card-pad" style="margin-bottom:14px;border-color:var(--gold)"><b>⏰ فعّل التنبيهات</b>
         <p class="muted" style="margin:6px 0 10px">باش يبان ليك تنبيه فالوقت ديال كل موعد (والتطبيق محلول).</p><button class="btn gold sm" id="notif-on">تفعيل التنبيهات</button></div>` : ''}
       <div class="chips" style="margin-bottom:14px">${tab('upcoming', 'الجاية')}${tab('today', 'اليوم')}${tab('all', 'الكل')}</div>
-      ${list.length ? `<div class="appt-list">${list.map(apptCard).join('')}</div>` : `<div class="card empty"><div class="big">📅</div><h3>ما كاين حتى موعد</h3><p>زيد موعد جديد وغادي نفكّرك فالوقت ⏰</p></div>`}
+      ${list.length ? `<div class="appt-list">${list.map(a => apptCard(a, true)).join('')}</div>` : `<div class="card empty"><div class="big">📅</div><h3>ما كاين حتى موعد</h3><p>زيد موعد جديد وغادي نفكّرك فالوقت ⏰</p></div>`}
       <p class="muted" style="font-size:12.5px;margin-top:14px">💡 التنبيه داخل التطبيق كيخدم ملي يكون محلول. باش يرن الهاتف حتى والتطبيق مسدود، ضغط «للتقويم» وزيد الموعد لـ Calendar.</p>`;
     const n = $('#notif-on'); if (n) n.onclick = async () => { await Notification.requestPermission(); viewAppts(query); };
     bindApptButtons(main(), () => viewAppts(query));
+    selReady(list.map(a => a.id));
   }
   async function viewApptForm(id, query = {}) {
     const ex = id && id !== 'new' ? S.appts.find(x => x.id === id) : null;
