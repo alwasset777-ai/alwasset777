@@ -15,7 +15,7 @@
       title: 'وصلة العقار', play: 'العب', groups: 'المجموعات', stage: 'المرحلة', helps: 'مساعدات', stars: 'نجوم', pts: 'نقطة',
       settings: 'الإعدادات', lang: 'اللغة', close: 'إغلاق', back: 'رجوع', remove: 'إحذف حرف', reveal: 'إكشف حرف', clear: 'مسح',
       locked: 'كمل المجموعة اللي قبل باش تتفتح', lockedStage: 'حل المرحلة اللي قبل أولاً', noHelps: 'ما بقاتش مساعدات — حل مراحل باش تربح مساعدات جديدة',
-      wrong: 'جواب غالط، عاود', good: 'برافو!', stageDone: 'كملتي المرحلة', next: 'المرحلة الموالية', toGroup: 'لائحة المراحل', earned: 'ربحتي',
+      wrong: 'جواب غالط، عاود', good: 'برافو!', stageDone: 'كملتي المرحلة', next: 'المرحلة الموالية', toGroup: 'رجوع للمواضيع', earned: 'ربحتي',
       board: 'ترتيب المشتركين', noBoard: 'الترتيب كيبان غير للمشتركين فتطبيق مجموعة الوسيط.', empty: 'حتى واحد ما لعب مازال — كون الأول!', me: 'أنت',
       share: 'شارك اللعبة', shareTxt: 'جرب «وصلة العقار» — لعبة الأسئلة العقارية ديال مكتب الوسيط 777 🧩🏠', saved: 'تسجلات النقط فالترتيب ✓',
       credits: 'حقوق الصور', pick: 'ختار سؤال من الشبكة', picQ: 'سؤال بالصورة', how: 'كيفاش تلعب؟',
@@ -26,7 +26,7 @@
       title: 'Wasla Immo', play: 'Jouer', groups: 'Groupes', stage: 'Étape', helps: 'Aides', stars: 'étoiles', pts: 'points',
       settings: 'Réglages', lang: 'Langue', close: 'Fermer', back: 'Retour', remove: 'Retirer une lettre', reveal: 'Révéler une lettre', clear: 'Effacer',
       locked: 'Terminez le groupe précédent pour le débloquer', lockedStage: 'Résolvez d’abord l’étape précédente', noHelps: 'Plus d’aides — résolvez des étapes pour en gagner',
-      wrong: 'Mauvaise réponse, réessayez', good: 'Bravo !', stageDone: 'Étape terminée', next: 'Étape suivante', toGroup: 'Liste des étapes', earned: 'Gagné',
+      wrong: 'Mauvaise réponse, réessayez', good: 'Bravo !', stageDone: 'Étape terminée', next: 'Étape suivante', toGroup: 'Retour aux thèmes', earned: 'Gagné',
       board: 'Classement des membres', noBoard: 'Le classement est réservé aux membres d’Al Wasset 777.', empty: 'Personne n’a encore joué — soyez le premier !', me: 'Vous',
       share: 'Partager le jeu', shareTxt: 'Essayez « Wasla Immo », le jeu de questions immobilières d’Al Wasset 777 🧩🏠', saved: 'Points enregistrés au classement ✓',
       credits: 'Crédits photos', pick: 'Choisissez une question dans la grille', picQ: 'Question en image', how: 'Comment jouer ?',
@@ -37,7 +37,7 @@
       title: 'Real-Estate Wasla', play: 'Play', groups: 'Groups', stage: 'Stage', helps: 'Helps', stars: 'stars', pts: 'points',
       settings: 'Settings', lang: 'Language', close: 'Close', back: 'Back', remove: 'Remove a letter', reveal: 'Reveal a letter', clear: 'Clear',
       locked: 'Finish the previous group to unlock it', lockedStage: 'Solve the previous stage first', noHelps: 'No helps left — solve stages to earn more',
-      wrong: 'Wrong answer, try again', good: 'Well done!', stageDone: 'Stage complete', next: 'Next stage', toGroup: 'Stage list', earned: 'Earned',
+      wrong: 'Wrong answer, try again', good: 'Well done!', stageDone: 'Stage complete', next: 'Next stage', toGroup: 'Back to topics', earned: 'Earned',
       board: 'Members ranking', noBoard: 'The ranking is for Al Wasset 777 members.', empty: 'Nobody has played yet — be the first!', me: 'You',
       share: 'Share the game', shareTxt: 'Try “Real-Estate Wasla”, the property quiz game by Al Wasset 777 🧩🏠', saved: 'Points saved to the ranking ✓',
       credits: 'Photo credits', pick: 'Pick a question in the grid', picQ: 'Picture question', how: 'How to play?',
@@ -252,7 +252,7 @@
     }
     function bindTop() {
       const b = root.querySelector('[data-back]');
-      if (b) b.onclick = () => { if (view.name === 'play') view = { name: 'group', gi: view.gi }; else view = { name: 'home' }; render(); };
+      if (b) b.onclick = () => { view = { name: 'home' }; play = null; render(); };
       root.querySelector('[data-set]').onclick = settings;
     }
 
@@ -295,7 +295,7 @@
       root.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
         const gi = +b.dataset.g;
         if (!groupOpen(gi)) return toast(L().locked);
-        view = { name: 'group', gi }; render();
+        startStage(gi, curStage(gi)); // دخول مباشر للمرحلة الجاية (بلا صفحة الأرقام)
       });
       root.querySelector('[data-how]').onclick = howTo;
       const sh = root.querySelector('[data-share]');
@@ -319,6 +319,11 @@
       else window.open('https://wa.me/?text=' + encodeURIComponent(txt + '\n' + url), '_blank', 'noopener');
     }
 
+    // المرحلة اللي غادي يلعب: أول وحدة ما سالاتش، ولا الأخيرة إلا سالاهم كاملين
+    function curStage(gi) {
+      const g = groups()[gi], i = g.s.findIndex((_, si) => !stageDone(gi, si));
+      return i >= 0 ? i : g.s.length - 1;
+    }
     /* ---------- المراحل ---------- */
     function group() {
       const gi = view.gi, g = groups()[gi];
@@ -498,7 +503,7 @@
         <div class="wl-big">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
         ${first ? `<p style="font-weight:800">${esc(L().earned)}: +${pts} ${esc(L().pts)} · +${bonus} 💡</p>` : ''}
         <div class="row"><button class="wl-btn w" data-gl>${esc(L().toGroup)}</button>${hasNext ? `<button class="wl-btn" data-nx>${esc(L().next)} ➜</button>` : ''}</div>`, m => {
-        m.querySelector('[data-gl]').onclick = () => { m.remove(); view = { name: 'group', gi: play.gi }; render(); };
+        m.querySelector('[data-gl]').onclick = () => { m.remove(); view = { name: 'home' }; play = null; render(); };
         const nx = m.querySelector('[data-nx]');
         if (nx) nx.onclick = () => {
           m.remove();
@@ -593,7 +598,7 @@
       }
       root.querySelector('[data-pback]').onclick = () => {
         if (play.open) { play.open = false; play.msg = ''; render(); return; }
-        view = { name: 'group', gi: play.gi }; render();
+        view = { name: 'home' }; play = null; render();
       };
       root.querySelector('[data-hinfo]').onclick = () => toast(L().helpsInfo);
       if (root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'start' });

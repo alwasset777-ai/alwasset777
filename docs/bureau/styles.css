@@ -1447,13 +1447,15 @@ html.lv-lite .fin-rot img { animation: none; } html.lv-lite .fin-rot img:first-c
 @media (prefers-reduced-motion: reduce) { .fin-rot img { animation: none; } .fin-rot img:first-child { opacity: 1; } }
 .fin-hero { display: flex; align-items: center; gap: 18px; padding: 20px 22px; overflow: hidden; background: radial-gradient(ellipse at 15% 30%, rgba(200,16,46,.08), transparent 55%), var(--surface); }
 .fin-hero-t { flex: 1; } .fin-hero h1 { margin: 0 0 6px; font-size: 24px; } .fin-hero p { margin: 0 0 12px; color: var(--muted); }
-.fin-orbit { position: relative; width: 190px; height: 190px; flex: none; animation: fin-spin 40s linear infinite; }
-.fin-orbit .fo-c { position: absolute; inset: 34%; width: 32%; height: 32%; border-radius: 50%; box-shadow: 0 6px 18px rgba(0,0,0,.18); animation: fin-spin 40s linear infinite reverse; }
-.fin-orbit span { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; transform: rotate(var(--a)) translateY(-78px) rotate(calc(-1 * var(--a))); }
-.fin-orbit span img { width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 12px; padding: 4px; box-shadow: 0 3px 10px rgba(0,0,0,.14); animation: fin-spin 40s linear infinite reverse; }
+.fin-orbit { position: relative; width: 240px; height: 240px; flex: none; animation: fin-spin 24s linear infinite; }
+.fin-orbit .fo-c { position: absolute; inset: 33%; width: 34%; height: 34%; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px #fff, 0 0 0 6px #c8102e, 0 8px 22px rgba(0,0,0,.22); animation: fin-spin 24s linear infinite reverse; z-index: 2; }
+.fin-orbit::before { content: ''; position: absolute; inset: 9%; border-radius: 50%; border: 2px dashed rgba(200,16,46,.28); }
+.fin-orbit span { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; transform: rotate(var(--a)) translateY(-98px) rotate(calc(-1 * var(--a))); }
+.fin-orbit span img { width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 12px; padding: 4px; box-shadow: 0 3px 10px rgba(0,0,0,.14); animation: fin-spin 24s linear infinite reverse; }
 @keyframes fin-spin { to { rotate: 360deg; } }
-html.lv-lite .fin-orbit, html.lv-lite .fin-orbit * { animation: none !important; }
-@media (max-width: 640px) { .fin-hero { flex-direction: column-reverse; text-align: center; } .fin-hero .btn-row { justify-content: center; } .fin-orbit { width: 160px; height: 160px; } .fin-orbit span { transform: rotate(var(--a)) translateY(-64px) rotate(calc(-1 * var(--a))); width: 34px; height: 34px; margin: -17px; } }
+/* الشعارات كيدوروا ديما (حركة خفيفة) — كتوقف غير إلا طلب الجهاز تقليل الحركة */
+@media (prefers-reduced-motion: reduce) { .fin-orbit, .fin-orbit * { animation: none !important; } }
+@media (max-width: 640px) { .fin-hero { flex-direction: column-reverse; text-align: center; } .fin-hero .btn-row { justify-content: center; } .fin-orbit { width: 200px; height: 200px; } .fin-orbit span { transform: rotate(var(--a)) translateY(-80px) rotate(calc(-1 * var(--a))); width: 38px; height: 38px; margin: -19px; } }
 .fin-tools { display: flex; gap: 10px; align-items: center; margin: 14px 0 8px; flex-wrap: wrap; }
 .fin-tools input[type=search] { flex: 1; min-width: 200px; }
 .fin-mre { display: flex; align-items: center; gap: 6px; font-weight: 700; white-space: nowrap; }
@@ -1618,3 +1620,27 @@ body.psel-mode .fab { display: none; }
 @media (max-width: 420px) { .psel-bar { gap: 5px; padding: 8px 10px; font-size: 13px; } .psel-bar .btn { padding: 0 9px; font-size: 12.5px; } }
 .psel-bar b { white-space: nowrap; }
 @media (max-width: 760px) { .psel-bar { top: calc(100px + env(safe-area-inset-top)); bottom: auto; left: 10px; right: 10px; transform: none; max-width: none; justify-content: space-between; } }
+
+/* ===== النجمة (المفضلة) + الشعار فوق صور العقارات ===== */
+.sel-tools .pc-fav { position: relative; width: 38px; height: 38px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; font-size: 21px; line-height: 1;
+  background: rgba(255,255,255,.92); color: #8a8f99; box-shadow: 0 4px 12px -4px rgba(0,0,0,.45); transition: transform .15s, background .2s, color .2s; -webkit-tap-highlight-color: transparent; }
+.sel-tools .pc-fav:hover { transform: scale(1.08); color: #e0a400; }
+.sel-tools .pc-fav.on { background: linear-gradient(145deg, #ffd54a, #f0a500); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.logo-mark { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: 46px; height: 46px; border-radius: 50%; background: #fff; display: grid; place-items: center; overflow: hidden;
+  box-shadow: 0 4px 14px -4px rgba(0,0,0,.55); pointer-events: none; z-index: 2; opacity: .96; }
+.logo-mark img { width: 92% !important; height: 92% !important; object-fit: contain !important; }
+.logo-mark.txt { width: auto; height: auto; border-radius: 99px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #c8102e; }
+.gallery > div:first-child .logo-mark { width: 62px; height: 62px; bottom: 14px; }
+.lb-ph { position: relative; display: inline-block; line-height: 0; }
+.lb-ph > img { max-width: 96vw; max-height: 86vh; object-fit: contain; }
+.lb-ph .logo-mark { width: 64px; height: 64px; bottom: 16px; }
+@media (max-width: 600px) { .logo-mark { width: 38px; height: 38px; } .gallery > div:first-child .logo-mark { width: 50px; height: 50px; } }
+
+/* ===== التمويل: شرح الألوان + معلومات المكتب ===== */
+.fin-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 16px; margin: 12px 0; font-size: 13.5px; font-weight: 700; }
+.fin-legend .muted { font-weight: 500; font-size: 12.5px; flex-basis: 100%; }
+.fc-top .badge small { font-size: 11px; font-weight: 700; margin-inline-start: 2px; }
+.fc-conv { display: inline-block; margin: 2px 0 4px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: #fff4d6; color: #8a5a00; }
+.fc-conv.ok { background: #e3f6ea; color: #137a3a; }
+.fin-mine .full { grid-column: 1 / -1; }
+.fin-mine b { font-weight: 700; line-height: 1.6; }

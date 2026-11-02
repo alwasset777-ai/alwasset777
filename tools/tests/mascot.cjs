@@ -5,7 +5,7 @@ const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.route(/googleapis|gstatic|supabase/,r=>r.abort());
 await p.addInitScript(()=>{localStorage.w777_wasla=JSON.stringify({lang:'ar',seenHow:1})});
 await p.goto('http://localhost:8777/bureau/#/game');await p.waitForTimeout(1200);
-await p.click('[data-g="0"]'); await p.click('[data-s="0"]'); await p.waitForTimeout(400);
+await p.click('[data-g="0"]'); await p.waitForTimeout(400);
 await p.screenshot({path:(process.env.S || '/tmp')+'/masc1.png'});
 // open selected, answer wrong then right
 await p.click('.wl-c.sel'); await p.waitForTimeout(200);
