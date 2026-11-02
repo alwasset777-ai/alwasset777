@@ -1,7 +1,8 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v152';
+const CACHE = 'w777-bureau-v153';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
+// الأصوات المحفوظة ديال المساعد (w777-tts) كتبقى حتى هي بين التحديثات
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
 const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'wasla-levels.js', 'wasla.js', 'finance-data.js', 'manifest.webmanifest', ...FONTS,
   'vendor/qrcode.js', 'icons/logo.png?v=10', 'icons/icon-192.png?v=9', 'icons/icon-512.png?v=9', 'icons/apple-touch-icon.png?v=9', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
@@ -12,7 +13,7 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG && k !== 'w777-tts').map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 let trimN = 0;
 async function trimImg(c) {

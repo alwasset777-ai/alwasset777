@@ -2128,6 +2128,12 @@
           <p class="muted" style="margin:0">هذه النسخة تعمل داخل claude.ai: البيانات محفوظة في هذا المتصفح فقط، بدون مزامنة سحابية. احفظ نسخة احتياطية بانتظام (الزر أسفله) واستوردها في جهازك الآخر. للمزامنة التلقائية والتثبيت على الهاتف استعمل الرابط الدائم على GitHub Pages.</p>
         </div>` : await cloudCard()}
 
+        ${EMBED ? '' : `<div class="card card-pad upd-card">
+          <h3 class="section-title">🔄 تحديث التطبيق</h3>
+          <p class="muted" style="margin-top:0">النسخة ديالك: <b id="upd-ver" dir="ltr">…</b>. التطبيق كيتحدث بوحدو، وهاد الزر كيجيب آخر نسخة فالحين ويحيد الملفات القديمة — البيانات ديالك (العقارات، الزبناء، الصور) ما كتمسّش.</p>
+          <div class="btn-row"><button class="btn gold" id="upd-full">🔄 تحديث كامل للتطبيق</button></div>
+        </div>`}
+
         <div class="card card-pad">
           <h3 class="section-title">${ic('database')} النسخ الاحتياطي ونقل البيانات بين الأجهزة</h3>
           <p class="muted" style="margin-top:0">البيانات محفوظة داخل هذا الجهاز فقط. لنقلها من الهاتف إلى الماك بوك (أو العكس): صدّر نسخة احتياطية هنا، ثم استوردها في الجهاز الآخر. ${lastBackup ? `<br>آخر نسخة: <b>${esc(lastBackup.slice(0, 16).replace('T', ' '))}</b>` : '<br><b style="color:var(--amber)">⚠️ لم تقم بأي نسخة احتياطية بعد.</b>'}</p>
@@ -2228,6 +2234,8 @@
     $('#imp-folder').onchange = e => { if (e.target.files.length) importFolder(e.target.files); e.target.value = ''; };
     $('#imp-vcf').onchange = e => { if (e.target.files[0]) importContacts(e.target.files[0]); e.target.value = ''; };
     $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
+    appVersion().then(v => { const e = $('#upd-ver'); if (e) e.textContent = v; });
+    const uf = $('#upd-full'); if (uf) uf.onclick = fullUpdate;
     if (!EMBED) $('#bk-full').onclick = () => exportBackup(true);
     $('#bk-light').onclick = () => exportBackup(false);
     $('#bk-import').onchange = e => { if (e.target.files[0]) importBackup(e.target.files[0]); };
@@ -8767,5 +8775,29 @@
       });
     }
   }
+  // رقم النسخة (من سمية الذاكرة ديال Service Worker)
+  async function appVersion() {
+    try { const k = (await caches.keys()).find(x => /^w777-bureau-v\d+$/.test(x)); return k ? k.replace('w777-bureau-', '') : '—'; } catch (e) { return '—'; }
+  }
+  // تحديث كامل: كنحيدو ملفات التطبيق القديمة والـ Service Worker، ونعاودو نحلو من الخادم (IndexedDB = البيانات ما كتمسّش)
+  async function fullUpdate() {
+    const b = $('#upd-full'); if (b) { b.disabled = true; b.textContent = '⏳ كنجيب آخر نسخة…'; }
+    try {
+      if (navigator.serviceWorker) { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); }
+      const keep = ['w777-img-v1', 'w777-tts'];
+      await Promise.all((await caches.keys()).filter(k => !keep.includes(k)).map(k => caches.delete(k)));
+    } catch (e) { /* */ }
+    try { sessionStorage.setItem('w777_updated', '1'); } catch (e) { /* */ }
+    location.replace(location.pathname + '?u=' + Date.now() + '#/settings');
+  }
+  // الفحص التلقائي: ملي كترجع للتطبيق (التيليفون كيخلي التطبيق محلول أيام)، ومرة كل 30 دقيقة
+  let updAt = 0;
+  function checkUpdate() {
+    if (!navigator.serviceWorker || Date.now() - updAt < 60000) return; updAt = Date.now();
+    navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => { /* */ });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+  setInterval(checkUpdate, 30 * 60000);
+  try { if (sessionStorage.getItem('w777_updated')) { sessionStorage.removeItem('w777_updated'); if (/[?&]u=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash); setTimeout(() => appVersion().then(v => toast('✓ التطبيق محدّث — النسخة ' + v)), 1500); } } catch (e) { /* */ }
   document.addEventListener('DOMContentLoaded', start);
 })();
