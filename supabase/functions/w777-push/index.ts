@@ -73,6 +73,17 @@ Deno.serve(async req => {
   else if (type === 'msg') r = await pushTo([row.recipient], { title: '💬 ' + await nameOf(row.sender), body: String(row.body || '').slice(0, 140), url: '#/chat/' + row.sender, tag: 'msg-' + row.sender });
   else if (type === 'rating') r = await pushTo([row.target], { title: '⭐ تقييم جديد', body: `${await nameOf(row.rater)} عطاك ${row.stars}/5`, url: '#/', tag: 'rating' });
   else if (type === 'notary') r = await pushTo([row.notary], { title: '🖋️ طلب جديد', body: [row.sender_name, row.contract || row.kind, row.prop_city].filter(Boolean).join(' · '), url: '#/notaries', tag: 'notary' });
+  // الستوري: صاحب الستوري كيتوصل بإشعار ملي شي حد يعجبو (مرة كل 15 دقيقة) ولا يعلق (كل تعليق)
+  else if ((type === 'story_like' || type === 'story_cm') && /^[0-9a-f-]{36}$/.test(row.story_id || '')) {
+    const st = await (await db(`w777_stories?id=eq.${row.story_id}&select=owner`)).json();
+    const owner = st && st[0] && st[0].owner;
+    if (owner && owner !== row.uid) {
+      const who = await nameOf(row.uid);
+      r = type === 'story_like'
+        ? await pushTo([owner], { title: '❤️ إعجاب بالستوري ديالك', body: `${who} عجبو الستوري ديالك`, url: '#/', tag: 'stlike-' + row.story_id }, 'stlike')
+        : await pushTo([owner], { title: '💬 تعليق على الستوري ديالك', body: `${who}: ${String(row.body || '').slice(0, 120)}`, url: '#/', tag: 'stcm-' + row.story_id });
+    }
+  }
   else if (type === 'booking') r = await pushTo(await admins(), { title: '🏖️ طلب حجز جديد', body: `${row.guest_name || ''} · ${row.check_in} → ${row.check_out}`, url: '#/stays', tag: 'booking' });
   else if (type === 'prop' && row.city && row.trx) {
     // عقار جديد فالشبكة ← المشتركين اللي عندهم طلب مفتوح كيناسبو (نفس المدينة، العملية، النوع والميزانية)

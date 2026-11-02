@@ -946,7 +946,7 @@
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
         <div class="card empty">
-          <div class="big">🏡</div><h3>مرحبا بك في تطبيق مكتب الوسيط 777</h3>
+          <div class="big">🏡</div><h3>مرحبا بك في تطبيق مجموعة الوسيط</h3>
           <p>ابدأ بإضافة أول عقار أو أول طلب، أو جرّب التطبيق ببيانات تجريبية.</p>
           <div class="btn-row" style="justify-content:center;margin-top:12px">
             <a class="btn primary" href="#/property/new">${ic('plus', 18)} أول عقار</a>
@@ -2449,28 +2449,27 @@
      ============================================================ */
   const AG_LANGS = [
     { id: 'darija', l: 'الدارجة', dir: 'rtl' }, { id: 'ar', l: 'العربية', dir: 'rtl' }, { id: 'fr', l: 'Français', dir: 'ltr' },
-    { id: 'en', l: 'English', dir: 'ltr' }, { id: 'es', l: 'Español', dir: 'ltr' }, { id: 'it', l: 'Italiano', dir: 'ltr' },
+    { id: 'en', l: 'English', dir: 'ltr' },
   ];
   const AG_T = {
-    darija: { hi: 'مرحبا! أنا المساعد ديال الوسيط 777. شنو نقدر نعاونك؟', ph: 'كتب سؤالك…', send: 'صيفط', fresh: 'محادثة جديدة', think: 'كنخدم…', login: 'دخل بالحساب ديالك أولا (الإعدادات ← المزامنة).', nokey: 'الوكيل مازال ما تفعّلش: خاص المدير يزيد المفتاح فالإعدادات.', quota: 'وصلتي للحد اليومي ديال الرسائل. رجع غدا.', err: 'وقع مشكل، عاود من بعد.', s: ['شنو المواعيد ديال اليوم؟', 'قلب ليا على شقة للبيع فمرجان تحت 700 ألف', 'شكون الزبناء اللي كيناسبهم آخر عقار؟'] },
-    ar: { hi: 'مرحبا! أنا مساعد الوسيط 777. كيف يمكنني مساعدتك؟', ph: 'اكتب سؤالك…', send: 'إرسال', fresh: 'محادثة جديدة', think: 'جارٍ العمل…', login: 'سجّل الدخول أولا (الإعدادات ← المزامنة).', nokey: 'المساعد غير مفعّل بعد: يجب على المدير إضافة المفتاح في الإعدادات.', quota: 'بلغت الحد اليومي من الرسائل.', err: 'حدث خطأ، أعد المحاولة لاحقا.', s: ['ما هي مواعيد اليوم؟', 'ابحث عن شقة للبيع في مرجان بأقل من 700 ألف درهم', 'ما هي إحصائيات المكتب؟'] },
-    fr: { hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Comment puis-je vous aider ?', ph: 'Écrivez votre question…', send: 'Envoyer', fresh: 'Nouvelle conversation', think: 'Je travaille…', login: 'Connectez-vous d’abord (Paramètres → Synchronisation).', nokey: 'L’assistant n’est pas encore activé : l’administrateur doit ajouter la clé dans les Paramètres.', quota: 'Limite quotidienne atteinte.', err: 'Une erreur est survenue, réessayez.', s: ['Quels sont les rendez-vous du jour ?', 'Cherche un appartement à vendre à Marjane sous 700 000 DH', 'Statistiques de l’agence'] },
-    en: { hi: 'Hello! I’m the Al Wasset 777 assistant. How can I help?', ph: 'Type your question…', send: 'Send', fresh: 'New chat', think: 'Working…', login: 'Please sign in first (Settings → Sync).', nokey: 'The assistant isn’t activated yet: the admin must add the key in Settings.', quota: 'Daily message limit reached.', err: 'Something went wrong, try again.', s: ['What are today’s appointments?', 'Find an apartment for sale in Marjane under 700,000 DH', 'Office statistics'] },
-    es: { hi: '¡Hola! Soy el asistente de Al Wasset 777. ¿En qué puedo ayudarte?', ph: 'Escribe tu pregunta…', send: 'Enviar', fresh: 'Nueva conversación', think: 'Trabajando…', login: 'Inicia sesión primero (Ajustes → Sincronización).', nokey: 'El asistente aún no está activado: el administrador debe añadir la clave en Ajustes.', quota: 'Límite diario alcanzado.', err: 'Ha ocurrido un error, inténtalo de nuevo.', s: ['¿Qué citas hay hoy?', 'Busca un piso en venta en Marjane por menos de 700.000 DH', 'Estadísticas de la agencia'] },
-    it: { hi: 'Ciao! Sono l’assistente di Al Wasset 777. Come posso aiutarti?', ph: 'Scrivi la tua domanda…', send: 'Invia', fresh: 'Nuova chat', think: 'Sto lavorando…', login: 'Accedi prima (Impostazioni → Sincronizzazione).', nokey: 'L’assistente non è ancora attivo: l’amministratore deve aggiungere la chiave nelle Impostazioni.', quota: 'Limite giornaliero raggiunto.', err: 'Si è verificato un errore, riprova.', s: ['Quali appuntamenti ci sono oggi?', 'Cerca un appartamento in vendita a Marjane sotto 700.000 DH', 'Statistiche dell’agenzia'] },
+    darija: { hi: 'مرحبا! أنا المساعد ديال تطبيق مجموعة الوسيط. شنو نقدر نعاونك؟', ph: 'كتب سؤالك…', send: 'صيفط', fresh: 'محادثة جديدة', think: 'كنخدم…', login: 'دخل بالحساب ديالك أولا (الإعدادات ← المزامنة).', nokey: 'الوكيل مازال ما تفعّلش: خاص المدير يزيد المفتاح فالإعدادات.', quota: 'وصلتي للحد اليومي ديال الرسائل. رجع غدا.', err: 'وقع مشكل، عاود من بعد.', s: ['شنو المواعيد ديال اليوم؟', 'قلب ليا على شقة للبيع فمرجان تحت 700 ألف', 'شكون الزبناء اللي كيناسبهم آخر عقار؟'] },
+    ar: { hi: 'مرحبا! أنا مساعد تطبيق مجموعة الوسيط. كيف يمكنني مساعدتك؟', ph: 'اكتب سؤالك…', send: 'إرسال', fresh: 'محادثة جديدة', think: 'جارٍ العمل…', login: 'سجّل الدخول أولا (الإعدادات ← المزامنة).', nokey: 'المساعد غير مفعّل بعد: يجب على المدير إضافة المفتاح في الإعدادات.', quota: 'بلغت الحد اليومي من الرسائل.', err: 'حدث خطأ، أعد المحاولة لاحقا.', s: ['ما هي مواعيد اليوم؟', 'ابحث عن شقة للبيع في مرجان بأقل من 700 ألف درهم', 'ما هي إحصائيات المكتب؟'] },
+    fr: { hi: 'Bonjour ! Je suis l’assistant de l’application Groupe Al Wasset. Comment puis-je vous aider ?', ph: 'Écrivez votre question…', send: 'Envoyer', fresh: 'Nouvelle conversation', think: 'Je travaille…', login: 'Connectez-vous d’abord (Paramètres → Synchronisation).', nokey: 'L’assistant n’est pas encore activé : l’administrateur doit ajouter la clé dans les Paramètres.', quota: 'Limite quotidienne atteinte.', err: 'Une erreur est survenue, réessayez.', s: ['Quels sont les rendez-vous du jour ?', 'Cherche un appartement à vendre à Marjane sous 700 000 DH', 'Statistiques de l’agence'] },
+    en: { hi: 'Hi there! I’m the Al Wasset Group app assistant. What can I do for you today?', ph: 'Type your question…', send: 'Send', fresh: 'New chat', think: 'Working…', login: 'Please sign in first (Settings → Sync).', nokey: 'The assistant isn’t activated yet: the admin must add the key in Settings.', quota: 'Daily message limit reached.', err: 'Something went wrong, try again.', s: ['What are today’s appointments?', 'Find an apartment for sale in Marjane under 700,000 DH', 'Office statistics'] },
   };
   const AG = { open: false, busy: false, history: [], view: [], cfg: null };
   const agAI = () => !!(AG.cfg && AG.cfg.ai_enabled);
   // الدارجة هي اللغة الافتراضية (مرة وحدة كنرجعو ليها حتى اللي كانو مختارين العربية من قبل)
   try { if (!localStorage.getItem('w777_agent_lang_v2')) { localStorage.setItem('w777_agent_lang_v2', '1'); localStorage.removeItem('w777_agent_lang'); } } catch (e) { /* */ }
-  const agLang = () => { try { return localStorage.getItem('w777_agent_lang') || 'darija'; } catch (e) { return 'darija'; } };
+  // الإسبانية والإيطالية تحيدو: اللي كانو مختارينهم كيرجعو للدارجة
+  const agLang = () => { try { const l = localStorage.getItem('w777_agent_lang'); return AG_LANGS.some(x => x.id === l) ? l : 'darija'; } catch (e) { return 'darija'; } };
   const agT = () => AG_T[agLang()] || AG_T.darija;
   function agCfgCached() { try { return JSON.parse(localStorage.getItem('w777_agent_cfg') || 'null'); } catch (e) { return null; } }
   // الوكيل ديال المشترك (الاسم/الصورة اللي ختار) — محفوظ فالحساب ديالو
   function agMyCached() { try { const m = JSON.parse(localStorage.getItem('w777_agent_my') || 'null'), Sy = window.W777_SYNC; return m && Sy && Sy.isOn() && m.u === Sy.uid() ? m : null; } catch (e) { return null; } }
   async function agLoadCfg() {
     const Sy = window.W777_SYNC;
-    AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد الوسيط 777', photo: null };
+    AG.cfg = AG.cfg || agCfgCached() || { name: 'مساعد مجموعة الوسيط', photo: null };
     if (AG.my === undefined) AG.my = agMyCached();
     if (!Sy || !Sy.isOn()) return AG.cfg;
     try {
@@ -2489,7 +2488,7 @@
     return AG.cfg;
   }
   const agMine = () => !!(AG.my && (AG.my.photo || AG.my.name));
-  const agName = () => (AG.my && AG.my.name) || (AG.cfg && AG.cfg.name) || 'مساعد الوسيط 777';
+  const agName = () => (AG.my && AG.my.name) || (AG.cfg && AG.cfg.name) || 'مساعد مجموعة الوسيط';
   const agPhoto = () => (AG.my && AG.my.photo) || (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=9';
   function agPaintButton() {
     const b = $('#agent-fab'); if (!b) return;
@@ -2547,7 +2546,10 @@
   // الجواب كيتقسم لجمل: أول جملة كتبدا تتقرا قبل ما يكمل الكتابة.
   const agTTS = () => 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
   const agVoiceOn = () => { try { return localStorage.getItem('w777_agent_voice') !== '0'; } catch (e) { return true; } };
-  const AGV = { ctx: null, an: null, buf: null, src: null, q: [], playing: false, gen: 0, cloudOff: 0, synth: false, said: 0, pend: '', pulse: 0 };
+  const AGV = { ctx: null, an: null, buf: null, src: null, q: [], playing: false, gen: 0, cloudOff: 0, synth: false, said: 0, pend: '', pulse: 0, t0: 0, first: true, synthGen: -1, ext: false };
+  // الوعد للمستعمل: الصوت كيبدا فـ 2 ثواني على الأكثر من الضغطة. إلا الصوت الطبيعي ما وصلش فالوقت، كنقراو بصوت الجهاز (نفس الجواب كامل بنفس الصوت)
+  const AG_VOICE_DEADLINE = 1900;
+  const agHearing = () => AG.open || AGV.ext;
   function agAudio() {
     const C = window.AudioContext || window.webkitAudioContext;
     if (!C) return null;
@@ -2581,7 +2583,7 @@
     return String(txt).replace(/\*\*/g, '').replace(/[\p{Extended_Pictographic}️‍]/gu, ' ').replace(/[#*_`>|•]/g, ' ').replace(/https?:\/\/\S+/g, '').replace(/W777-0*(\d+)/g, '$1').replace(/DM-0*(\d+)/g, 'طلب $1').replace(/\s+/g, ' ').trim();
   }
   function agHush() {
-    AGV.gen++; AGV.q = []; AGV.playing = false; AGV.pend = ''; AGV.said = 0;
+    AGV.gen++; AGV.q = []; AGV.playing = false; AGV.pend = ''; AGV.said = 0; AGV.t0 = performance.now(); AGV.first = true;
     if (AGV.src) { try { AGV.src.onended = null; AGV.src.stop(); } catch (e) { /* */ } AGV.src = null; }
     if (agTTS()) { try { speechSynthesis.cancel(); } catch (e) { /* */ } }
     AGV.synth = false; agStage(false);
@@ -2590,7 +2592,7 @@
   function agSayStart() { agHush(); }
   // كيوصل النص شوية بشوية: كنقطعوه لجمل ونصيفطو كل جملة كاملة للصوت
   function agSayFeed(delta) {
-    if (!agVoiceOn() || !AG.open) return;
+    if (!agVoiceOn() || !agHearing()) return;
     AGV.pend += delta;
     for (;;) {
       const min = AGV.q.length || AGV.playing ? 140 : 20; // الجملة الأولى قصيرة باش يبدا بسرعة
@@ -2606,7 +2608,7 @@
     if (!txt || /^[\d\s.,:-]*$/.test(txt) || AGV.said > 1400) return;
     AGV.said += txt.length;
     const gen = AGV.gen, item = { txt, gen };
-    item.audio = agCloudOK() ? agFetchVoice(txt).catch(() => null) : Promise.resolve(null);
+    item.audio = agCloudOK() && AGV.synthGen !== gen ? agFetchVoice(txt).catch(() => null) : Promise.resolve(null);
     AGV.q.push(item);
     if (!AGV.playing) agPlayNext();
   }
@@ -2628,9 +2630,15 @@
   }
   async function agPlayNext() {
     const it = AGV.q.shift();
-    if (!it || it.gen !== AGV.gen || !AG.open) { AGV.playing = false; if (!AGV.q.length) agStage(false); return; }
-    AGV.playing = true; agStage(true);
-    const buf = await it.audio;
+    if (!it || it.gen !== AGV.gen || !agHearing()) { AGV.playing = false; if (!AGV.q.length) agStage(false); if (AGV.onIdle) AGV.onIdle(); return; }
+    AGV.playing = true; agStage(true); if (AGV.onTalk) AGV.onTalk();
+    let buf, late = false;
+    if (AGV.first) {
+      // أول جملة: كنتسناو الصوت الطبيعي غير حتى 1.9 ثانية من الضغطة
+      AGV.first = false;
+      buf = await Promise.race([it.audio, new Promise(r => setTimeout(() => r('late'), Math.max(0, AG_VOICE_DEADLINE - (performance.now() - AGV.t0))))]);
+      if (buf === 'late') { buf = null; late = true; AGV.synthGen = it.gen; }
+    } else buf = AGV.synthGen === it.gen ? null : await it.audio;
     if (it.gen !== AGV.gen) return;
     // الصوت ديال المتصفح كيبقى «موقف» إلا تخلق بلا ضغطة: كنحاولو نشعلوه، وإلا ما تشعلش كنقراو بصوت المتصفح
     if (buf && AGV.ctx && AGV.ctx.state !== 'running') { try { await Promise.race([AGV.ctx.resume(), new Promise(r => setTimeout(r, 600))]); } catch (e) { /* */ } }
@@ -2639,7 +2647,7 @@
       AGV.src = src; src.onended = () => { if (AGV.src === src) AGV.src = null; agPlayNext(); };
       try { src.start(0); return; } catch (e) { /* نكملو بصوت المتصفح */ }
     }
-    if (agCloudOK() && !buf) AGV.cloudOff = Date.now() + 10 * 60000; // الصوت الطبيعي ما خدمش: 10 دقايق بصوت المتصفح
+    if (agCloudOK() && !buf && !late && AGV.synthGen !== it.gen) AGV.cloudOff = Date.now() + 10 * 60000; // الصوت الطبيعي ما خدمش: 10 دقايق بصوت المتصفح
     if (!agTTS()) { agPlayNext(); return; }
     const tag = AG_SR_LANG[agLang()] || 'ar-SA', u = new SpeechSynthesisUtterance(it.txt);
     u.lang = tag; const v = agVoice(tag); if (v) u.voice = v;
@@ -2651,12 +2659,22 @@
   }
   // الطريقة القديمة (جواب كامل دفعة وحدة) — للمساعد البسيط
   function agSpeak(src, isHtml) {
-    if (!agVoiceOn() || !AG.open) return;
+    if (!agVoiceOn() || !agHearing()) return;
     const txt = agSpeechText(src, isHtml).slice(0, 700);
     if (!txt) return;
     agSayStart(); agSayFeed(txt + ' '); agSayFlush();
   }
   if (agTTS()) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch (e) { /* */ } }
+  // صوت منير للعبة «وصلة العقار»: start (من الضغطة) ← feed (النص كيوصل) ← flush ← stop
+  window.W777_VOICE = {
+    unlock: () => agUnlockTTS(),
+    start: () => { agUnlockTTS(); AGV.ext = true; agHush(); },
+    feed: d => agSayFeed(d), flush: () => agSayFlush(),
+    // جواب جاهز فالحين: ما نتسناوش الصوت الطبيعي أكثر من 0.4 ثانية (إلا كان محفوظ كيخدم هو)
+    now: () => { AGV.t0 = performance.now() - AG_VOICE_DEADLINE + 400; },
+    stop: () => { agHush(); AGV.ext = false; },
+    on: (talk, idle) => { AGV.onTalk = talk; AGV.onIdle = idle; },
+  };
 
   // ---------- الوجه الحي: الفم كيتحل مع الصوت، العينين كيرمشو، والراس كيتحرك ----------
   // مكان الفم والعينين (نسبة من الصورة) كيحددو المدير مرة وحدة من الإعدادات.
@@ -2749,7 +2767,7 @@
   }
   // ---------- الميكروفون (التعرف على الصوت ديال المتصفح — فابور) ----------
   const agSR = () => window.SpeechRecognition || window.webkitSpeechRecognition;
-  const AG_SR_LANG = { darija: 'ar-MA', ar: 'ar-MA', fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT' };
+  const AG_SR_LANG = { darija: 'ar-MA', ar: 'ar-MA', fr: 'fr-FR', en: 'en-US' };
   const agMicSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
   let agRec = null;
   function agListen() {
@@ -3102,12 +3120,10 @@
   }
   /* ---------- المساعد المحلي (فابور، بلا AI): أزرار + كلمات مفتاحية فـ 6 لغات ---------- */
   const LX = {
-    darija: { hi: 'السلام! أنا المساعد ديال الوسيط 777. هضر معايا بالدارجة ولا ورك على شي زر: مثلا «بغيت شي شقة للكرا فحمرية تحت 3000 درهم» ولا «شنو عندي اليوم؟»', today: 'المواعيد ديال اليوم', avail: 'العقارات اللي كاينين', reqs: 'الطلبات اللي مازال محلولين', stats: 'الحصيلة', follow: 'شكون نعيطو ليه اليوم', strong: 'أحسن المطابقات', newReq: 'زيد طلب جديد', newAppt: 'زيد موعد جديد', newProp: 'زيد عقار جديد', price: 'قارن الثمن مع السوق', none: 'سمح ليا، ما لقيت والو. جرب تبدل شي كلمة: الحي، النوع، الثمن ولا سمية الزبون.', found: 'لقيت ليك', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'حل', more: 'شوف كولشي', matches: 'اللي كيناسبوه', avl: 'عقار كاين', openR: 'طلب محلول', strongW: 'مطابقة قوية', apptT: 'المواعيد ديال اليوم', fu: 'خاصهم تعييطة', noAppt: 'ما عندك حتى موعد اليوم ✓ نهار مزيان!', noFu: 'ما كاين حتى واحد خاصك تعيط ليه اليوم ✓', limited: 'الوضع المجاني: كنفهم الدارجة والكلمات المهمة', hello: 'وعليكم السلام، مرحبا بيك! لاباس عليك؟ قول ليا شنو بغيتي: نقلب ليك على عقار، نوريك المواعيد ديال اليوم، ولا الزبناء اللي خاصك تعيط ليهم.', thanks: 'العفو، هادا واجب! إلا احتاجيتي شي حاجة أخرى أنا هنا.', help: 'نقدر نعاونك فـ: التقليب على العقارات (مثلا «فيلا للبيع فويسلان بين 150 و 250 مليون»)، المواعيد ديال اليوم، الزبناء والطلبات، المطابقات، والحصيلة. هضر معايا بحال إلا كتهضر مع صاحبك، بالعربية ولا بالحروف اللاتينية.' },
-    ar: { hello: 'وعليكم السلام، أهلاً بك! كيف يمكنني مساعدتك؟', thanks: 'العفو! أنا في الخدمة.', help: 'أستطيع البحث عن العقارات، عرض مواعيد اليوم، الطلبات، المطابقات والإحصائيات.', hi: 'مرحبا! أنا مساعد الوسيط 777. اضغط على زر أو اكتب كلمة (حي، نوع، مرجع W777-…، اسم زبون…)', today: 'مواعيد اليوم', avail: 'العقارات المتاحة', reqs: 'الطلبات المفتوحة', stats: 'الإحصائيات', follow: 'متابعات اليوم', strong: 'أفضل المطابقات', newReq: 'طلب جديد', newAppt: 'موعد جديد', newProp: 'عقار جديد', price: 'مقارنة الثمن', none: 'لا توجد نتائج. جرّب كلمة أخرى.', found: 'وجدت', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'فتح', more: 'عرض الكل', matches: 'المطابقات', avl: 'متاح', openR: 'طلب مفتوح', strongW: 'مطابقة قوية', apptT: 'مواعيد اليوم', fu: 'متابعات', noAppt: 'لا توجد مواعيد اليوم ✓', noFu: 'لا توجد متابعات ✓', limited: 'الوضع المجاني: أفهم الأزرار والكلمات المفتاحية فقط.' },
-    fr: { hello: 'Bonjour ! Comment puis-je vous aider ?', thanks: 'Avec plaisir !', help: 'Je peux chercher des biens, afficher les RDV du jour, les demandes, les correspondances et les statistiques.', hi: 'Bonjour ! Je suis l’assistant Al Wasset 777. Touchez un bouton ou tapez un mot (quartier, type, réf. W777-…, nom de client…)', today: 'RDV du jour', avail: 'Biens disponibles', reqs: 'Demandes ouvertes', stats: 'Statistiques', follow: 'Relances du jour', strong: 'Meilleurs matchs', newReq: 'Nouvelle demande', newAppt: 'Nouveau RDV', newProp: 'Nouveau bien', price: 'Comparer un prix', none: 'Aucun résultat. Essayez un autre mot.', found: 'Trouvé', props: 'bien(s)', reqsW: 'demande(s)', apptsW: 'RDV', open: 'Ouvrir', more: 'Tout voir', matches: 'Correspondances', avl: 'disponibles', openR: 'demandes ouvertes', strongW: 'matchs forts', apptT: 'RDV du jour', fu: 'relances', noAppt: 'Aucun RDV aujourd’hui ✓', noFu: 'Aucune relance ✓', limited: 'Mode gratuit : je comprends les boutons et les mots-clés.' },
-    en: { hello: 'Hello! How can I help?', thanks: 'You’re welcome!', help: 'I can search properties and show today’s appointments, requests, matches and stats.', hi: 'Hello! I’m the Al Wasset 777 assistant. Tap a button or type a word (district, type, ref W777-…, client name…)', today: 'Today’s appointments', avail: 'Available properties', reqs: 'Open requests', stats: 'Statistics', follow: 'Today’s follow-ups', strong: 'Best matches', newReq: 'New request', newAppt: 'New appointment', newProp: 'New property', price: 'Compare a price', none: 'No results. Try another word.', found: 'Found', props: 'property(ies)', reqsW: 'request(s)', apptsW: 'appointment(s)', open: 'Open', more: 'See all', matches: 'Matches', avl: 'available', openR: 'open requests', strongW: 'strong matches', apptT: 'Today’s appointments', fu: 'follow-ups', noAppt: 'No appointments today ✓', noFu: 'No follow-ups ✓', limited: 'Free mode: I understand buttons and keywords.' },
-    es: { hello: '¡Hola! ¿En qué puedo ayudarte?', thanks: '¡De nada!', help: 'Puedo buscar inmuebles y mostrar citas, solicitudes, coincidencias y estadísticas.', hi: '¡Hola! Soy el asistente de Al Wasset 777. Pulsa un botón o escribe una palabra (barrio, tipo, ref. W777-…, cliente…)', today: 'Citas de hoy', avail: 'Inmuebles disponibles', reqs: 'Solicitudes abiertas', stats: 'Estadísticas', follow: 'Seguimientos de hoy', strong: 'Mejores coincidencias', newReq: 'Nueva solicitud', newAppt: 'Nueva cita', newProp: 'Nuevo inmueble', price: 'Comparar precio', none: 'Sin resultados. Prueba otra palabra.', found: 'Encontrado', props: 'inmueble(s)', reqsW: 'solicitud(es)', apptsW: 'cita(s)', open: 'Abrir', more: 'Ver todo', matches: 'Coincidencias', avl: 'disponibles', openR: 'solicitudes abiertas', strongW: 'coincidencias fuertes', apptT: 'Citas de hoy', fu: 'seguimientos', noAppt: 'No hay citas hoy ✓', noFu: 'Sin seguimientos ✓', limited: 'Modo gratuito: entiendo botones y palabras clave.' },
-    it: { hello: 'Ciao! Come posso aiutarti?', thanks: 'Prego!', help: 'Posso cercare immobili e mostrare appuntamenti, richieste, abbinamenti e statistiche.', hi: 'Ciao! Sono l’assistente di Al Wasset 777. Tocca un pulsante o scrivi una parola (quartiere, tipo, rif. W777-…, cliente…)', today: 'Appuntamenti di oggi', avail: 'Immobili disponibili', reqs: 'Richieste aperte', stats: 'Statistiche', follow: 'Richiami di oggi', strong: 'Migliori abbinamenti', newReq: 'Nuova richiesta', newAppt: 'Nuovo appuntamento', newProp: 'Nuovo immobile', price: 'Confronta prezzo', none: 'Nessun risultato. Prova un’altra parola.', found: 'Trovato', props: 'immobile/i', reqsW: 'richiesta/e', apptsW: 'appuntamento/i', open: 'Apri', more: 'Vedi tutto', matches: 'Abbinamenti', avl: 'disponibili', openR: 'richieste aperte', strongW: 'abbinamenti forti', apptT: 'Appuntamenti di oggi', fu: 'richiami', noAppt: 'Nessun appuntamento oggi ✓', noFu: 'Nessun richiamo ✓', limited: 'Modalità gratuita: capisco pulsanti e parole chiave.' },
+    darija: { hi: 'السلام! أنا المساعد ديال تطبيق مجموعة الوسيط. هضر معايا بالدارجة ولا ورك على شي زر: مثلا «بغيت شي شقة للكرا فحمرية تحت 3000 درهم» ولا «شنو عندي اليوم؟»', today: 'المواعيد ديال اليوم', avail: 'العقارات اللي كاينين', reqs: 'الطلبات اللي مازال محلولين', stats: 'الحصيلة', follow: 'شكون نعيطو ليه اليوم', strong: 'أحسن المطابقات', newReq: 'زيد طلب جديد', newAppt: 'زيد موعد جديد', newProp: 'زيد عقار جديد', price: 'قارن الثمن مع السوق', none: 'سمح ليا، ما لقيت والو. جرب تبدل شي كلمة: الحي، النوع، الثمن ولا سمية الزبون.', found: 'لقيت ليك', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'حل', more: 'شوف كولشي', matches: 'اللي كيناسبوه', avl: 'عقار كاين', openR: 'طلب محلول', strongW: 'مطابقة قوية', apptT: 'المواعيد ديال اليوم', fu: 'خاصهم تعييطة', noAppt: 'ما عندك حتى موعد اليوم ✓ نهار مزيان!', noFu: 'ما كاين حتى واحد خاصك تعيط ليه اليوم ✓', limited: 'الوضع المجاني: كنفهم الدارجة والكلمات المهمة', hello: 'وعليكم السلام، مرحبا بيك! لاباس عليك؟ قول ليا شنو بغيتي: نقلب ليك على عقار، نوريك المواعيد ديال اليوم، ولا الزبناء اللي خاصك تعيط ليهم.', thanks: 'العفو، هادا واجب! إلا احتاجيتي شي حاجة أخرى أنا هنا.', help: 'نقدر نعاونك فـ: التقليب على العقارات (مثلا «فيلا للبيع فويسلان بين 150 و 250 مليون»)، المواعيد ديال اليوم، الزبناء والطلبات، المطابقات، والحصيلة. هضر معايا بحال إلا كتهضر مع صاحبك، بالعربية ولا بالحروف اللاتينية.' },
+    ar: { hello: 'وعليكم السلام، أهلاً بك! كيف يمكنني مساعدتك؟', thanks: 'العفو! أنا في الخدمة.', help: 'أستطيع البحث عن العقارات، عرض مواعيد اليوم، الطلبات، المطابقات والإحصائيات.', hi: 'مرحبا! أنا مساعد تطبيق مجموعة الوسيط. اضغط على زر أو اكتب كلمة (حي، نوع، مرجع W777-…، اسم زبون…)', today: 'مواعيد اليوم', avail: 'العقارات المتاحة', reqs: 'الطلبات المفتوحة', stats: 'الإحصائيات', follow: 'متابعات اليوم', strong: 'أفضل المطابقات', newReq: 'طلب جديد', newAppt: 'موعد جديد', newProp: 'عقار جديد', price: 'مقارنة الثمن', none: 'لا توجد نتائج. جرّب كلمة أخرى.', found: 'وجدت', props: 'عقار', reqsW: 'طلب', apptsW: 'موعد', open: 'فتح', more: 'عرض الكل', matches: 'المطابقات', avl: 'متاح', openR: 'طلب مفتوح', strongW: 'مطابقة قوية', apptT: 'مواعيد اليوم', fu: 'متابعات', noAppt: 'لا توجد مواعيد اليوم ✓', noFu: 'لا توجد متابعات ✓', limited: 'الوضع المجاني: أفهم الأزرار والكلمات المفتاحية فقط.' },
+    fr: { hello: 'Bonjour ! Comment puis-je vous aider ?', thanks: 'Avec plaisir !', help: 'Je peux chercher des biens, afficher les RDV du jour, les demandes, les correspondances et les statistiques.', hi: 'Bonjour ! Je suis l’assistant de l’application Groupe Al Wasset. Touchez un bouton ou tapez un mot (quartier, type, réf. W777-…, nom de client…)', today: 'RDV du jour', avail: 'Biens disponibles', reqs: 'Demandes ouvertes', stats: 'Statistiques', follow: 'Relances du jour', strong: 'Meilleurs matchs', newReq: 'Nouvelle demande', newAppt: 'Nouveau RDV', newProp: 'Nouveau bien', price: 'Comparer un prix', none: 'Aucun résultat. Essayez un autre mot.', found: 'Trouvé', props: 'bien(s)', reqsW: 'demande(s)', apptsW: 'RDV', open: 'Ouvrir', more: 'Tout voir', matches: 'Correspondances', avl: 'disponibles', openR: 'demandes ouvertes', strongW: 'matchs forts', apptT: 'RDV du jour', fu: 'relances', noAppt: 'Aucun RDV aujourd’hui ✓', noFu: 'Aucune relance ✓', limited: 'Mode gratuit : je comprends les boutons et les mots-clés.' },
+    en: { hello: 'Hey, good to see you! What can I help you with?', thanks: 'Anytime — happy to help!', help: 'I can find properties for you, walk you through today’s appointments, open requests, best matches and your office stats.', hi: 'Hi! I’m the Al Wasset Group app assistant. Tap a button or just type what you need — a district, a property type, a ref like W777-…, or a client’s name.', today: 'Today’s appointments', avail: 'Available properties', reqs: 'Open requests', stats: 'Statistics', follow: 'Today’s follow-ups', strong: 'Best matches', newReq: 'New request', newAppt: 'New appointment', newProp: 'New property', price: 'Compare a price', none: 'No results. Try another word.', found: 'Found', props: 'property(ies)', reqsW: 'request(s)', apptsW: 'appointment(s)', open: 'Open', more: 'See all', matches: 'Matches', avl: 'available', openR: 'open requests', strongW: 'strong matches', apptT: 'Today’s appointments', fu: 'follow-ups', noAppt: 'No appointments today ✓', noFu: 'No follow-ups ✓', limited: 'Free mode: I understand buttons and keywords.' },
   };
   const lx = () => LX[agLang()] || LX.darija;
   const LX_ACTIONS = ['today', 'avail', 'reqs', 'stats', 'follow', 'strong', 'newReq', 'newAppt', 'newProp', 'price'];
@@ -3316,13 +3332,26 @@
   const agReq = r => ({ ref: r.ref, client: (r.client || {}).name, phone: (r.client || {}).phone, transaction: trxAr(r.transaction), types: (r.types || []).map(typeAr), city: r.city, districts: r.districts || [], budget_max: r.budgetMax || null, status: (RSTATUS[r.status] || {}).ar || r.status, follow_up: r.followUp || null });
   const byRef = (list, ref) => list.find(x => String(x.ref || '').toLowerCase() === String(ref || '').trim().toLowerCase());
   const agAsk = async msg => confirmBox(msg, '✓', false);
-  const AG_TOOL_AR = {
+  const AG_TOOL_AR = { calculate: '🧮 كنحسب…', loan_calc: '🏦 كنحسب القرض…', buying_fees: '🧾 كنحسب مصاريف الشراء…',
     search_properties: 'كنقلب فالعقارات…', get_property: 'كنشوف تفاصيل العقار…', search_requests: 'كنقلب فالطلبات…', get_request: 'كنشوف الطلب…',
     matches_for_request: 'كنقلب على العقارات المناسبة…', matches_for_property: 'كنقلب على الزبناء المناسبين…', create_request: 'كنزيد الطلب…',
     list_appointments: 'كنشوف المواعيد…', create_appointment: 'كنزيد الموعد…', update_property_status: 'كنبدل حالة العقار…', market_price: 'كنقارن مع ثمن السوق…',
     office_stats: 'كنحسب الأرقام ديال المكتب…', network_search: 'كنقلب فالشبكة…', app_help: 'كنقلب فدليل التطبيق…', finance_summary: 'كنحسب المالية…',
     rentals_summary: 'كنشوف الكراء…', open_page: 'كنحل الصفحة…', get_contract_template: 'كنقرا نموذج العقد…',
   };
+  // حساب دقيق بلا eval: + - * / % ^ والأقواس (2.5% = 0.025، و«م» مليون سنتيم ماشي هنا: الوكيل كيحولها لدرهم)
+  function agCalc(expr) {
+    const src = String(expr || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[×x]/g, '*').replace(/÷/g, '/').replace(/,/g, '.').replace(/\s+/g, '');
+    if (!src || /[^0-9.+\-*/%^()]/.test(src)) return null;
+    let i = 0;
+    const peek = () => src[i], eat = c => (src[i] === c ? (i++, true) : false);
+    const num0 = () => { const m = /^\d*\.?\d+(?:e[+-]?\d+)?/.exec(src.slice(i)); if (!m) throw 0; i += m[0].length; return parseFloat(m[0]); };
+    const atom = () => { if (eat('(')) { const v = add(); if (!eat(')')) throw 0; return v; } if (eat('-')) return -atom(); if (eat('+')) return atom(); let v = num0(); while (eat('%')) v /= 100; return v; };
+    const pow = () => { const b = atom(); return eat('^') ? Math.pow(b, pow()) : b; };
+    const mul = () => { let v = pow(); for (;;) { if (eat('*')) v *= pow(); else if (eat('/')) v /= pow(); else return v; } };
+    const add = () => { let v = mul(); for (;;) { if (eat('+')) v += mul(); else if (eat('-')) v -= mul(); else return v; } };
+    try { const v = add(); return i === src.length && isFinite(v) ? v : null; } catch (e) { return null; }
+  }
   async function agRunTool(name, a) {
     const lim = Math.min(num(a.limit) || 10, 25);
     switch (name) {
@@ -3409,6 +3438,24 @@
         return { total: list.length, results: list.slice(0, lim).map(x => ({ agency: x.agency, agency_phone: x.phone, ref: (x.data || {}).ref, type: typeAr(x.type), city: x.city, district: (x.data || {}).district, price: priceText(netAsProp(x)) })) };
       }
       case 'app_help': return { lessons: agGuide(a.query || '', 3) };
+      case 'calculate': {
+        const v = agCalc(a.expression);
+        return v == null ? { error: 'invalid expression', expression: a.expression } : { expression: a.expression, result: v, result_text: fmtRaw(Math.round(v * 100) / 100), ...(a.label ? { label: a.label } : {}) };
+      }
+      case 'loan_calc': {
+        const L = loanCalc({ price: a.price, down: a.down_pct, years: a.years, rate: a.rate, ins: a.insurance });
+        const r = x => Math.round(x);
+        return { price_dh: r(L.price), down_payment_dh: r(L.down), down_pct: L.downPct, loan_dh: r(L.principal), years: L.years, rate_pct: L.rate,
+          monthly_installment_dh: r(L.monthly), of_which_insurance_dh: r(L.insM), total_interest_dh: r(L.interest), total_insurance_dh: r(L.insTot),
+          required_monthly_income_dh: r(L.income), note: 'estimate; the bank gives the final offer' };
+      }
+      case 'buying_fees': {
+        const price = num(a.price) || 0, k = a.kind === 'land' ? 'land' : a.kind === 'pro' ? 'pro' : 'home';
+        const rate = k === 'land' ? 0.06 : k === 'pro' ? 0.05 : 0.04;
+        const rows = { registration: price * rate, ...(a.cash ? { cash_surcharge_2pct: price * 0.02 } : {}), land_registry: Math.max(price * 0.015, 500) + 100, notary_fees_incl_vat: price * 0.011, stamps_and_misc: 1500 };
+        const tot = Object.values(rows).reduce((q, x) => q + x, 0);
+        return { price_dh: price, kind: k, registration_rate_pct: rate * 100, items_dh: Object.fromEntries(Object.entries(rows).map(([x, y]) => [x, Math.round(y)])), total_fees_dh: Math.round(tot), pct_of_price: +(tot / (price || 1) * 100).toFixed(1), total_with_price_dh: Math.round(price + tot), note: 'estimate; the notary gives the final amount' };
+      }
       case 'get_contract_template': {
         if (!a.id) return { templates: CONTRACTS.map(c => ({ id: c.f, title: c.ar, fr: c.fr, law: c.law || '' })) };
         const T = AG.ctTexts || (AG.ctTexts = await (await fetch('files/contrats/texts.json?v=1')).json());
@@ -3431,7 +3478,7 @@
       }
       case 'open_page': {
         const pg = a.page, ref = a.ref;
-        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new', new_appointment: '#/appointment/new', rentals: '#/rentals', finance: '#/finance', report: '#/report', loan: '#/loan', map: '#/map', ad_maker: '#/ad-maker', messages: '#/inbox' };
+        const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new', new_appointment: '#/appointment/new', rentals: '#/rentals', finance: '#/finance', report: '#/report', loan: '#/loan', map: '#/map', ad_maker: '#/ad-maker', messages: '#/inbox', tamwil: '#/tamwil', game: '#/game', stories: '#/' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
         else if (map[pg]) location.hash = map[pg];
@@ -4930,10 +4977,12 @@
     draw();
   }
   // الرئيسية (لفوق): غير جوج أزرار — «إصنع إعلانا» (على اليمين) و«بحث» ← صفحة البحث بالفلتر الكامل
+  // ترتيب المدير: «بحث» على اليمين، «إعلانات فورية» فالوسط، «التمويل العقاري» على اليسار (بشعارات الجهات كتدور)
   function homeSearch() {
-    return `<div class="card hs-card hs-two">
-      <a class="btn ad-cta" href="#/ad-maker">✨ إعلانات فورية</a>
+    return `<div class="card hs-card hs-two hs-three">
       <a class="btn gold" href="#/search?scope=mine">${ic('search', 18)} بحث</a>
+      <a class="btn ad-cta" href="#/ad-maker">✨ إعلانات فورية</a>
+      <a class="btn fin-cta" href="#/tamwil"><i class="fin-rot fin-mini" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}</i> التمويل العقاري</a>
     </div>`;
   }
   function bindHomeSearch() { /* الأزرار روابط عادية */ }
@@ -4961,7 +5010,7 @@
       <div class="gd-hero">
         <div class="grow">
           <div class="gd-k">🎓 دليل الاستعمال</div>
-          <h1>تعلّم استعمال تطبيق الوسيط 777</h1>
+          <h1>تعلّم استعمال تطبيق مجموعة الوسيط</h1>
           <p>${L.length} درسا قصيرا بالصور، خطوة بخطوة — من أول دخول حتى شبكة الوسيط 777. كل درس فيه زر «جرّب دابا» يفتح لك الصفحة مباشرة.</p>
           <div class="gd-bar"><span style="width:${pct}%"></span></div>
           <small>${pct}% · ${L.filter(l => done.has(l.n)).length} / ${L.length} درس</small>
@@ -4980,7 +5029,7 @@
             <img src="guide/${l.img[0]}.webp" alt="" loading="lazy">
             <div class="gd-body"><span class="gd-n">${done.has(l.n) ? '✓' : String(l.n).padStart(2, '0')}</span><b>${esc(l.t)}</b><small>${esc(l.tag)}</small></div></a>`).join('')}</div>`;
       }).join('')}`;
-    bindAgCard(main(), { guide: 'سلام منير! علمني كيفاش نستعمل تطبيق الوسيط 777 من الأول، خطوة بخطوة.' });
+    bindAgCard(main(), { guide: 'سلام منير! علمني كيفاش نستعمل تطبيق مجموعة الوسيط من الأول، خطوة بخطوة.' });
     const r = $('#gd-reset'); if (r) r.onclick = async () => { if (await confirmBox('إعادة الدليل من الأول؟', 'إعادة', false)) { gdSave(new Set()); viewGuide(); } };
   }
   function viewGuideLesson(l, L, done) {
@@ -5551,7 +5600,7 @@
     bindMoney(main());
     const card = r => {
       const mine = r.owner === me || admin, m = INV_MODES[r.mode] || INV_MODES.partner;
-      const msg = `السلام عليكم ${r.owner_name || ''}، شفت عرض الاستثمار «${r.title}» (${refOf('INV', r.id)}) فتطبيق الوسيط 777، وعندي مشروع/عقار مناسب.`;
+      const msg = `السلام عليكم ${r.owner_name || ''}، شفت عرض الاستثمار «${r.title}» (${refOf('INV', r.id)}) فتطبيق مجموعة الوسيط، وعندي مشروع/عقار مناسب.`;
       const bud = r.budget_min && r.budget_max ? `<small>من</small> ${nm(r.budget_min)} <small>إلى</small> ${nm(r.budget_max)} <small>درهم</small>`
         : r.budget_min || r.budget_max ? `<small>${r.budget_min ? 'ابتداء من' : 'حتى'}</small> ${nm(r.budget_min || r.budget_max)} <small>درهم</small>` : '<small class="muted">الميزانية حسب المشروع</small>';
       return `<div class="card iv-card ${r.status === 'closed' ? 'is-closed' : ''}">
@@ -6202,7 +6251,7 @@
     main().innerHTML = head + (tab === '' && rows.length ? `<div class="card card-pad" style="margin-bottom:14px"><div class="kv"><div><small>مشاريع منشورة</small><b>${rows.length}</b></div><div><small>مجموع التمويل المطلوب</small><b>${esc(millions(total) || fmt(total))} درهم</b></div></div></div>` : '') + `
       <div class="dir-grid">${rows.map(r => {
         const owner = r.owner === me;
-        const msg = `السلام عليكم، شفت المشروع «${r.title}» (${refOf('PJ', r.id)}) فتطبيق الوسيط 777 وبغيت نعرف أكثر.`;
+        const msg = `السلام عليكم، شفت المشروع «${r.title}» (${refOf('PJ', r.id)}) فتطبيق مجموعة الوسيط وبغيت نعرف أكثر.`;
         const contact = r.phone || W777_OFFICE;
         const cover = (r.files || []).find(f => f.t === 'photo'), cnt = pjCount(r);
         return `<div class="card card-pad pj-card">
@@ -7022,7 +7071,7 @@
   async function importBackup(file) {
     let data;
     try { data = JSON.parse(await file.text()); } catch (e) { toast('ملف غير صالح'); return; }
-    if (!data || data.app !== 'wasset777-bureau') { toast('هذا الملف ليس نسخة احتياطية لتطبيق الوسيط 777'); return; }
+    if (!data || data.app !== 'wasset777-bureau') { toast('هذا الملف ليس نسخة احتياطية لتطبيق مجموعة الوسيط'); return; }
     const choice = await new Promise(res => modal(`<h3>استيراد ${data.properties.length} عقار و ${data.requests.length} طلب${(data.appointments || []).length ? ' و ' + data.appointments.length + ' موعد' : ''}</h3>
       <p class="muted">تاريخ النسخة: ${esc((data.exportedAt || '').slice(0, 16).replace('T', ' '))}</p>
       <div class="btn-row" style="flex-direction:column;align-items:stretch">
@@ -7494,6 +7543,7 @@
       agentName: agMine() && AG.my.name ? AG.my.name : null,
       agentPhoto: AG.my && AG.my.photo ? AG.my.photo : null,
       askAI: on ? body => Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) : null,
+      voice: window.W777_VOICE, // نفس صوت المساعد (طبيعي، وإلا صوت الجهاز فـ 2 ثواني)
     });
   }
   /* ============================================================
@@ -8152,7 +8202,7 @@
       ${R.added.length ? `<h2>🏠 العقارات الجديدة (${R.added.length})</h2><table><tr><th>المرجع</th><th>العقار</th><th>المكان</th><th>الثمن</th></tr>${R.added.slice(0, 40).map(p => `<tr><td>${esc(p.ref)}</td><td>${esc(p.title || typeAr(p.type))}</td><td>${esc([p.district, p.city].filter(Boolean).join('، '))}</td><td>${esc(priceText(p))}</td></tr>`).join('')}</table>` : ''}
       ${R.topD.length ? `<h2>📍 الأحياء الأكثر نشاطا</h2><table>${R.topD.map(d => `<tr><td>${esc(d[0])}</td><td>${d[1]} عقار</td></tr>`).join('')}</table>` : ''}
       ${R.rentLate.length ? `<h2>⛔ كراء متأخر</h2><table><tr><th>المكتري</th><th>العقار</th><th>السومة</th></tr>${R.rentLate.map(l => `<tr><td>${esc((l.tenant && l.tenant.name) || '')}</td><td>${esc(l.propLabel || '')}</td><td>${M0(l.rent)} د</td></tr>`).join('')}</table>` : ''}
-      <p class="muted" style="margin-top:20px">تقرير أوتوماتيكي من تطبيق الوسيط 777 — ${esc(today())}</p>`;
+      <p class="muted" style="margin-top:20px">تقرير أوتوماتيكي من تطبيق مجموعة الوسيط — ${esc(today())}</p>`;
   }
   function viewReport(query) {
     const k = query.m || ym(), R = monthReport(k);
