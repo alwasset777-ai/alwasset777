@@ -34,7 +34,8 @@
   /* ---------- أنواع العقارات الموجودة بالمغرب ---------- */
   const PROPERTY_TYPES = [
     // شقق
-    { id: 'apartment', ar: 'شقة', fr: 'Appartement', cat: 'apartment' },
+    { id: 'apartment', ar: 'شقة غير مفروشة', fr: 'Appartement non meublé', cat: 'apartment' },
+    { id: 'apartment_furnished', ar: 'شقة مفروشة', fr: 'Appartement meublé', cat: 'apartment' },
     { id: 'apartment_eco', ar: 'شقة اقتصادية', fr: 'Appartement économique', cat: 'apartment' },
     { id: 'social_housing', ar: 'سكن اجتماعي (250 ألف)', fr: 'Logement social', cat: 'apartment' },
     { id: 'low_cost', ar: 'سكن منخفض التكلفة (140 ألف)', fr: 'Logement à faible VIT', cat: 'apartment' },

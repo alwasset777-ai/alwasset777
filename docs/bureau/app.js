@@ -344,7 +344,7 @@
       const m = items[i];
       const url = await fileUrl(m.id);
       lb.innerHTML = `
-        ${m.kind === 'video' ? `<video src="${url}" controls autoplay playsinline></video>` : `<img src="${url}" alt="">`}
+        ${m.kind === 'video' ? `<video src="${url}" controls autoplay playsinline></video>` : `<div class="lb-ph"><img src="${url}" alt="">${m.wm ? '' : logoMark()}</div>`}
         <button class="lb-btn lb-close">${ic('x', 24)}</button>
         ${items.length > 1 ? `<button class="lb-btn lb-prev">${ic('chevR', 26)}</button><button class="lb-btn lb-next">${ic('chevL', 26)}</button>` : ''}
         <div class="lb-count">${i + 1} / ${items.length}</div>`;
@@ -474,6 +474,24 @@
     MATCH_CACHE.set(key, res);
     return res;
   }
+  // العقار مفروش؟ true / false / null (ما معروفش)
+  function isFurn(p) {
+    const f = (p.specs || {}).furnished;
+    if (f === 'مفروش' || f === 'مفروش جزئيا') return true;
+    if (f === 'غير مفروش' || f === 'مطبخ مجهز فقط') return false;
+    if (p.type === 'apartment_furnished' || p.transaction === 'rent_furnished' || p.transaction === 'seasonal') return true;
+    if (p.type === 'apartment') return false;
+    return null;
+  }
+  // الزبون باغي مفروش؟ true / false / null (ما كيهمّوش)
+  function wantFurn(r) {
+    if (r.transaction === 'rent_furnished' || r.transaction === 'seasonal') return true;
+    const t = r.types || [], a = t.includes('apartment'), f = t.includes('apartment_furnished');
+    if (f && !a) return true;
+    if (a && !f) return false;
+    if (r.transaction === 'rent') return false;
+    return null;
+  }
   function matchScoreRaw(p, r) {
     if (['sold', 'rented', 'withdrawn'].includes(p.status)) return null;
     const reasons = [];
@@ -484,6 +502,10 @@
       if (!compatible) return null;
       reasons.push({ t: trxAr(p.transaction), s: 'mid' });
     }
+    // مفروش / غير مفروش (شرط أساسي): اللي باغي شقة خاوية ما تبانش ليه المفروشة، والعكس
+    const wf = wantFurn(r), pf = isFurn(p);
+    if (wf !== null && pf !== null && wf !== pf) return null;
+    if (wf !== null && pf === wf) reasons.push({ t: pf ? 'مفروش' : 'غير مفروش', s: 'ok' });
     // المدينة (شرط أساسي)
     if (r.city && p.city !== r.city) return null;
     score += 20;
@@ -542,6 +564,18 @@
     if (p.status === 'reserved' || p.status === 'negotiation') { score -= 10; reasons.push({ t: PSTATUS[p.status].ar, s: 'mid' }); }
     return { score: Math.max(0, Math.min(100, score)), reasons };
   }
+  // اختبار محلي فقط (localhost): مفروش ↔ غير مفروش
+  if (location.hostname === 'localhost') window.W777_TEST = { furnCheck: () => {
+    const P = (type, trx, furn) => ({ id: 'x' + type + trx + furn, type, transaction: trx, city: 'مكناس', status: 'available', specs: furn ? { furnished: furn } : {} });
+    const R = (types, trx) => ({ id: 'r' + types + trx, types, transaction: trx, city: 'مكناس' });
+    const c = [
+      [P('apartment_furnished', 'rent'), R(['apartment'], 'rent'), false], [P('apartment', 'rent', 'مفروش'), R(['apartment'], 'rent'), false],
+      [P('apartment', 'rent_furnished'), R(['apartment'], 'rent'), false], [P('apartment', 'rent', 'غير مفروش'), R(['apartment'], 'rent'), true],
+      [P('apartment', 'rent'), R(['apartment_furnished'], 'rent'), false], [P('apartment_furnished', 'rent'), R(['apartment_furnished'], 'rent'), true],
+      [P('apartment', 'rent_furnished'), R([], 'rent_furnished'), true], [P('apartment', 'sale'), R(['apartment'], 'sale'), true], [P('villa', 'sale'), R([], 'sale'), true],
+    ].map(([p, r, want]) => !!matchScoreRaw(p, r) === want);
+    return { ok: c.every(Boolean), c };
+  } };
   const MIN_SCORE = 50;
   const openReq = r => !['done', 'cancelled'].includes(r.status);
   // قائمة الاقتراحات ديال كل طلب محفوظة حتى يتبدل شي عقار ولا الطلب نفسه
@@ -1019,9 +1053,9 @@
     const sp = p.specs || {};
     const a = areaOf(p);
     return `<a class="card prop-card${tools === true ? selOn(p.id) : ''}" href="#/property/${p.id}"${tools === true ? ` data-sid="${p.id}"` : ''}>
-      <div class="prop-cover">${tools === true ? selTools(p.id, 'on-cover') : ''}
-        ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">` : `<div class="ph">${ic('image', 40)}</div>`}
-        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${p.fav ? `<span class="badge fav">★</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${mktBadge(p)}</div>
+      <div class="prop-cover">${tools === true ? selTools(p.id, 'on-cover', favBtn(p)) : `<span class="sel-tools on-cover">${favBtn(p)}</span>`}
+        ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">${cv.wm ? '' : logoMark()}` : `<div class="ph">${ic('image', 40)}</div>`}
+        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${mktBadge(p)}</div>
         <span class="ref">${esc(p.ref)}</span>
         ${nPh || nV ? `<span class="cnt">${nPh ? ic('camera', 14) + nPh : ''} ${nV ? ic('video', 14) + nV : ''}</span>` : ''}
       </div>
@@ -1044,7 +1078,10 @@
   S.psel = new Set();
   const selKind = () => (location.hash.split('/')[1] || '').split('?')[0];
   const SEL_CARDS = { properties: '#plist .prop-card[data-sid]', requests: '#rlist [data-sid]', appointments: '.appt-list [data-sid]', matching: '#mlist [data-sid]' };
-  const selTools = (id, cls = '') => `<span class="sel-tools ${cls}"><button type="button" class="pc-sel" data-psel="${esc(id)}" aria-label="تحديد" title="تحديد">${ic('check', 16)}</button><button type="button" class="pc-del" data-pdel="${esc(id)}" aria-label="مسح" title="مسح">${ic('trash', 16)}</button></span>`;
+  // زر النجمة (المفضلة) فوق صورة العقار + الشعار فوق الصور اللي ما فيهاش العلامة المائية
+  const favBtn = p => `<button type="button" class="pc-fav${p.fav ? ' on' : ''}" data-pfav="${esc(p.id)}" aria-label="المفضلة" title="${p.fav ? 'حيد من المفضلة' : 'زيد للمفضلة'}">${p.fav ? '★' : '☆'}</button>`;
+  const logoMark = () => { const B = brandOf(); return B.logo ? `<span class="logo-mark"><img src="${esc(B.logo)}" alt=""></span>` : `<span class="logo-mark txt">${esc(String(B.mark || '').slice(0, 14))}</span>`; };
+  const selTools = (id, cls = '', pre = '') => `<span class="sel-tools ${cls}">${pre}<button type="button" class="pc-sel" data-psel="${esc(id)}" aria-label="تحديد" title="تحديد">${ic('check', 16)}</button><button type="button" class="pc-del" data-pdel="${esc(id)}" aria-label="مسح" title="مسح">${ic('trash', 16)}</button></span>`;
   const selOn = id => S.psel.has(id) ? ' psel-on' : '';
   async function delFrom(store, ids, label, one) {
     const items = ids.map(id => (store === 'requests' ? S.reqs : S.appts).find(x => x.id === id)).filter(Boolean);
@@ -1106,6 +1143,17 @@
   // كل صفحة كتعطي لائحة العناصر اللي بانو (باش «تحديد الكل» ياخدهم كاملين، حتى اللي مازال ما تعرضوش)
   function selReady(ids) { S.pselList = ids; pselBar(); }
   const selPaint = () => { const q = SEL_CARDS[selKind()]; if (q) $$(q).forEach(c => c.classList.toggle('psel-on', S.psel.has(c.dataset.sid))); };
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-pfav]');
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const p = S.props.find(x => x.id === b.dataset.pfav); if (!p) return;
+    p.fav = !p.fav;
+    try { await DB.saveRec('properties', p); } catch (err) { p.fav = !p.fav; return toast(err && err.message === 'staff-perm' ? 'ما عندكش الصلاحية تبدل هاد العقار' : 'ما تسجلش، عاود'); }
+    b.classList.toggle('on', p.fav); b.textContent = p.fav ? '★' : '☆'; b.title = p.fav ? 'حيد من المفضلة' : 'زيد للمفضلة';
+    toast(p.fav ? 'تزاد للمفضلة ★' : 'تحيد من المفضلة');
+    if (!p.fav && S.propFilters.fav && /^#\/properties/.test(location.hash)) { const c = b.closest('.prop-card'); if (c) c.remove(); }
+  }, true);
   document.addEventListener('click', e => {
     const t = e.target.closest && e.target.closest('[data-psel], [data-pdel], [data-pb]');
     const kind = selKind();
@@ -1612,7 +1660,7 @@
         </div>
       </div>
       ${gal.length ? `<div class="gallery ${galCls}">${gal.map((m, i) => `<div data-lb="${i}">
-          ${m.kind === 'video' ? `<video data-full="${m.id}" muted playsinline preload="metadata"></video><div class="play" style="position:absolute;inset:0;display:grid;place-items:center;color:#fff">${ic('play', 44)}</div>` : `<img data-full="${m.id}" alt="">`}
+          ${m.kind === 'video' ? `<video data-full="${m.id}" muted playsinline preload="metadata"></video><div class="play" style="position:absolute;inset:0;display:grid;place-items:center;color:#fff">${ic('play', 44)}</div>` : `<img data-full="${m.id}" alt="">${m.wm ? '' : logoMark()}`}
           ${i === gal.length - 1 && visual.length > 3 ? `<div class="more">+${visual.length - 3}</div>` : ''}</div>`).join('')}</div>` : ''}
       <div class="detail-grid">
         <div style="display:flex;flex-direction:column;gap:16px">
@@ -2661,6 +2709,9 @@
   const AGV = { ctx: null, an: null, buf: null, src: null, q: [], playing: false, gen: 0, cloudOff: 0, synth: false, said: 0, pend: '', pulse: 0, t0: 0, first: true, synthGen: -1, ext: false };
   // الوعد للمستعمل: الصوت كيبدا فـ 2 ثواني على الأكثر من الضغطة. إلا الصوت الطبيعي ما وصلش فالوقت، كنقراو بصوت الجهاز (نفس الجواب كامل بنفس الصوت)
   const AG_VOICE_DEADLINE = 1900;
+  // المساعد (ماشي اللعبة): الصوت الطبيعي بالدارجة أحسن بزاف من صوت الجهاز (اللي كيقرا بالفصحى بحال روبو)،
+  // داكشي كنتسناوه حتى 5 ثواني قبل ما نرجعو لصوت الجهاز. اللعبة كتبقى بـ 2 ثواني (طلب المدير)
+  const agDeadline = () => (AGV.ext ? AG_VOICE_DEADLINE : 5000);
   const agHearing = () => AG.open || AGV.ext;
   function agAudio() {
     const C = window.AudioContext || window.webkitAudioContext;
@@ -2748,7 +2799,7 @@
     if (AGV.first) {
       // أول جملة: كنتسناو الصوت الطبيعي غير حتى 1.9 ثانية من الضغطة
       AGV.first = false;
-      buf = await Promise.race([it.audio, new Promise(r => setTimeout(() => r('late'), Math.max(0, AG_VOICE_DEADLINE - (performance.now() - AGV.t0))))]);
+      buf = await Promise.race([it.audio, new Promise(r => setTimeout(() => r('late'), Math.max(0, agDeadline() - (performance.now() - AGV.t0))))]);
       if (buf === 'late') { buf = null; late = true; AGV.synthGen = it.gen; }
     } else buf = AGV.synthGen === it.gen ? null : await it.audio;
     if (it.gen !== AGV.gen) return;
@@ -2759,7 +2810,7 @@
       AGV.src = src; src.onended = () => { if (AGV.src === src) AGV.src = null; agPlayNext(); };
       try { src.start(0); return; } catch (e) { /* نكملو بصوت المتصفح */ }
     }
-    if (agCloudOK() && !buf && !late && AGV.synthGen !== it.gen) AGV.cloudOff = Date.now() + 10 * 60000; // الصوت الطبيعي ما خدمش: 10 دقايق بصوت المتصفح
+    if (agCloudOK() && !buf && !late && AGV.synthGen !== it.gen) AGV.cloudOff = Date.now() + 90000; // الصوت الطبيعي ما خدمش: دقيقة ونص بصوت المتصفح ومن بعد كنعاودو
     if (!agTTS()) { agPlayNext(); return; }
     const tag = AG_SR_LANG[agLang()] || 'ar-SA', u = new SpeechSynthesisUtterance(it.txt);
     u.lang = tag; const v = agVoice(tag); if (v) u.voice = v;
@@ -7577,12 +7628,46 @@
   const STUDIO_ORIGIN = new URL(STUDIO_URL).origin;
   let studioProp = null, studioSent = false;
   window.addEventListener('message', e => {
-    if (e.origin !== STUDIO_ORIGIN || !e.data || e.data.type !== 'w777-studio-ready') return;
+    if (e.origin !== STUDIO_ORIGIN || !e.data) return;
     const fr = $('#studio-frame');
-    if (!fr || e.source !== fr.contentWindow || !studioProp || studioSent) return;
+    if (!fr || e.source !== fr.contentWindow) return;
+    // «إعدادات الوكالة» ديال الاستوديو كتتحفظ هنا (فالتطبيق + السحابة) حيت المتصفح (Safari) كيمسح التخزين ديال الصفحات المدمجة
+    if (e.data.type === 'w777-agency-save') return studioAgencySave(e.data.agency);
+    if (e.data.type !== 'w777-studio-ready') return;
+    studioAgency().then(a => fr.contentWindow.postMessage({ type: 'w777-agency', v: 1, agency: a }, STUDIO_ORIGIN)).catch(() => {});
+    if (!studioProp || studioSent) return;
     studioSent = true;
     studioPayload(studioProp).then(m => fr.contentWindow.postMessage(m, STUDIO_ORIGIN)).catch(() => { studioSent = false; });
   });
+  const AG_TXT = ['name', 'slogan', 'address', 'city', 'whatsapp', 'website', 'facebook', 'instagram', 'tiktok', 'youtube'];
+  // كنقبلو غير النصوص والصور (data:image) بحجم معقول — حتى حاجة أخرى ما كتدخل
+  function cleanAgency(a) {
+    if (!a || typeof a !== 'object') return null;
+    const o = {};
+    AG_TXT.forEach(k => { o[k] = typeof a[k] === 'string' ? a[k].slice(0, 300) : ''; });
+    o.phones = Array.isArray(a.phones) ? a.phones.filter(x => typeof x === 'string').slice(0, 4).map(x => x.slice(0, 40)) : [];
+    ['logo', 'qr'].forEach(k => { const v = a[k]; o[k] = typeof v === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length < 1200000 ? v : ''; });
+    return o;
+  }
+  async function studioAgencySave(a) {
+    const o = cleanAgency(a); if (!o) return;
+    S.settings.studioAgency = o; S.settings.updatedAt = new Date().toISOString();
+    try { await DB.setMeta('settings', S.settings); await DB.markDirty('meta', 'settings'); toast('معلومات الوكالة تحفظات ✓'); } catch (_) { toast('ما تحفظاتش معلومات الوكالة — عاود'); }
+  }
+  const toDataUrl = url => fetch(url).then(r => r.ok ? r.blob() : null).then(b => b && new Promise(res => { const f = new FileReader(); f.onload = () => res(String(f.result)); f.onerror = () => res(''); f.readAsDataURL(b); })).catch(() => '');
+  // أول مرة: كنعمرو المعلومات من إعدادات المكتب (الاسم، الهواتف، المدينة، الشعار)
+  async function studioAgency() {
+    const saved = S.settings.studioAgency;
+    if (saved && (saved.name || saved.logo || (saved.phones || []).length)) return saved;
+    const B = brandOf(), ag = S.role === 'agency' ? (S.agency || {}) : null;
+    const logo = B.logo ? await toDataUrl(B.logo) : '';
+    return cleanAgency({
+      name: ag ? B.name : (S.settings.officeName || B.name), slogan: ag ? '' : 'مع الوسيط… حلك بسيط',
+      city: S.settings.officeCity || '', address: '', website: '', facebook: '', instagram: '', tiktok: '', youtube: '',
+      phones: ag ? [ag.phone].filter(Boolean) : [S.settings.officePhone, S.settings.officePhone2].filter(Boolean),
+      whatsapp: ag ? (ag.phone || '') : (S.settings.officePhone || ''), logo: /^data:image\/(png|jpeg|webp)/.test(logo) ? logo : '', qr: '',
+    });
+  }
   function studioType(t) {
     const c = (TYPE[t] || {}).cat;
     if (/villa|bungalow|palace|chalet/.test(t)) return 'Villa';
@@ -7599,7 +7684,7 @@
     (p.features || []).forEach(f => { const m = STUDIO_FEAT.find(([re]) => re.test(f)); const v = m ? m[1] : f; if (!feats.includes(v)) feats.push(v); });
     const v = p.priceMax || p.priceMin;
     const data = {
-      deal: trx === 'rent' ? 'location' : (trx === 'rent_furnished' || trx === 'seasonal') ? 'meuble' : 'vente',
+      deal: trx === 'rent' ? (isFurn(p) ? 'meuble' : 'location') : (trx === 'rent_furnished' || trx === 'seasonal') ? 'meuble' : 'vente',
       type: studioType(p.type), headline: '',
       city: p.city || '', district: p.district || '',
       surface: Math.round(areaOf(p) || 0), surfaceMax: 0,
@@ -7664,6 +7749,13 @@
      الشروط والنسب كيتزادو غير ملي يأكدهم المكتب بعد الاتصال بكل جهة
      ============================================================ */
   const FIN_ST = { ok: ['✅', 'معلومات كافية', 'green'], partial: ['🟡', 'معلومات جزئية — تُستكمل', 'amber'], missing: ['🔴', 'معلومات ناقصة — تواصل مباشر', 'red'] };
+  // المعلومات اللي كيعمرها المكتب بيدو لكل جهة (بعد الاتصال بها) — محفوظة فالإعدادات وكتتزامن مع السحابة
+  const FIN_FORM = [['conv', 'الاتفاقية مع المكتب', 'sel', ['', 'ما تواصلناش بعد', 'تواصلنا — فالانتظار', 'اتفاقية موقعة ✓']], ['contact', 'اسم المسؤول / الوكالة', 'txt'], ['phone', 'هاتف المسؤول', 'tel'], ['email', 'البريد الإلكتروني', 'email'],
+    ['rate', 'نسبة الفائدة (%)', 'txt', 'مثلا: 4.5% ثابتة'], ['years', 'أقصى مدة (سنوات)', 'txt', 'مثلا: 25'], ['quota', 'نسبة التمويل', 'txt', 'مثلا: حتى 100%'], ['fees', 'مصاريف الملف والتأمين', 'txt'], ['docs', 'الوثائق المطلوبة', 'area', 'وحدة فكل سطر'], ['notes', 'ملاحظات', 'area']];
+  const finMine = id => ((S.settings.finInfo || {})[id]) || {};
+  // الحالة: ✅ إلا عمّر المكتب النسبة + المدة + الوثائق، 🟡 إلا عمّر شي حاجة، وإلا الحالة الأصلية
+  const finStatus = x => { const m = finMine(x.id); if (m.rate && m.years && m.docs) return 'ok'; if (FIN_FORM.some(([k]) => k !== 'conv' && m[k])) return x.status === 'ok' ? 'ok' : 'partial'; return x.status; };
+  const finLegend = () => `<div class="fin-legend card">${Object.values(FIN_ST).map(([e, t]) => `<span>${e} ${esc(t)}</span>`).join('')}<span class="muted">· اللون كيبين واش عندنا الشروط الكاملة ديال الجهة (النسبة، المدة، الوثائق). عمّر «معلومات المكتب» فصفحة الجهة باش تولي ✅.</span></div>`;
   const FIN_STEPS = [['📝', 'استقبال الطلب', 'عند مكتب الوسيط 777: المشروع، الدخل، العقار'], ['🗂️', 'تجميع الوثائق', 'لائحة الوثائق حسب فئتك'], ['🔍', 'دراسة الملف', 'لدى الجهة المموّلة'], ['📄', 'العرض والموافقة', 'الشروط النهائية مكتوبة'], ['✍️', 'التوقيع', 'عند الموثق أو العدول'], ['🔑', 'الصرف والمفاتيح', 'مبروك السكن!']];
   const finLogo = (k, cls = '') => k ? `<img class="${cls}" src="icons/fin/${k}.webp" alt="" loading="lazy" decoding="async">` : '';
   const finPair = (x, big) => `<span class="fin-pair${big ? ' big' : ''}"><img src="${LOGO}" alt=""><i>×</i><span class="fp-i">${x.logo ? finLogo(x.logo) : x.glogo ? finLogo(x.glogo) : `<b>${esc((x.ar || '؟').trim()[0])}</b>`}</span></span>`;
@@ -7684,6 +7776,7 @@
       </div>
       <div class="fin-tools"><input id="fin-q" type="search" placeholder="🔍 قلب على بنك أو جهة…" value="${esc(st.q)}">
         <label class="fin-mre"><input type="checkbox" id="fin-mre" ${st.mre ? 'checked' : ''}> 🌍 مغاربة العالم</label></div>
+      ${finLegend()}
       <div class="fin-chips" id="fin-chips"><button data-c="" class="${st.cat ? '' : 'on'}">الكل <small>${F.inst.length}</small></button>${F.cats.map(c => `<button data-c="${c[0]}" class="${st.cat === c[0] ? 'on' : ''}">${esc(c[2])} <small>${F.inst.filter(x => x.cat === c[0]).length}</small></button>`).join('')}</div>
       <div id="fin-list" class="fin-grid"></div>
       <p class="muted fin-disc">ℹ️ معلومات تعريفية مأخوذة من المواقع الرسمية للجهات (تحقق: ${esc(F.date)}). النسب والشروط كتبان هنا غير بعد ما يأكدها مكتب الوسيط 777 مع كل جهة. المرجع النهائي هو الجهة المموّلة. الشعارات للتعريف فقط ولا تعني شراكة.</p>`;
@@ -7691,9 +7784,10 @@
       const q = norm(st.q);
       const list = F.inst.filter(x => (!st.cat || x.cat === st.cat) && (!st.mre || x.mre === 'oui') && (!q || norm(x.ar + ' ' + x.name + ' ' + x.group + ' ' + x.types.join(' ')).includes(q)));
       $('#fin-list').innerHTML = list.length ? list.map(x => {
-        const S0 = FIN_ST[x.status], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
+        const S0 = FIN_ST[finStatus(x)], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '', cv = finMine(x.id).conv;
         return `<a class="fin-card card" href="#/tamwil/${x.id}">
-          <div class="fc-top">${finPair(x)}<span class="badge ${S0[2]}" title="${esc(S0[1])}">${S0[0]}</span></div>
+          <div class="fc-top">${finPair(x)}<span class="badge ${S0[2]}" title="${esc(S0[1])}">${S0[0]} <small>${esc(S0[1].split(' — ')[0])}</small></span></div>
+          ${cv ? `<span class="fc-conv${/موقعة/.test(cv) ? ' ok' : ''}">🤝 ${esc(cv)}</span>` : ''}
           <b class="fc-n">${esc(x.ar)}</b><small class="fc-f" dir="ltr">${esc(x.name)}</small>
           <div class="fc-tags"><span>${esc(cat)}</span>${x.mre === 'oui' ? '<span>🌍 MRE</span>' : ''}${x.web ? '<span>🌐 موقع رسمي</span>' : ''}</div></a>`;
       }).join('') : '<div class="card card-pad muted">ما لقينا والو — جرب كلمة أخرى.</div>';
@@ -7705,8 +7799,9 @@
   }
   function viewTamwilOne(F, x) {
     if (!x) { main().innerHTML = '<div class="card card-pad">هاد الجهة ما كايناش. <a href="#/tamwil">رجوع</a></div>'; return; }
-    const S0 = FIN_ST[x.status], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
+    const S0 = FIN_ST[finStatus(x)], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
     const tel = n => String(n).replace(/[^\d+]/g, '');
+    const M = finMine(x.id), filled = FIN_FORM.filter(([k]) => M[k]);
     main().innerHTML = `
       <div class="page-head"><div><a class="muted" href="#/tamwil">→ التمويل العقاري</a><h1>${esc(x.ar)}</h1><div class="sub" dir="ltr">${esc(x.name)}</div></div></div>
       <div class="fin-one card card-pad">
@@ -7717,12 +7812,29 @@
         <div class="fo-ph">${x.phones.length ? x.phones.map(([l, n, s]) => `<a class="fo-call" href="tel:${esc(tel(n))}"><span>${esc(l)}${s === 's' ? ' <em>يُؤكَّد</em>' : ''}</span><b dir="ltr">${esc(n)}</b></a>`).join('') : '<div class="muted">الهاتف الرسمي غير منشور — كيتأكد من بعد الاتصال.</div>'}</div>
         ${x.web ? `<a class="btn" href="${esc(x.web)}" target="_blank" rel="noopener">🌐 الموقع الرسمي</a>` : ''}
         ${x.products.length ? `<h3 class="section-title">🏠 العروض المنشورة</h3><div class="fc-tags">${x.products.map(p => `<span dir="ltr">${esc(p)}</span>`).join('')}</div>` : ''}
-        <div class="fo-wait">⏳ النسب، المدة، نسبة التمويل والوثائق المطلوبة: <b>كتتزاد قريباً بعد تأكيدها مع ${esc(x.ar)}</b>.</div>
+        ${filled.length ? `<h3 class="section-title">✅ الشروط المؤكدة من المكتب</h3><div class="kv fin-mine">${filled.map(([k, l]) => `<div${k === 'docs' || k === 'notes' ? ' class="full"' : ''}><small>${esc(l)}</small><b>${esc(M[k]).replace(/\n/g, '<br>')}</b></div>`).join('')}</div>${M.updatedAt ? `<p class="muted" style="font-size:12px">آخر تحديث: ${esc(String(M.updatedAt).slice(0, 10))}</p>` : ''}`
+          : `<div class="fo-wait">⏳ النسب، المدة، نسبة التمويل والوثائق المطلوبة: <b>عمّرهم فالاستمارة لتحت ملي تأكدهم مع ${esc(x.ar)}</b>.</div>`}
       </div>
+      <div class="card card-pad"><h3 class="section-title">✍️ معلومات المكتب على ${esc(x.ar)}</h3><p class="muted" style="margin-top:0">عمّر غير اللي أكدتيه مع الجهة. كيتحفظ فالتطبيق وكيتزامن مع السحابة.</p>
+        <form id="fin-f" class="form-grid">${FIN_FORM.map(([k, l, t, o]) => t === 'sel' ? fSelect(k, l, o.filter(Boolean), M[k] || '', {}) : t === 'area' ? `<div class="field full"><label>${esc(l)}</label><textarea name="${k}" rows="3" placeholder="${esc(o || '')}">${esc(M[k] || '')}</textarea></div>` : fInput(k, l, M[k] || '', { type: t === 'txt' ? 'text' : t, ph: o || '' })).join('')}
+          <div class="btn-row full"><button class="btn primary" type="submit">💾 حفظ المعلومات</button>${filled.length ? '<button class="btn" type="button" id="fin-clr">مسح</button>' : ''}</div></form></div>
       <div class="card card-pad"><h3 class="section-title">🧭 مراحل التمويل مع الوسيط 777</h3><p class="muted" style="margin-top:0">مراحل مرجعية — كتتحدّث حسب مسطرة كل جهة.</p>
         <ol class="fin-steps">${FIN_STEPS.map(([ic, t, d], k) => `<li><span class="fs-n">${k + 1}</span>${finPair(x)}<div><b>${ic} ${t}</b><small>${d}</small></div></li>`).join('')}</ol>
         <div class="btn-row"><a class="btn gold" href="#/loan">🧮 احسب القسط</a><a class="btn" href="https://wa.me/212777777848?text=${encodeURIComponent('السلام عليكم، بغيت معلومات على التمويل العقاري مع ' + x.ar)}" target="_blank" rel="noopener">💬 اسأل الوسيط 777</a></div></div>
       <p class="muted fin-disc">ℹ️ المعلومات إرشادية؛ المرجع النهائي هو الجهة المموّلة. الشعار للتعريف فقط.</p>`;
+    const saveFin = async v => {
+      const all = Object.assign({}, S.settings.finInfo || {});
+      if (v) all[x.id] = v; else delete all[x.id];
+      S.settings.finInfo = all; S.settings.updatedAt = new Date().toISOString();
+      try { await DB.setMeta('settings', S.settings); await DB.markDirty('meta', 'settings'); toast(v ? 'تحفظات المعلومات ✓' : 'تمسحات'); viewTamwilOne(F, x); } catch (e) { toast('ما تحفظاتش — عاود'); }
+    };
+    $('#fin-f').onsubmit = e => {
+      e.preventDefault();
+      const v = {}; FIN_FORM.forEach(([k]) => { const el = e.target.elements[k]; const t = el ? String(el.value || '').trim().slice(0, 1500) : ''; if (t) v[k] = t; });
+      if (!Object.keys(v).length) return saveFin(null);
+      v.updatedAt = new Date().toISOString(); saveFin(v);
+    };
+    const clr = $('#fin-clr'); if (clr) clr.onclick = async () => { if (await confirmBox('نمسح المعلومات اللي عمرتي على هاد الجهة؟', 'مسح', true)) saveFin(null); };
   }
   function viewLoan(query) {
     const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };

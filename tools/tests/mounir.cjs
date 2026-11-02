@@ -9,7 +9,7 @@ await p.route(/functions\/v1\/w777-agent/,async r=>{const bd=JSON.parse(r.reques
 await p.route(/supabase\.co\/(rest|auth)/,r=>r.abort());
 await p.addInitScript(()=>{localStorage.w777_wasla=JSON.stringify({lang:'ar',seenHow:1})});
 await p.goto(url);await p.waitForTimeout(1500);
-await p.click('[data-g="0"]'); await p.click('[data-s="0"]'); await p.waitForTimeout(300);
+await p.click('[data-g="0"]'); await p.waitForTimeout(300);
 await p.click('.wl-c.sel'); await p.waitForTimeout(300);
 await p.click('[data-ask]'); await p.waitForTimeout(300);
 await p.click('.wl-ai-chips button >> nth=1'); await p.waitForTimeout(800);

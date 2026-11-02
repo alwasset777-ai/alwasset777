@@ -18,7 +18,7 @@ async function run(name,url,{login=false,chip=1,textDelay=1200,ttsDelay=0}={}){
     r.fulfill({status:200,headers:{'content-type':'text/event-stream'},body:SSE('هاد الكلمة كتعني الجزء الداخلي ديال الدار. ')+SSE('مثلا فمكناس كاين بزاف ديال الرياضات.')});});
   if(login){await p.goto(BASE);await p.waitForTimeout(800);await F.login(p,BASE);}
   await p.goto(url);await p.waitForTimeout(1500);
-  await p.click('[data-g="0"]');await p.click('[data-s="0"]');await p.waitForTimeout(300);
+  await p.click('[data-g="0"]');await p.waitForTimeout(300);
   await p.click('.wl-c.sel');await p.waitForTimeout(300);await p.click('[data-ask]');await p.waitForTimeout(400);
   const t0=await p.evaluate(n=>{const t=performance.now();document.querySelectorAll('.wl-ai-chips button')[n].click();return t;},chip);
   await p.waitForTimeout(3500);

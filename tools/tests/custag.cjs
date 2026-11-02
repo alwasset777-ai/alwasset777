@@ -6,7 +6,7 @@ await p.route(/googleapis|gstatic|supabase/,r=>r.abort());
 await p.addInitScript(()=>{localStorage.w777_wasla=JSON.stringify({lang:'ar',seenHow:1})});
 await p.goto('http://localhost:8777/bureau/game.html');await p.waitForTimeout(800);
 await p.evaluate(()=>{const d=document.getElementById('cw-root');d.innerHTML='';W777_CW.mount(d,{agentName:'سارة',agentPhoto:'icons/icon-192.png?v=9'})});
-await p.click('[data-g="0"]'); await p.click('[data-s="0"]'); await p.waitForTimeout(300);
+await p.click('[data-g="0"]'); await p.waitForTimeout(300);
 console.log('mascot', await p.getAttribute('.wl-mav','src'));
 await p.click('.wl-c.sel'); await p.waitForTimeout(200);
 console.log('ask', await p.textContent('.wl-ask'));
