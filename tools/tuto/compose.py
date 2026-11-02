@@ -50,7 +50,7 @@ body{{background:linear-gradient(180deg,#fff 0,#f6f3ee 100%);position:relative}}
 .cap{{position:absolute;left:44px;right:44px;top:{SY + SH + 34}px;bottom:30px;border-radius:34px;background:#fff;box-shadow:0 18px 40px -22px rgba(0,0,0,.35);border:1px solid #eee}}
 .cap::before{{content:'';position:absolute;right:0;top:26px;bottom:26px;width:7px;border-radius:7px 0 0 7px;background:{RED}}}
 </style></head><body>{roofs(W, H, .05)}
-<div class="hd"><img src="file://{APP}/icons/logo.png"><div><div class="k">دليل تطبيق الوسيط 777 · المرحلة</div><h1>{e(s['t'])}</h1></div></div>
+<div class="hd"><img src="file://{APP}/icons/logo.png"><div><div class="k">دليل تطبيق مجموعة الوسيط · المرحلة</div><h1>{e(s['t'])}</h1></div></div>
 <div class="num">{s['n']:02d}<small> / {total}</small></div>
 <div class="bz"></div><div class="cap"></div></body></html>"""
 
