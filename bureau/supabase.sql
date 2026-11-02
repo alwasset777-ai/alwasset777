@@ -1251,3 +1251,9 @@ drop policy if exists w777_mfa on public.w777_story_likes;
 create policy w777_mfa on public.w777_story_likes as restrictive for all to authenticated using ((select public.w777_aal_ok())) with check ((select public.w777_aal_ok()));
 drop policy if exists w777_mfa on public.w777_story_comments;
 create policy w777_mfa on public.w777_story_comments as restrictive for all to authenticated using ((select public.w777_aal_ok())) with check ((select public.w777_aal_ok()));
+
+-- إشعارات الستوري: صاحب الستوري كيتوصل بالإعجابات والتعاليق (الدالة w777-push كتتأكد من المول وما كتصيفطش ليه على راسو)
+drop trigger if exists w777_push_story_like on public.w777_story_likes;
+create trigger w777_push_story_like after insert on public.w777_story_likes for each row execute function public.w777_push_hook('story_like');
+drop trigger if exists w777_push_story_cm on public.w777_story_comments;
+create trigger w777_push_story_cm after insert on public.w777_story_comments for each row execute function public.w777_push_hook('story_cm');

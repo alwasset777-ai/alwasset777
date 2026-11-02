@@ -1575,3 +1575,15 @@ html.lv-lite .bottomnav { -webkit-backdrop-filter: none; backdrop-filter: none; 
 .stat .ic:has(.xi) { overflow: visible; }
 h1 .xi { width: 1.25em; height: 1.25em; vertical-align: -.26em; }
 .chip .xi { width: 1.3em; height: 1.3em; vertical-align: -.33em; }
+
+/* ===== الرئيسية: بحث · إعلانات فورية · التمويل العقاري ===== */
+.hs-two.hs-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.btn.fin-cta { background: linear-gradient(135deg, #1b1b1f, #3a0a14); color: #fff; border-color: rgba(200,16,46,.55); box-shadow: 0 6px 18px -6px rgba(200,16,46,.6); gap: 8px; }
+.btn.fin-cta:hover { filter: brightness(1.12); }
+.fin-mini { position: relative; width: 30px; height: 30px; flex: none; border-radius: 50%; background: #fff; overflow: hidden; display: inline-block; box-shadow: 0 0 0 2px #e6c77e; }
+@media (max-width: 560px) {
+  .hs-two.hs-three { gap: 6px; padding: 10px 8px; }
+  .hs-two.hs-three .btn { font-size: 13px; height: 50px; padding: 0 6px; gap: 5px; white-space: normal; line-height: 1.2; text-align: center; }
+  .hs-two.hs-three .fin-mini { width: 24px; height: 24px; }
+  .hs-two.hs-three .btn .xi { width: 1.2em; height: 1.2em; }
+}
