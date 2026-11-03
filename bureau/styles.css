@@ -1654,3 +1654,10 @@ body.psel-mode .fab { display: none; }
 .offer-777 .of-t { background: var(--surface, #fff); border-radius: 12px; padding: 10px 12px; box-shadow: 0 2px 8px -4px rgba(0,0,0,.18); }
 .offer-777 .of-t b { display: block; font-size: 13.5px; } .offer-777 .of-t small { color: #b8860b; font-weight: 700; }
 .offer-777 .of-t.full { opacity: .55; } .offer-777 .of-t.full small { color: var(--muted); }
+.offer-777 .of-h a { color: #b8860b; font-weight: 800; }
+.offer-777 .of-hon { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(135deg, #111, #3a0b14); color: #fff; }
+.offer-777 .of-hon > b { display: block; margin-bottom: 6px; color: #ffd166; }
+.offer-777 .of-hon div { display: flex; flex-wrap: wrap; gap: 6px; }
+.offer-777 .of-hon span { background: rgba(255,255,255,.1); border-radius: 99px; padding: 4px 10px 4px 6px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.offer-777 .of-hon i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; background: #ffd166; color: #111; display: grid; place-items: center; font-size: 12px; font-weight: 900; }
+.offer-777 .of-hon small { opacity: .7; font-weight: 500; }
