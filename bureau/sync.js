@@ -54,7 +54,7 @@
   function normEmail(e) {
     e = String(e || '').trim().toLowerCase();
     if (e.includes('@')) return e;
-    const m = e.match(/^([a-z]*)[\s-]*0*(\d{1,3})$/);
+    const m = e.match(/^([a-z]*)[\s-]*0*(\d{1,5})$/);
     return m && Object.prototype.hasOwnProperty.call(PREFIX, m[1]) ? PREFIX[m[1]] + m[2].padStart(3, '0') + '@alwasset777.ma' : e;
   }
   // 👥 حساب موظف ← كيخدم على بيانات المكتب ديال مولاه (حسب الصلاحية)

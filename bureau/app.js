@@ -565,7 +565,17 @@
     return { score: Math.max(0, Math.min(100, score)), reasons };
   }
   // اختبار محلي فقط (localhost): مفروش ↔ غير مفروش
-  if (location.hostname === 'localhost') window.W777_TEST = { furnCheck: () => {
+  if (location.hostname === 'localhost') window.W777_TEST = {
+    offer: () => {
+      const ago = m => { const d = new Date(); d.setMonth(d.getMonth() - m); return d.toISOString(); };
+      const A = (n, z, m, sub) => ({ seat_no: n, seat_zone: z || 'ma', terms_at: ago(m || 1), sub_until: sub || null });
+      const c = [[A(7), 0, true], [A(8), 100, true], [A(77), 100, true], [A(78), 149, true], [A(777), 149, true], [A(778), 149, true],
+        [A(800, 'ma', 60), 199, false], [A(70, 'out', 30), 0, true], [A(71, 'out'), 149, true], [A(500, 'ma', 8), 149, false], [{ terms_at: null }, 199, true]]
+        .map(([a, price, ok]) => subPrice(a) === price && subInfo(a).ok === ok);
+      return { ok: c.every(Boolean), c };
+    },
+    board: () => offerBoard([{ seat_no: 3, seat_zone: 'ma' }, { seat_no: 9, seat_zone: 'ma' }, { seat_no: 1, seat_zone: 'out' }, {}], 'agency'),
+    furnCheck: () => {
     const P = (type, trx, furn) => ({ id: 'x' + type + trx + furn, type, transaction: trx, city: 'مكناس', status: 'available', specs: furn ? { furnished: furn } : {} });
     const R = (types, trx) => ({ id: 'r' + types + trx, types, transaction: trx, city: 'مكناس' });
     const c = [
@@ -887,12 +897,12 @@
      الصفحة الرئيسية (لوحة القيادة)
      ============================================================ */
   const HUB = [
-    ['agencies', '🏢', 'الوكالات العقارية', '700 داخل · 77 خارج'], ['brokers', '🤝', 'الوسطاء', '777 وسيط'],
-    ['contractors', '🏗️', 'شركات المقاولات', '777 شركة'], ['finishing', '🎨', 'شركات التشطيب', '777 شركة'],
+    ['agencies', '🏢', 'الوكالات العقارية', 'عرض 777 للأوائل'], ['brokers', '🤝', 'الوسطاء', 'عرض 777 للأوائل'],
+    ['contractors', '🏗️', 'شركات المقاولات', 'عرض 777 للأوائل'], ['finishing', '🎨', 'شركات التشطيب', 'عرض 777 للأوائل'],
     ['projects', '🚀', 'عرض المشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات العقارية', 'معارض وصالونات'],
     ['stays', '🏖️', 'الحجز الفوري', 'مفروش وعطل'], ['news', '📰', 'الأخبار العقارية', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
     ['disputes', '⚖️', 'نزاعات و حلول', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
-    ['associations', '🏘️', 'الجمعيات السكنية', '777 جمعية'],
+    ['associations', '🏘️', 'الجمعيات السكنية', 'عرض 777 للأوائل'],
     ['terms', '📜', 'قانون التطبيق', 'شروط الاشتراك'],
   ];
   // لون الهالة ديال كل أيقونة 3D
@@ -4383,7 +4393,7 @@
   }
 
   /* ============================================================
-     شبكة الوكالات العقارية (777 حساب)
+     شبكة الوكالات العقارية (عدد الأعضاء بلا حد — عرض 777 للأوائل)
      كل وكالة كتدخل بحسابها، كتزيد وتعدّل غير العقارات ديالها،
      وكتشوف عقارات الشبكة كاملة بلا اسم ولا هاتف المالك.
      ============================================================ */
@@ -5228,8 +5238,8 @@
   }
 
   /* ============================================================
-     شبكة 777: الوكالات (700 داخل المغرب + 77 خارج المغرب)، الوسطاء،
-     شركات المقاولات، شركات التشطيب — 777 حساب لكل خانة، بنفس الطريقة
+     شبكة 777: الوكالات (داخل وخارج المغرب)، الوسطاء، المقاولات، التشطيب، المستثمرون، الموثقون، الجمعيات
+     عدد الأعضاء بلا حد؛ الرقم 777 ولّى فالامتيازات (عرض 777 للأوائل، شوف seatTier)
      ============================================================ */
   const W777_OFFICE = '0777777959', W777_OFFICE2 = '0777777848';
   const officeTels = () => [W777_OFFICE, W777_OFFICE2].map(n => `<a href="${telLink(n)}" dir="ltr">${n}</a>`).join(' · ');
@@ -5290,7 +5300,7 @@
   }
   async function loadDir(force) {
     if (!force && S.dir && Date.now() - S.dirAt < 300000) return S.dir;
-    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,id_doc,id_doc_at' : ''}&order=code.asc`);
+    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,seat_no,seat_zone,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,id_doc,id_doc_at' : ''}&order=code.asc`);
     S.dirAt = Date.now();
     return S.dir;
   }
@@ -5396,17 +5406,12 @@
     try { all = (await loadDir(query.r === '1')).filter(a => kindOf(a) === kind); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
     const listed = all.filter(a => a.active && (isNamed(a) || a.phone));
     const cities = [...new Set(listed.map(a => a.city).filter(Boolean))].sort();
-    const seats = kind === 'agency'
-      ? `<div><small>🇲🇦 داخل المغرب</small><b>${listed.filter(a => !isAbroad(a)).length} / ${all.filter(a => !isAbroad(a)).length}</b></div>
-         <div><small>🌍 خارج المغرب</small><b>${listed.filter(isAbroad).length} / ${all.filter(isAbroad).length}</b></div>`
-      : `<div><small>المقاعد</small><b>${all.length}</b></div><div><small>المسجلين</small><b>${listed.length}</b></div>`;
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
-        <div class="kv">${seats}<div><small>المقاعد الحرة</small><b>${all.length - listed.length}</b></div></div>
-        <div class="seat-bar"><span style="width:${all.length ? Math.max(2, Math.round(listed.length * 100 / all.length)) : 0}%"></span></div>
+        ${offerBoard(all, kind)}
         <form id="df" class="form-grid" style="margin-top:12px">
           ${fInput('q', 'بحث', '', { ph: 'اسم، مدينة، خدمة، هاتف…' })}
-          ${kind === 'agency' ? fSelect('zone', 'المنطقة', [{ v: '', l: 'الكل' }, { v: 'ma', l: '🇲🇦 داخل المغرب (700)' }, { v: 'out', l: '🌍 خارج المغرب (77)' }], query.zone || '', { noEmpty: true }) : ''}
+          ${kind === 'agency' ? fSelect('zone', 'المنطقة', [{ v: '', l: 'الكل' }, { v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }], query.zone || '', { noEmpty: true }) : ''}
           ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], cities.includes(query.city) ? query.city : '', { noEmpty: true })}
           ${fSelect('sv', kind === 'investor' ? 'القطاع' : kind === 'notary' ? 'الاختصاص' : 'الخدمة', [{ v: '', l: 'الكل' }, ...K.sv.map(c => ({ v: c, l: c }))], '', { noEmpty: true })}
           ${kind === 'investor' ? fSelect('mode', 'نوع الاستثمار', [{ v: '', l: 'الكل' }, ...Object.values(INV_MODES).map(m => ({ v: m[0], l: m[0] }))], '', { noEmpty: true }) : ''}
@@ -5534,7 +5539,8 @@
         : kind === 'investor' ? 'من بعد كمّلو «حسابي» (الميزانية ونوع الاستثمار) وزيدو عروضكم فـ «فرص الاستثمار».'
           : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
             : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.') +
-      `\n📜 قانون التطبيق (199 درهم فالعام من بعد 3 أشهر مجانية): ${appUrl}#/terms` +
+      `\n🎁 عرض 777: 6 أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? '، و70 وكالة الأولى خارج المغرب مجاني مدى الحياة' : ''} — الترتيب حسب نهار الموافقة على القانون` +
+      `\n📜 قانون التطبيق: ${appUrl}#/terms` +
       (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
@@ -5543,6 +5549,7 @@
           ${kind === 'agency' ? `<div><small>🇲🇦 / 🌍</small><b>${ags.filter(a => !isAbroad(a)).length} / ${ags.filter(isAbroad).length}</b></div>` : ''}
           <div><small>اللي زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div>
           <div><small>📜 وافقو على القانون</small><b>${ags.filter(a => a.terms_at).length}</b></div></div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn gold sm" id="ag-add">➕ زيد حسابات جداد</button><span class="muted" style="font-size:12.5px">عدد الأعضاء بلا حد — الرمز كيكمل من آخر رقم</span></div>
         <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف، مدينة…' })}
           ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
             ...(kind === 'agency' ? [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }] : [])], '', { noEmpty: true })}</div>
@@ -5556,7 +5563,7 @@
       $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
         ${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy" style="width:40px;height:40px">` : ''}
         <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${isAbroad(a) ? `<span class="badge blue">🌍 ${esc(a.country)}</span>` : ''} ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
-          ${a.terms_at ? `<span class="badge ${subInfo(a).ok ? (subInfo(a).trial ? 'blue' : 'green') : 'red'}" title="${esc(subInfo(a).txt)}">${subInfo(a).ok ? (subInfo(a).trial ? '🎁 مجاني' : '💳 خالص') : '⏳ 199 مستحق'}</span>` : ''}
+          ${a.terms_at ? `${tierBadge(a)}<span class="badge ${subInfo(a).ok ? (subInfo(a).trial || subInfo(a).free ? 'blue' : 'green') : 'red'}" title="${esc(subInfo(a).txt)}">${subInfo(a).ok ? (subInfo(a).free ? '♾️ مجاني' : subInfo(a).trial ? '🎁 مجاني' : '💳 خالص') : `⏳ ${subPrice(a)} مستحق`}</span>` : ''}
           ${isNamed(a) || a.id_doc ? (a.id_doc ? `<span class="badge ${a.id_ok ? 'green' : 'amber'}">🪪 ${a.id_ok ? 'مؤكدة' : 'كتسنى التأكيد'}</span>` : `<span class="badge ${idRequired(a) ? 'red' : ''}">🪪 ما كايناش</span>`) : ''}
           <small class="muted">${esc(a.phone || 'بلا هاتف')}${a.city ? ' · ' + esc(a.city) : ''} · <span dir="ltr">${esc(loginOf(a))}</span> / <span dir="ltr" class="pw" data-pw="${a.uid}">••••••</span></small></div>
         <div class="btn-row">
@@ -5582,9 +5589,9 @@
       $$('[data-edit]').forEach(b => b.onclick = () => {
         const a = ags.find(x => x.uid === b.dataset.edit);
         modal(`<h3>${K.ic} <span dir="ltr">${esc(a.code)}</span></h3><form id="age" class="form-grid">${fInput('name', 'الاسم', a.name, { req: true })}${fInput('phone', 'الهاتف', a.phone, { type: 'tel' })}
-          ${placeLists()}${fInput('city', 'المدينة', a.city, { list: 'dl-cities' })}${fInput('country', 'الدولة', a.country || 'المغرب', { list: 'dl-countries', hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (77 وكالة خارج المغرب)' : '' })}
+          ${placeLists()}${fInput('city', 'المدينة', a.city, { list: 'dl-cities' })}${fInput('country', 'الدولة', a.country || 'المغرب', { list: 'dl-countries', hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (70 وكالة الأولى خارج المغرب مجاني مدى الحياة)' : '' })}
           ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}
-          ${fInput('sub_until', 'الاشتراك (199 درهم) خالص حتى', a.sub_until, { type: 'date', hint: a.terms_at ? 'وافق على القانون: ' + dAr(a.terms_at) : 'مازال ما وافقش على القانون' })}
+          ${fInput('sub_until', `الاشتراك (${subPrice(a)} درهم فالعام) خالص حتى`, a.sub_until, { type: 'date', hint: a.terms_at ? 'وافق على القانون: ' + dAr(a.terms_at) : 'مازال ما وافقش على القانون' })}
           <div class="field" style="justify-content:flex-end"><button type="button" class="btn sm" id="age-year">💳 +1 عام</button></div></form>
           <h4 style="margin:16px 0 8px">🖼️ الصورة والشعار</h4><div class="mm-grid" id="age-mm">${admMediaHtml(a)}</div>
           <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="age-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
@@ -5604,6 +5611,17 @@
         });
       });
     };
+    $('#ag-add').onclick = () => modal(`<h3>➕ حسابات جداد — ${esc(K.ar)}</h3><form id="agn" class="form-grid">${fInput('n', 'شحال من حساب', 10, { type: 'number', hint: 'من 1 حتى 50 فكل مرة' })}
+        ${kind === 'agency' ? fSelect('zone', 'المنطقة', [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }], 'ma', { noEmpty: true }) : ''}</form>
+        <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="agn-ok">${ic('check', 16)} إنشاء</button></div>`, (box, close) => {
+      $('#agn-ok', box).onclick = async () => {
+        const v = collect($('#agn', box)), b = $('#agn-ok', box); b.disabled = true; b.textContent = '⏳…';
+        try {
+          const r = await staffFn({ action: 'seats', kind, count: Math.max(1, Math.min(50, Number(v.n) || 1)), abroad: v.zone === 'out' });
+          close(); S.dir = null; toast(`تزادو ${r.made.length} حسابات ✓ (${r.made[0].code} ← ${r.made[r.made.length - 1].code})`, 4000); viewAgManage(kind, head, query);
+        } catch (e) { b.disabled = false; b.textContent = 'إنشاء'; toast('تعذر: ' + e.message, 4000); }
+      };
+    });
     $('[name=agq]').addEventListener('input', () => { shown = 60; draw(); });
     $('[name=agf]').addEventListener('change', () => { shown = 60; draw(); });
     draw();
@@ -5831,12 +5849,13 @@
   /* ============================================================
      قانون التطبيق وشروط الاشتراك + مجموعات المشتركين (واتساب وتيليغرام)
      ============================================================ */
-  const TERMS_V = '2026-10';
+  const TERMS_V = '2026-11';
   const TERMS_MAIN = [
     ['📣', 'الإبلاغ عن العمليات', 'كل عملية (بيع، كراء، شراكة، تمويل، توثيق…) تمّت بين طرفين عن طريق التطبيق، ولا بسبب معلومة منشورة فيه، خاص المشترك يبلّغ بيها مكتب الوسيط 777 فور إتمامها.'],
     ['🔑', 'غياب المشترك المكلّف بالعقار', 'فحالة عدم ظهور المشترك المكلّف بالعقار (ما كيجاوبش ولا غايب)، يجوز لمكتب الوسيط 777 الولوج لمعلومات صاحب العقار والتواصل معه لإتمام العملية، مع حفظ عمولة المشترك المكلّف كاملة.'],
-    ['💳', 'الاشتراك', 'كيوفّر مكتب الوسيط 777 هاد الخدمة مقابل 199 درهم فالعام، كتخلص من بعد 3 أشهر مجانية كتبدا من نهار الموافقة على هاد القانون.'],
-    ['🪪', 'التعريف بالهوية', 'الإدلاء بصورة البطاقة الوطنية، أو جواز السفر بالنسبة للمشتركين من دول أخرى، وذلك لضمان المصداقية والشفافية والنزاهة. كتولي إجبارية من بعد انتهاء الأشهر الثلاثة المجانية، والصورة كيشوفها غير مكتب الوسيط 777 (ما كتبانش للمشتركين).'],
+    ['💳', 'الاشتراك', 'كيوفّر مكتب الوسيط 777 هاد الخدمة مقابل 199 درهم فالعام، كتخلص من بعد 6 أشهر مجانية للجميع كتبدا من نهار الموافقة على هاد القانون. عدد المشتركين بلا حد.'],
+    ['🎁', 'عرض 777 للأوائل', 'الترتيب حسب نهار الموافقة على القانون، فكل فئة بوحدها: 7 الأوائل الخدمة مجانية مدى الحياة · 70 اللي موراهم تخفيض 50% مدى الحياة · 700 اللي موراهم تخفيض 25% مدى الحياة · وكل من تسجّل من بعد تخفيض 25% لمدة 4 سنين. و70 وكالة الأولى خارج المغرب الاشتراك مجاني مدى الحياة.'],
+    ['🪪', 'التعريف بالهوية', 'الإدلاء بصورة البطاقة الوطنية، أو جواز السفر بالنسبة للمشتركين من دول أخرى، وذلك لضمان المصداقية والشفافية والنزاهة. كتولي إجبارية من بعد انتهاء الأشهر الستة المجانية، والصورة كيشوفها غير مكتب الوسيط 777 (ما كتبانش للمشتركين).'],
     ['⚠️', 'حدود المسؤولية', 'لا يتحمل مكتب الوسيط 777 أي مسؤولية فحالة تمّ التعاقد بدون علمه ولا بدون الرجوع إليه.'],
   ];
   const TERMS_MORE = [
@@ -5847,14 +5866,46 @@
     ['الحساب', 'الرمز وكلمة السر شخصيين. المشترك مسؤول على كل استعمال للحساب ديالو.'],
     ['القبول', 'استعمال التطبيق والدخول للشبكة كيعني الموافقة الكاملة على هاد القانون وعلى أي تعديل كيتنشر فهاد الصفحة.'],
   ];
+  /* ---------- عرض 777: الامتياز حسب رقم التسجيل فالفئة (seat_no كيعطيه الخادم نهار الموافقة على القانون) ---------- */
+  const SUB_BASE = 199, FREE_MONTHS = 6;
+  function seatTier(a) {
+    const n = a && a.seat_no;
+    if (!n) return null;
+    if (a.seat_zone === 'out') return n <= 70 ? { pay: 0, ic: '🌍', t: `وكالة رقم ${n} من 70 الأوائل خارج المغرب — مجاني مدى الحياة` } : { pay: 0.75, years: 4, ic: '🎟️', t: `مقعد رقم ${n} — تخفيض 25% لمدة 4 سنين` };
+    if (n <= 7) return { pay: 0, ic: '🥇', t: `مقعد رقم ${n} من 7 الأوائل — التطبيق مجاني مدى الحياة` };
+    if (n <= 77) return { pay: 0.5, ic: '🥈', t: `مقعد رقم ${n} — تخفيض 50% مدى الحياة` };
+    if (n <= 777) return { pay: 0.75, ic: '🥉', t: `مقعد رقم ${n} — تخفيض 25% مدى الحياة` };
+    return { pay: 0.75, years: 4, ic: '🎟️', t: `مقعد رقم ${n} — تخفيض 25% لمدة 4 سنين` };
+  }
+  // ثمن العام دابا (درهم) حسب الامتياز
+  function subPrice(a) {
+    const tr = seatTier(a);
+    if (!tr) return SUB_BASE;
+    if (tr.years && a.terms_at) { const end = new Date(a.terms_at); end.setFullYear(end.getFullYear() + tr.years); if (end < new Date()) return SUB_BASE; }
+    return Math.round(SUB_BASE * tr.pay);
+  }
+  const tierBadge = a => { const tr = seatTier(a); return tr ? `<span class="badge gold" title="${esc(tr.t)}">${tr.ic} ${a.seat_no}</span> ` : ''; };
   function subInfo(a) {
     if (!a) return null;
+    const tr = seatTier(a), price = subPrice(a);
+    if (tr && price === 0) return { ok: true, free: true, txt: `${tr.ic} ${tr.t}` };
     const paid = a.sub_until ? new Date(a.sub_until + 'T23:59:59') : null, now = new Date();
-    if (paid && paid >= now) return { ok: true, txt: `✅ الاشتراك خالص حتى ${dAr(a.sub_until)}` };
-    if (!a.terms_at) return { ok: true, trial: true, txt: '🎁 3 أشهر مجانية كتبدا من نهار الموافقة على القانون' };
-    const end = new Date(a.terms_at); end.setMonth(end.getMonth() + 3);
-    if (end >= now) return { ok: true, trial: true, txt: `🎁 الفترة المجانية حتى ${dAr(end.toISOString())} — من بعد 199 درهم فالعام` };
-    return { ok: false, txt: `⏳ الاشتراك السنوي (199 درهم) مستحق — تواصل مع مكتب الوسيط 777` };
+    const extra = tr ? ` · ${tr.ic} ${tr.t}` : '';
+    if (paid && paid >= now) return { ok: true, txt: `✅ الاشتراك خالص حتى ${dAr(a.sub_until)}${extra}` };
+    if (!a.terms_at) return { ok: true, trial: true, txt: `🎁 ${FREE_MONTHS} أشهر مجانية كتبدا من نهار الموافقة على القانون` };
+    const end = freeEnd(a);
+    if (end >= now) return { ok: true, trial: true, txt: `🎁 الفترة المجانية حتى ${dAr(end.toISOString())} — من بعد ${price} درهم فالعام${extra}` };
+    return { ok: false, txt: `⏳ الاشتراك السنوي (${price} درهم) مستحق — تواصل مع مكتب الوسيط 777${extra}` };
+  }
+  // لوحة العرض فالدليل: شحال تسجل وشحال باقي فكل امتياز (فهاد الفئة)
+  function offerBoard(all, kind) {
+    const reg = z => all.filter(a => a.seat_no && (a.seat_zone || 'ma') === z).length;
+    const ma = reg('ma'), out = kind === 'agency' ? reg('out') : 0;
+    const row = (ic, t, from, to) => `<div class="of-t${ma >= to ? ' full' : ''}"><b>${ic} ${t}</b><small>${ma >= to ? 'تعمّرو' : `باقي ${to - Math.max(ma, from)} مقعد`}</small></div>`;
+    return `<div class="offer-777"><div class="of-h"><b>🎁 عرض 777 للأوائل</b><span>المسجلين: ${ma + out} · عدد الأعضاء بلا حد · 6 أشهر مجانية للجميع</span></div>
+      <div class="of-g">${row('🥇', '7 الأوائل: مجاني مدى الحياة', 0, 7)}${row('🥈', '70 الموالين: -50% مدى الحياة', 7, 77)}${row('🥉', '700 الموالين: -25% مدى الحياة', 77, 777)}
+        <div class="of-t"><b>🎟️ من بعد: -25% لمدة 4 سنين</b><small>لكل من تسجّل</small></div>
+        ${kind === 'agency' ? `<div class="of-t${out >= 70 ? ' full' : ''}"><b>🌍 70 وكالة خارج المغرب: مجاني مدى الحياة</b><small>${out >= 70 ? 'تعمّرو' : `باقي ${70 - out} مقعد`}</small></div>` : ''}</div></div>`;
   }
   /* ---------- صورة المشترك، الشعار، والبطاقة الوطنية / جواز السفر ---------- */
   const brandUrl = p => {
@@ -5862,8 +5913,8 @@
     const a = window.W777_SYNC && window.W777_SYNC.account();
     return a && a.url ? `${a.url}/storage/v1/object/public/w777-brand/${String(p).split('/').map(encodeURIComponent).join('/')}` : '';
   };
-  const freeEnd = a => { if (!a || !a.terms_at) return null; const d = new Date(a.terms_at); d.setMonth(d.getMonth() + 3); return d; };
-  // البطاقة كتولي إجبارية من بعد الفترة المجانية (3 أشهر من الموافقة على القانون)
+  const freeEnd = a => { if (!a || !a.terms_at) return null; const d = new Date(a.terms_at); d.setMonth(d.getMonth() + FREE_MONTHS); return d; };
+  // البطاقة كتولي إجبارية من بعد الفترة المجانية (6 أشهر من الموافقة على القانون)
   const idRequired = a => !!a && !a.id_doc && !!freeEnd(a) && freeEnd(a) < new Date();
   const idLabel = a => isAbroad(a) ? 'جواز السفر (ولا البطاقة الوطنية)' : 'البطاقة الوطنية';
   async function brandBlob(file, max, keepAlpha) {
@@ -5952,7 +6003,7 @@
         <div class="mm-tile${req ? ' mm-req' : ''}">
           <div class="mm-img"><span>🪪</span></div>
           <b>${esc(idLabel(ag))}</b>${idSt}
-          <small class="muted">${req ? '⚠️ إجبارية دابا: انتهات الفترة المجانية' : end ? `إجبارية من بعد ${dAr(end.toISOString())} (نهاية الفترة المجانية)` : 'إجبارية من بعد الأشهر الثلاثة المجانية'}</small>
+          <small class="muted">${req ? '⚠️ إجبارية دابا: انتهات الفترة المجانية' : end ? `إجبارية من بعد ${dAr(end.toISOString())} (نهاية الفترة المجانية)` : 'إجبارية من بعد الأشهر الستة المجانية'}</small>
           <div class="btn-row"><label class="btn sm gold">${ic('upload', 15)} ${ag.id_doc ? 'بدّل' : 'تحميل'}<input type="file" accept="image/*,application/pdf" data-mm="id_doc" hidden></label>
             ${ag.id_doc ? `<button class="btn sm" data-mm-view>${ic('eye', 15)} عرض</button>` : ''}</div></div>
       </div>
@@ -5977,7 +6028,7 @@
   function idGate() {
     const ag = S.agency || {};
     main().innerHTML = `<div class="card card-pad tr-gate">
-      <div class="tr-hero" style="box-shadow:none;border:0;padding:0;margin-bottom:12px"><img src="${LOGO}" alt="" class="tr-logo"><div><b>🪪 ${esc(idLabel(ag))} — خطوة وحدة باقية</b><small>انتهات الفترة المجانية (3 أشهر)</small></div></div>
+      <div class="tr-hero" style="box-shadow:none;border:0;padding:0;margin-bottom:12px"><img src="${LOGO}" alt="" class="tr-logo"><div><b>🪪 ${esc(idLabel(ag))} — خطوة وحدة باقية</b><small>انتهات الفترة المجانية (6 أشهر)</small></div></div>
       <p>حسب قانون التطبيق، خاص كل مشترك يدلي بصورة ${esc(idLabel(ag))} باش يكمّل يستافد من شبكة الوسيط 777، وذلك لضمان <b>المصداقية والشفافية والنزاهة</b>.</p>
       <p class="muted" style="font-size:13px">🔒 الصورة كيشوفها غير مكتب الوسيط 777. صورة واضحة للوجهين (ولا PDF).</p>
       <div class="btn-row"><label class="btn gold">${ic('upload', 18)} تحميل ${esc(idLabel(ag))}<input type="file" accept="image/*,application/pdf" id="idg-f" hidden></label><a class="btn" href="#/terms">⚖️ قانون التطبيق</a></div></div>`;
@@ -6307,7 +6358,7 @@
     try {
       await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', { terms_at: new Date().toISOString() }, 'return=minimal');
       await refreshRole(true);
-      toast('مرحبا بك فشبكة الوسيط 777 ✓ — 3 أشهر مجانية بدات اليوم', 3500);
+      toast('مرحبا بك فشبكة الوسيط 777 ✓ — 6 أشهر مجانية بدات اليوم', 3500);
       if (after) after();
     } catch (e) { toast('تعذر: ' + e.message, 4000); }
   }
