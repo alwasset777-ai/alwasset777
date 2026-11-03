@@ -12,43 +12,43 @@ VID_URL = 'https://alwasset777-ai.github.io/alwasset777/bureau/tuto/'
 WA = '212777777959'
 KINDS = ['agency', 'broker', 'contractor', 'finishing', 'investor', 'notary', 'association']
 G = {
-    'agency': dict(ar='الوكالات العقارية', one='وكالة عقارية', to='إلى كل وكالة عقارية', ic='🏢', img='building', seats='700 مقعد داخل المغرب · 77 خارجه', code='agence001',
+    'agency': dict(ar='الوكالات العقارية', one='وكالة عقارية', to='إلى كل وكالة عقارية', ic='🏢', img='building', seats='عرض 777 للأوائل + 70 وكالة خارج المغرب مجاناً', code='agence001',
         hook='وكالتك تستحق شبكة بحجم المغرب', pitch='اربط وكالتك بمئات الوكالات والوسطاء والمستثمرين: عقاراتك تصل لزبناء جدد، وعقاراتهم تصبح عروضا لزبنائك.',
         ben=[('🌍', 'عقاراتك أمام كل الشبكة', 'شارك عقاراتك بضغطة لتصل لوكالات المدن الأخرى ولمغاربة العالم.'), ('🏘️', 'آلاف العروض لزبنائك', 'عقارات الشبكة بين يديك: بِع أكثر بشراكة واضحة.'),
              ('🗂️', 'مكتب رقمي كامل', 'عقارات، زبناء، مواعيد، عقود، محفظة مالية وتقرير شهري.'), ('✨', 'المطابقة الذكية', 'التطبيق يربط كل زبون بالعقار المناسب تلقائيا.'),
              ('🏦', 'التمويل العقاري', 'وجّه زبونك لجهة التمويل المناسبة بمراحل ملفها.'), ('⭐', 'بطاقتك في الدليل', 'كن مرئيا في دليل الوكالات داخل المغرب وخارجه مع التقييمات.')],
         scenes=[(12, 1, 'عقارات الشبكة: آلاف العروض بين يديك'), (4, 1, 'اعرض عقاراتك كالمحترفين'), (5, 2, 'المطابقة الذكية لكل زبون'), (9, 1, 'التمويل العقاري لزبنائك')]),
-    'broker': dict(ar='الوسطاء العقاريون', one='وسيط عقاري', to='إلى كل وسيط عقاري', ic='🤝', img='handshake', seats='777 مقعدا', code='W001',
+    'broker': dict(ar='الوسطاء العقاريون', one='وسيط عقاري', to='إلى كل وسيط عقاري', ic='🤝', img='handshake', seats='عرض 777 للأوائل', code='W001',
         hook='من وسيط إلى محترف معترف به', pitch='اشتغل بأدوات الوكالات الكبرى من هاتفك: ملف احترافي لكل عقار، حماية عمولتك، وعروض الشبكة كلها لزبنائك.',
         ben=[('📱', 'مكتبك في هاتفك', 'كل عقاراتك وزبنائك ومواعيدك منظمة ومحفوظة.'), ('🛡️', 'احمِ عمولتك', 'سجّل الزيارات والتفويض بتوقيع الزبون.'),
              ('🌍', 'عروض الشبكة', 'عقارات الوكالات والوسطاء في مدينتك وخارجها.'), ('🖼️', 'ملصق إعلاني + QR', 'إعلان جاهز للشبكات الاجتماعية بضغطة.'),
              ('🤖', 'منير يكتب لك', 'إعلانات بالدارجة والعربية والفرنسية في ثوان.'), ('🤝', 'شراكات مع الوكالات', 'تواصل مباشر ورسائل داخل التطبيق.')],
         scenes=[(4, 2, 'ملصق إعلاني وعرض احترافي'), (6, 0, 'المواعيد والزيارات: احمِ عمولتك'), (12, 1, 'عروض الشبكة لزبنائك'), (15, 0, 'الستوري: عروضك كل يوم')]),
-    'contractor': dict(ar='شركات المقاولات', one='شركة مقاولات', to='إلى كل شركة مقاولات', ic='🏗️', img='crane', seats='777 مقعدا', code='B001',
+    'contractor': dict(ar='شركات المقاولات', one='شركة مقاولات', to='إلى كل شركة مقاولات', ic='🏗️', img='crane', seats='عرض 777 للأوائل', code='B001',
         hook='مشاريعك تبحث عن أراضٍ ومستثمرين… وهم هنا', pitch='الجمعيات السكنية، المستثمرون والوكالات يبحثون عن مقاول موثوق: كن في المكان الذي تُصنع فيه المشاريع.',
         ben=[('🏘️', 'الجمعيات السكنية', 'مشاريع بناء جماعي وتجزئات تبحث عن مقاول.'), ('💼', 'المستثمرون', 'اعرض مشروعك للتمويل أو الشراكة.'),
              ('📇', 'بطاقتك في الدليل', 'خدماتك ومدينتك ومشاريعك أمام كل الشبكة.'), ('🎨', 'شراكة مع التشطيب', 'فريق كامل من الأساس إلى آخر لمسة.'),
              ('🎪', 'المعارض والملتقيات', 'لا تفوّت أي صالون أو ملتقى عقاري.'), ('⭐', 'التقييمات', 'سمعتك الجيدة تجلب لك زبناء جددا.')],
         scenes=[(14, 0, 'مشاريع تبحث عن مقاول وشريك'), (13, 1, 'دليل شركات المقاولات'), (16, 1, 'المعارض والملتقيات'), (12, 2, 'شبكة داخل المغرب وخارجه')]),
-    'finishing': dict(ar='شركات التشطيب', one='شركة تشطيب', to='إلى كل شركة تشطيب وديكور', ic='🎨', img='paint', seats='777 مقعدا', code='F001',
+    'finishing': dict(ar='شركات التشطيب', one='شركة تشطيب', to='إلى كل شركة تشطيب وديكور', ic='🎨', img='paint', seats='عرض 777 للأوائل', code='F001',
         hook='كل عقار يُباع أو يُكرى يحتاج لمستك', pitch='بعد كل صفقة يأتي الترميم والتجهيز: الوكالات والملاك والمقاولون في الشبكة يبحثون عن تشطيب يثقون فيه.',
         ben=[('🔑', 'طلبات بعد كل صفقة', 'الوكالات توجه لك الملاك الجدد مباشرة.'), ('📇', 'بطاقة بخدماتك', 'زليج، صباغة، جبس، نجارة، ألومنيوم، مطابخ…'),
              ('🏗️', 'شراكة مع المقاولين', 'كن الشريك الدائم لمشاريع البناء.'), ('📸', 'الستوري', 'اعرض أعمالك قبل/بعد كل يوم.'),
              ('⭐', 'التقييمات', 'كل عمل متقن يتحول لزبون جديد.'), ('💬', 'رسائل مباشرة', 'تواصل مع الأعضاء داخل التطبيق.')],
         scenes=[(13, 2, 'دليل شركات التشطيب والديكور'), (15, 0, 'الستوري: أعمالك أمام الجميع'), (4, 1, 'عقارات تحتاج لمستك'), (12, 2, 'شبكة في كل المدن')]),
-    'investor': dict(ar='المستثمرون', one='مستثمر', to='إلى كل مستثمر عقاري', ic='💼', img='money', seats='777 مقعدا', code='I001',
+    'investor': dict(ar='المستثمرون', one='مستثمر', to='إلى كل مستثمر عقاري', ic='💼', img='money', seats='عرض 777 للأوائل', code='I001',
         hook='فرص عقارية مختارة… قبل أن تصل للسوق', pitch='مشاريع يراجعها المكتب قبل النشر، وعقارات الشبكة كلها، وأدوات تقدير الأثمان والتمويل — داخل المغرب ومن الخارج.',
         ben=[('🚀', 'مشاريع مراجعة', 'مشاريع تبحث عن تمويل أو شريك بعد موافقة المكتب.'), ('🏘️', 'عقارات الشبكة', 'عروض من كل المدن في مكان واحد.'),
              ('🤝', 'تمويل، شراكة، شراء', 'حدد طريقتك وقطاعاتك المفضلة.'), ('📊', 'تقدير الأثمان', 'قارن بالأثمان المرجعية قبل أي قرار.'),
              ('🏦', 'التمويل العقاري', 'جهات التمويل ومراحل الملف.'), ('✈️', 'مغاربة العالم', 'استثمر في بلدك وأنت في الخارج بثقة.')],
         scenes=[(14, 0, 'مشاريع مراجعة تبحث عن مستثمر'), (12, 1, 'عقارات الشبكة من كل المدن'), (7, 1, 'تقدير الأثمان قبل القرار'), (9, 1, 'جهات التمويل العقاري')]),
-    'notary': dict(ar='الموثقون', one='موثق', to='إلى كل موثق', ic='🖋️', img='stamp', seats='777 مقعدا', code='N001',
+    'notary': dict(ar='الموثقون', one='موثق', to='إلى كل موثق', ic='🖋️', img='stamp', seats='عرض 777 للأوائل', code='N001',
         hook='الصفقات تُبرم كل يوم… كن موثقها', pitch='الوكالات والوسطاء في الشبكة يبرمون صفقات كل يوم: كن الموثق المقترح لعقاراتهم واستشاراتهم.',
         ben=[('📍', 'مقترح مع أقرب عقار', 'الشبكة تقترحك حسب مدينتك وموقع العقار.'), ('📝', 'طلبات التوثيق', 'استقبل طلبات العقود والاستشارات مباشرة.'),
              ('⚖️', 'النزاعات المحولة', 'ملفات تحتاج رأي المختص تصلك منظمة.'), ('📚', 'مكتبة العقود', 'نماذج جاهزة ومراحل التملك للزبناء.'),
              ('📇', 'بطاقتك في الدليل', 'خدماتك واختصاصاتك أمام كل الأعضاء.'), ('⭐', 'الثقة', 'تقييمات الأعضاء تبني سمعتك.')],
         scenes=[(8, 0, 'مكتبة العقود ومراحل التملك'), (17, 0, 'النزاعات: الملفات تصل للمختص'), (12, 2, 'دليل الشبكة'), (9, 2, 'مراحل ملف التمويل حتى التوقيع')]),
-    'association': dict(ar='الجمعيات السكنية', one='جمعية سكنية', to='إلى كل جمعية وودادية وتعاونية سكنية', ic='🏘️', img='courtyard', seats='777 مقعدا', code=None,
+    'association': dict(ar='الجمعيات السكنية', one='جمعية سكنية', to='إلى كل جمعية وودادية وتعاونية سكنية', ic='🏘️', img='courtyard', seats='عرض 777 للأوائل', code=None,
         hook='سكن أعضائكم يبدأ من شبكة واحدة', pitch='الأراضي، المقاولون، الموثقون، وجهات التمويل في مكان واحد: وفّروا على أعضائكم الوقت والمال.',
         ben=[('🗺️', 'الأراضي والتجزئات', 'عروض الأراضي من الوكالات في كل المدن.'), ('🏗️', 'مقاولون موثوقون', 'شركات بناء وتشطيب مع التقييمات.'),
              ('🖋️', 'موثقون', 'عقود الشراء الجماعي بأمان.'), ('🏦', 'التمويل والدعم', 'جهات التمويل ومراحل الملف لأعضائكم.'),
@@ -98,15 +98,25 @@ h1{{font-size:96px;font-weight:900;line-height:1.12;margin-top:30px}}
 <div class="f"><img src="file://{APP}/icons/logo.png">شبكة الوسيط 777</div></body></html>"""
 
 
+
+# عرض 777 للأوائل (عدد المشتركين بلا حد، الترتيب حسب التسجيل فكل فئة)
+def offer_rows(k):
+    r = [('🥇', '7 الأوائل', 'التطبيق مجاني مدى الحياة'), ('🥈', '70 الموالين', 'تخفيض 50% مدى الحياة'), ('🥉', '700 الموالين', 'تخفيض 25% مدى الحياة'),
+         ('🎟️', 'كل من تسجّل بعدهم', 'تخفيض 25% لمدة 4 سنوات'), ('🎁', 'جميع المشتركين', '6 أشهر مجانية')]
+    if k == 'agency': r.append(('🌍', '70 وكالة خارج المغرب', 'مجاني مدى الحياة'))
+    return r
+
 def card_seats(g):
+    k = next(x for x in KINDS if G[x] is g)
+    rows = ''.join(f'<div><i>{a}</i><b>{e(b)}</b><span>{e(c)}</span></div>' for a, b, c in offer_rows(k))
     return f"""<html><head><style>{C.CSS}body{{background:#fff;position:relative;text-align:center}}
-.c{{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;padding:90px}}
-.n{{font-size:150px;font-weight:900;color:{RED};line-height:1}}h1{{font-size:64px;font-weight:900;color:{INK};line-height:1.25}}
-.s{{font-size:40px;color:#444;font-weight:700;border:3px solid {INK};border-radius:80px;padding:18px 40px}}
-.g{{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;max-width:880px}}.g b{{font-size:30px;background:#f3f0ea;border-radius:60px;padding:10px 24px}}.g b.on{{background:{RED};color:#fff}}
-</style></head><body>{C.roofs(C.W, C.H, .05)}<div class="c"><div class="n">7</div><h1>فئات مهنية… شبكة واحدة</h1>
-<div class="g">{''.join(f'<b class="{"on" if G[k] is g else ""}">{G[k]["ic"]} {e(G[k]["ar"])}</b>' for k in KINDS)}</div>
-<div class="s">{e(g['ar'])}: {e(g['seats'])} — المقاعد محدودة</div></div></body></html>"""
+.c{{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:80px}}
+.n{{font-size:170px;font-weight:900;color:{RED};line-height:1}}h1{{font-size:62px;font-weight:900;color:{INK};line-height:1.2;margin:0}}
+.o{{display:flex;flex-direction:column;gap:14px;width:900px}}.o div{{display:flex;align-items:center;gap:18px;background:#f6f2ea;border-radius:28px;padding:18px 26px;text-align:right}}
+.o i{{font-style:normal;font-size:50px}}.o b{{font-size:36px;color:{INK};min-width:330px}}.o span{{font-size:34px;color:{RED};font-weight:800}}
+.s{{font-size:32px;color:#444;font-weight:700}}
+</style></head><body>{C.roofs(C.W, C.H, .05)}<div class="c"><div class="n">777</div><h1>عرض 777 للأوائل</h1>
+<div class="o">{rows}</div><div class="s">{e(g['ar'])} · عدد المشتركين غير محدود</div></div></body></html>"""
 
 
 def card_cta(g):
@@ -183,6 +193,9 @@ CSS = BASE_CSS + f"""
 .cover .bt {{ position: absolute; bottom: 16mm; right: 16mm; left: 16mm; display: flex; justify-content: space-between; align-items: flex-end; z-index: 2; }}
 .cover .seat {{ font-size: 11pt; font-weight: 700; border: 1px solid #555; border-radius: 3mm; padding: 3mm 5mm; }}
 .cover .seat b {{ color: {RED}; display: block; font-size: 8pt; letter-spacing: .2em; }}
+.offer {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2mm; margin: 2mm 0 1mm; }}
+.offer div {{ display: flex; align-items: center; gap: 3mm; background: #f6f2ea; border-radius: 3mm; padding: 2mm 3.5mm; }}
+.offer div {{ flex-wrap: wrap; }} .offer i {{ font-style: normal; font-size: 14pt; }} .offer b {{ font-size: 9.5pt; }} .offer span {{ color: {RED}; font-weight: 800; font-size: 9.5pt; flex-basis: 100%; }}
 .cover .qr {{ width: 28mm; height: 28mm; background: #fff; padding: 1.8mm; border-radius: 2.5mm; }}
 h2.big {{ font-size: 23pt; font-weight: 900; margin: 1mm 0; }}
 .lead {{ font-size: 11.5pt; color: #333; line-height: 1.8; }}
@@ -252,7 +265,7 @@ def pdf(raw, out, k, tmp):
       <div class="field">{roof_field(794, 600, seed=7 + KINDS.index(k), cols=19, rows=14, stroke='#ffffff', op=.45)}</div>
       <div class="top"><div class="lg"><img src="{LOGO}">مجموعة الوسيط 777</div><div class="inv">INVITATION · دعوة خاصة</div></div>
       <div class="in"><div class="ic">{g['ic']}</div><div class="to">{e(g['to'])}…</div><h1>{e(g['hook'])}</h1><div class="p">{e(g['pitch'])}</div></div>
-      <div class="bt"><div class="seat"><b>المقاعد محدودة</b>{e(g['ar'])}: {e(g['seats'])}</div><div class="qr">{qr(app)}</div></div></section>""")
+      <div class="bt"><div class="seat"><b>عرض 777 للأوائل</b>🥇 7 الأوائل مجاناً مدى الحياة · 🎁 6 أشهر مجانية للجميع</div><div class="qr">{qr(app)}</div></div></section>""")
     H.append(f"""<section class="pb"><div class="kicker">لماذا تنضم؟</div><h2 class="big">ماذا تربح كـ{e(g['one'])}؟</h2><div class="rule red"></div>
       <div class="ben">{''.join(f'<div><span>{a}</span><div><b>{e(b)}</b><p>{e(c)}</p></div></div>' for a, b, c in g['ben'])}</div>
       <div class="net">{ring(k)}<p><b>شبكة الوسيط 777</b> تجمع 7 فئات مهنية في تطبيق واحد: الوكالات، الوسطاء، المقاولات، التشطيب، المستثمرون، الموثقون والجمعيات السكنية — داخل المغرب وخارجه.
@@ -262,14 +275,17 @@ def pdf(raw, out, k, tmp):
       <div class="tour">{''.join(f'<figure><div class="phone"><img src="file://{o}"></div><figcaption>{e(t)}</figcaption></figure>' for o, t in shots)}</div>
       <a class="vid" href="{vurl}"><div class="th"><img src="file://{out}/net-{k}.jpg"><i>▶</i></div><div><h3>شاهد الفيديو</h3>
         <p>دقيقة واحدة لتكتشف ما تقدمه الشبكة لـ{e(g['ar'])}. امسح الرمز بكاميرا الهاتف أو اضغط هنا.</p><div class="qr">{qr(vurl)}</div></div></a></section>""")
-    H.append(f"""<section class="pb"><div class="kicker">الانضمام</div><h2 class="big">انضم في 3 خطوات</h2><div class="rule red"></div>
+    H.append(f"""<section class="pb"><div class="kicker">الانضمام</div><h2 class="big">عرض 777 للأوائل</h2><div class="rule red"></div>
+      <p class="lead" style="margin:0">عدد المشتركين غير محدود · الترتيب حسب تاريخ التسجيل في كل فئة · 199 درهم في السنة</p>
+      <div class="offer">{''.join(f'<div><i>{a}</i><b>{e(b)}</b><span>{e(c)}</span></div>' for a, b, c in offer_rows(k))}</div>
+      <h2 class="big" style="margin-top:2mm">انضم في 3 خطوات</h2><div class="rule red"></div>
       <div class="steps"><div><b>01</b><h3>افتح التطبيق</h3><p>امسح رمز QR أو افتح الرابط، ثم «إضافة إلى الشاشة الرئيسية». لا متجر تطبيقات.</p></div>
       <div><b>02</b><h3>احصل على حسابك</h3><p>راسل المكتب على واتساب: نعطيك {code} — حساب خاص ومحمي.</p></div>
       <div><b>03</b><h3>أكمل بطاقتك</h3><p>الاسم، المدينة، الخدمات والشعار — وتظهر مباشرة في دليل الشبكة.</p></div></div>
       <div class="cta"><div class="qr">{qr(app)}</div><div><h3>مكانك في الشبكة ينتظرك</h3>
         <div class="ct"><b>📞</b><span class="ltr">{OFFICE['tel1']} · {OFFICE['tel2']}</span><b>✉️</b><span class="ltr">{OFFICE['mail']}</span><b>📍</b><span>{OFFICE['city_ar']}</span><b>🌐</b><span class="ltr">{app}</span></div>
         <a class="btnw" href="{wa(k)}">💬 انضم عبر واتساب</a></div></div>
-      <p class="lead" style="margin-top:10mm;font-weight:800;color:{RED};font-size:15pt;text-align:center">{OFFICE['slogan']}</p>
+      <p class="lead" style="margin-top:2mm;font-weight:800;color:{RED};font-size:13pt;text-align:center">{OFFICE['slogan']}</p>
       <div class="cred">Photos: {'; '.join(f"{n}: {cred[n]['by']} ({cred[n]['lic']})" for n in sorted(used) if n in cred)} — Wikimedia Commons. Demo data is fictional.</div></section></body></html>""")
     hp = os.path.join(tmp, f'{k}.html'); open(hp, 'w').write(''.join(H))
     pp = os.path.join(out, f'Invitation_{k}_AlWasset777.pdf')

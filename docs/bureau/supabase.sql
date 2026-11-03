@@ -1257,3 +1257,36 @@ drop trigger if exists w777_push_story_like on public.w777_story_likes;
 create trigger w777_push_story_like after insert on public.w777_story_likes for each row execute function public.w777_push_hook('story_like');
 drop trigger if exists w777_push_story_cm on public.w777_story_comments;
 create trigger w777_push_story_cm after insert on public.w777_story_comments for each row execute function public.w777_push_hook('story_cm');
+
+-- ============================================================
+-- عرض 777 (2026-11): عدد المشتركين بلا حد، والترتيب ديال التسجيل (نهار الموافقة على القانون) كيحدد الامتياز:
+-- 7 الأوائل مجاني مدى الحياة · 70 اللي موراهم -50% مدى الحياة · 700 اللي موراهم -25% مدى الحياة · الباقي -25% لمدة 4 سنين
+-- 70 وكالة الأولى خارج المغرب مجاني مدى الحياة · الجميع 6 أشهر مجانية. الترتيب لكل فئة (والوكالات: داخل/خارج المغرب بوحدهم)
+-- ============================================================
+alter table public.w777_agencies add column if not exists seat_no int;   -- رقم التسجيل فالفئة (كيعطيه الخادم، ما كيتبدلش)
+alter table public.w777_agencies add column if not exists seat_zone text; -- ma / out
+-- الأعضاء اللي وافقو قبل: ترتيب حسب تاريخ الموافقة
+with r as (select uid, case when kind = 'agency' and coalesce(country, 'المغرب') <> 'المغرب' then 'out' else 'ma' end z,
+  row_number() over (partition by kind, case when kind = 'agency' and coalesce(country, 'المغرب') <> 'المغرب' then 'out' else 'ma' end order by terms_at, code) n
+  from public.w777_agencies where terms_at is not null and seat_no is null)
+update public.w777_agencies a set seat_no = r.n, seat_zone = r.z from r where a.uid = r.uid;
+create or replace function public.w777_seat_no() returns trigger language plpgsql security definer set search_path = public as $$
+declare z text;
+begin
+  if new.terms_at is not null and new.seat_no is null then
+    z := case when new.kind = 'agency' and coalesce(new.country, 'المغرب') <> 'المغرب' then 'out' else 'ma' end;
+    perform pg_advisory_xact_lock(hashtext('w777_seat_' || new.kind || z));
+    new.seat_zone := z;
+    new.seat_no := coalesce((select max(seat_no) from w777_agencies where kind = new.kind and seat_zone = z), 0) + 1;
+  end if;
+  return new;
+end $$;
+revoke execute on function public.w777_seat_no() from public, anon, authenticated;
+-- كيدور من بعد w777_ag_guard (الترتيب بالأبجدية): المشترك ما يقدرش يبدل الرقم بيدو
+drop trigger if exists w777_seat_no on public.w777_agencies;
+create trigger w777_seat_no before update on public.w777_agencies for each row execute function public.w777_seat_no();
+create or replace function public.w777_seat_lock() returns trigger language plpgsql security definer set search_path = public as $$
+begin if not w777_is_admin() then new.seat_no := old.seat_no; new.seat_zone := old.seat_zone; end if; return new; end $$;
+revoke execute on function public.w777_seat_lock() from public, anon, authenticated;
+drop trigger if exists w777_seat_lock on public.w777_agencies;
+create trigger w777_seat_lock before update on public.w777_agencies for each row execute function public.w777_seat_lock();
