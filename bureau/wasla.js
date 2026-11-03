@@ -150,6 +150,11 @@
 .wl-pl .wl-c.drg{background:var(--r)!important;color:#fff;transform:scale(1.16);z-index:2;box-shadow:0 6px 14px rgba(200,16,46,.45)}
 .wl-pl .wl-c.drg.go{transform:scale(1.24)}
 .wl-pl .wl-grid.dragging .wl-c:not(.drg){opacity:.8}
+.wl-pl .wl-c.wait{color:transparent!important}
+.wl-fly{position:fixed;z-index:10001;pointer-events:none;display:flex;align-items:center;justify-content:center;font-weight:900;border-radius:9px;background:#0a7a2f;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.3);transform-origin:center;will-change:transform}
+.wl-pl .wl-grid.hint .wl-c.sel{animation:wl-hint 1.6s ease-in-out infinite;animation-delay:var(--hd,0ms)}
+@keyframes wl-hint{0%,55%,100%{transform:none}25%{transform:scale(1.16) translateY(-3px);box-shadow:0 6px 12px rgba(200,16,46,.4)}}
+@media(prefers-reduced-motion:reduce){.wl-pl .wl-grid.hint .wl-c.sel{animation:none}}
 .wl-hint{text-align:center;font-weight:800;margin-top:10px;color:#444}
 .wl-mascot{display:flex;align-items:center;gap:12px;margin:14px auto 0;max-width:460px}
 .wl-mwrap{position:relative;display:inline-block;flex:0 0 auto;line-height:0}
@@ -426,6 +431,30 @@
       play.msg = '';
       if (!paintPlay()) render();
     }
+    // مكان كل حرف فالخانات قبل ما تتسد البطاقة
+    function grabFly() {
+      return Array.from(root.querySelectorAll('.wl-slots[dir] .wl-slot')).map(el => ({ ch: el.textContent, r: el.getBoundingClientRect() }));
+    }
+    // الحروف كيطيرو وحدة بوحدة لخاناتها فالشبكة (الخانة كتبان فارغة حتى يوصلها الحرف)
+    function flyTo(i, from) {
+      if (!from || !from.length || !Element.prototype.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const grid = root.querySelector('.wl-grid'); if (!grid) return;
+      cells(stageObj().w[i]).forEach(([r, c], n) => {
+        const el = grid.querySelector(`[data-k="${r},${c}"]`), a = from[n]; if (!el || !a) return;
+        const b = el.getBoundingClientRect();
+        el.classList.add('wait');
+        const f = document.createElement('div');
+        f.className = 'wl-fly'; f.textContent = a.ch;
+        f.style.cssText = `left:${a.r.left}px;top:${a.r.top}px;width:${a.r.width}px;height:${a.r.height}px;font-size:${Math.round(a.r.height * 0.5)}px`;
+        document.body.appendChild(f);
+        const dx = b.left - a.r.left + (b.width - a.r.width) / 2, dy = b.top - a.r.top + (b.height - a.r.height) / 2, k = b.width / a.r.width;
+        const an = f.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 },
+          { transform: `translate(${dx * 0.5}px,${dy * 0.5 - 60}px) scale(${(1 + k) / 2 + 0.15})`, opacity: 1, offset: 0.55 },
+          { transform: `translate(${dx}px,${dy}px) scale(${k})`, opacity: 1 }], { duration: 520, delay: n * 55, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards' });
+        an.onfinish = () => { f.remove(); el.classList.remove('wait'); };
+        setTimeout(() => { if (f.isConnected) { f.remove(); el.classList.remove('wait'); } }, 1600 + n * 55);
+      });
+    }
     function check() {
       const st = stateOf(play.gi, play.si), w = stageObj().w[play.sel];
       const guess = play.slots.map(s => s.ch).join('');
@@ -435,7 +464,8 @@
         play.msg = '✓ ' + L().good; play.mood = 'happy';
         play.msgCls = 'okm';
         const stg = stageObj();
-        if (stg.w.every((_, i) => st.sol[i])) { play.open = false; play.flash = play.sel; play.mood = 'win'; render(); return finishStage(); }
+        const fly = grabFly(), solvedI = play.sel;
+        if (stg.w.every((_, i) => st.sol[i])) { play.open = false; play.flash = play.sel; play.mood = 'win'; render(); flyTo(solvedI, fly); return finishStage(); }
         // السؤال الموالي اللي باقي
         const nxt = stg.w.findIndex((_, i) => i > play.sel && !st.sol[i]);
         const pick = nxt >= 0 ? nxt : stg.w.findIndex((_, i) => !st.sol[i]);
@@ -443,6 +473,7 @@
         select(pick, true);
         play.msg = msg; play.msgCls = 'okm'; play.flash = done; play.mood = 'happy';
         render();
+        flyTo(done, fly);
         return;
       }
       play.msg = L().wrong; play.msgCls = 'bad'; play.mood = 'sad';
@@ -539,6 +570,16 @@
       } catch (e) { flushE++; flushT = setTimeout(flush, Math.min(600000, 60000 * flushE)); } // كل مرة كنتسناو كثر (حتى 10 دقايق)
     }
 
+    // تلميح: من بعد 6 ثواني بلا حركة فالشبكة، شريط الكلمة المقترحة كيتنطط (حتى يلمس اللاعب الشبكة)
+    let hintT = null;
+    function armHint() {
+      clearTimeout(hintT);
+      const grid = root.querySelector('.wl-grid'); if (!grid) return;
+      grid.querySelectorAll('.wl-c.sel').forEach((el, n) => el.style.setProperty('--hd', (n * 70) + 'ms'));
+      hintT = setTimeout(() => { if (grid.isConnected && !grid.classList.contains('dragging')) grid.classList.add('hint'); }, 6000);
+      const stop = () => { clearTimeout(hintT); grid.classList.remove('hint'); };
+      grid.addEventListener('pointerdown', stop, { once: true });
+    }
     // سحب الشريط: كنسحبو الصبع على خانات الكلمة (أفقي ولا عمودي)، الشريط كيكبر شوية مع السحب، وملي نطلقو كتحل الكلمة
     function bindDrag(grid, stg, st) {
       if (!grid) return;
@@ -638,6 +679,7 @@
         play.mood = '';
         root.querySelector('[data-askg]').onclick = () => askMounir(play.sel >= 0 ? play.sel : 0);
         bindDrag(root.querySelector('.wl-grid'), stg, st);
+        armHint();
       } else {
         // بطاقة السؤال: العنوان + الصورة/النص + كشف/حذف حرف، ومن تحت الخانات والحروف
         const C = (DATA.credits || {})[w[2]];
