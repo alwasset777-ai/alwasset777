@@ -23,6 +23,30 @@ Deno.serve(async req => {
     db(`w777_staff?uid=eq.${me}&select=uid`).then(r => r.json())]);
   if (st.length || (!ag.length && !ad.length)) return out({ error: 'هاد الخدمة غير لمول المكتب' }, 403);
   const b = await req.json().catch(() => ({}));
+
+  // ➕ المدير: حسابات جديدة فالشبكة (عدد المشتركين بلا حد) — الرمز كيكمل من آخر رقم فالفئة
+  if (b.action === 'seats') {
+    if (!ad.length) return out({ error: 'غير المدير' }, 403);
+    const K: Record<string, [string, string, string]> = { agency: ['', 'agence', 'Agence '], broker: ['W', 'wasit', 'وسيط '], contractor: ['B', 'btp', 'مقاولة '],
+      finishing: ['F', 'finition', 'تشطيب '], investor: ['I', 'invest', 'مستثمر '], notary: ['N', 'notaire', 'موثق '], association: ['J', 'jamia', 'جمعية '] };
+    const k = K[b.kind]; if (!k) return out({ error: 'kind' }, 400);
+    const n = Math.max(1, Math.min(50, parseInt(b.count, 10) || 1));
+    const country = b.kind === 'agency' && b.abroad ? 'خارج المغرب' : 'المغرب';
+    const rows = (await (await db(`w777_agencies?kind=eq.${b.kind}&select=code`)).json()) || [];
+    let num = rows.reduce((m: number, r: { code: string }) => Math.max(m, parseInt(String(r.code).replace(/\D/g, ''), 10) || 0), 0) + 1;
+    const made: { code: string; login: string }[] = [];
+    for (let tries = 0; made.length < n && tries < n + 10; tries++, num++) {
+      const p3 = String(num).padStart(3, '0'), code = k[0] + p3, login = k[1] + p3, email = login + '@alwasset777.ma', pw = genPass();
+      const c = await admin('users', { method: 'POST', body: JSON.stringify({ email, password: pw, email_confirm: true, user_metadata: { kind: b.kind } }) });
+      if (!c.ok) { if (c.status === 422) continue; break; }
+      const uid = (await c.json()).id;
+      const ins = await db('w777_agencies', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ uid, code, name: k[2] + num, email, kind: b.kind, country, active: true }) });
+      const sec = ins.ok && await db('w777_agency_secrets', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ uid, password: pw }) });
+      if (!ins.ok || !sec || !sec.ok) { await admin('users/' + uid, { method: 'DELETE' }); break; }
+      made.push({ code, login });
+    }
+    return made.length ? out({ ok: true, made }) : out({ error: 'تعذر إنشاء الحسابات' }, 500);
+  }
   const role = ['view', 'edit', 'full'].includes(b.role) ? b.role : 'edit';
   const pass = typeof b.password === 'string' && b.password.length >= 8 ? b.password.slice(0, 72) : genPass();
   const mine = async (id: string) => /^[0-9a-f-]{36}$/.test(id || '') && ((await (await db(`w777_staff?uid=eq.${id}&owner=eq.${me}&select=uid`)).json()) || []).length > 0;
