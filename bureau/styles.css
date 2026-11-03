@@ -1478,6 +1478,7 @@ html.lv-lite .fin-rot img { animation: none; } html.lv-lite .fin-rot img:first-c
 .fin-pair.big > img { width: 52px; height: 52px; } .fin-pair.big .fp-i, .fin-pair.big .fp-i img { height: 52px; max-height: 52px; max-width: 150px; } .fin-pair.big { padding: 8px 12px; border-radius: 18px; }
 .fin-one .fo-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
 .fo-group { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--muted); } .fo-group img { height: 22px; max-width: 70px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
+.fin-note { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(200,16,46,.06); border: 1px solid rgba(200,16,46,.18); font-size: 13px; line-height: 1.5; text-align: left; }
 .fo-ph { display: grid; gap: 6px; margin-bottom: 12px; }
 .fo-call { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); color: inherit; text-decoration: none; }
 .fo-call b { color: #c8102e; white-space: nowrap; } .fo-call em { font-style: normal; font-size: 11px; color: #8a5a00; background: #fff4d6; border-radius: 6px; padding: 0 5px; }
