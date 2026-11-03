@@ -1290,3 +1290,9 @@ begin if not w777_is_admin() then new.seat_no := old.seat_no; new.seat_zone := o
 revoke execute on function public.w777_seat_lock() from public, anon, authenticated;
 drop trigger if exists w777_seat_lock on public.w777_agencies;
 create trigger w777_seat_lock before update on public.w777_agencies for each row execute function public.w777_seat_lock();
+-- عداد عمومي لصفحة «انضم» (join.html): شحال تسجّل فكل فئة — أرقام فقط، بلا حتى معلومة شخصية
+create or replace function public.w777_offer_counts() returns json language sql stable security definer set search_path = public as $$
+  select coalesce(json_agg(json_build_object('kind', kind, 'zone', seat_zone, 'n', n)), '[]'::json)
+  from (select kind, seat_zone, count(*)::int n from w777_agencies where seat_no is not null group by kind, seat_zone) t $$;
+revoke execute on function public.w777_offer_counts() from public;
+grant execute on function public.w777_offer_counts() to anon, authenticated;

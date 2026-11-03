@@ -574,7 +574,8 @@
         .map(([a, price, ok]) => subPrice(a) === price && subInfo(a).ok === ok);
       return { ok: c.every(Boolean), c };
     },
-    board: () => offerBoard([{ seat_no: 3, seat_zone: 'ma' }, { seat_no: 9, seat_zone: 'ma' }, { seat_no: 1, seat_zone: 'out' }, {}], 'agency'),
+    board: () => offerBoard([{ seat_no: 1, seat_zone: 'ma', name: 'وكالة النخيل', city: 'مكناس' }, { seat_no: 2, seat_zone: 'ma', name: 'Agence 2' }, { seat_no: 3, seat_zone: 'ma', name: 'دار السعادة' }, { seat_no: 1, seat_zone: 'out', name: 'Atlas Immo' }, {}], 'agency'),
+    msg: () => offerMsg([{ seat_no: 1, seat_zone: 'ma' }, { seat_no: 2, seat_zone: 'ma' }], 'agency'),
     furnCheck: () => {
     const P = (type, trx, furn) => ({ id: 'x' + type + trx + furn, type, transaction: trx, city: 'مكناس', status: 'available', specs: furn ? { furnished: furn } : {} });
     const R = (types, trx) => ({ id: 'r' + types + trx, types, transaction: trx, city: 'مكناس' });
@@ -5540,7 +5541,7 @@
           : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
             : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.') +
       `\n🎁 عرض 777: 6 أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? '، و70 وكالة الأولى خارج المغرب مجاني مدى الحياة' : ''} — الترتيب حسب نهار الموافقة على القانون` +
-      `\n📜 قانون التطبيق: ${appUrl}#/terms` +
+      `\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` +
       (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
@@ -5549,7 +5550,7 @@
           ${kind === 'agency' ? `<div><small>🇲🇦 / 🌍</small><b>${ags.filter(a => !isAbroad(a)).length} / ${ags.filter(isAbroad).length}</b></div>` : ''}
           <div><small>اللي زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div>
           <div><small>📜 وافقو على القانون</small><b>${ags.filter(a => a.terms_at).length}</b></div></div>
-        <div class="btn-row" style="margin-top:10px"><button class="btn gold sm" id="ag-add">➕ زيد حسابات جداد</button><span class="muted" style="font-size:12.5px">عدد الأعضاء بلا حد — الرمز كيكمل من آخر رقم</span></div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn gold sm" id="ag-add">➕ زيد حسابات جداد</button><a class="btn sm wa" id="ag-offer" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(offerMsg(ags, kind))}">📣 رسالة العرض</a><span class="muted" style="font-size:12.5px">عدد الأعضاء بلا حد — الرمز كيكمل من آخر رقم</span></div>
         <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف، مدينة…' })}
           ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
             ...(kind === 'agency' ? [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }] : [])], '', { noEmpty: true })}</div>
@@ -5897,12 +5898,26 @@
     if (end >= now) return { ok: true, trial: true, txt: `🎁 الفترة المجانية حتى ${dAr(end.toISOString())} — من بعد ${price} درهم فالعام${extra}` };
     return { ok: false, txt: `⏳ الاشتراك السنوي (${price} درهم) مستحق — تواصل مع مكتب الوسيط 777${extra}` };
   }
+  // رسالة واتساب جاهزة: العرض + شحال باقي من المقاعد المجانية + رابط صفحة الانضمام
+  function offerMsg(all, kind) {
+    const K = KINDS[kind], n = all.filter(a => a.seat_no && (a.seat_zone || 'ma') === 'ma').length, o = all.filter(a => a.seat_no && a.seat_zone === 'out').length;
+    const left = (from, to) => Math.max(0, to - Math.max(n, from));
+    return `${K.ic} ${K.ar} — عرض 777 للأوائل فشبكة الوسيط 777\n` +
+      (left(0, 7) ? `🥇 باقي ${left(0, 7)} مقاعد فقط: التطبيق مجاني مدى الحياة\n` : '') +
+      (left(7, 77) ? `🥈 ${left(7, 77)} مقعد: تخفيض 50% مدى الحياة\n` : '') +
+      `🥉 ${left(77, 777)} مقعد: تخفيض 25% مدى الحياة\n🎁 6 أشهر مجانية للجميع\n` +
+      (kind === 'agency' && o < 70 ? `🌍 باقي ${70 - o} مقعد مجاني مدى الحياة للوكالات خارج المغرب\n` : '') +
+      `👉 ${appBase()}join.html?k=${kind}\n📞 0777777959 · 0777777848`;
+  }
   // لوحة العرض فالدليل: شحال تسجل وشحال باقي فكل امتياز (فهاد الفئة)
   function offerBoard(all, kind) {
     const reg = z => all.filter(a => a.seat_no && (a.seat_zone || 'ma') === z).length;
     const ma = reg('ma'), out = kind === 'agency' ? reg('out') : 0;
     const row = (ic, t, from, to) => `<div class="of-t${ma >= to ? ' full' : ''}"><b>${ic} ${t}</b><small>${ma >= to ? 'تعمّرو' : `باقي ${to - Math.max(ma, from)} مقعد`}</small></div>`;
-    return `<div class="offer-777"><div class="of-h"><b>🎁 عرض 777 للأوائل</b><span>المسجلين: ${ma + out} · عدد الأعضاء بلا حد · 6 أشهر مجانية للجميع</span></div>
+    // 🏅 لوحة الشرف: الأعضاء الأوائل (اللي كمّلو الاسم) — كتبان غير للأعضاء
+    const honor = all.filter(a => a.seat_no && a.seat_no <= 7 && (a.seat_zone || 'ma') === 'ma' && isNamed(a)).sort((x, y) => x.seat_no - y.seat_no);
+    const hon = honor.length ? `<div class="of-hon"><b>🏅 لوحة الشرف — الأوائل</b><div>${honor.map(a => `<span><i>${a.seat_no}</i>${esc(a.name)}${a.city ? ` <small>${esc(a.city)}</small>` : ''}</span>`).join('')}</div></div>` : '';
+    return `<div class="offer-777"><div class="of-h"><b>🎁 عرض 777 للأوائل</b><span>المسجلين: ${ma + out} · عدد الأعضاء بلا حد · 6 أشهر مجانية للجميع · <a href="join.html?k=${kind}" target="_blank" rel="noopener">صفحة الانضمام ↗</a></span></div>${hon}
       <div class="of-g">${row('🥇', '7 الأوائل: مجاني مدى الحياة', 0, 7)}${row('🥈', '70 الموالين: -50% مدى الحياة', 7, 77)}${row('🥉', '700 الموالين: -25% مدى الحياة', 77, 777)}
         <div class="of-t"><b>🎟️ من بعد: -25% لمدة 4 سنين</b><small>لكل من تسجّل</small></div>
         ${kind === 'agency' ? `<div class="of-t${out >= 70 ? ' full' : ''}"><b>🌍 70 وكالة خارج المغرب: مجاني مدى الحياة</b><small>${out >= 70 ? 'تعمّرو' : `باقي ${70 - out} مقعد`}</small></div>` : ''}</div></div>`;
