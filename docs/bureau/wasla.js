@@ -18,8 +18,8 @@
       wrong: 'جواب غالط، عاود', good: 'برافو!', stageDone: 'كملتي المرحلة', next: 'المرحلة الموالية', toGroup: 'رجوع للمواضيع', earned: 'ربحتي',
       board: 'ترتيب المشتركين', noBoard: 'الترتيب كيبان غير للمشتركين فتطبيق مجموعة الوسيط.', empty: 'حتى واحد ما لعب مازال — كون الأول!', me: 'أنت',
       share: 'شارك اللعبة', shareTxt: 'جرب «وصلة العقار» — لعبة الأسئلة العقارية ديال مكتب الوسيط 777 🧩🏠', saved: 'تسجلات النقط فالترتيب ✓',
-      credits: 'حقوق الصور', pick: 'ختار سؤال من الشبكة', picQ: 'سؤال بالصورة', how: 'كيفاش تلعب؟',
-      howTxt: 'ختار خانات كلمة فالشبكة باش يبان السؤال (بالصورة أحياناً)، ومن بعد ركّب الجواب بالحروف المقترحة. الحروف المشتركة مع كلمات محلولة كتبان بالأصفر. «حذف حرف» كيحيد حرف زايد، و«كشف حرف» كيعطيك حرف من الجواب. حل المرحلة بلا مساعدات = 3 نجوم.',
+      credits: 'حقوق الصور', pick: 'سحب صبعك على كلمة فالشبكة', picQ: 'سؤال بالصورة', how: 'كيفاش تلعب؟',
+      howTxt: 'سحب صبعك على خانات كلمة فالشبكة (الشريط كيكبر) باش يبان السؤال (بالصورة أحياناً)، ومن بعد ركّب الجواب بالحروف المقترحة. الحروف المشتركة مع كلمات محلولة كتبان بالأصفر. «حذف حرف» كيحيد حرف زايد، و«كشف حرف» كيعطيك حرف من الجواب. حل المرحلة بلا مساعدات = 3 نجوم.',
       allDone: 'سالييتي جميع المراحل! 🏆', puzzle: 'لغز رقم', cheers: ['برافو! 🎉', 'ممتاز! 👏', 'واعر بزاف! 🔥', 'زيد هكا! 💪'], sad: 'ماشي مشكل، عاود مرة أخرى 💪', tapMe: 'ورك عليا إلا بغيتي شي مساعدة 😉', ask: 'إسأل منير', askT: 'منير — مساعد اللعبة', askPh: 'سول منير على أي حاجة فالعقار…', chips: ['شنو الجواب؟', 'شرح ليا هاد الكلمة', 'عطيني مثال من المغرب'], ansIs: 'الجواب هو', ansMore: 'إلا بغيتي نشرح ليك الكلمة ضغط «شرح ليا هاد الكلمة».', voiceOn: 'الصوت مشعول', voiceOff: 'الصوت مطفي', thinking: 'منير كيفكر…', aiErr: 'وقع مشكل فالاتصال، عاود من بعد شوية.', aiQuota: 'وصلتي للحد ديال الأسئلة اليوم، رجع غدا إن شاء الله.', send: 'صيفط', aiHi: 'مرحبا! أنا منير 🤖 سولني على هاد السؤال ولا على أي كلمة عقارية بغيتي تفهمها.', whatIs: 'ما هذا؟', info: 'معلومات عقارية', helpsInfo: 'كتربح مساعدة مع كل لغز كتحلو، وزوج إلا حليتيه بلا مساعدات ⭐⭐⭐',
     },
     fr: {
@@ -29,8 +29,8 @@
       wrong: 'Mauvaise réponse, réessayez', good: 'Bravo !', stageDone: 'Étape terminée', next: 'Étape suivante', toGroup: 'Retour aux thèmes', earned: 'Gagné',
       board: 'Classement des membres', noBoard: 'Le classement est réservé aux membres d’Al Wasset 777.', empty: 'Personne n’a encore joué — soyez le premier !', me: 'Vous',
       share: 'Partager le jeu', shareTxt: 'Essayez « Wasla Immo », le jeu de questions immobilières d’Al Wasset 777 🧩🏠', saved: 'Points enregistrés au classement ✓',
-      credits: 'Crédits photos', pick: 'Choisissez une question dans la grille', picQ: 'Question en image', how: 'Comment jouer ?',
-      howTxt: 'Touchez un mot dans la grille pour voir sa question (parfois en image), puis composez la réponse avec les lettres proposées. Les lettres partagées avec des mots déjà trouvés apparaissent en jaune. « Retirer une lettre » enlève une lettre inutile, « Révéler une lettre » en donne une. Sans aide = 3 étoiles.',
+      credits: 'Crédits photos', pick: 'Glissez le doigt sur un mot de la grille', picQ: 'Question en image', how: 'Comment jouer ?',
+      howTxt: 'Glissez le doigt sur un mot de la grille pour voir sa question (parfois en image), puis composez la réponse avec les lettres proposées. Les lettres partagées avec des mots déjà trouvés apparaissent en jaune. « Retirer une lettre » enlève une lettre inutile, « Révéler une lettre » en donne une. Sans aide = 3 étoiles.',
       allDone: 'Vous avez terminé toutes les étapes ! 🏆', puzzle: 'Énigme n°', cheers: ['Bravo ! 🎉', 'Excellent ! 👏', 'Super ! 🔥', 'Continue ! 💪'], sad: 'Pas grave, réessayez 💪', tapMe: 'Touchez-moi si vous avez besoin d’aide 😉', ask: 'Demander à Mounir', askT: 'Mounir — l’assistant du jeu', askPh: 'Posez votre question sur l’immobilier…', chips: ['Quelle est la réponse ?', 'Explique-moi ce mot', 'Un exemple au Maroc'], ansIs: 'La réponse est', ansMore: 'Pour comprendre le mot, appuie sur « Explique-moi ce mot ».', voiceOn: 'Son activé', voiceOff: 'Son coupé', thinking: 'Mounir réfléchit…', aiErr: 'Problème de connexion, réessayez dans un instant.', aiQuota: 'Limite de questions atteinte pour aujourd’hui, revenez demain.', send: 'Envoyer', aiHi: 'Bonjour ! Je suis Mounir 🤖 Posez-moi une question sur cette énigme ou sur n’importe quel mot de l’immobilier.', whatIs: 'Qu’est-ce que c’est ?', info: 'Culture immobilière', helpsInfo: 'Chaque énigme résolue rapporte 1 aide, 2 si vous la résolvez sans aide ⭐⭐⭐',
     },
     en: {
@@ -40,8 +40,8 @@
       wrong: 'Wrong answer, try again', good: 'Well done!', stageDone: 'Stage complete', next: 'Next stage', toGroup: 'Back to topics', earned: 'Earned',
       board: 'Members ranking', noBoard: 'The ranking is for Al Wasset 777 members.', empty: 'Nobody has played yet — be the first!', me: 'You',
       share: 'Share the game', shareTxt: 'Try “Real-Estate Wasla”, the property quiz game by Al Wasset 777 🧩🏠', saved: 'Points saved to the ranking ✓',
-      credits: 'Photo credits', pick: 'Pick a question in the grid', picQ: 'Picture question', how: 'How to play?',
-      howTxt: 'Tap a word in the grid to see its question (sometimes a picture), then build the answer with the suggested letters. Letters shared with solved words show in yellow. “Remove a letter” takes out a wrong letter, “Reveal a letter” gives you one. No help = 3 stars.',
+      credits: 'Photo credits', pick: 'Swipe across a word in the grid', picQ: 'Picture question', how: 'How to play?',
+      howTxt: 'Swipe across a word in the grid to see its question (sometimes a picture), then build the answer with the suggested letters. Letters shared with solved words show in yellow. “Remove a letter” takes out a wrong letter, “Reveal a letter” gives you one. No help = 3 stars.',
       allDone: 'You finished every stage! 🏆', puzzle: 'Puzzle', cheers: ['Well done! 🎉', 'Excellent! 👏', 'Awesome! 🔥', 'Keep going! 💪'], sad: 'No worries, try again 💪', tapMe: 'Tap me if you need help 😉', ask: 'Ask Mounir', askT: 'Mounir — game assistant', askPh: 'Ask anything about real estate…', chips: ['What is the answer?', 'Explain this word', 'An example in Morocco'], ansIs: 'The answer is', ansMore: 'To understand the word, tap “Explain this word”.', voiceOn: 'Sound on', voiceOff: 'Sound off', thinking: 'Mounir is thinking…', aiErr: 'Connection problem, please try again shortly.', aiQuota: 'Daily question limit reached, come back tomorrow.', send: 'Send', aiHi: 'Hi! I’m Mounir 🤖 Ask me about this puzzle or any real-estate word you want to understand.', whatIs: 'What is this?', info: 'Real-estate knowledge', helpsInfo: 'Each solved puzzle gives 1 help, 2 if solved with no help ⭐⭐⭐',
     },
   };
@@ -115,7 +115,10 @@
 .wl-slot.ok{background:#0a7a2f;color:#fff;border-color:#0a7a2f}
 .wl-bank{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:6px;margin-top:6px}
 .wl-t{height:48px;border-radius:12px;border:0;background:var(--k);color:#fff;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 3px 0 var(--r)}
-.wl-t:active{transform:translateY(2px);box-shadow:none}.wl-t.used,.wl-t.gone{visibility:hidden}
+.wl-t{touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .08s,opacity .12s}
+.wl-t:active{transform:translateY(2px) scale(.94);box-shadow:none}.wl-t.used,.wl-t.gone{visibility:hidden;opacity:0}
+.wl-slot{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.wl-slot.pop{animation:wl-pop .18s ease-out}
+@keyframes wl-pop{0%{transform:scale(.7)}70%{transform:scale(1.12)}100%{transform:none}}
 .wl-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.wl-acts button{flex:1 1 30%;min-height:44px;border-radius:12px;border:2px solid var(--k);background:#fff;font-weight:800;cursor:pointer;font-size:14px}
 .wl-acts .h{background:var(--r);color:#fff;border-color:var(--r)}
 .wl-shake{animation:wl-sh .4s}@keyframes wl-sh{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
@@ -142,6 +145,11 @@
 .wl-pl .wl-c.sel{background:var(--r)!important;color:#fff}.wl-pl .wl-c.fl{animation:wl-fl 1.1s}
 @keyframes wl-fl{0%,60%{background:#2ecc71;color:#fff;transform:scale(1.1)}}
 .wl-pl .wl-c .pic{font-size:9px;top:1px}
+.wl-pl .wl-grid{touch-action:none;-webkit-user-select:none;user-select:none}
+.wl-pl .wl-c{transition:transform .12s cubic-bezier(.2,.9,.3,1.4),background-color .1s,box-shadow .12s;-webkit-tap-highlight-color:transparent}
+.wl-pl .wl-c.drg{background:var(--r)!important;color:#fff;transform:scale(1.16);z-index:2;box-shadow:0 6px 14px rgba(200,16,46,.45)}
+.wl-pl .wl-c.drg.go{transform:scale(1.24)}
+.wl-pl .wl-grid.dragging .wl-c:not(.drg){opacity:.8}
 .wl-hint{text-align:center;font-weight:800;margin-top:10px;color:#444}
 .wl-mascot{display:flex;align-items:center;gap:12px;margin:14px auto 0;max-width:460px}
 .wl-mwrap{position:relative;display:inline-block;flex:0 0 auto;line-height:0}
@@ -407,14 +415,16 @@
       play.used[bi] = true;
       play.slots[p] = { ch: play.bank[bi], b: bi };
       if (play.slots.every(Boolean)) return check();
-      render();
+      play.msg = '';
+      if (!paintPlay(p)) render();
     }
     function untap(p) {
       const s = play.slots[p];
       if (!s || s.lock) return;
       play.used[s.b] = false;
       play.slots[p] = null;
-      render();
+      play.msg = '';
+      if (!paintPlay()) render();
     }
     function check() {
       const st = stateOf(play.gi, play.si), w = stageObj().w[play.sel];
@@ -529,6 +539,72 @@
       } catch (e) { flushE++; flushT = setTimeout(flush, Math.min(600000, 60000 * flushE)); } // كل مرة كنتسناو كثر (حتى 10 دقايق)
     }
 
+    // سحب الشريط: كنسحبو الصبع على خانات الكلمة (أفقي ولا عمودي)، الشريط كيكبر شوية مع السحب، وملي نطلقو كتحل الكلمة
+    function bindDrag(grid, stg, st) {
+      if (!grid) return;
+      const at = new Map(); // «r,c» ← العنصر
+      grid.querySelectorAll('.wl-c').forEach(el => at.set(el.dataset.k, el));
+      const rc = k => k.split(',').map(Number);
+      const wordsAt = k => stg.w.map((x, i) => i).filter(i => cells(stg.w[i]).some(([r, c]) => r + ',' + c === k));
+      let d = null, lit = [];
+      const light = i => {
+        lit.forEach(el => el.classList.remove('drg'));
+        lit = i == null ? [] : cells(stg.w[i]).map(([r, c]) => at.get(r + ',' + c)).filter(Boolean);
+        lit.forEach((el, n) => { el.style.transitionDelay = (n * 14) + 'ms'; el.classList.add('drg'); });
+      };
+      // الكلمة اللي كتبدا من الخانة: حسب الاتجاه (a = أفقي، d = عمودي)، والأولوية للي مازال ما تحلاتش
+      const pick = (k, dirn) => {
+        let h = wordsAt(k);
+        if (dirn) { const f = h.filter(i => stg.w[i][5] === dirn); if (f.length) h = f; }
+        if (!h.length) return null;
+        let i = h.find(x => !st.sol[x] && x !== play.sel);
+        if (i == null) i = h.find(x => !st.sol[x]);
+        return i == null ? h[0] : i;
+      };
+      const cellAt = (x, y) => { const el = document.elementFromPoint(x, y); const c = el && el.closest && el.closest('.wl-c'); return c && grid.contains(c) ? c : null; };
+      grid.addEventListener('pointerdown', e => {
+        const c = e.target.closest('.wl-c'); if (!c) return;
+        e.preventDefault();
+        try { grid.setPointerCapture(e.pointerId); } catch (er) { /* */ }
+        d = { k: c.dataset.k, id: e.pointerId, i: pick(c.dataset.k, null), moved: false };
+        grid.classList.add('dragging');
+        light(d.i);
+      });
+      grid.addEventListener('pointermove', e => {
+        if (!d || e.pointerId !== d.id) return;
+        const c = cellAt(e.clientX, e.clientY); if (!c || c.dataset.k === d.k && !d.moved) return;
+        const [r0, c0] = rc(d.k), [r1, c1] = rc(c.dataset.k);
+        if (r1 === r0 && c1 === c0) return;
+        d.moved = true;
+        const dirn = Math.abs(c1 - c0) >= Math.abs(r1 - r0) ? 'a' : 'd';
+        const i = pick(d.k, dirn);
+        if (i !== d.i) { d.i = i; light(i); }
+      });
+      const end = e => {
+        if (!d || (e && e.pointerId !== d.id)) return;
+        const i = d.i; d = null;
+        grid.classList.remove('dragging');
+        if (i == null) { light(null); return; }
+        if (navigator.vibrate) try { navigator.vibrate(8); } catch (er) { /* */ }
+        lit.forEach(el => el.classList.add('go'));
+        setTimeout(() => select(i), 90); // الشريط كيبان كيتنطط شوية ومن بعد كتحل البطاقة
+      };
+      grid.addEventListener('pointerup', end);
+      grid.addEventListener('pointercancel', () => { d = null; grid.classList.remove('dragging'); light(null); });
+    }
+    // الحروف: كنبدلو غير الخانات والزر المعني (بلا ما نعاودو نرسمو البطاقة والصورة) — أخف وأسرع
+    function paintPlay(popAt) {
+      const box = root.querySelector('.wl-slots[dir]'), bank = root.querySelector('.wl-bank');
+      if (!box || !bank) return false;
+      play.slots.forEach((sl, p) => {
+        const el = box.querySelector(`[data-p="${p}"]`); if (!el) return;
+        el.className = 'wl-slot ' + (sl ? (sl.lock ? sl.lock : 'in') : '') + (p === popAt ? ' pop' : '');
+        el.textContent = sl ? sl.ch : '';
+      });
+      bank.querySelectorAll('[data-b]').forEach(b => { const u = play.used[+b.dataset.b]; b.classList.toggle('used', !!u && u !== 'gone'); b.classList.toggle('gone', u === 'gone'); });
+      const m = root.querySelector('.wl-msg'); if (m) { m.textContent = ''; m.className = 'wl-msg'; }
+      return true;
+    }
     function playView() {
       const st = stateOf(play.gi, play.si), stg = stageObj();
       const kn = known(), H = stg.H, W = stg.W, rtl = S.lang === 'ar';
@@ -561,15 +637,7 @@
             <div class="wl-bub">${esc(play.mood === 'happy' ? L().cheers[Object.keys(st.sol).length % L().cheers.length] : play.mood === 'win' ? L().stageDone + ' 🏆' : play.msg || L().pick)}<small>${esc(L().tapMe)}</small></div></div></div>`;
         play.mood = '';
         root.querySelector('[data-askg]').onclick = () => askMounir(play.sel >= 0 ? play.sel : 0);
-        root.querySelectorAll('.wl-c').forEach(el => el.onclick = () => {
-          const k = el.dataset.k;
-          const hits = stg.w.map((x, i) => i).filter(i => cells(stg.w[i]).some(([r, c]) => r + ',' + c === k));
-          if (!hits.length) return;
-          let i = hits.find(h => !st.sol[h] && h !== play.sel);
-          if (i == null) i = hits.find(h => !st.sol[h]);
-          if (i == null) i = hits[0];
-          select(i);
-        });
+        bindDrag(root.querySelector('.wl-grid'), stg, st);
       } else {
         // بطاقة السؤال: العنوان + الصورة/النص + كشف/حذف حرف، ومن تحت الخانات والحروف
         const C = (DATA.credits || {})[w[2]];
@@ -588,8 +656,9 @@
           <div class="wl-msg ${play.msgCls || ''}">${esc(play.msg || '')}</div>
           <div class="wl-bank" style="--n:${cols}" dir="${dir()}">${play.bank.map((ch, bi) => `<button class="wl-t ${play.used[bi] === 'gone' ? 'gone' : play.used[bi] ? 'used' : ''}" data-b="${bi}">${esc(ch)}</button>`).join('')}</div>`}
         </div>`;
-        root.querySelectorAll('[data-b]').forEach(b => b.onclick = () => tap(+b.dataset.b));
-        root.querySelectorAll('[data-p]').forEach(b => b.onclick = () => untap(+b.dataset.p));
+        const bankEl = root.querySelector('.wl-bank'), slotsEl = root.querySelector('.wl-slots[dir]');
+        if (bankEl) bankEl.addEventListener('pointerdown', e => { const b = e.target.closest('[data-b]'); if (!b) return; e.preventDefault(); tap(+b.dataset.b); });
+        if (slotsEl) slotsEl.addEventListener('pointerdown', e => { const b = e.target.closest('[data-p]'); if (!b) return; e.preventDefault(); untap(+b.dataset.p); });
         root.querySelectorAll('[data-h]').forEach(b => b.onclick = () => useHelp(b.dataset.h));
         root.querySelector('[data-ask]').onclick = () => askMounir(play.sel);
         play.mood = ''; // الحركة كتلعب مرة وحدة
