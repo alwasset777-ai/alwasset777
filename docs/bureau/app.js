@@ -7882,6 +7882,7 @@
         <div class="fo-ph">${x.phones.length ? x.phones.map(([l, n, s]) => `<a class="fo-call" href="tel:${esc(tel(n))}"><span>${esc(l)}${s === 's' ? ' <em>يُؤكَّد</em>' : ''}</span><b dir="ltr">${esc(n)}</b></a>`).join('') : '<div class="muted">الهاتف الرسمي غير منشور — كيتأكد من بعد الاتصال.</div>'}</div>
         ${x.web ? `<a class="btn" href="${esc(x.web)}" target="_blank" rel="noopener">🌐 الموقع الرسمي</a>` : ''}
         ${x.products.length ? `<h3 class="section-title">🏠 العروض المنشورة</h3><div class="fc-tags">${x.products.map(p => `<span dir="ltr">${esc(p)}</span>`).join('')}</div>` : ''}
+        ${x.notes ? `<p class="fin-note" dir="ltr">ℹ️ ${esc(x.notes)}</p>` : ''}
         ${filled.length ? `<h3 class="section-title">✅ الشروط المؤكدة من المكتب</h3><div class="kv fin-mine">${filled.map(([k, l]) => `<div${k === 'docs' || k === 'notes' ? ' class="full"' : ''}><small>${esc(l)}</small><b>${esc(M[k]).replace(/\n/g, '<br>')}</b></div>`).join('')}</div>${M.updatedAt ? `<p class="muted" style="font-size:12px">آخر تحديث: ${esc(String(M.updatedAt).slice(0, 10))}</p>` : ''}`
           : `<div class="fo-wait">⏳ النسب، المدة، نسبة التمويل والوثائق المطلوبة: <b>عمّرهم فالاستمارة لتحت ملي تأكدهم مع ${esc(x.ar)}</b>.</div>`}
       </div>
