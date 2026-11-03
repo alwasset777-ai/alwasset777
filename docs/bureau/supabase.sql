@@ -1296,3 +1296,14 @@ create or replace function public.w777_offer_counts() returns json language sql 
   from (select kind, seat_zone, count(*)::int n from w777_agencies where seat_no is not null group by kind, seat_zone) t $$;
 revoke execute on function public.w777_offer_counts() from public;
 grant execute on function public.w777_offer_counts() to anon, authenticated;
+-- الحماية (2026-11): المشترك ما يقدرش يبدل حسابو من «المغرب» لـ«خارج المغرب» (ولا العكس) — باش ما ياخدش امتياز 70 وكالة خارج المغرب بلا حق.
+-- بين دول الخارج (خارج المغرب ← فرنسا…) عادي. التبديل بين المغرب والخارج كيديرو غير المدير.
+create or replace function public.w777_seat_lock() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then
+    new.seat_no := old.seat_no; new.seat_zone := old.seat_zone;
+    if (coalesce(old.country, 'المغرب') = 'المغرب') <> (coalesce(new.country, 'المغرب') = 'المغرب') then new.country := old.country; end if;
+  end if;
+  return new;
+end $$;
+revoke execute on function public.w777_seat_lock() from public, anon, authenticated;

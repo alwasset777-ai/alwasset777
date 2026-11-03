@@ -975,7 +975,7 @@
 
     main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + `
       <div class="hero">
-        <div class="hero-marq"><span>${esc(S.role === 'agency' ? myAgencyName() : String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط')).replace(/777/g, '<b class="r777">777</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
+        <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
         <div class="hero-big3">
           <button class="btn gold" data-hm="add">${ic('plus', 20)} إضافة</button>
           <button class="btn" data-hm="svc">🧰 خدمات المجموعة${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</button>
@@ -2722,7 +2722,8 @@
   const AG_VOICE_DEADLINE = 1900;
   // المساعد (ماشي اللعبة): الصوت الطبيعي بالدارجة أحسن بزاف من صوت الجهاز (اللي كيقرا بالفصحى بحال روبو)،
   // داكشي كنتسناوه حتى 5 ثواني قبل ما نرجعو لصوت الجهاز. اللعبة كتبقى بـ 2 ثواني (طلب المدير)
-  const agDeadline = () => (AGV.ext ? AG_VOICE_DEADLINE : 5000);
+  // الفرنسية والإنجليزية: صوت الجهاز مزيان، داكشي ما كنتسناوش بزاف (2.8 ثانية)
+  const agDeadline = () => (AGV.ext ? AG_VOICE_DEADLINE : /^(fr|en)$/.test(agLang()) ? 2800 : 6000);
   const agHearing = () => AG.open || AGV.ext;
   function agAudio() {
     const C = window.AudioContext || window.webkitAudioContext;
@@ -2769,9 +2770,12 @@
     if (!agVoiceOn() || !agHearing()) return;
     AGV.pend += delta;
     for (;;) {
-      const min = AGV.q.length || AGV.playing ? 140 : 20; // الجملة الأولى قصيرة باش يبدا بسرعة
-      const re = /[.!?؟؛:](?=\s)|\n/g; let m, cut = -1;
+      // الجملة الأولى قصيرة (حتى الفاصلة، ولا ~70 حرف) باش الصوت يبدا بسرعة؛ الباقي جمل كاملة
+      const first = !AGV.q.length && !AGV.playing && !AGV.said;
+      const min = first ? 12 : 140;
+      const re = first ? /[.!?؟؛:،,](?=\s)|\n/g : /[.!?؟؛:](?=\s)|\n/g; let m, cut = -1;
       while ((m = re.exec(AGV.pend))) { if (m.index + 1 >= min) { cut = m.index + 1; break; } }
+      if (cut < 0 && first && AGV.pend.length > 90) { const sp = AGV.pend.lastIndexOf(' ', 70); cut = sp > 25 ? sp : 70; }
       if (cut < 0) { if (AGV.pend.length <= 400) break; const sp = AGV.pend.lastIndexOf(' ', 380); cut = sp > 50 ? sp : 380; }
       agSayChunk(AGV.pend.slice(0, cut)); AGV.pend = AGV.pend.slice(cut);
     }
@@ -5470,7 +5474,7 @@
           ${fInput('name', 'الاسم', ag.name, { req: true })}
           ${fInput('phone', 'الهاتف / واتساب', ag.phone, { type: 'tel' })}
           ${fInput('city', 'المدينة', ag.city, { list: 'dl-cities', ph: 'مكناس، فاس، باريس…' })}
-          ${fInput('country', 'الدولة', ag.country === 'خارج المغرب' ? '' : (ag.country || 'المغرب'), { list: 'dl-countries', ph: 'المغرب، فرنسا، إسبانيا…' })}
+          ${fInput('country', 'الدولة', ag.country === 'خارج المغرب' ? '' : (ag.country || 'المغرب'), { list: 'dl-countries', ph: 'المغرب، فرنسا، إسبانيا…', hint: 'التبديل بين «المغرب» و«خارج المغرب» كيديرو غير مكتب الوسيط 777' })}
           ${kind === 'notary' ? fInput('district', 'الحي / العنوان ديال المكتب', ag.district, { ph: 'مثال: حمرية، شارع…' }) : ''}
           ${kind === 'notary' ? `<div class="field"><label>الموقع (GPS) — باش تتقترح مع أقرب عقار</label><div class="range"><input name="gps" value="${esc(ag.gps || '')}" placeholder="33.89,-5.55" dir="ltr">
             <button type="button" class="btn sm" id="me-gps">${ic('gps', 16)} موقعي الآن</button></div></div>` : ''}

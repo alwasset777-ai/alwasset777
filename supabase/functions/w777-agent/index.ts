@@ -296,7 +296,7 @@ async function tts(key: string, text: string, lang = "darija") {
     contents: [{ parts: [{ text: (TTS_STYLE[lang] ?? "") + text }] }],
     generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } } },
   });
-  // النماذج كتبدا بالتتابع (كل 2.5 ثانية واحد جديد) وأول جواب صحيح كيربح: إلا كان الأول بطيء ولا مسدود، ما كنتسناوش 20 ثانية
+  // النماذج كتبدا بالتتابع (كل 1.2 ثانية واحد جديد) وأول جواب صحيح كيربح: إلا كان الأول بطيء ولا مسدود، ما كنتسناوش 20 ثانية
   let last = 0, done = false;
   const ctrls: AbortController[] = [];
   const one = async (m: string, delay: number): Promise<Uint8Array> => {
@@ -316,7 +316,7 @@ async function tts(key: string, text: string, lang = "darija") {
     } catch (e) { if ((e as Error).name === "AbortError") last = last || 504; throw e; } finally { clearTimeout(timer); }
   };
   try {
-    const out = await Promise.any(TTS_MODELS.map((m, i) => one(m, i * 2500)));
+    const out = await Promise.any(TTS_MODELS.map((m, i) => one(m, i * 1200)));
     done = true; ctrls.forEach((c) => c.abort());
     return out;
   } catch { done = true; }
