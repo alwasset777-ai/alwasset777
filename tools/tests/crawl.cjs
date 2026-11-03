@@ -32,7 +32,7 @@ for(const k of ['add','svc','net']){
 }
 console.log(vw.width, errs.length?errs.join('\n'):'no errors'); all.push(...errs); await c.close();}
 // الصفحات العمومية
-for (const pg of ['catalog.html','game.html','stays.html','partner.html']){
+for (const pg of ['catalog.html','game.html','stays.html','partner.html','join.html']){
   const c=await b.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});const p=await c.newPage();
   const errs=[];p.on('pageerror',e=>errs.push(pg+' :: '+e.message));
   await p.route(/googleapis|gstatic|supabase|unpkg|jsdelivr|cdnjs|tile|openstreetmap/,r=>r.abort());
