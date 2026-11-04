@@ -22,9 +22,9 @@ let lang='skip';const lb=await p.$('#btn-lang');
 if(lb){await lb.click();await p.waitForTimeout(300);await Promise.all([p.waitForNavigation({timeout:5000}).catch(()=>null),p.click('[data-lang="fr"]')]);await p.waitForTimeout(800);
  lang=await p.evaluate(()=>({c:document.cookie,l:localStorage.getItem('w777_lang'),code:(document.querySelector('#lang-code')||{}).textContent}));
  await p.evaluate(()=>{document.cookie='googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';});
- await p.reload();await p.waitForTimeout(600);const again=await p.evaluate(()=>document.cookie);lang.restored=/googtrans=\/ar\/fr/.test(again);
+ await p.reload();await p.waitForTimeout(600);const again=await p.evaluate(()=>(document.querySelector('#lang-code')||{}).textContent);lang.restored=again==='FR';
  await p.evaluate(()=>{localStorage.removeItem('w777_lang');document.cookie='googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';});}
-const langOk=lang==='skip'||(/googtrans=\/ar\/fr/.test(lang.c)&&lang.l==='fr'&&lang.restored);
+const langOk=lang==='skip'||(!/googtrans=\/ar/.test(lang.c)&&lang.l==='fr'&&lang.code==='FR'&&lang.restored);
 const ok=kinds.join(',')==='PROJECT,REELS,POST'&&imgsOk&&soon&&frame&&calls>10&&mk>=15&&callNow&&mkSec&&!oldName&&langOk&&!errs.length;if(!ok)bad++;
 console.log(ok?'OK ':'BAD',vw.width,'kinds',kinds.join(','),imgsOk,'soon',soon,'post',frame,'calls',calls,'mk',mk,'callNow',callNow,mkSec,'oldName',oldName,'lang',JSON.stringify(lang),errs.join('|'));
 await p.close();}
