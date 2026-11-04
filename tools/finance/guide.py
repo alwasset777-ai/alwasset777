@@ -101,6 +101,7 @@ def card(i):
    <div><h4>الاتصال</h4>{phones}{mails}
      <div class="ph"><span>الموقع الرسمي</span><span><a href="{e(i['web'])}">{e(i['web'].replace('https://', ''))}</a></span></div>
      {f'<div class="ph"><span>العنوان {src(i["addr_ok"])}</span><span class="fr" style="white-space:normal;font-weight:500">{e(i["addr"])}</span></div>' if i['addr'] else '<div class="ph"><span>العنوان</span><span>يُستكمل</span></div>'}
+     {('<h4>الوكالة بمكناس</h4>' + ''.join(f'<div class="ph"><span class="fr" style="white-space:normal">{e(l)} — {e(ad)} {src(sv)}</span><span>{e(n)}</span></div>' for l, ad, n, sv in i.get('mk', []))) if i.get('mk') else ''}
      <h4>معلومات يجب استكمالها</h4><ul>{miss}</ul></div>
    <div><h4>المنتجات العقارية المنشورة</h4><ul>{prods}</ul>
      {f'<h4>ملاحظات</h4><div class="fr" style="font-size:8.6pt">{e(i["notes"])}</div>' if i['notes'] else ''}</div>
