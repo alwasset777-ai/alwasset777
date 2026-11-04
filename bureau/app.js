@@ -2635,6 +2635,13 @@
   // الإسبانية والإيطالية تحيدو: اللي كانو مختارينهم كيرجعو للدارجة
   const agLang = () => { try { const l = localStorage.getItem('w777_agent_lang'); return AG_LANGS.some(x => x.id === l) ? l : 'darija'; } catch (e) { return 'darija'; } };
   const agT = () => AG_T[agLang()] || AG_T.darija;
+  // لغة التطبيق تبدلات ← الوكيل كيتبعها (فرنسية/إنجليزية، والعربية ← الدارجة)؛ اللغات الأخرى كيبقى على اختيار المستعمل
+  window.addEventListener('w777-lang', e => {
+    const c = e.detail, to = c === 'fr' ? 'fr' : c === 'en' ? 'en' : c === 'ar' ? 'darija' : null;
+    if (!to || to === agLang()) return;
+    try { localStorage.setItem('w777_agent_lang', to); } catch (er) { /* */ }
+    if (AG.open) { agHide(); agOpen(); }
+  });
   function agCfgCached() { try { return JSON.parse(localStorage.getItem('w777_agent_cfg') || 'null'); } catch (e) { return null; } }
   // الوكيل ديال المشترك (الاسم/الصورة اللي ختار) — محفوظ فالحساب ديالو
   function agMyCached() { try { const m = JSON.parse(localStorage.getItem('w777_agent_my') || 'null'), Sy = window.W777_SYNC; return m && Sy && Sy.isOn() && m.u === Sy.uid() ? m : null; } catch (e) { return null; } }
@@ -7566,69 +7573,230 @@
   ];
   const RTL_LANGS = ['ar', 'ur', 'pa-Arab', 'fa', 'iw'];
   const LANG_SHORT = { 'pt-PT': 'PT', 'zh-CN': 'ZH', 'pa-Arab': 'PA', iw: 'HE', 'ber-Latn': 'ⵣ', ber: 'ⵣ' };
+  // الترجمة ديالنا (بلا الأداة ديال Google اللي ما كتخدمش مزيان فـ iPhone/Safari):
+  // كنجمعو النصوص العربية من الصفحة، كنترجموها دفعة وحدة عبر خدمة Google المجانية، وكنحفظوها فالتيليفون.
+  // كل نص جديد كيبان (صفحة جديدة، نافذة…) كيترجم بوحدو، وتبديل اللغة كيكون فالحين بلا إعادة تحميل.
+  const TR = { lang: 'ar', cache: new Map(), orig: new WeakMap(), done: new WeakMap(), attr: new WeakMap(), queue: new Map(), timer: 0, mo: null, active: 0, gen: 0, saveT: 0 };
+  const TR_ATTRS = ['placeholder', 'title', 'aria-label'];
+  const TR_AR = /[؀-ۿ]/;
+  const TR_SKIP = 'script,style,noscript,textarea,code,pre,svg,.notranslate,[translate="no"],#agent-panel,#cw-root,.wl-mod,.wl-fly,[contenteditable="true"]'; // الوكيل واللعبة عندهم اللغة ديالهم
   function curLang() {
-    const m = document.cookie.match(/(?:^|;\s*)googtrans=\/[^/;]*\/([^;]+)/);
-    let c = m ? decodeURIComponent(m[1]) : '';
-    // Safari كيمسح الكوكيز من بعد أيام: اللغة محفوظة حتى فالمتصفح ونرجعو الكوكي منها
-    if (!c) { try { c = localStorage.getItem('w777_lang') || ''; } catch (e) { /* */ } if (c && c !== 'ar') setLangCookie(c); }
+    let c = '';
+    try { c = localStorage.getItem('w777_lang') || ''; } catch (e) { /* */ }
     return LANGS.some(l => l[0] === c) ? c : 'ar';
   }
-  function setLangCookie(code) {
-    const host = location.hostname, exp = code === 'ar' ? '; expires=Thu, 01 Jan 1970 00:00:00 GMT' : '; max-age=31536000';
-    const v = code === 'ar' ? '' : `/ar/${code}`;
-    document.cookie = `googtrans=${v}; path=/${exp}`;
-    if (host.includes('.')) document.cookie = `googtrans=${v}; path=/; domain=.${host}${exp}`;
+  // الكوكي القديم ديال Google Translate: كنمسحوه باش ما يرجعش يترجم فوق الترجمة ديالنا
+  function clearGTCookie() {
+    const host = location.hostname, exp = '; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'googtrans=; path=/' + exp;
+    if (host.includes('.')) document.cookie = `googtrans=; path=/; domain=.${host}${exp}`;
   }
   function paintLang(code) {
     const el = $('#lang-code');
     if (el) el.textContent = LANG_SHORT[code] || code.slice(0, 2).toUpperCase();
     document.documentElement.dir = RTL_LANGS.includes(code) ? 'rtl' : 'ltr';
+    document.documentElement.lang = code === 'ar' ? 'ar' : code.split('-')[0];
     document.documentElement.classList.toggle('tr-on', code !== 'ar');
   }
-  let gtLoading = null;
-  function loadGT() {
-    if (gtLoading) return gtLoading;
-    gtLoading = new Promise((res, rej) => {
-      window.w777InitTranslate = () => {
-        try {
-          new window.google.translate.TranslateElement({ pageLanguage: 'ar', autoDisplay: false }, 'gt-el');
-          res();
-        } catch (e) { rej(e); }
-      };
-      const sc = document.createElement('script');
-      sc.src = 'https://translate.google.com/translate_a/element.js?cb=w777InitTranslate';
-      sc.async = true;
-      sc.onerror = () => { gtLoading = null; rej(new Error('gt')); };
-      document.head.appendChild(sc);
-    });
-    return gtLoading;
+  function trLoadCache(code) {
+    TR.cache = new Map();
+    try { const o = JSON.parse(localStorage.getItem('w777_tr_' + code) || '{}'); Object.keys(o).forEach(k => TR.cache.set(k, o[k])); } catch (e) { /* */ }
   }
-  // تغيير اللغة عبر قائمة Google المخفية (بدون إعادة تحميل الصفحة)
-  function gtCombo(code, tries = 40) {
-    const sel = document.querySelector('#gt-el select.goog-te-combo');
-    if (sel && sel.options.length > 1) {
-      if (sel.value === code || document.documentElement.classList.contains('translated-ltr') || document.documentElement.classList.contains('translated-rtl')) return;
-      sel.value = code;
-      sel.dispatchEvent(new Event('change'));
-      return;
+  function trSaveCache() {
+    clearTimeout(TR.saveT);
+    TR.saveT = setTimeout(() => {
+      const ent = [...TR.cache].slice(-5000), obj = {};
+      ent.forEach(([k, v]) => { obj[k] = v; });
+      try { localStorage.setItem('w777_tr_' + TR.lang, JSON.stringify(obj)); }
+      catch (e) { try { localStorage.setItem('w777_tr_' + TR.lang, JSON.stringify(Object.fromEntries(ent.slice(-1500)))); } catch (er) { /* الذاكرة عامرة */ } }
+    }, 900);
+  }
+  // نص واحد: كنحافظو على الفراغات اللي فالجناب
+  function trSplit(t) { const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(t); return [m[1], m[2], m[3]]; }
+  function trWant(key) { return key && key.length < 4000 && TR_AR.test(key); }
+  // أسماء المدن ما كتترجمش بالمعنى («العيون» ماشي «Yeux»): كنستعملو الاسم الرسمي ديالها
+  const TR_ARAB_SCRIPT = ['ur', 'fa', 'pa-Arab'];
+  let TR_FIX = null;
+  function trFixed(code) {
+    TR_FIX = new Map();
+    const D = window.W777_DATA; if (!D || !D.REGIONS) return;
+    D.REGIONS.forEach(R => (R.cities || []).forEach(c => { if (c.n && c.f) TR_FIX.set(c.n, TR_ARAB_SCRIPT.includes(code) ? c.n : c.f); }));
+  }
+  // كلمات قصيرة ديال الواجهة: الترجمة الآلية كتغلط فيهم بلا سياق («التكوين» ← Genèse) — [إنجليزي، فرنسي]
+  const TR_GLOSS = {
+    'الرئيسية': ['Home', 'Accueil'], 'العقارات': ['Properties', 'Biens'], 'الطلبات': ['Requests', 'Demandes'], 'المواعيد': ['Appointments', 'Rendez-vous'],
+    'التملك': ['Ownership', 'Propriété'], 'العقود': ['Contracts', 'Contrats'], 'التكوين': ['Training', 'Formation'], 'الإعدادات': ['Settings', 'Paramètres'],
+    'رجوع': ['Back', 'Retour'], 'بحث': ['Search', 'Recherche'], 'المطابقة': ['Matching', 'Correspondance'], 'المطابقة الذكية': ['Smart matching', 'Correspondance intelligente'],
+    'لغة التطبيق': ['App language', 'Langue de l’application'], 'إعلانات فورية': ['Instant ads', 'Annonces instantanées'], 'التمويل العقاري': ['Home financing', 'Financement immobilier'],
+    'مجموعة الوسيط': ['Al Wasset Group', 'Groupe Al Wasset'], 'مكتب الوسيط 777': ['Al Wasset 777 Office', 'Agence Al Wasset 777'], 'تطبيق مجموعة الوسيط': ['Al Wasset Group app', 'Application Groupe Al Wasset'],
+    'الوكالات': ['Agencies', 'Agences'], 'الوسطاء': ['Brokers', 'Courtiers'], 'المقاولات': ['Contractors', 'Entreprises du bâtiment'], 'التشطيب': ['Finishing works', 'Travaux de finition'],
+    'المستثمرون': ['Investors', 'Investisseurs'], 'الموثقون': ['Notaries', 'Notaires'], 'المشاريع': ['Projects', 'Projets'], 'الأخبار العقارية': ['Real-estate news', 'Actualités immobilières'],
+    'الحجز الفوري': ['Instant booking', 'Réservation instantanée'], 'المناسبات العقارية': ['Real-estate events', 'Événements immobiliers'], 'الزبناء': ['Clients', 'Clients'], 'الملاك': ['Owners', 'Propriétaires'],
+    'حفظ': ['Save', 'Enregistrer'], 'إلغاء': ['Cancel', 'Annuler'], 'تعديل': ['Edit', 'Modifier'], 'حذف': ['Delete', 'Supprimer'], 'مسح': ['Delete', 'Supprimer'], 'زيد': ['Add', 'Ajouter'], 'إضافة': ['Add', 'Ajouter'],
+    'للبيع': ['For sale', 'À vendre'], 'للكراء': ['For rent', 'À louer'], 'شقة غير مفروشة': ['Unfurnished apartment', 'Appartement non meublé'], 'شقة مفروشة': ['Furnished apartment', 'Appartement meublé'],
+  };
+  // الاسم ديال المجموعة كيتبقى اسم (ماشي «مجموعة وسطاء»): كنبدلوه قبل ما نصيفطو النص
+  const TR_BRAND = [['تطبيق مجموعة الوسيط', 'Al Wasset Group app'], ['مجموعة الوسيط', 'Al Wasset Group'], ['مكتب الوسيط 777', 'Al Wasset 777'], ['الوسيط 777', 'Al Wasset 777']];
+  const trPrep = k => TR_BRAND.reduce((t, [a, b]) => t.split(a).join(b), k);
+  // اللغات الأخرى: الكلمات ديال القاموس كتترجم من الإنجليزية (أدق من العربية بلا سياق)
+  async function trGloss(code, gen) {
+    if (code === 'en' || code === 'fr') return;
+    const keys = Object.keys(TR_GLOSS).filter(k => !TR.cache.has('§' + k));
+    if (!keys.length) return;
+    try {
+      const body = new URLSearchParams(); keys.forEach(k => body.append('q', TR_GLOSS[k][0]));
+      const res = await fetch('https://translate.googleapis.com/translate_a/t?client=gtx&sl=en&tl=' + encodeURIComponent(code) + '&dj=1', { method: 'POST', body, credentials: 'omit' });
+      if (!res.ok) return;
+      let out = await res.json(); if (!Array.isArray(out)) out = [out];
+      if (gen !== TR.gen) return;
+      keys.forEach((k, i) => { let t = out[i]; if (Array.isArray(t)) t = t[0]; if (typeof t === 'string' && t) TR.cache.set('§' + k, t); });
+      trSaveCache(); trRepaint();
+    } catch (e) { /* كتبقى الترجمة العادية */ }
+  }
+  // القائمة اللي لتحت: ترجمة مضبوطة باليد للغات الأوروبية الكبيرة
+  const TR_NAV = {
+    es: { 'الرئيسية': 'Inicio', 'العقارات': 'Inmuebles', 'الطلبات': 'Solicitudes', 'المواعيد': 'Citas', 'التملك': 'Propiedad', 'العقود': 'Contratos', 'التكوين': 'Formación', 'الإعدادات': 'Ajustes', 'بحث': 'Buscar', 'رجوع': 'Volver' },
+    it: { 'الرئيسية': 'Home', 'العقارات': 'Immobili', 'الطلبات': 'Richieste', 'المواعيد': 'Appuntamenti', 'التملك': 'Proprietà', 'العقود': 'Contratti', 'التكوين': 'Formazione', 'الإعدادات': 'Impostazioni', 'بحث': 'Cerca', 'رجوع': 'Indietro' },
+    de: { 'الرئيسية': 'Start', 'العقارات': 'Immobilien', 'الطلبات': 'Anfragen', 'المواعيد': 'Termine', 'التملك': 'Eigentum', 'العقود': 'Verträge', 'التكوين': 'Schulung', 'الإعدادات': 'Einstellungen', 'بحث': 'Suche', 'رجوع': 'Zurück' },
+    'pt-PT': { 'الرئيسية': 'Início', 'العقارات': 'Imóveis', 'الطلبات': 'Pedidos', 'المواعيد': 'Marcações', 'التملك': 'Propriedade', 'العقود': 'Contratos', 'التكوين': 'Formação', 'الإعدادات': 'Definições', 'بحث': 'Pesquisar', 'رجوع': 'Voltar' },
+    nl: { 'الرئيسية': 'Start', 'العقارات': 'Woningen', 'الطلبات': 'Aanvragen', 'المواعيد': 'Afspraken', 'التملك': 'Eigendom', 'العقود': 'Contracten', 'التكوين': 'Opleiding', 'الإعدادات': 'Instellingen', 'بحث': 'Zoeken', 'رجوع': 'Terug' },
+  };
+  function trGl(k) {
+    const n = TR_NAV[TR.lang]; if (n && n[k]) return n[k];
+    const g = TR_GLOSS[k]; if (!g) return null;
+    if (TR.lang === 'en') return g[0]; if (TR.lang === 'fr') return g[1];
+    return TR.cache.get('§' + k) || null;
+  }
+  function trLook(k) {
+    const g0 = trGl(k); if (g0) return g0;
+    // «🌐 لغة التطبيق»، «📍 مكناس»: الرمز كيبقى والكلمة من القاموس
+    const mm = /^([^\u0600-\u06FF]*)([\u0600-\u06FF][\u0600-\u06FF\s\d-]*[\u0600-\u06FF\d]|[\u0600-\u06FF])([^\u0600-\u06FF]*)$/.exec(k);
+    if (mm && mm[1] + mm[3]) { const g1 = trGl(mm[2]); if (g1) return mm[1] + g1 + mm[3]; }
+    if (TR_FIX && TR_FIX.size) {
+      if (TR_FIX.has(k)) return TR_FIX.get(k);
+      const m = /^([^\u0600-\u06FF]*)([\u0600-\u06FF][\u0600-\u06FF\s-]*[\u0600-\u06FF]|[\u0600-\u06FF])([^\u0600-\u06FF]*)$/.exec(k);
+      if (m && TR_FIX.has(m[2])) return m[1] + TR_FIX.get(m[2]) + m[3];
     }
-    if (tries > 0) setTimeout(() => gtCombo(code, tries - 1), 250);
+    return TR.cache.get(k);
   }
+  function trApplyText(node) {
+    const o = TR.orig.get(node); if (o == null) return;
+    const [l, k, r] = trSplit(o);
+    if (TR.lang === 'ar') { if (node.nodeValue !== o) { TR.done.set(node, o); node.nodeValue = o; } return; }
+    const t = trLook(k);
+    if (t == null) { trAsk(k); return; }
+    const v = l + t + r;
+    if (node.nodeValue !== v) { TR.done.set(node, v); node.nodeValue = v; }
+  }
+  function trApplyAttr(el) {
+    let m = TR.attr.get(el);
+    TR_ATTRS.forEach(at => {
+      const cur = el.getAttribute(at); if (cur == null) return;
+      if (!m) { m = {}; TR.attr.set(el, m); }
+      if (!m[at] || (cur !== m[at].o && cur !== m[at].t)) m[at] = { o: cur, t: null }; // النص تبدل من التطبيق
+      const o = m[at].o; if (!trWant(o.trim())) return;
+      if (TR.lang === 'ar') { if (cur !== o) el.setAttribute(at, o); return; }
+      const t = trLook(o.trim());
+      if (t == null) { trAsk(o.trim()); return; }
+      m[at].t = t; if (cur !== t) el.setAttribute(at, t);
+    });
+  }
+  function trNode(node) {
+    if (node.nodeType === 3) {
+      const par = node.parentElement; if (!par || par.closest(TR_SKIP)) return;
+      const v = node.nodeValue;
+      if (!TR.orig.has(node) || (v !== TR.done.get(node) && v !== TR.orig.get(node))) TR.orig.set(node, v);
+      if (!trWant(trSplit(TR.orig.get(node))[1])) return;
+      trApplyText(node);
+    } else if (node.nodeType === 1) {
+      if (node.closest(TR_SKIP)) return;
+      if (TR_ATTRS.some(a => node.hasAttribute(a))) trApplyAttr(node);
+      const w = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+        acceptNode: n => (n.nodeType === 1 && n.matches(TR_SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+      });
+      let n = w.nextNode();
+      while (n) { if (n.nodeType === 3) trNode(n); else if (TR_ATTRS.some(a => n.hasAttribute(a))) trApplyAttr(n); n = w.nextNode(); }
+    }
+  }
+  function trAsk(key) {
+    if (TR.lang === 'ar' || TR.cache.has(key)) return;
+    TR.queue.set(key, 1);
+    clearTimeout(TR.timer); TR.timer = setTimeout(trFlush, 60);
+  }
+  // دفعات صغار (حتى 45 نص / 3500 حرف) وحتى 4 طلبات فنفس الوقت
+  function trFlush() {
+    if (TR.lang === 'ar' || !TR.queue.size) return;
+    if (!navigator.onLine) { if (!TR.offWarn) { TR.offWarn = 1; toast('🌐 الترجمة تحتاج الاتصال بالإنترنت'); } return; }
+    while (TR.queue.size && TR.active < 4) {
+      const batch = []; let len = 0;
+      for (const k of TR.queue.keys()) { if (batch.length >= 45 || (len + k.length > 3500 && batch.length)) break; batch.push(k); len += k.length; }
+      batch.forEach(k => TR.queue.delete(k));
+      trFetch(batch, TR.lang, TR.gen);
+    }
+  }
+  async function trFetch(batch, code, gen, tries = 0) {
+    TR.active++;
+    document.documentElement.classList.add('tr-busy');
+    try {
+      const body = new URLSearchParams(); batch.forEach(k => body.append('q', trPrep(k)));
+      const res = await fetch('https://translate.googleapis.com/translate_a/t?client=gtx&sl=ar&tl=' + encodeURIComponent(code) + '&dj=1', { method: 'POST', body, credentials: 'omit' });
+      if (!res.ok) throw new Error('tr ' + res.status);
+      let out = await res.json();
+      if (!Array.isArray(out)) out = [out];
+      if (gen !== TR.gen) return;
+      batch.forEach((k, i) => { let t = out[i]; if (Array.isArray(t)) t = t[0]; if (typeof t === 'string' && t) TR.cache.set(k, t); });
+      trSaveCache();
+      trRepaint();
+    } catch (e) {
+      if (gen === TR.gen && tries < 2) setTimeout(() => trFetch(batch, code, gen, tries + 1), 1200 * (tries + 1));
+    } finally {
+      TR.active--;
+      if (!TR.active) document.documentElement.classList.remove('tr-busy');
+      if (gen === TR.gen) trFlush();
+    }
+  }
+  let trRepaintT = 0;
+  function trRepaint() { cancelAnimationFrame(trRepaintT); trRepaintT = requestAnimationFrame(() => { trPause(() => trNode(document.body)); document.title = trTitle(); }); }
+  function trTitle() { const o = TR.titleO || (TR.titleO = document.title); return TR.lang === 'ar' ? o : (TR.cache.get(o) || o); }
+  // كنوقفو المراقب ملي كنبدلو النصوص بيدينا (باش ما يدورش فراسو)
+  function trPause(fn) { if (TR.mo) TR.mo.disconnect(); try { fn(); } finally { if (TR.mo && TR.lang !== 'ar') trObserve(); } }
+  function trObserve() {
+    if (!TR.mo) TR.mo = new MutationObserver(list => {
+      const nodes = new Set();
+      list.forEach(m => {
+        if (m.type === 'characterData') nodes.add(m.target);
+        else if (m.type === 'attributes') nodes.add(m.target);
+        else m.addedNodes.forEach(n => nodes.add(n));
+      });
+      trPause(() => nodes.forEach(n => { if (n.isConnected) { if (n.nodeType === 1 && !n.firstChild) trApplyAttr(n); else trNode(n); } }));
+    });
+    TR.mo.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: TR_ATTRS });
+  }
+  function trStart(code) {
+    TR.gen++; TR.lang = code; TR.queue.clear();
+    trLoadCache(code); trFixed(code);
+    if (code === 'ar') { if (TR.mo) TR.mo.disconnect(); trNode(document.body); document.title = trTitle(); return; }
+    trPause(() => trNode(document.body)); document.title = trTitle();
+    trObserve(); // كل محتوى جديد (صفحة، نافذة، لائحة) كيترجم فالحين
+    trFlush(); trGloss(code, TR.gen);
+  }
+  // للوكيل والأدوات: ترجمة نص واحد فالحين (من الذاكرة) ولا كيرجع العربي
+  window.W777_TR = { lang: () => TR.lang, t: k => (TR.lang === 'ar' ? k : TR.cache.get(k) || k) };
   function setLang(code) {
-    const prev = curLang();
-    if (code === prev) return;
-    setLangCookie(code);
+    if (code === curLang() && code === TR.lang) return;
     try { localStorage.setItem('w777_lang', code); } catch (e) { /* */ }
-    if (!navigator.onLine && code !== 'ar') { toast('🌐 الترجمة تحتاج الاتصال بالإنترنت'); return; }
-    // كنعاودو نحلو الصفحة: Google كيقرا اللغة من الكوكي ويترجم كلشي من الأول (أضمن من تبديل القائمة المخفية)
-    paintLang(code); toast('🌐 …'); setTimeout(() => location.reload(), 150);
+    clearGTCookie();
+    paintLang(code);
+    trStart(code);
+    // الوكيل كيتبع لغة التطبيق إلا ما ختارش المستعمل لغة خاصة بيه
+    try { window.dispatchEvent(new CustomEvent('w777-lang', { detail: code })); } catch (e) { /* */ }
   }
   function langPicker() {
     const cur = curLang();
     modal(`<div class="notranslate" translate="no">
       <h3 class="lang-h">🌐 اللغة · Langue · Language</h3>
       <div class="lang-grid">${LANGS.map(([c, n, f]) => `<button class="lang-opt${c === cur ? ' on' : ''}" data-lang="${c}"><span class="lf">${f}</span><span class="ln" dir="auto">${esc(n)}</span></button>`).join('')}</div>
-      <p class="lang-note">الترجمة تلقائية عبر Google · Traduction automatique par Google</p>
+      <p class="lang-note">ترجمة تلقائية · Traduction automatique · Automatic translation</p>
       <div class="btn-row" style="justify-content:flex-end"><button class="btn" data-close>✕</button></div></div>`,
     (m, close) => {
       m.classList.add('lang-modal');
@@ -7642,10 +7810,12 @@
   function setupLang() {
     const b = $('#btn-lang');
     if (b) b.onclick = langPicker;
+    clearGTCookie();
     const code = curLang();
     paintLang(code);
-    if (code !== 'ar') loadGT().then(() => gtCombo(code)).catch(() => { /* بدون إنترنت: تبقى الواجهة بالعربية */ });
+    if (code !== 'ar') trStart(code);
   }
+
 
   /* ============================================================
      تأثير 3D فكل ضغطة: العنصر كيتميّل نحو بلاصة الصبع وكيغطس شوية، ومن بعد كيرجع بنابض
