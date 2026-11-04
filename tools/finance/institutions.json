@@ -91,11 +91,25 @@
    "missing": [
     "Taux et conditions actuelles",
     "Contact dédié partenariats / apporteurs d'affaires",
-    "Interlocuteur régional Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Site officiel inaccessible au moment de la vérification automatique : coordonnées issues des pages officielles citées par les moteurs de recherche. Filiales immobilières : Wafa Immobilier, Bank Assafa (participatif), Wafabail.",
    "src": [
     "https://www.attijariwafabank.com/en/manage-your-budget/finance-your-real-estate-projects"
+   ],
+   "mk": [
+    [
+     "Agence Meknès Hassan II",
+     "6, boulevard Hassan II, Meknès",
+     "05 35 40 26 02",
+     "s"
+    ],
+    [
+     "Agence Ville Nouvelle",
+     "Rue Settat, Meknès",
+     "05 35 52 28 80",
+     "s"
+    ]
    ]
   },
   {
@@ -147,13 +161,27 @@
    "missing": [
     "Taux, quotité, durée",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Sites : particulier.groupebcp.com et mdm.groupebcp.com (Marocains du Monde). Filiales : Bank Al Yousr (participatif), Maroc Leasing, Chaabi Bank (Europe), Fondation Attawfiq.",
    "src": [
     "https://www.groupebcp.com/fr/Pages/contactez-nous.aspx",
     "https://particulier.groupebcp.com/fr/Pages/acquerir-un-logement.aspx",
     "https://mdm.groupebcp.com/fr/Pages/credits-immobiliers.aspx"
+   ],
+   "mk": [
+    [
+     "Agence Alexandrie",
+     "4, rue d'Alexandrie, Meknès",
+     "05 35 51 36 38",
+     "s"
+    ],
+    [
+     "Agence Riad",
+     "Lot. Salam, avenue Ennassr, Meknès",
+     "05 35 53 96 23",
+     "s"
+    ]
    ]
   },
   {
@@ -222,7 +250,7 @@
    "missing": [
     "Taux et durée",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Filiales : Bank Al Karam (ex-BTI Bank, participatif), Maghrebail (leasing), BMCE EuroServices (Europe).",
    "src": [
@@ -230,6 +258,20 @@
     "https://www.bankofafrica.ma/fr/actualites/offres-accompagnement-marocains-du-monde",
     "https://www.credithabitat.ma",
     "https://www.bankofafrica.ma/fr/particuliers/financer-mes-projets"
+   ],
+   "mk": [
+    [
+     "Agence Meknès Ville",
+     "98, avenue des FAR, Meknès",
+     "05 35 52 83 41",
+     "s"
+    ],
+    [
+     "Agence Moulay Youssef",
+     "5, avenue Moulay Youssef, Meknès",
+     "05 35 40 46 61",
+     "s"
+    ]
    ]
   },
   {
@@ -278,11 +320,25 @@
    "missing": [
     "Offres habitat résidents (taux, durée)",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Banque historiquement spécialisée dans l'immobilier. Site officiel inaccessible lors de la vérification automatique — numéros à confirmer par téléphone.",
    "src": [
     "https://www.cihbank.ma"
+   ],
+   "mk": [
+    [
+     "Agence Meknès Principale",
+     "Av. Allal Ben Abdellah, Résidence El Ouataniya, Meknès",
+     "",
+     "s"
+    ],
+    [
+     "Agence Meknès Hamria",
+     "71, avenue Hassan II, Ville Nouvelle, Meknès",
+     "",
+     "s"
+    ]
    ]
   },
   {
@@ -363,12 +419,26 @@
    "missing": [
     "Taux en vigueur",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Fenêtre participative : Najmah (Mourabaha immobilière, Ijara Mountahia Bi Tamlik).",
    "src": [
     "https://www.bmci.ma/marocains-du-monde-2/",
     "https://www.bmci.ma/professionnels/financement/"
+   ],
+   "mk": [
+    [
+     "Meknès Plaisance",
+     "6, angle av. des FAR et Jabrane Khalil, Meknès",
+     "05 35 51 91 70",
+     "s"
+    ],
+    [
+     "Meknès Marjane",
+     "Avenue Mohammed VI, Lot. Marjane II, Meknès",
+     "05 35 46 81 01",
+     "s"
+    ]
    ]
   },
   {
@@ -410,12 +480,21 @@
    "missing": [
     "Taux en vigueur",
     "Offre MRE",
-    "Contact partenariats"
+    "Contact partenariats",
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Fenêtre participative : Arreda.",
    "src": [
     "https://www.creditdumaroc.ma/particulier/credit-immobilier-sakane",
     "https://www.creditdumaroc.ma/particulier/reclamation"
+   ],
+   "mk": [
+    [
+     "Agence Yacoub El Mansour",
+     "16, angle av. Yacoub El Mansour et rue Sidi Brahim, Hamria, Meknès",
+     "05 35 52 40 87",
+     "s"
+    ]
    ]
   },
   {
@@ -468,13 +547,27 @@
    "missing": [
     "Taux et durée",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Fenêtre participative : Dar Al Amane.",
    "src": [
     "https://www.sahambank.com/",
     "https://www.sahambank.com/marocains-du-monde/",
     "https://www.sahambank.com/nous-contacter/"
+   ],
+   "mk": [
+    [
+     "Agence Meknès Principale",
+     "Place Al Wahda Al Ifriquia, Meknès",
+     "05 35 40 47 70",
+     "s"
+    ],
+    [
+     "Agence Meknès Hamria",
+     "1, rue Pasteur, Meknès",
+     "05 35 40 47 02",
+     "s"
+    ]
    ]
   },
   {
@@ -545,13 +638,27 @@
    "missing": [
     "Taux en vigueur",
     "Contact partenariats",
-    "Agence de Meknès",
-    "Confirmation officielle du numéro 6464"
+    "Confirmation officielle du numéro 6464",
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Filiale participative : Al Akhdar Bank.",
    "src": [
     "https://www.creditagricole.ma/fr/marocain-du-monde",
     "https://www.creditagricole.ma/fr/particulier/financement-de-vos-projets"
+   ],
+   "mk": [
+    [
+     "Caisse régionale",
+     "Place Al Wahda, Ville Nouvelle, Meknès",
+     "",
+     "s"
+    ],
+    [
+     "Agence Ouislane",
+     "40, avenue Al Massira, Ouislane",
+     "",
+     "s"
+    ]
    ]
   },
   {
@@ -601,7 +708,7 @@
    "missing": [
     "Taux, quotité, durée",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Le produit immobilier s'appelle aujourd'hui « SalafLik » (ex-Barid Sakane).",
    "src": [
@@ -610,6 +717,14 @@
     "https://www.albaridbank.ma/fr/vos-besoins/acheter-un-logement",
     "https://www.albaridbank.ma/fr/vous-etes/particulier/marocain-resident-letranger",
     "https://www.albaridbank.ma/fr/demande-information"
+   ],
+   "mk": [
+    [
+     "Agence principale",
+     "Place Istiqlal, Hamria, Ville Nouvelle, 50000 Meknès",
+     "",
+     "s"
+    ]
    ]
   },
   {
@@ -661,7 +776,8 @@
    "notes": "Banque orientée clientèle haut de gamme et professions libérales.",
    "src": [
     "https://www.cfgbank.com/particuliers/notre-offre/solution-financement/le-credit-immobilier/"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "amal",
@@ -705,7 +821,8 @@
    "notes": "Spécialisée dans l'investissement des MRE, pas dans le crédit logement.",
    "src": [
     "https://www.groupebcp.com/fr/Pages/bank-al-amal.aspx"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "caixa",
@@ -751,7 +868,8 @@
    "notes": "La succursale au Maroc travaille uniquement avec les entreprises : elle ne propose PAS de crédit immobilier aux particuliers (avertissement officiel sur son site).",
    "src": [
     "https://www.caixabank.ma/fr"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "umnia",
@@ -797,12 +915,20 @@
    "missing": [
     "Marge en vigueur",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "La Mourabaha n'est pas un prêt à intérêt : la banque achète le bien puis le revend au client avec une marge fixée d'avance.",
    "src": [
     "https://www.umniabank.ma/fr/contact-2",
     "https://www.umniabank.ma/fr/faq/financement-immobilier"
+   ],
+   "mk": [
+    [
+     "Agence Meknès",
+     "30, place Ferhat Hachad, bd Hassan II, Ville Nouvelle, Meknès",
+     "",
+     "s"
+    ]
    ]
   },
   {
@@ -855,13 +981,28 @@
    "status": "ok",
    "missing": [
     "Marge en vigueur",
-    "Programme partenaires (Ok'Immo) pour agences"
+    "Programme partenaires (Ok'Immo) pour agences",
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Le programme Ok'Immo avec partenaires immobiliers est une porte d'entrée intéressante pour une convention.",
    "src": [
     "https://www.bankassafa.com/fr/assafa-sakane",
     "https://www.bankassafa.com/fr/okimmo-les-deals-qui-mettent-tout-le-monde-daccord",
     "https://www.bankassafa.com/fr/contactez-nous"
+   ],
+   "mk": [
+    [
+     "Agence Meknès Driss II",
+     "Boulevard Driss II, Meknès",
+     "05 35 40 12 87",
+     "s"
+    ],
+    [
+     "Agence Meknès Med VI",
+     "Lot. Rizana n° 11, av. Mohammed VI, Meknès",
+     "05 35 45 70 40",
+     "s"
+    ]
    ]
   },
   {
@@ -903,11 +1044,19 @@
    "missing": [
     "Marge, durée",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Site officiel inaccessible lors de la vérification automatique.",
    "src": [
     "https://alyousr.ma/fr/trouvez-nous"
+   ],
+   "mk": [
+    [
+     "Agence Meknès",
+     "Imm. n° 30, Marjane 2, bd Mohammed VI, Meknès",
+     "05 38 90 81 75",
+     "s"
+    ]
    ]
   },
   {
@@ -948,7 +1097,8 @@
    "notes": "BTI Bank s'appelle Bank Al Karam depuis juin 2023 (filiale à 100 % de Bank of Africa). Site officiel inaccessible lors de la vérification.",
    "src": [
     "https://bankalkaram.ma"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "akhdar",
@@ -1008,6 +1158,14 @@
     "https://www.alakhdarbank.ma/demande-de-financement-immo",
     "https://www.alakhdarbank.ma/demande-de-financement-logement",
     "https://www.alakhdarbank.ma/demande-de-financement-terrain"
+   ],
+   "mk": [
+    [
+     "Agence Meknès",
+     "Listée dans le formulaire officiel de demande de financement",
+     "",
+     "v"
+    ]
    ]
   },
   {
@@ -1053,7 +1211,8 @@
    "notes": "",
    "src": [
     "https://www.bmci.ma/najmah/contactez-nous/"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "arreda",
@@ -1093,7 +1252,8 @@
    "src": [
     "https://www.arreda.ma/",
     "https://www.arreda.ma/ar/simulateur-mourabaha-immo"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "daralamane",
@@ -1129,12 +1289,20 @@
    "missing": [
     "Marge en vigueur",
     "Liste des promoteurs partenaires",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Fenêtre participative de Saham Bank (11 agences dédiées). Travaille avec des promoteurs partenaires : piste de convention pour l'agence.",
    "src": [
     "https://www.daralamane.ma/",
     "https://www.daralamane.ma/nos-solutions-de-financement/mourabaha-al-amane-lil-akar/"
+   ],
+   "mk": [
+    [
+     "Agence Meknès",
+     "Angle av. des FAR et av. de la Gare, Ville Nouvelle, Meknès",
+     "05 35 51 92 01",
+     "s"
+    ]
    ]
   },
   {
@@ -1172,11 +1340,19 @@
    "missing": [
     "Conditions",
     "Contact partenariats",
-    "Agence de Meknès"
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Site officiel inaccessible lors de la vérification automatique.",
    "src": [
     "https://www.attijariwafabank.com/en/brands-and-Moroccan-subsidiaries/wafa-immobilier"
+   ],
+   "mk": [
+    [
+     "Agence Meknès",
+     "69, angle bd Hassan II et rue de Safi, Ville Nouvelle, Meknès",
+     "05 35 52 38 16",
+     "s"
+    ]
    ]
   },
   {
@@ -1223,7 +1399,8 @@
    "notes": "",
    "src": [
     "https://www.wafabail.ma/contact"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "maghrebail",
@@ -1274,7 +1451,8 @@
    "notes": "",
    "src": [
     "https://www.maghrebail.ma/siege"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "marocleasing",
@@ -1315,7 +1493,8 @@
    "src": [
     "https://www.marocleasing.ma/",
     "https://www.marocleasing.ma/nos-produits"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "sofac",
@@ -1371,13 +1550,22 @@
    "status": "ok",
    "missing": [
     "Taux",
-    "Contact partenariats"
+    "Contact partenariats",
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "",
    "src": [
     "https://www.sofac.ma/autres-acces/nous-contacter/",
     "https://www.sofac.ma/projet/je-complete-mon-credit-immobilier/",
     "https://www.sofac.ma/produit/leasing/"
+   ],
+   "mk": [
+    [
+     "Agence Meknès",
+     "28, avenue Idriss II, Ville Nouvelle, Meknès",
+     "",
+     "s"
+    ]
    ]
   },
   {
@@ -1423,11 +1611,20 @@
    "mre": "à confirmer",
    "status": "ok",
    "missing": [
-    "Plafonds et conditions"
+    "Plafonds et conditions",
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Utile pour les clients à revenus modestes ou irréguliers.",
    "src": [
     "https://www.alamana.org.ma/ar/ar/services-financiers/tamwil-milkia"
+   ],
+   "mk": [
+    [
+     "Antenne Sidi Bouzekri",
+     "1531, Lot. Marjane 5, Sidi Bouzekri, Meknès",
+     "05 35 53 83 60",
+     "s"
+    ]
    ]
   },
   {
@@ -1472,10 +1669,19 @@
    "mre": "non",
    "status": "partial",
    "missing": [
-    "Plafonds et conditions"
+    "Plafonds et conditions",
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "",
-   "src": []
+   "src": [],
+   "mk": [
+    [
+     "Agence Meknès",
+     "Bd Allal El Fassi, Borj Moulay Omar, Rés. Tayeb 2, Meknès",
+     "",
+     "s"
+    ]
+   ]
   },
   {
    "id": "tamwilcom",
@@ -1515,7 +1721,8 @@
    "notes": "Organisme de garantie : ne prête pas directement.",
    "src": [
     "https://www.tamwilcom.ma/"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "daamsakane",
@@ -1554,7 +1761,8 @@
    "notes": "Aide, pas un crédit : se combine avec un financement bancaire.",
    "src": [
     "https://www.cdg.ma/fr/daam-sakane"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "alomrane",
@@ -1587,13 +1795,22 @@
    "mre": "à confirmer",
    "status": "ok",
    "missing": [
-    "Liste à jour des programmes à Meknès (catalogue en ligne ou agence Fès-Meknès)"
+    "Liste à jour des programmes à Meknès (catalogue en ligne ou agence Fès-Meknès)",
+    "Confirmer l'agence de Meknès"
    ],
    "notes": "Aménageur-promoteur public : partenaire potentiel pour l'offre de logements, pas un organisme de crédit.",
    "src": [
     "https://www.alomrane.gov.ma/",
     "https://www.alomrane.gov.ma/Notre-reseau/Al-omrane-fes-meknes",
     "https://www.alomrane.gov.ma/Notre-reseau/Al-omrane-fes-meknes/Produits/Projets"
+   ],
+   "mk": [
+    [
+     "Bureau de vente",
+     "Riad Al Omrane, TR C2, Ouislane, Meknès",
+     "05 35 46 43 99",
+     "s"
+    ]
    ]
   },
   {
@@ -1645,7 +1862,8 @@
    "src": [
     "https://www.chaabibank.fr/produit/credit-immobilier/?o=258",
     "https://www.chaabibank.fr/particuliers/vos-projets/credit-immobilier/"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "awb_eu",
@@ -1690,7 +1908,8 @@
    "notes": "",
    "src": [
     "https://particuliers.attijariwafabank-europe.fr/africains-sans-frontiere/afrique-du-nord/solutions-bancaires-au-maroc/"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "bmce_eu",
@@ -1728,7 +1947,8 @@
    "notes": "Réseau en Europe (France, Espagne, Allemagne…).",
    "src": [
     "https://www.bankofafrica.ma/en/reseau-bank-africa-letranger"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "ifc",
@@ -1766,7 +1986,8 @@
    "notes": "Finance des entreprises et projets de grande taille, pas les particuliers.",
    "src": [
     "https://www.ifc.org/en/contact-directory"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "ebrd",
@@ -1801,7 +2022,8 @@
    "src": [
     "https://www.ebrd.com/home/contacts.html",
     "https://www.ebrd.com/morocco.html"
-   ]
+   ],
+   "mk": []
   },
   {
    "id": "afdb",
@@ -1838,7 +2060,8 @@
     "Programmes logement"
    ],
    "notes": "",
-   "src": []
+   "src": [],
+   "mk": []
   },
   {
    "id": "eib",
@@ -1875,7 +2098,8 @@
     "Programmes logement"
    ],
    "notes": "",
-   "src": []
+   "src": [],
+   "mk": []
   },
   {
    "id": "icd",
@@ -1913,7 +2137,8 @@
    "notes": "Actionnaire d'Al Akhdar Bank.",
    "src": [
     "https://icd-ps.org/en/contact-us"
-   ]
+   ],
+   "mk": []
   }
  ]
 }

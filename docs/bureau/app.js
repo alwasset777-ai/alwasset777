@@ -749,7 +749,7 @@
     if (leaveGuard) { const g = leaveGuard; leaveGuard = null; await g(); }
     navTrack();
     const { parts, query } = parseHash();
-    document.body.classList.toggle('in-studio', parts[0] === 'ad-maker');
+    document.body.classList.toggle('in-studio', parts[0] === 'ad-maker' && (query.m === 'post' || !!query.p));
     document.body.classList.toggle('in-game', parts[0] === 'game'); // اللعبة: الأزرار العائمة كيغطيو الحروف
     const [a, b, c] = parts;
     let nav = 'home';
@@ -930,7 +930,7 @@
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
         hubPic('#/game', 'games', 'وصلة العقار', 'لعبة أسئلة عقارية', '#c8102e'), finHub(),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
-      net: ['✦ شبكة الوسيط 777', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
+      net: ['✦ مجموعة الوسيط', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
     if (!M) return;
     modal(`<h3>${M[0]}</h3><div class="hub hub-menu hub-spin${kind === 'net' ? ' hub-big' : ''}">${M[1].join('')}</div>`, (box, close) => {
@@ -979,7 +979,7 @@
         <div class="hero-big3">
           <button class="btn gold" data-hm="add">${ic('plus', 20)} إضافة</button>
           <button class="btn" data-hm="svc">🧰 خدمات المجموعة${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</button>
-          <button class="btn" data-hm="net">✦ شبكة الوسيط 777</button>
+          <button class="btn" data-hm="net">✦ مجموعة الوسيط</button>
         </div>
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
@@ -2648,7 +2648,12 @@
         Sy.request('/rest/v1/w777_agent_config?id=eq.1&select=name,photo,face,ai_enabled,wa_group,tg_group,fb_group,updated_at').then(x => x.json()),
         Sy.request('/rest/v1/w777_agent_prefs?select=name,photo,face').then(x => (x.ok ? x.json() : null)).catch(() => null),
       ]);
-      const r = rc[0];
+      let r = Array.isArray(rc) ? rc[0] : null;
+      // المشترك اللي ما عندوش الحق يقرا الإعدادات: الصورة والاسم كيجيو من دالة عمومية (نفس الوكيل للجميع)
+      if (!r || !r.photo || r.ai_enabled === undefined) {
+        const f = await Sy.request('/rest/v1/rpc/w777_agent_face', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(x => (x.ok ? x.json() : [])).catch(() => []);
+        if (f && f[0] && f[0].photo) r = Object.assign({}, AG.cfg, r || {}, { name: f[0].name, photo: f[0].photo, face: f[0].face, ai_enabled: f[0].ai_enabled });
+      }
       if (r) { AG.cfg = r; try { localStorage.setItem('w777_agent_cfg', JSON.stringify(r)); } catch (e) { /* */ } }
       if (Array.isArray(rm)) {
         AG.my = rm[0] ? Object.assign({ u: Sy.uid() }, rm[0]) : null;
@@ -2723,7 +2728,8 @@
   // المساعد (ماشي اللعبة): الصوت الطبيعي بالدارجة أحسن بزاف من صوت الجهاز (اللي كيقرا بالفصحى بحال روبو)،
   // داكشي كنتسناوه حتى 5 ثواني قبل ما نرجعو لصوت الجهاز. اللعبة كتبقى بـ 2 ثواني (طلب المدير)
   // الفرنسية والإنجليزية: صوت الجهاز مزيان، داكشي ما كنتسناوش بزاف (2.8 ثانية)
-  const agDeadline = () => (AGV.ext ? AG_VOICE_DEADLINE : /^(fr|en)$/.test(agLang()) ? 2800 : 6000);
+  // الدارجة/العربية: كنتسناو الصوت الطبيعي حتى 12 ثانية — صوت الجهاز كيقرا الدارجة بالفصحى (ماشي طبيعي)
+  const agDeadline = () => (AGV.ext ? AG_VOICE_DEADLINE : /^(fr|en)$/.test(agLang()) ? 2800 : 12000);
   const agHearing = () => AG.open || AGV.ext;
   function agAudio() {
     const C = window.AudioContext || window.webkitAudioContext;
@@ -2772,11 +2778,12 @@
     for (;;) {
       // الجملة الأولى قصيرة (حتى الفاصلة، ولا ~70 حرف) باش الصوت يبدا بسرعة؛ الباقي جمل كاملة
       const first = !AGV.q.length && !AGV.playing && !AGV.said;
-      const min = first ? 12 : 140;
-      const re = first ? /[.!?؟؛:،,](?=\s)|\n/g : /[.!?؟؛:](?=\s)|\n/g; let m, cut = -1;
+      const min = AGV.ext ? (first ? 12 : 140) : (first ? 45 : 240); // اللعبة: أول جملة قصيرة (وعد 2 ثواني)
+      const re = /[.!?؟؛:](?=\s)|\n/g; let m, cut = -1;
       while ((m = re.exec(AGV.pend))) { if (m.index + 1 >= min) { cut = m.index + 1; break; } }
-      if (cut < 0 && first && AGV.pend.length > 90) { const sp = AGV.pend.lastIndexOf(' ', 70); cut = sp > 25 ? sp : 70; }
-      if (cut < 0) { if (AGV.pend.length <= 400) break; const sp = AGV.pend.lastIndexOf(' ', 380); cut = sp > 50 ? sp : 380; }
+      // الجملة الأولى طويلة بلا نقطة: نقطعو فالفاصلة باش يبدا الصوت بلا ما نتسناو بزاف
+      if (cut < 0 && first && AGV.pend.length > 140) { const c = Math.max(AGV.pend.lastIndexOf('،', 130), AGV.pend.lastIndexOf(',', 130)); const sp = AGV.pend.lastIndexOf(' ', 120); cut = c > 40 ? c + 1 : sp > 40 ? sp : 120; }
+      if (cut < 0) { if (AGV.pend.length <= 520) break; const sp = AGV.pend.lastIndexOf(' ', 500); cut = sp > 80 ? sp : 500; }
       agSayChunk(AGV.pend.slice(0, cut)); AGV.pend = AGV.pend.slice(cut);
     }
   }
@@ -2816,7 +2823,10 @@
       AGV.first = false;
       buf = await Promise.race([it.audio, new Promise(r => setTimeout(() => r('late'), Math.max(0, agDeadline() - (performance.now() - AGV.t0))))]);
       if (buf === 'late') { buf = null; late = true; AGV.synthGen = it.gen; }
-    } else buf = AGV.synthGen === it.gen ? null : await it.audio;
+    } else {
+      buf = AGV.synthGen === it.gen ? null : await it.audio;
+      if (!buf && AGV.synthGen !== it.gen && agCloudOK()) buf = await agFetchVoice(it.txt).catch(() => null);
+    }
     if (it.gen !== AGV.gen) return;
     // الصوت ديال المتصفح كيبقى «موقف» إلا تخلق بلا ضغطة: كنحاولو نشعلوه، وإلا ما تشعلش كنقراو بصوت المتصفح
     if (buf && AGV.ctx && AGV.ctx.state !== 'running') { try { await Promise.race([AGV.ctx.resume(), new Promise(r => setTimeout(r, 600))]); } catch (e) { /* */ } }
@@ -4552,7 +4562,7 @@
     const p = netAsProp(x);
     const s = p.specs || {}, cat = catOf(p.type), a = areaOf(p);
     const specRows = (D.FIELDS[cat] || []).filter(f => s[f.k] !== undefined && s[f.k] !== null && s[f.k] !== '').map(f => `<div><small>${esc(f.l)}</small><b>${esc(f.t === 'number' ? fmt(s[f.k]) : s[f.k])}</b></div>`);
-    const msg = `السلام عليكم ${x.agency || ''}، بغيت نسول على العقار ${p.ref || ''} (${p.title || typeAr(p.type)} — ${priceText(p)}) اللي فشبكة الوسيط 777.`;
+    const msg = `السلام عليكم ${x.agency || ''}، بغيت نسول على العقار ${p.ref || ''} (${p.title || typeAr(p.type)} — ${priceText(p)}) اللي فمجموعة الوسيط.`;
     main().innerHTML = `
       <div class="page-head"><a class="btn" href="#/agencies">${ic('back', 18)} عقارات الشبكة</a></div>
       <div class="detail-grid">
@@ -5190,7 +5200,7 @@
         <div class="grow">
           <div class="gd-k">🎓 دليل الاستعمال</div>
           <h1>تعلّم استعمال تطبيق مجموعة الوسيط</h1>
-          <p>${L.length} درسا قصيرا بالصور، خطوة بخطوة — من أول دخول حتى شبكة الوسيط 777. كل درس فيه زر «جرّب دابا» يفتح لك الصفحة مباشرة.</p>
+          <p>${L.length} درسا قصيرا بالصور، خطوة بخطوة — من أول دخول حتى مجموعة الوسيط. كل درس فيه زر «جرّب دابا» يفتح لك الصفحة مباشرة.</p>
           <div class="gd-bar"><span style="width:${pct}%"></span></div>
           <small>${pct}% · ${L.filter(l => done.has(l.n)).length} / ${L.length} درس</small>
           <div class="btn-row" style="margin-top:12px">${next ? `<a class="btn gold" href="#/guide/${next.n}">▶ ${done.size ? 'كمّل' : 'ابدأ'}: ${esc(next.t)}</a>` : '<span class="badge green">🏆 كمّلتي كل الدروس — مبروك!</span>'}
@@ -5322,7 +5332,7 @@
     main().innerHTML = `<div class="card empty">جاري التحميل…</div>`;
     await refreshRole(force || !S.role || S.role === 'solo');
     if (!inNetwork()) {
-      main().innerHTML = `<div class="card empty"><div class="big">🔒</div><h3>هاد الحساب ماشي مفعل فشبكة الوسيط 777</h3>
+      main().innerHTML = `<div class="card empty"><div class="big">🔒</div><h3>هاد الحساب ماشي مفعل فمجموعة الوسيط</h3>
         <p>تواصل مع مكتب الوسيط 777: ${officeTels()}</p></div>`;
       return false;
     }
@@ -5906,7 +5916,7 @@
   function offerMsg(all, kind) {
     const K = KINDS[kind], n = all.filter(a => a.seat_no && (a.seat_zone || 'ma') === 'ma').length, o = all.filter(a => a.seat_no && a.seat_zone === 'out').length;
     const left = (from, to) => Math.max(0, to - Math.max(n, from));
-    return `${K.ic} ${K.ar} — عرض 777 للأوائل فشبكة الوسيط 777\n` +
+    return `${K.ic} ${K.ar} — عرض 777 للأوائل فمجموعة الوسيط\n` +
       (left(0, 7) ? `🥇 باقي ${left(0, 7)} مقاعد فقط: التطبيق مجاني مدى الحياة\n` : '') +
       (left(7, 77) ? `🥈 ${left(7, 77)} مقعد: تخفيض 50% مدى الحياة\n` : '') +
       `🥉 ${left(77, 777)} مقعد: تخفيض 25% مدى الحياة\n🎁 6 أشهر مجانية للجميع\n` +
@@ -6048,7 +6058,7 @@
     const ag = S.agency || {};
     main().innerHTML = `<div class="card card-pad tr-gate">
       <div class="tr-hero" style="box-shadow:none;border:0;padding:0;margin-bottom:12px"><img src="${LOGO}" alt="" class="tr-logo"><div><b>🪪 ${esc(idLabel(ag))} — خطوة وحدة باقية</b><small>انتهات الفترة المجانية (6 أشهر)</small></div></div>
-      <p>حسب قانون التطبيق، خاص كل مشترك يدلي بصورة ${esc(idLabel(ag))} باش يكمّل يستافد من شبكة الوسيط 777، وذلك لضمان <b>المصداقية والشفافية والنزاهة</b>.</p>
+      <p>حسب قانون التطبيق، خاص كل مشترك يدلي بصورة ${esc(idLabel(ag))} باش يكمّل يستافد من مجموعة الوسيط، وذلك لضمان <b>المصداقية والشفافية والنزاهة</b>.</p>
       <p class="muted" style="font-size:13px">🔒 الصورة كيشوفها غير مكتب الوسيط 777. صورة واضحة للوجهين (ولا PDF).</p>
       <div class="btn-row"><label class="btn gold">${ic('upload', 18)} تحميل ${esc(idLabel(ag))}<input type="file" accept="image/*,application/pdf" id="idg-f" hidden></label><a class="btn" href="#/terms">⚖️ قانون التطبيق</a></div></div>`;
     $('#idg-f').onchange = async e => {
@@ -6262,7 +6272,7 @@
   function storyComposer() {
     const Sy = window.W777_SYNC;
     if (!Sy || !Sy.isOn()) return toast('دخل بالحساب ديالك أولا (الإعدادات ← المزامنة السحابية)', 4000);
-    if (!inNetwork()) return toast('الستوري خاص بأعضاء شبكة الوسيط 777 المفعّلين', 4000);
+    if (!inNetwork()) return toast('الستوري خاص بأعضاء مجموعة الوسيط المفعّلين', 4000);
     let kind = 'text', bg = ST_BG[0], img = '';
     modal(`<h3>📸 ستوري جديد</h3><p class="muted" style="margin-top:0">كيبان لجميع المشتركين فشريط «الشركاء» لمدة 24 ساعة.</p>
       <div class="st-seg" id="stk"><button type="button" class="on" data-k="text">📝 نص</button><button type="button" data-k="image">🖼️ صورة</button></div>
@@ -6377,14 +6387,14 @@
     try {
       await rq(`/rest/v1/w777_agencies?uid=eq.${window.W777_SYNC.uid()}`, 'PATCH', { terms_at: new Date().toISOString() }, 'return=minimal');
       await refreshRole(true);
-      toast('مرحبا بك فشبكة الوسيط 777 ✓ — 6 أشهر مجانية بدات اليوم', 3500);
+      toast('مرحبا بك فمجموعة الوسيط ✓ — 6 أشهر مجانية بدات اليوم', 3500);
       if (after) after();
     } catch (e) { toast('تعذر: ' + e.message, 4000); }
   }
   // قبل الدخول للشبكة: الموافقة على القانون (مرة وحدة)
   function termsGate() {
     main().innerHTML = `<div class="card card-pad tr-gate">
-      <div class="tr-hero" style="box-shadow:none;border:0;padding:0;margin-bottom:12px"><img src="${LOGO}" alt="" class="tr-logo"><div><b>قبل ما تدخل لشبكة الوسيط 777</b><small>قرا البنود الأساسية ووافق عليها مرة وحدة</small></div></div>
+      <div class="tr-hero" style="box-shadow:none;border:0;padding:0;margin-bottom:12px"><img src="${LOGO}" alt="" class="tr-logo"><div><b>قبل ما تدخل لمجموعة الوسيط</b><small>قرا البنود الأساسية ووافق عليها مرة وحدة</small></div></div>
       <ol class="tr-more">${TERMS_MAIN.map(([i, t, d]) => `<li><b>${i} ${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ol>
       <label class="toggle-line" style="margin:12px 0"><input type="checkbox" id="tg-chk"> قريت <a href="#/terms">قانون التطبيق كامل</a> ووافقت عليه</label>
       <div class="btn-row"><button class="btn gold" id="tg-ok" disabled>✅ موافق — دخول للشبكة</button></div></div>`;
@@ -7558,7 +7568,9 @@
   const LANG_SHORT = { 'pt-PT': 'PT', 'zh-CN': 'ZH', 'pa-Arab': 'PA', iw: 'HE', 'ber-Latn': 'ⵣ', ber: 'ⵣ' };
   function curLang() {
     const m = document.cookie.match(/(?:^|;\s*)googtrans=\/[^/;]*\/([^;]+)/);
-    const c = m ? decodeURIComponent(m[1]) : 'ar';
+    let c = m ? decodeURIComponent(m[1]) : '';
+    // Safari كيمسح الكوكيز من بعد أيام: اللغة محفوظة حتى فالمتصفح ونرجعو الكوكي منها
+    if (!c) { try { c = localStorage.getItem('w777_lang') || ''; } catch (e) { /* */ } if (c && c !== 'ar') setLangCookie(c); }
     return LANGS.some(l => l[0] === c) ? c : 'ar';
   }
   function setLangCookie(code) {
@@ -7595,6 +7607,7 @@
   function gtCombo(code, tries = 40) {
     const sel = document.querySelector('#gt-el select.goog-te-combo');
     if (sel && sel.options.length > 1) {
+      if (sel.value === code || document.documentElement.classList.contains('translated-ltr') || document.documentElement.classList.contains('translated-rtl')) return;
       sel.value = code;
       sel.dispatchEvent(new Event('change'));
       return;
@@ -7606,10 +7619,9 @@
     if (code === prev) return;
     setLangCookie(code);
     try { localStorage.setItem('w777_lang', code); } catch (e) { /* */ }
-    if (code === 'ar') { location.reload(); return; }
-    paintLang(code);
-    if (!navigator.onLine) { toast('🌐 الترجمة تحتاج الاتصال بالإنترنت'); return; }
-    loadGT().then(() => gtCombo(code)).catch(() => toast('⚠️ تعذر تحميل خدمة الترجمة، حاول لاحقا'));
+    if (!navigator.onLine && code !== 'ar') { toast('🌐 الترجمة تحتاج الاتصال بالإنترنت'); return; }
+    // كنعاودو نحلو الصفحة: Google كيقرا اللغة من الكوكي ويترجم كلشي من الأول (أضمن من تبديل القائمة المخفية)
+    paintLang(code); toast('🌐 …'); setTimeout(() => location.reload(), 150);
   }
   function langPicker() {
     const cur = curLang();
@@ -7632,7 +7644,7 @@
     if (b) b.onclick = langPicker;
     const code = curLang();
     paintLang(code);
-    if (code !== 'ar') loadGT().catch(() => { /* بدون إنترنت: تبقى الواجهة بالعربية */ });
+    if (code !== 'ar') loadGT().then(() => gtCombo(code)).catch(() => { /* بدون إنترنت: تبقى الواجهة بالعربية */ });
   }
 
   /* ============================================================
@@ -7767,7 +7779,22 @@
     const photos = (await Promise.all(ph.slice(0, 5).map(m => getBlob(m.id, false).then(b => b || getBlob(m.id, true)).catch(() => null)))).filter(Boolean);
     return { type: 'w777-prefill', v: 1, ref: p.ref || '', data, photos };
   }
+  // «إعلانات فورية»: 3 دوائر (Project / Reels / Post) — Post هو صانع الإعلانات؛ الباقي كيتزاد من بعد
+  const AD_KINDS = [['project', 'PROJECT', 'المشاريع العقارية'], ['reels', 'REELS', 'فيديوهات قصيرة'], ['post', 'POST', 'منشورات إعلانية']];
   function viewAdMaker(query) {
+    if (!query.p && !query.m) {
+      main().innerHTML = `
+        <div class="page-head"><div><h1>✨ إعلانات فورية</h1><div class="sub">ختار نوع الإعلان</div></div></div>
+        <div class="ad-kinds">${AD_KINDS.map(([k, t, d]) => `<a class="ad-kind" href="#/ad-maker?m=${k}"><img src="icons/ads-${k}.webp" alt="${t}" width="180" height="180"><b dir="ltr">${t}</b><small>${d}</small></a>`).join('')}</div>`;
+      return;
+    }
+    if (query.m && query.m !== 'post') {
+      const K = AD_KINDS.find(x => x[0] === query.m) || AD_KINDS[0];
+      main().innerHTML = `
+        <div class="page-head"><div><a class="muted" href="#/ad-maker">→ إعلانات فورية</a><h1 dir="ltr" style="text-align:right">${K[1]}</h1><div class="sub">${esc(K[2])}</div></div></div>
+        <div class="card card-pad ad-soon"><img src="icons/ads-${K[0]}.webp" alt="" width="140" height="140"><h3>⏳ قريبا</h3><p class="muted">هاد الخانة كتوجد — المحتوى ديالها غادي يتزاد قريبا.</p><a class="btn" href="#/ad-maker?m=post">✨ صاوب منشور (POST) دابا</a></div>`;
+      return;
+    }
     const p = query.p ? S.props.find(x => x.id === query.p) : null;
     studioProp = p; studioSent = false;
     main().innerHTML = `
@@ -7820,9 +7847,13 @@
      ============================================================ */
   const FIN_ST = { ok: ['✅', 'معلومات كافية', 'green'], partial: ['🟡', 'معلومات جزئية — تُستكمل', 'amber'], missing: ['🔴', 'معلومات ناقصة — تواصل مباشر', 'red'] };
   // المعلومات اللي كيعمرها المكتب بيدو لكل جهة (بعد الاتصال بها) — محفوظة فالإعدادات وكتتزامن مع السحابة
-  const FIN_FORM = [['conv', 'الاتفاقية مع المكتب', 'sel', ['', 'ما تواصلناش بعد', 'تواصلنا — فالانتظار', 'اتفاقية موقعة ✓']], ['contact', 'اسم المسؤول / الوكالة', 'txt'], ['phone', 'هاتف المسؤول', 'tel'], ['email', 'البريد الإلكتروني', 'email'],
+  const FIN_FORM = [['conv', 'الاتفاقية مع المكتب', 'sel', ['', 'ما تواصلناش بعد', 'تواصلنا — فالانتظار', 'اتفاقية موقعة ✓']], ['contact', 'اسم المسؤول / الوكالة', 'txt'], ['phone', 'هاتف المسؤول', 'tel'], ['email', 'البريد الإلكتروني', 'email'], ['mk', 'وكالة مكناس (العنوان / الهاتف)', 'txt', 'مثلا: شارع الجيش الملكي — 05 35 …'],
     ['rate', 'نسبة الفائدة (%)', 'txt', 'مثلا: 4.5% ثابتة'], ['years', 'أقصى مدة (سنوات)', 'txt', 'مثلا: 25'], ['quota', 'نسبة التمويل', 'txt', 'مثلا: حتى 100%'], ['fees', 'مصاريف الملف والتأمين', 'txt'], ['docs', 'الوثائق المطلوبة', 'area', 'وحدة فكل سطر'], ['notes', 'ملاحظات', 'area']];
   const finMine = id => ((S.settings.finInfo || {})[id]) || {};
+  const finTel = n => String(n || '').replace(/[^\d+]/g, '');
+  const finCallNo = x => { const m = finMine(x.id); if (m.phone) return finTel(m.phone); const p = x.phones.find(p => p[2] === 'v') || x.phones[0]; return p ? finTel(p[1]) : ''; };
+  // عندها وكالة فمكناس: من البيانات ولا من معلومات المكتب
+  const finMk = x => !!(finMine(x.id).mk || (x.mk && x.mk.length));
   // الحالة: ✅ إلا عمّر المكتب النسبة + المدة + الوثائق، 🟡 إلا عمّر شي حاجة، وإلا الحالة الأصلية
   const finStatus = x => { const m = finMine(x.id); if (m.rate && m.years && m.docs) return 'ok'; if (FIN_FORM.some(([k]) => k !== 'conv' && m[k])) return x.status === 'ok' ? 'ok' : 'partial'; return x.status; };
   const finLegend = () => `<div class="fin-legend card">${Object.values(FIN_ST).map(([e, t]) => `<span>${e} ${esc(t)}</span>`).join('')}<span class="muted">· اللون كيبين واش عندنا الشروط الكاملة ديال الجهة (النسبة، المدة، الوثائق). عمّر «معلومات المكتب» فصفحة الجهة باش تولي ✅.</span></div>`;
@@ -7837,7 +7868,7 @@
     if (!F) { main().innerHTML = '<div class="card card-pad">تعذر التحميل — تأكد من الإنترنت.</div>'; return; }
     const id = parts[1];
     if (id) return viewTamwilOne(F, F.inst.find(x => x.id === id));
-    const st = { cat: query.cat || '', q: query.q || '', mre: query.mre === '1' };
+    const st = { cat: query.cat || '', q: query.q || '', mre: query.mre === '1', mk: query.mk === '1' };
     main().innerHTML = `
       <div class="fin-hero card">
         <div class="fin-hero-t"><h1>🏦 التمويل العقاري</h1><p>البنوك والبنوك التشاركية وشركات التمويل والضمانات العمومية — بالمغرب وللمغاربة المقيمين بالخارج.</p>
@@ -7845,32 +7876,37 @@
         <div class="fin-orbit" aria-hidden="true"><img class="fo-c" src="${LOGO}" alt="">${F.inst.filter(x => x.logo).slice(0, 12).map((x, i, a) => `<span style="--a:${(360 / a.length) * i}deg"><img src="icons/fin/${x.logo}.webp" alt=""></span>`).join('')}</div>
       </div>
       <div class="fin-tools"><input id="fin-q" type="search" placeholder="🔍 قلب على بنك أو جهة…" value="${esc(st.q)}">
-        <label class="fin-mre"><input type="checkbox" id="fin-mre" ${st.mre ? 'checked' : ''}> 🌍 مغاربة العالم</label></div>
+        <label class="fin-mre"><input type="checkbox" id="fin-mre" ${st.mre ? 'checked' : ''}> 🌍 مغاربة العالم</label>
+        <label class="fin-mre"><input type="checkbox" id="fin-mk" ${st.mk ? 'checked' : ''}> 📍 وكالة فمكناس <small>${F.inst.filter(finMk).length}</small></label></div>
       ${finLegend()}
       <div class="fin-chips" id="fin-chips"><button data-c="" class="${st.cat ? '' : 'on'}">الكل <small>${F.inst.length}</small></button>${F.cats.map(c => `<button data-c="${c[0]}" class="${st.cat === c[0] ? 'on' : ''}">${esc(c[2])} <small>${F.inst.filter(x => x.cat === c[0]).length}</small></button>`).join('')}</div>
       <div id="fin-list" class="fin-grid"></div>
       <p class="muted fin-disc">ℹ️ معلومات تعريفية مأخوذة من المواقع الرسمية للجهات (تحقق: ${esc(F.date)}). النسب والشروط كتبان هنا غير بعد ما يأكدها مكتب الوسيط 777 مع كل جهة. المرجع النهائي هو الجهة المموّلة. الشعارات للتعريف فقط ولا تعني شراكة.</p>`;
     const paint = () => {
       const q = norm(st.q);
-      const list = F.inst.filter(x => (!st.cat || x.cat === st.cat) && (!st.mre || x.mre === 'oui') && (!q || norm(x.ar + ' ' + x.name + ' ' + x.group + ' ' + x.types.join(' ')).includes(q)));
+      const list = F.inst.filter(x => (!st.cat || x.cat === st.cat) && (!st.mre || x.mre === 'oui') && (!st.mk || finMk(x)) && (!q || norm(x.ar + ' ' + x.name + ' ' + x.group + ' ' + x.types.join(' ')).includes(q)));
       $('#fin-list').innerHTML = list.length ? list.map(x => {
         const S0 = FIN_ST[finStatus(x)], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '', cv = finMine(x.id).conv;
         return `<a class="fin-card card" href="#/tamwil/${x.id}">
           <div class="fc-top">${finPair(x)}<span class="badge ${S0[2]}" title="${esc(S0[1])}">${S0[0]} <small>${esc(S0[1].split(' — ')[0])}</small></span></div>
           ${cv ? `<span class="fc-conv${/موقعة/.test(cv) ? ' ok' : ''}">🤝 ${esc(cv)}</span>` : ''}
           <b class="fc-n">${esc(x.ar)}</b><small class="fc-f" dir="ltr">${esc(x.name)}</small>
-          <div class="fc-tags"><span>${esc(cat)}</span>${x.mre === 'oui' ? '<span>🌍 MRE</span>' : ''}${x.web ? '<span>🌐 موقع رسمي</span>' : ''}</div></a>`;
+          <div class="fc-tags"><span>${esc(cat)}</span>${x.mre === 'oui' ? '<span>🌍 MRE</span>' : ''}${finMk(x) ? '<span>📍 مكناس</span>' : ''}${x.web ? '<span>🌐 موقع رسمي</span>' : ''}</div>
+          ${finCallNo(x) ? `<span class="fc-call" role="button" data-tel="${esc(finCallNo(x))}">📞 اتصل</span>` : ''}</a>`;
       }).join('') : '<div class="card card-pad muted">ما لقينا والو — جرب كلمة أخرى.</div>';
     };
     paint();
     $('#fin-q').oninput = e => { st.q = e.target.value; paint(); };
     $('#fin-mre').onchange = e => { st.mre = e.target.checked; paint(); };
+    $('#fin-mk').onchange = e => { st.mk = e.target.checked; paint(); };
+    // زر «اتصل» داخل البطاقة: كيتصل بلا ما يفتح الصفحة
+    $('#fin-list').addEventListener('click', e => { const c = e.target.closest('.fc-call'); if (!c) return; e.preventDefault(); e.stopPropagation(); location.href = 'tel:' + c.dataset.tel; });
     $('#fin-chips').onclick = e => { const b = e.target.closest('button'); if (!b) return; st.cat = b.dataset.c; $$('#fin-chips button').forEach(x => x.classList.toggle('on', x === b)); paint(); };
   }
   function viewTamwilOne(F, x) {
     if (!x) { main().innerHTML = '<div class="card card-pad">هاد الجهة ما كايناش. <a href="#/tamwil">رجوع</a></div>'; return; }
     const S0 = FIN_ST[finStatus(x)], cat = (F.cats.find(c => c[0] === x.cat) || [])[2] || '';
-    const tel = n => String(n).replace(/[^\d+]/g, '');
+    const tel = finTel, cn = finCallNo(x);
     const M = finMine(x.id), filled = FIN_FORM.filter(([k]) => M[k]);
     main().innerHTML = `
       <div class="page-head"><div><a class="muted" href="#/tamwil">→ التمويل العقاري</a><h1>${esc(x.ar)}</h1><div class="sub" dir="ltr">${esc(x.name)}</div></div></div>
@@ -7878,9 +7914,11 @@
         <div class="fo-head">${finPair(x, true)}<div><span class="badge ${S0[2]}">${S0[0]} ${esc(S0[1])}</span><div class="muted" style="margin-top:6px">${esc(cat)}${x.group ? ' · ' + esc(x.group) : ''}</div>
           ${x.glogo && x.logo ? `<div class="fo-group">المجموعة الأم: ${finLogo(x.glogo)}</div>` : ''}</div></div>
         <div class="fc-tags">${x.types.map(t => `<span dir="ltr">${esc(t)}</span>`).join('')}${x.mre === 'oui' ? '<span>🌍 مغاربة العالم</span>' : ''}</div>
+        ${cn ? `<a class="btn primary fo-callnow" href="tel:${esc(cn)}">📞 اتصل الآن <b dir="ltr">${esc(cn)}</b></a>` : ''}
         <h3 class="section-title">📞 الاتصال</h3>
         <div class="fo-ph">${x.phones.length ? x.phones.map(([l, n, s]) => `<a class="fo-call" href="tel:${esc(tel(n))}"><span>${esc(l)}${s === 's' ? ' <em>يُؤكَّد</em>' : ''}</span><b dir="ltr">${esc(n)}</b></a>`).join('') : '<div class="muted">الهاتف الرسمي غير منشور — كيتأكد من بعد الاتصال.</div>'}</div>
         ${x.web ? `<a class="btn" href="${esc(x.web)}" target="_blank" rel="noopener">🌐 الموقع الرسمي</a>` : ''}
+        ${M.mk || (x.mk && x.mk.length) ? `<h3 class="section-title">📍 الوكالة فمكناس</h3><div class="fo-ph">${M.mk ? `<div class="fo-call"><span>معلومات المكتب ✓</span><b>${esc(M.mk)}</b></div>` : ''}${(x.mk || []).map(([l, a, n, s]) => `<${n ? `a href="tel:${esc(tel(n))}"` : 'div'} class="fo-call"><span dir="ltr">${esc(l)} — ${esc(a)}${s === 's' ? ' <em>يُؤكَّد</em>' : ''}</span>${n ? `<b dir="ltr">${esc(n)}</b>` : ''}</${n ? 'a' : 'div'}>`).join('')}</div>` : ''}
         ${x.products.length ? `<h3 class="section-title">🏠 العروض المنشورة</h3><div class="fc-tags">${x.products.map(p => `<span dir="ltr">${esc(p)}</span>`).join('')}</div>` : ''}
         ${x.notes ? `<p class="fin-note" dir="ltr">ℹ️ ${esc(x.notes)}</p>` : ''}
         ${filled.length ? `<h3 class="section-title">✅ الشروط المؤكدة من المكتب</h3><div class="kv fin-mine">${filled.map(([k, l]) => `<div${k === 'docs' || k === 'notes' ? ' class="full"' : ''}><small>${esc(l)}</small><b>${esc(M[k]).replace(/\n/g, '<br>')}</b></div>`).join('')}</div>${M.updatedAt ? `<p class="muted" style="font-size:12px">آخر تحديث: ${esc(String(M.updatedAt).slice(0, 10))}</p>` : ''}`

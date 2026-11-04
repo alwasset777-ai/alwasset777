@@ -1307,3 +1307,12 @@ begin
   return new;
 end $$;
 revoke execute on function public.w777_seat_lock() from public, anon, authenticated;
+
+-- v162: صورة واسم الوكيل لجميع المشتركين (حتى اللي ما عندهمش الحق يقراو إعدادات الوكيل)
+-- + ai_enabled: بلا هاد المعلومة المشترك كان كيسمع صوت الجهاز (كيقرا الدارجة بالفصحى) بلاصة الصوت الطبيعي
+drop function if exists public.w777_agent_face();
+create function public.w777_agent_face() returns table(name text, photo text, face jsonb, ai_enabled boolean, updated_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select c.name, c.photo, to_jsonb(c.face), c.ai_enabled, c.updated_at from w777_agent_config c where c.id = 1 $$;
+revoke all on function public.w777_agent_face() from public;
+grant execute on function public.w777_agent_face() to authenticated;

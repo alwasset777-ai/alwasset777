@@ -31,6 +31,21 @@ ASK_AR = {
  'intl': ['معايير الأهلية وسقوف التدخل لدى مؤسستكم؛', 'قنوات الولوج (خطوط تمويل عبر البنوك المغربية، تمويل مباشر، مساهمة في رأس المال)؛', 'تعيين مخاطَب خاص بالمغرب؛', 'إمكانية تنظيم اجتماع لعرض المشاريع.'],
 }
 ASK_DEF_AR = ['تعيين مخاطَب خاص (على مستوى مكناس و/أو الإدارة المركزية)؛', 'شروطكم الحالية للتمويل ولائحة الوثائق المطلوبة حسب فئة العميل؛', 'كيفيات برنامج محتمل لتقديم أو إحالة العملاء، والإطار القانوني المعمول به، وشروط المكافأة إن وُجدت؛', 'الإذن الكتابي باستعمال شعاركم لأغراض إخبارية داخل تطبيقنا؛', 'تنظيم اجتماع تعريفي حضورياً أو عن بُعد.']
+# جهات عندها برنامج شركاء (منعشين) — رسالة خاصة كتطلب الانضمام للبرنامج
+PROMO = {
+ 'daralamane': dict(
+   prog="Mourabaha Al Amane Lil-Akar", prog_ar="مرابحة الأمان للعقار",
+   hook="Nous avons pris connaissance avec intérêt de votre offre « Mourabaha Al Amane Lil-Akar » et de votre réseau de promoteurs immobiliers partenaires, ainsi que de votre accord de principe en ligne en moins de 48 heures. Notre agence commercialise des logements neufs et anciens à Meknès et dans sa région, et accompagne de nombreux clients — dont des Marocains du Monde — qui souhaitent un financement participatif.",
+   hook_ar="اطلعنا باهتمام على عرضكم «مرابحة الأمان للعقار» وعلى شبكة المنعشين العقاريين الشركاء لديكم، وعلى الموافقة المبدئية عبر الإنترنت في أقل من 48 ساعة. ويسوّق مكتبنا مساكن جديدة وقديمة بمكناس وجهتها، ويواكب عدداً كبيراً من العملاء — منهم مغاربة العالم — الراغبين في تمويل تشاركي.",
+   asks=["les conditions pour que notre agence soit référencée comme partenaire de votre programme Mourabaha Lil-Akar (agence immobilière / apporteur de clients) ;", "la liste de vos promoteurs partenaires et de leurs programmes dans la région Fès-Meknès ;", "la procédure pour orienter nos clients vers l'accord de principe en ligne et le suivi de leurs dossiers ;", "la désignation d'un interlocuteur à votre agence de Meknès ;", "l'autorisation écrite d'utiliser votre logo à des fins d'information dans notre application ;", "l'organisation d'une réunion de présentation."],
+   asks_ar=['شروط إدراج مكتبنا كشريك في برنامج «مرابحة الأمان للعقار» (وكالة عقارية / موجِّه للعملاء)؛', 'لائحة المنعشين الشركاء ومشاريعهم بجهة فاس-مكناس؛', 'مسطرة توجيه عملائنا نحو الموافقة المبدئية عبر الإنترنت وتتبع ملفاتهم؛', 'تعيين مخاطَب بوكالتكم بمكناس؛', 'الإذن الكتابي باستعمال شعاركم لأغراض إخبارية داخل تطبيقنا؛', 'تنظيم اجتماع تعريفي.']),
+ 'assafa': dict(
+   prog="Ok'Immo", prog_ar="أوكي إيمو",
+   hook="Nous avons pris connaissance avec intérêt de votre programme « Ok'Immo », qui associe le financement participatif à des remises négociées auprès de promoteurs partenaires, ainsi que de votre offre « Assafa Sakane ». Notre agence commercialise des projets immobiliers à Meknès et dans sa région et oriente chaque mois des acquéreurs vers un financement participatif.",
+   hook_ar="اطلعنا باهتمام على برنامجكم «أوكي إيمو» الذي يجمع بين التمويل التشاركي وتخفيضات متفاوض عليها مع منعشين شركاء، وعلى عرض «الصفاء سكن». ويسوّق مكتبنا مشاريع عقارية بمكناس وجهتها ويوجّه كل شهر مشترين نحو التمويل التشاركي.",
+   asks=["les conditions pour que notre agence et les promoteurs que nous représentons rejoignent le programme Ok'Immo ;", "la liste des programmes Ok'Immo déjà disponibles dans la région Fès-Meknès ;", "la procédure de transmission et de suivi des dossiers de nos clients (dont les Marocains du Monde) ;", "la désignation d'un interlocuteur dans l'une de vos agences de Meknès ;", "l'autorisation écrite d'utiliser votre logo à des fins d'information dans notre application ;", "l'organisation d'une réunion de présentation."],
+   asks_ar=['شروط انضمام مكتبنا والمنعشين الذين نمثلهم إلى برنامج «أوكي إيمو»؛', 'لائحة مشاريع «أوكي إيمو» المتوفرة بجهة فاس-مكناس؛', 'مسطرة إرسال وتتبع ملفات عملائنا (ومنهم مغاربة العالم)؛', 'تعيين مخاطَب بإحدى وكالاتكم بمكناس؛', 'الإذن الكتابي باستعمال شعاركم لأغراض إخبارية داخل تطبيقنا؛', 'تنظيم اجتماع تعريفي.']),
+}
 PJ = ["Registre de commerce (RC)", "Identifiant fiscal (IF) et ICE", "Attestation de taxe professionnelle", "Copie de la CIN du représentant légal", "Présentation de l'agence et de l'application AL WASSET 777"]
 PJ_AR = ['السجل التجاري', 'التعريف الضريبي والمعرف الموحد للمقاولة (ICE)', 'شهادة الضريبة المهنية', 'نسخة من البطاقة الوطنية للممثل القانوني', 'تقديم المكتب وتطبيق الوسيط 777']
 
@@ -85,6 +100,8 @@ def letter_fr(i, k):
     prod = i['products'][0][0] if i['products'] else ''
     hook = f"Nous avons pris connaissance avec intérêt de votre offre « {e(prod)} », qui répond directement aux besoins de nombreux clients que nous accompagnons." if prod and i['cat'] not in ('intl',) else "Nous suivons avec intérêt l'action de votre institution en faveur du financement de l'immobilier au Maroc."
     asks = ASK.get(i['cat'], ASK_DEF)
+    pr = PROMO.get(i['id'])
+    if pr: hook, asks, obj = pr['hook'], pr['asks'], f"Demande d'adhésion au programme « {pr['prog']} » — partenariat promoteurs et agence immobilière"
     addr = f'<br>{e(i["addr"])}' if i['addr'] else ''
     grp = f'<br><small>{e(i["group"])}</small>' if i['group'] and 'confirmer' not in i['group'] else ''
     return f'''<section class="letter fr" id="l{k}">{header(i)}
@@ -93,7 +110,7 @@ def letter_fr(i, k):
 <div class="obj"><span>Objet :</span> {e(obj)}</div>
 <p>Madame, Monsieur le Directeur Général,</p>
 <p>Nous avons l'honneur de vous présenter <b>AL WASSET 777 IMMOBILIER</b>, agence d'intermédiation immobilière basée à Meknès, active dans la vente, la location résidentielle et commerciale, l'accompagnement des investisseurs et des Marocains du Monde, ainsi que la commercialisation de projets immobiliers. Notre agence anime également le réseau professionnel « Al Wasset 777 » (agences, courtiers, promoteurs, entreprises de finition, notaires, investisseurs et associations d'habitat) au moyen de sa propre application de gestion.</p>
-<p>{hook} Dans le cadre du lancement de notre service « <b>Financement immobilier</b> », nous souhaitons ouvrir la voie à une collaboration structurée avec votre institution.</p>
+<p>{hook} {"Nous souhaitons rejoindre votre programme de partenaires afin d'y présenter nos clients et les projets que nous commercialisons." if pr else "Dans le cadre du lancement de notre service « <b>Financement immobilier</b> », nous souhaitons ouvrir la voie à une collaboration structurée avec votre institution."}</p>
 <p><b>Ce que nous proposons :</b></p>
 <ul><li>l'orientation vers vos services de clients au projet clair et aux dossiers pré-qualifiés et complets ;</li><li>un point de contact unique et réactif à Meknès pour le suivi des dossiers ;</li><li>la présentation de vos offres, dans le strict respect de leurs conditions officielles, au sein de notre application et auprès de notre réseau ;</li><li>une démarche transparente envers les clients et conforme à la loi 09-08 relative à la protection des données personnelles.</li></ul>
 <p><b>Afin d'étudier ce partenariat, nous vous serions reconnaissants de bien vouloir nous communiquer :</b></p>
@@ -109,6 +126,8 @@ def letter_ar(i, k):
     prod = i['products'][0][0] if i['products'] else ''
     hook = f'وقد اطلعنا باهتمام على عرضكم «<span class="ltr">{e(prod)}</span>» الذي يستجيب مباشرة لحاجيات عدد كبير من العملاء الذين نواكبهم.' if prod and i['cat'] != 'intl' else 'ونتابع باهتمام دور مؤسستكم في تمويل العقار بالمغرب.'
     asks = ASK_AR.get(i['cat'], ASK_DEF_AR)
+    pr = PROMO.get(i['id'])
+    if pr: hook, asks, obj = pr['hook_ar'], pr['asks_ar'], f"طلب الانضمام إلى برنامج «{pr['prog_ar']}» — شراكة المنعشين والوكالة العقارية"
     addr = f'<br><span class="ltr">{e(i["addr"])}</span>' if i['addr'] else ''
     return f'''<section class="letter">{header(i, False)}
 <div class="meta"><span>المرجع: <b class="ltr">777/CONV/2026/{k:02d}</b></span><span>مكناس في: <span class="fill"></span></span></div>
@@ -116,7 +135,7 @@ def letter_ar(i, k):
 <div class="obj"><span>الموضوع:</span> {e(obj)}</div>
 <p>تحية طيبة وبعد،</p>
 <p>يشرفنا أن نقدم لكم <b>مكتب الوسيط 777 للعقارات</b>، مكتب وساطة عقارية مقره بمكناس، ينشط في البيع والكراء السكني والتجاري، ومواكبة المستثمرين ومغاربة العالم، وتسويق المشاريع العقارية. كما يدير المكتب شبكة «الوسيط 777» المهنية (وكالات، وسطاء، منعشون، مقاولات التشطيب، موثقون، مستثمرون وجمعيات سكنية) عبر تطبيقه الخاص للتدبير.</p>
-<p>{hook} وفي إطار إطلاق خدمتنا «<b>التمويل العقاري</b>»، نرغب في فتح باب تعاون منظم مع مؤسستكم الموقرة.</p>
+<p>{hook} {"ونرغب في الانضمام إلى برنامج الشركاء لديكم لتقديم عملائنا والمشاريع التي نسوّقها." if pr else "وفي إطار إطلاق خدمتنا «<b>التمويل العقاري</b>»، نرغب في فتح باب تعاون منظم مع مؤسستكم الموقرة."}</p>
 <p><b>ما نقترحه:</b></p>
 <ul><li>توجيه عملاء ذوي مشاريع واضحة وملفات مكتملة ومدروسة مسبقاً نحو خدماتكم؛</li><li>نقطة اتصال واحدة وسريعة بمكناس لتتبع الملفات؛</li><li>التعريف بعروضكم وفق شروطها الرسمية فقط داخل تطبيقنا ولدى شبكتنا؛</li><li>الشفافية مع العملاء واحترام القانون 09-08 المتعلق بحماية المعطيات الشخصية.</li></ul>
 <p><b>ولدراسة هذه الشراكة، نرجو التفضل بموافاتنا بما يلي:</b></p>
@@ -174,3 +193,12 @@ out = os.path.join(HERE, 'letters.html'); open(out, 'w').write(page)
 pdf = os.path.join(HERE, 'Demandes_Conventions_AlWasset777.pdf')
 render_pdf(out, pdf, footer_text=f'AL WASSET 777 IMMOBILIER — Demandes de conventions de partenariat — {DATE}')
 print(pdf, os.path.getsize(pdf))
+
+# PDF خاص: طلبات الانضمام لبرامج المنعشين (دار الأمان + بنك الصفاء)
+sp = [(k, i) for k, i in enumerate(order, 1) if i['id'] in PROMO]
+cover2 = cover.replace('Demandes de conventions de partenariat<br><em>en financement immobilier</em>', 'Programmes promoteurs partenaires<br><em>Dar Al Amane · Bank Assafa</em>').replace('طلبات إبرام اتفاقيات الشراكة في مجال التمويل العقاري', 'طلبات الانضمام لبرامج المنعشين الشركاء').replace(f'{len(order)} lettres personnalisées', f'{len(sp)} lettres personnalisées')
+page2 = f'<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>Promoteurs partenaires — Al Wasset 777</title><style>{CSS}</style></head><body>{cover2}' + ''.join(letter_fr(i, k) + letter_ar(i, k) for k, i in sp) + convention() + '</body></html>'
+out2 = os.path.join(HERE, 'letters_promo.html'); open(out2, 'w').write(page2)
+pdf2 = os.path.join(HERE, 'Programmes_Promoteurs_DarAlAmane_Assafa.pdf')
+render_pdf(out2, pdf2, footer_text=f'AL WASSET 777 IMMOBILIER — Programmes promoteurs partenaires — {DATE}')
+print(pdf2, os.path.getsize(pdf2))

@@ -20,6 +20,7 @@ for i in D['inst']:
         'logo': i['id'] if i['id'] in HAS else '', 'glogo': g if g and g in HAS else '',
         'products': [p for p, _, s in i['products'] if s == 'v'][:4],
         'notes': i.get('notes', ''),
+        'mk': i.get('mk', [])[:2],
     })
 js = '/* مولّد بـ tools/finance/build_app_data.py — ما تبدلوش باليد. معلومات تعريفية؛ الشروط كتتزاد غير بعد تأكيدها. */\nwindow.W777_FIN = ' + json.dumps({'date': D['date'], 'cats': D['cats'], 'inst': out}, ensure_ascii=False, separators=(',', ':')) + ';\n'
 open(os.path.join(ROOT, 'docs/bureau/finance-data.js'), 'w').write(js)

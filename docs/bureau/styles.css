@@ -634,7 +634,7 @@ a.chip { text-decoration: none; }
 @media (max-height: 640px) { .ag-stage { height: 132px; } .ag-3d { width: 104px; height: 104px; } }
 @media (prefers-reduced-motion: reduce) { .ag-3d, .ag-stage.talk .ag-3d, .ag-stage.talk .ag-wave span { animation: none; } }
 
-/* ---------- شبكة الوسيط 777: البلاطات فالرئيسية + الدليل + المشاريع + الهبة + النزاعات ---------- */
+/* ---------- مجموعة الوسيط: البلاطات فالرئيسية + الدليل + المشاريع + الهبة + النزاعات ---------- */
 .hub-title { position: relative; z-index: 1; margin: 18px 0 8px; color: #8a6a1f; font-weight: 800; font-size: 13px; letter-spacing: .5px; }
 .hub { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 6px; padding: 6px 0 2px; }
 @media (min-width: 520px) { .hub { grid-template-columns: repeat(4, 1fr); } }
@@ -1363,7 +1363,7 @@ body.st-open { overflow: hidden; }
 /* التيليفون: بلا أيقونة البحث فالشريط الفوقاني (البحث كاين فالرئيسية وفـ +) */
 @media (max-width: 640px) { .topbar .search-wrap { display: none; } }
 
-/* القوائم الثلاثة (إضافة، خدمات المجموعة، شبكة الوسيط 777): الدوائر كتدور بحال قطعة نقدية (الوجه ديما مقابل، بلا انعكاس) */
+/* القوائم الثلاثة (إضافة، خدمات المجموعة، مجموعة الوسيط): الدوائر كتدور بحال قطعة نقدية (الوجه ديما مقابل، بلا انعكاس) */
 @keyframes hub-coin { 0% { transform: perspective(520px) rotateY(0deg); } 50% { transform: perspective(520px) rotateY(90deg); } 50.01% { transform: perspective(520px) rotateY(-90deg); } 100% { transform: perspective(520px) rotateY(0deg); } }
 .hub-spin .hub-tile .hi { animation: hub-coin 3.5s linear infinite; animation-delay: var(--spin-d, 0s); will-change: transform; transform-style: flat; -webkit-font-smoothing: antialiased; } /* كاملين بنفس الدوران فنفس الوقت */
 @media (prefers-reduced-motion: reduce) { .hub-spin .hub-tile .hi { animation: none; } }
@@ -1371,7 +1371,7 @@ body.st-open { overflow: hidden; }
 /* !important كيغلب الحركة بلا ما يوقفها: الدوران كيبقى خدام فالخفاء، وملي كتحيد الفأرة كترجع الدائرة فنفس اللحظة مع الباقين */
 @media (hover: hover) { .hub-spin .hub-tile:hover .hi { transform: perspective(520px) rotateY(0deg) translateY(-4px) !important; } }
 .hub-spin .hub-tile.hold .hi { transform: perspective(520px) rotateY(0deg) scale(.96) !important; }
-/* «شبكة الوسيط 777»: الكتابة تحت الدوائر كبيرة وواضحة (×2) — النافذة كتوسع وكتولي 3 أعمدة (2 فالتيليفون) */
+/* «مجموعة الوسيط»: الكتابة تحت الدوائر كبيرة وواضحة (×2) — النافذة كتوسع وكتولي 3 أعمدة (2 فالتيليفون) */
 .modal:has(.hub-big) { max-width: min(1180px, 96vw); width: 96vw; }
 .hub-menu.hub-big { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 30px 14px; }
 @media (max-width: 639px) { .hub-menu.hub-big { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
@@ -1478,6 +1478,8 @@ html.lv-lite .fin-rot img { animation: none; } html.lv-lite .fin-rot img:first-c
 .fin-pair.big > img { width: 52px; height: 52px; } .fin-pair.big .fp-i, .fin-pair.big .fp-i img { height: 52px; max-height: 52px; max-width: 150px; } .fin-pair.big { padding: 8px 12px; border-radius: 18px; }
 .fin-one .fo-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
 .fo-group { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--muted); } .fo-group img { height: 22px; max-width: 70px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
+.fin-card { position: relative; } .fc-call { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; align-self: flex-start; padding: 6px 12px; border-radius: 999px; background: #0a7a2f; color: #fff; font-weight: 800; font-size: 13px; cursor: pointer; }
+.fo-callnow { display: flex; justify-content: center; gap: 8px; margin: 12px 0 4px; font-size: 16px; } .fo-callnow b { font-weight: 900; }
 .fin-note { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(200,16,46,.06); border: 1px solid rgba(200,16,46,.18); font-size: 13px; line-height: 1.5; text-align: left; }
 .fo-ph { display: grid; gap: 6px; margin-bottom: 12px; }
 .fo-call { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); color: inherit; text-decoration: none; }
@@ -1662,3 +1664,12 @@ body.psel-mode .fab { display: none; }
 .offer-777 .of-hon span { background: rgba(255,255,255,.1); border-radius: 99px; padding: 4px 10px 4px 6px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
 .offer-777 .of-hon i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; background: #ffd166; color: #111; display: grid; place-items: center; font-size: 12px; font-weight: 900; }
 .offer-777 .of-hon small { opacity: .7; font-weight: 500; }
+
+/* إعلانات فورية: 3 دوائر */
+.ad-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 760px; margin: 10px auto 24px; }
+.ad-kind { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: inherit; text-align: center; }
+.ad-kind img { width: 100%; max-width: 200px; aspect-ratio: 1; height: auto; border-radius: 50%; background: #fff; border: 3px solid #1f3d33; box-shadow: 0 10px 24px rgba(0,0,0,.14), inset 0 0 0 4px #fff; transition: transform .2s ease, box-shadow .2s ease; }
+.ad-kind:hover img, .ad-kind:focus-visible img { transform: translateY(-4px) scale(1.03); box-shadow: 0 16px 30px rgba(200,16,46,.22); }
+.ad-kind b { font-size: 16px; letter-spacing: .08em; } .ad-kind small { color: var(--muted); font-size: 12.5px; }
+.ad-soon { text-align: center; } .ad-soon img { border-radius: 50%; border: 3px solid #1f3d33; }
+@media (max-width: 420px) { .ad-kinds { gap: 8px; } .ad-kind b { font-size: 13px; } }
