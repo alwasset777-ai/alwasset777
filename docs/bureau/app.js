@@ -3678,7 +3678,7 @@
         const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new', new_appointment: '#/appointment/new', rentals: '#/rentals', finance: '#/finance', report: '#/report', loan: '#/loan', map: '#/map', ad_maker: '#/ad-maker', messages: '#/inbox', tamwil: '#/tamwil', game: '#/game', stories: '#/' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
-        else if (pg === 'reels' || pg === 'project' || (pg === 'ad_maker' && ref)) {
+        else if (pg === 'reels' || pg === 'project' || pg === 'post' || (pg === 'ad_maker' && ref)) {
           const p = ref ? byRef(S.props, ref) : null; if (ref && !p) return { error: 'not found' };
           location.hash = '#/ad-maker?' + (pg !== 'ad_maker' ? 'm=' + pg + (p ? '&' : '') : '') + (p ? 'p=' + encodeURIComponent(p.id) : '');
         }
@@ -7891,6 +7891,7 @@
     if (!fr || e.source !== fr.contentWindow) return;
     // «إعدادات الوكالة» ديال الاستوديو كتتحفظ هنا (فالتطبيق + السحابة) حيت المتصفح (Safari) كيمسح التخزين ديال الصفحات المدمجة
     if (e.data.type === 'w777-agency-save') return studioAgencySave(e.data.agency);
+    if (e.data.type === 'w777-studio-made') return adMark(studioProp, 'post');
     if (e.data.type !== 'w777-studio-ready') return;
     studioAgency().then(a => fr.contentWindow.postMessage({ type: 'w777-agency', v: 1, agency: a }, STUDIO_ORIGIN)).catch(() => {});
     if (!studioProp || studioSent) return;
@@ -7959,12 +7960,26 @@
   const AD_KINDS = [['project', 'PROJECT', 'عرض PDF: عقار، مشروع، مستثمر'], ['reels', 'REELS', 'فيديوهات قصيرة'], ['post', 'POST', 'منشورات إعلانية']];
   // العقار المختار فـ«إعلانات فورية» (كيتعقل فهاد الجلسة)
   let adSel = '';
+  // شنو تصاوب لكل عقار (POST / REELS / PROJECT) — محفوظ فهاد الجهاز: { id: { post: iso, reels: iso, project: iso } }
+  let AD_MADE = null;
+  async function adMadeLoad() { if (!AD_MADE) AD_MADE = await DB.getMeta('ad_made', {}).catch(() => ({})) || {}; return AD_MADE; }
+  async function adMark(p, kind) {
+    if (!p || !p.id) return;
+    const m = await adMadeLoad();
+    m[p.id] = Object.assign({}, m[p.id], { [kind]: new Date().toISOString() });
+    try { await DB.setMeta('ad_made', m); } catch (e) { /* */ }
+    toast(`✓ تسجّل: ${kind.toUpperCase()} لـ ${p.ref || 'العقار'}`);
+  }
+  const adDate = iso => { try { return new Date(iso).toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' }); } catch (e) { return ''; } };
   function adHref(k, id) { return '#/ad-maker?m=' + k + (id ? '&p=' + encodeURIComponent(id) : ''); }
   function viewAdMaker(query) {
     if (!query.p && !query.m) {
+      if (!AD_MADE) { adMadeLoad().then(() => { if (/^#\/ad-maker\/?$/.test(location.hash)) viewAdMaker(query); }); }
+      const made = AD_MADE || {};
       // الدوائر الثلاثة + العقارات المعروضة: كل عقار عندو POST / REELS / PROJECT معمّرين بالصور والمعلومات
       const all = S.props.filter(x => !x.deleted).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
       const ACTIVE = ['available', 'reserved', 'negotiation'];
+      const DEM = new Map(), demand = x => { if (!DEM.has(x.id)) { let n = 0; try { n = ACTIVE.includes(x.status || 'available') ? matchesForProp(x).length : 0; } catch (e) { /* */ } DEM.set(x.id, n); } return DEM.get(x.id); };
       if (adSel && !all.some(x => x.id === adSel)) adSel = '';
       main().innerHTML = `
         <div class="page-head"><div><h1>✨ إعلانات فورية</h1><div class="sub">ختار العقار، ومن بعد نوع الإعلان — الصور والمعلومات كيتعمرو بوحدهم</div></div></div>
@@ -7972,21 +7987,24 @@
         <div class="ad-kinds">${AD_KINDS.map(([k, t, d]) => `<a class="ad-kind" data-k="${k}" href="${adHref(k, adSel)}"><img src="icons/ads-${k}.webp" alt="${t}" width="180" height="180"><b dir="ltr">${t}</b><small>${d}</small></a>`).join('')}</div>
         <div class="card ad-props">
           <div class="ad-props-h"><h3>🏠 العقارات المعروضة <span class="muted" id="ad-n"></span></h3>
-            <div class="ad-props-f"><input id="ad-q" type="search" placeholder="مرجع، حي، نوع…"><label class="ad-all"><input type="checkbox" id="ad-all"> حتى المباعة والمكرية</label></div></div>
+            <div class="ad-props-f"><input id="ad-q" type="search" placeholder="مرجع، حي، نوع…"><select id="ad-sort" aria-label="الترتيب"><option value="demand">🔥 الأكثر طلباً</option><option value="new">🕒 الأحدث</option><option value="todo">📣 باقي ما تعلنش عليه</option></select><label class="ad-all"><input type="checkbox" id="ad-all"> حتى المباعة والمكرية</label></div></div>
           <div id="ad-list"></div>
         </div>`;
       const paint = () => {
-        const q = $('#ad-q').value.trim().toLowerCase(), wantAll = $('#ad-all').checked;
-        const list = all.filter(x => (wantAll || ACTIVE.includes(x.status || 'available')) && (!q || [x.ref, x.title, typeAr(x.type), x.district, x.city].join(' ').toLowerCase().includes(q)));
+        const q = $('#ad-q').value.trim().toLowerCase(), wantAll = $('#ad-all').checked, sort = $('#ad-sort').value;
+        let list = all.filter(x => (wantAll || ACTIVE.includes(x.status || 'available')) && (!q || [x.ref, x.title, typeAr(x.type), x.district, x.city].join(' ').toLowerCase().includes(q)));
+        const nMade = x => Object.keys(made[x.id] || {}).length;
+        if (sort === 'todo') list = list.filter(x => nMade(x) < 3).sort((a, b) => nMade(a) - nMade(b) || demand(b) - demand(a));
+        else if (sort === 'demand') list = list.slice().sort((a, b) => demand(b) - demand(a));
         $('#ad-n').textContent = list.length ? '(' + list.length + ')' : '';
         $('#ad-list').innerHTML = list.slice(0, 80).map(x => {
-          const cv = coverOf(x), st = PSTATUS[x.status] || PSTATUS.available, nPh = (x.media || []).filter(m => m.kind === 'photo').length;
+          const cv = coverOf(x), st = PSTATUS[x.status] || PSTATUS.available, nPh = (x.media || []).filter(m => m.kind === 'photo').length, d = demand(x), mk = made[x.id] || {};
           return `<div class="ad-prop${x.id === adSel ? ' on' : ''}" data-id="${esc(x.id)}" role="button" tabindex="0">
             <div class="ad-th">${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="">` : ic('home', 22)}${nPh ? `<span>${ic('camera', 11)}${nPh}</span>` : ''}</div>
             <div class="grow"><b>${esc(x.title || typeAr(x.type))}</b>
               <div class="muted ad-meta">${esc(x.ref || '')} · ${esc([x.district, x.city].filter(Boolean).join('، ') || '—')}${x.status && x.status !== 'available' ? ` · <span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}</div>
-              <div class="ad-price">${esc(priceText(x).replace(/[⁦⁩]/g, ''))}</div></div>
-            <div class="ad-go">${AD_KINDS.map(([k, t]) => `<a class="ad-go-${k}" href="${adHref(k, x.id)}" dir="ltr">${t}</a>`).join('')}</div>
+              <div class="ad-price">${esc(priceText(x).replace(/[⁦⁩]/g, ''))}${d ? ` <span class="ad-hot" title="طلبات مفتوحة كتناسب هاد العقار">🔥 ${d} ${d === 1 ? 'طلب' : 'طلبات'}</span>` : ''}</div></div>
+            <div class="ad-go">${AD_KINDS.map(([k, t]) => `<a class="ad-go-${k}${mk[k] ? ' done' : ''}" href="${adHref(k, x.id)}" dir="ltr"${mk[k] ? ` title="تصاوب ${adDate(mk[k])}"` : ''}>${mk[k] ? '✓ ' : ''}${t}</a>`).join('')}</div>
           </div>`;
         }).join('') || `<p class="muted card-pad">${all.length ? 'ما كاين حتى عقار بهاد البحث' : 'مازال ما كاين حتى عقار — <a href="#/property/new">زيد عقار</a>'}</p>`;
         hydrateThumbs($('#ad-list'));
@@ -8008,7 +8026,7 @@
         if (adSel) $('.ad-kinds').scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
       $('#ad-list').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('ad-prop')) e.target.click(); });
-      $('#ad-q').oninput = paint; $('#ad-all').onchange = paint;
+      $('#ad-q').oninput = paint; $('#ad-all').onchange = paint; $('#ad-sort').onchange = paint;
       paint(); selPaint();
       return;
     }
@@ -8104,6 +8122,8 @@
     } else if (m.type === 'w777-project-ready') {
       if (projSent) return; projSent = true;
       try { fr.contentWindow.postMessage(await projectPayload(projProp), location.origin); } catch (er) { /* */ }
+    } else if (m.type === 'w777-made') {
+      adMark(fr.id === 'reels-frame' ? reelsProp : projProp, fr.id === 'reels-frame' ? 'reels' : 'project');
     } else if (m.type === 'w777-sample') {
       const reply = o => { try { fr.contentWindow.postMessage(Object.assign({ type: 'w777-sample-res', id: m.id }, o), location.origin); } catch (er) { /* */ } };
       const Sy = window.W777_SYNC;
