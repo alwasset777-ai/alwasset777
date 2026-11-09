@@ -1701,3 +1701,29 @@ body.psel-mode .fab { display: none; }
 .ad-go a.done { background: #1f3d33; color: #fff; }
 .ad-go a.ad-go-project.done { background: #c8102e; color: #fff; }
 .ad-hot { display: inline-block; margin-inline-start: 6px; font-size: 11.5px; font-weight: 800; color: #b45309; background: #fef3c7; border-radius: 99px; padding: 1px 8px; }
+
+/* 🔑 الدخول بالإيميل / التسجيل / الحساب موقوف */
+body.gated .bottomnav, body.gated .sidenav, body.gated #fab, body.gated .fab-menu, body.gated #agent-fab, body.gated #btn-sync, body.gated #btn-back,
+body.gated .topbar-inner > :not(.logo):not(#btn-lang) { display: none !important; }
+body.gated #main { margin-inline: auto; }
+.auth-wrap { min-height: calc(100vh - 140px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 0 30px; }
+.auth-card { width: 100%; max-width: 440px; padding: 26px 22px 20px; text-align: center; }
+.auth-card h1 { font-size: 22px; margin: 6px 0 6px; }
+.auth-card p { margin: 6px 0 12px; }
+.auth-logo { width: 84px; height: 84px; border-radius: 50%; object-fit: contain; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 22px rgba(0,0,0,.12); }
+.auth-card input[type=email], .auth-card .auth-code { width: 100%; font-size: 17px; padding: 12px 14px; margin: 4px 0 12px; text-align: center; }
+.auth-card .auth-code { font-size: 30px; letter-spacing: 12px; font-weight: 800; }
+.auth-card .btn.block { width: 100%; justify-content: center; padding: 13px 16px; font-size: 16px; }
+.auth-small { font-size: 12.5px; }
+.auth-row { justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.auth-foot { font-size: 12.5px; color: var(--muted); text-align: center; margin-top: 14px; }
+.auth-card .form-grid { text-align: right; margin: 8px 0 10px; }
+.rg-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.rg-kind { display: inline-flex; position: relative; }
+.rg-kind input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
+.rg-kind span { border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; background: var(--surface-2); }
+.rg-kind input:checked + span { background: #c8102e; border-color: #c8102e; color: #fff; }
+.rg-kind input:focus-visible + span { outline: 2px solid #c8102e; outline-offset: 2px; }
+.rg-terms span { display: block; font-weight: 600; line-height: 1.8; }
+.rg-terms input[type=checkbox] { width: 20px; height: 20px; min-height: 0; padding: 0; vertical-align: middle; margin: 0 0 0 6px; flex: none; }
+.field.adm-dates, .adm-dates { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; align-items: center; }

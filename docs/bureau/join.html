@@ -99,15 +99,15 @@
           <div class="j-tiers"><div><b>🥇 7 الأوائل</b><span>مجاني مدى الحياة</span></div><div><b>🥈 70 الموالين</b><span>-50% مدى الحياة</span></div>
             <div><b>🥉 700 الموالين</b><span>-25% مدى الحياة</span></div><div><b>🎟️ من بعد</b><span>-25% لمدة 4 سنوات</span></div>
             <div><b>🎁 الجميع</b><span>6 أشهر مجانية</span></div><div><b>🌍 70 وكالة خارج المغرب</b><span>مجاني مدى الحياة</span></div></div>
-          <div class="j-cta"><a class="btn wa" href="${wa(k)}" target="_blank" rel="noopener">💬 انضم عبر واتساب</a><a class="btn" href="${esc(APP)}">📱 افتح التطبيق</a><a class="btn" href="tuto/">🎬 الفيديوهات</a></div></div>
+          <div class="j-cta"><a class="btn gold" href="${esc(APP)}">✉️ سجّل دابا بالإيميل</a><a class="btn wa" href="${wa(k)}" target="_blank" rel="noopener">💬 سول المكتب</a><a class="btn" href="tuto/">🎬 الفيديوهات</a></div></div>
         <div class="j-tabs" id="jt">${K.map(x => `<button data-k="${x[0]}" class="${x[0] === cur ? 'on' : ''}">${x[1]} ${x[2]}</button>`).join('')}</div>
         <div class="card j-k"><h2>${k[1]} ${k[2]}</h2><p>${k[4]} الترتيب حسب تاريخ التسجيل فهاد الفئة · المسجلين: ${cnt(k[0], 'ma') + cnt(k[0], 'out')}</p>
           <div class="j-rows">${rows(k)}</div>
           <div class="j-vid"><video src="tuto/net-${k[0]}.mp4" poster="tuto/net-${k[0]}.jpg" controls playsinline preload="none"></video>
             <div><b>شوف شنو كتربح كـ${k[3]}</b><p class="muted" style="margin:6px 0 10px">دقيقة واحدة على الشبكة والتطبيق.</p><a class="btn wa" href="${wa(k)}" target="_blank" rel="noopener">💬 حجز مقعدي</a></div></div></div>
         <div class="j-steps"><div><b>01</b>افتح التطبيق و«أضف إلى الشاشة الرئيسية» — بلا متجر تطبيقات.</div>
-          <div><b>02</b>راسل المكتب على واتساب: كنعطيوك الرمز وكلمة السر ديال حسابك.</div>
-          <div><b>03</b>وافق على قانون التطبيق: نهار الموافقة هو اللي كيحدد رقم مقعدك.</div></div>
+          <div><b>02</b>كتب الإيميل ديالك ← كيوصلك كود من 6 أرقام ← عمّر البطاقة ديالك وكتدخل فالحين (بلا كلمة السر).</div>
+          <div><b>03</b>الموافقة على قانون التطبيق (فنفس البطاقة) هي اللي كتحدد رقم مقعدك، ومنها كتبدا 6 أشهر المجانية.</div></div>
         <p class="muted" style="text-align:center;margin-top:14px">📞 <span dir="ltr">0777777959 · 0777777848</span></p>`;
       $$('#jt [data-k]').forEach(b => b.onclick = () => { cur = b.dataset.k; history.replaceState(null, '', '?k=' + cur); draw(); });
     }
