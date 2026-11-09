@@ -745,10 +745,221 @@
     if (NAV.stack.length > 1) { NAV.stack.pop(); NAV.back = true; location.hash = NAV.stack[NAV.stack.length - 1]; }
     else location.hash = '#/';
   }
+  /* ---------- 🔑 الدخول بالإيميل (كود 6 أرقام، بلا كلمة سر) + التسجيل الذاتي + إيقاف الحساب ملي تسالي المدة ----------
+     البوابة كتخدم فالموقع؛ فجهاز التطوير (localhost) غير بـ ?gate=1 (للاختبارات). الحماية الحقيقية فالخادم (w777_can_use / w777_not_stopped). */
+  try { if (/[?&]gate=1/.test(location.search)) sessionStorage.setItem('w777_gate', '1'); } catch (e) { /* */ }
+  const gateOn = () => { if (EMBED) return false; if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return true; try { return sessionStorage.getItem('w777_gate') === '1'; } catch (e) { return false; } };
+  const PUBLIC_ROUTES = ['terms'];
+  let MY = null; // { admin, staff, member, ok, email }
+  const myReset = () => { MY = null; try { localStorage.removeItem('w777_my'); } catch (e) { /* */ } };
+  async function myStatus(force) {
+    const Sy = window.W777_SYNC;
+    if (!Sy || !Sy.isOn()) return null;
+    const u = Sy.uid();
+    if (!MY || MY.u !== u) { try { const c = JSON.parse(localStorage.getItem('w777_my') || 'null'); MY = c && c.u === u ? c : null; } catch (e) { MY = null; } }
+    if (!force && MY && Date.now() - MY.at < 600000) return MY;
+    try {
+      const r = await Sy.request('/rest/v1/rpc/w777_my_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (r.ok) { const d = await r.json(); if (d && typeof d === 'object') { MY = Object.assign(d, { u, at: Date.now() }); try { localStorage.setItem('w777_my', JSON.stringify(MY)); } catch (e) { /* */ } } }
+    } catch (e) { /* بلا إنترنت: كنبقاو على اللي محفوظ */ }
+    return MY;
+  }
+  async function authGate(parts) {
+    const Sy = window.W777_SYNC, on = Sy && Sy.isOn();
+    document.body.classList.remove('gated');
+    if (EMBED || PUBLIC_ROUTES.includes(parts[0])) return false;
+    if (!on) { if (!gateOn()) return false; viewAuth(); return true; }
+    const m = await myStatus();
+    if (m && m.ok === false) { await viewStopped(); return true; }
+    if (m && gateOn() && !m.admin && !m.staff && !m.member) { viewRegister(m); return true; }
+    return false;
+  }
+  function gatedShell(html) {
+    document.body.classList.add('gated');
+    main().innerHTML = `<div class="auth-wrap"><div class="card auth-card"><img src="${LOGO}" alt="" class="auth-logo">${html}</div>
+      <p class="auth-foot"><a href="#/terms">⚖️ قانون التطبيق</a> · 📞 ${officeTels()}</p></div>`;
+  }
+  const mailOk = e => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e);
+  let authMail = '', authSentAt = 0;
+  function authErr(e) {
+    const m = String((e && e.message) || e || '');
+    if (/rate limit|security purposes|too many|429/i.test(m)) return 'بزاف ديال الطلبات — تسنى شوية (دقيقة ولا أكثر) وعاود.';
+    if (/expired|invalid|otp|token/i.test(m)) return 'الكود غالط ولا سالا الوقت ديالو — طلب كود جديد.';
+    if (/signups? not allowed|disabled/i.test(m)) return 'التسجيل موقوف دابا — تواصل مع مكتب الوسيط 777.';
+    if (/Failed to fetch|network/i.test(m)) return 'ما كاينش الإنترنت — تأكد من الاتصال وعاود.';
+    return 'وقع مشكل: ' + m;
+  }
+  async function afterLogin() {
+    const Sy = window.W777_SYNC;
+    try { localStorage.setItem('w777_last_email', (Sy.account() || {}).email || ''); } catch (e) { /* */ }
+    myReset(); S.roleAt = 0;
+    await refreshRole(true);
+    if (syOn()) loadStaff().catch(() => {});
+    if (location.hash !== '#/') location.hash = '#/'; else route();
+  }
+  async function mfaLoop() {
+    for (;;) {
+      const c = await askCode();
+      if (!c) { window.W777_SYNC.mfaCancel(); toast('تلغى الدخول'); return false; }
+      try { await window.W777_SYNC.mfaLogin(c); return true; } catch (e) { toast('الرمز غالط ولا سالا الوقت ديالو — عاود', 3500); }
+    }
+  }
+  function viewAuth(step) {
+    const Sy = window.W777_SYNC;
+    if (!authMail) { try { const l = localStorage.getItem('w777_last_email') || ''; if (!/@alwasset777\.ma$/.test(l)) authMail = l; } catch (e) { /* */ } }
+    if (step === 'code') {
+      gatedShell(`<h1>📩 دخل الكود</h1>
+        <p class="muted">صيفطنا كود من 6 أرقام لـ <b dir="ltr">${esc(authMail)}</b></p>
+        <input id="au-code" class="auth-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" placeholder="••••••" aria-label="الكود">
+        <button class="btn gold block" id="au-ok">${ic('lock', 18)} دخول</button>
+        <p class="muted auth-small">ما لقيتيهش؟ شوف فـ «Spam / Indésirables». ولا ضغط على الرابط اللي فالإيميل من هاد الجهاز.</p>
+        <div class="btn-row auth-row"><button class="btn sm" id="au-again" disabled>🔁 عاود صيفط الكود</button><button class="btn sm" id="au-back">✏️ بدّل الإيميل</button></div>`);
+      const i = $('#au-code'), ok = $('#au-ok'), again = $('#au-again');
+      setTimeout(() => i.focus(), 60);
+      const go = async () => {
+        const c = i.value.replace(/\D/g, '');
+        if (c.length !== 6) return toast('كتب الكود ديال 6 أرقام');
+        ok.disabled = true; ok.textContent = '⏳ …';
+        try {
+          const r = await Sy.otpVerify(authMail, c);
+          if (r && r.mfa && !(await mfaLoop())) { ok.disabled = false; ok.textContent = 'دخول'; return; }
+          toast('مرحبا بيك ✓'); await afterLogin();
+        } catch (e) { ok.disabled = false; ok.textContent = 'دخول'; i.select(); toast(authErr(e), 4500); }
+      };
+      ok.onclick = go; i.oninput = () => { if (i.value.replace(/\D/g, '').length === 6) go(); };
+      i.onkeydown = e => { if (e.key === 'Enter') go(); };
+      const tick = () => { if (!document.body.contains(again)) return; const left = 60 - Math.floor((Date.now() - authSentAt) / 1000); again.disabled = left > 0; again.textContent = left > 0 ? `🔁 عاود صيفط الكود (${left})` : '🔁 عاود صيفط الكود'; if (left > 0) setTimeout(tick, 1000); };
+      tick();
+      again.onclick = async () => { again.disabled = true; try { await Sy.otpSend(authMail); authSentAt = Date.now(); toast('تصيفط كود جديد ✓'); } catch (e) { toast(authErr(e), 4500); } tick(); };
+      $('#au-back').onclick = () => viewAuth();
+      return;
+    }
+    if (step === 'pw') {
+      gatedShell(`<h1>🔐 الدخول برمز العضوية</h1>
+        <p class="muted">للحسابات اللي عطاكم المكتب (agence001 · W001 · B001…) والموظفين والإدارة.</p>
+        <form id="au-pwf" class="form-grid" onsubmit="return false">
+          ${fInput('email', 'الرمز ولا البريد', '', { cls: 'full', attrs: 'dir="ltr" autocapitalize="off" autocomplete="username"' })}
+          ${fInput('password', 'كلمة السر', '', { cls: 'full', type: 'password', attrs: 'dir="ltr" autocomplete="current-password"' })}
+        </form>
+        <button class="btn gold block" id="au-pin">${ic('lock', 18)} دخول</button>
+        <div class="btn-row auth-row"><button class="btn sm" id="au-back">📩 الدخول بالإيميل (كود)</button></div>`);
+      $('#au-back').onclick = () => viewAuth();
+      $('#au-pin').onclick = async () => {
+        const v = collect($('#au-pwf')), b = $('#au-pin');
+        if (!v.email || !v.password) return toast('عمّر الرمز وكلمة السر');
+        b.disabled = true;
+        try {
+          const d = Sy.defaults(), r = await Sy.signIn(d.url, d.key, v.email, v.password);
+          if (r && r.mfa && !(await mfaLoop())) { b.disabled = false; return; }
+          toast('مرحبا بيك ✓'); await afterLogin();
+        } catch (e) { b.disabled = false; toast(/Invalid login/i.test(String(e.message)) ? 'الرمز أو كلمة السر غير صحيحة' : authErr(e), 4500); }
+      };
+      return;
+    }
+    gatedShell(`<h1>تطبيق مجموعة الوسيط</h1>
+      <p class="muted">دخل بالإيميل ديالك: كيوصلك كود من 6 أرقام. <b>ماكايناش كلمة السر.</b></p>
+      <input id="au-mail" type="email" dir="ltr" autocomplete="email" autocapitalize="off" placeholder="exemple@gmail.com" value="${esc(authMail)}" aria-label="الإيميل">
+      <button class="btn gold block" id="au-send">📩 صيفط ليا الكود</button>
+      <p class="muted auth-small">أول مرة؟ نفس الطريقة: الإيميل ← الكود ← كتعمر البطاقة ديالك وكتدخل. 🎁 ${FREE_MONTHS} أشهر مجانية.</p>
+      <div class="btn-row auth-row"><button class="btn sm ghost" id="au-pw">🔐 عندي رمز العضوية وكلمة السر</button></div>`);
+    const i = $('#au-mail'), b = $('#au-send');
+    setTimeout(() => i.focus(), 60);
+    const send = async () => {
+      const m = i.value.trim().toLowerCase();
+      if (!mailOk(m)) return toast('كتب إيميل صحيح (مثلاً name@gmail.com)');
+      if (/@alwasset777\.ma$/.test(m)) return viewAuth('pw');
+      b.disabled = true; b.textContent = '⏳ كنصيفطو الكود…';
+      try { await Sy.otpSend(m); authMail = m; authSentAt = Date.now(); viewAuth('code'); }
+      catch (e) { b.disabled = false; b.textContent = '📩 صيفط ليا الكود'; toast(authErr(e), 5000); }
+    };
+    b.onclick = send; i.onkeydown = e => { if (e.key === 'Enter') send(); };
+    $('#au-pw').onclick = () => viewAuth('pw');
+  }
+  function gateLogout() {
+    const Sy = window.W777_SYNC;
+    Sy.signOut(); S.role = null; S.kind = null; S.dir = null; S.agency = null; S.roleFor = null; S.net = null; myReset();
+    ['w777_role', 'w777_agent_my', 'w777_agc1'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* */ } });
+    AG.my = null; agPaintButton();
+    if (location.hash !== '#/') location.hash = '#/'; else route();
+  }
+  // ✍️ أول دخول بإيميل جديد: البطاقة + الموافقة على القانون ← الحساب كيتصاوب فالحين (6 أشهر مجانية)
+  function viewRegister(m) {
+    const kinds = Object.keys(KINDS);
+    gatedShell(`<h1>🎉 مرحبا بيك!</h1>
+      <p class="muted">الإيميل <b dir="ltr">${esc(m.email || '')}</b> تأكد ✓ — بقات غير البطاقة ديالك.</p>
+      <form id="rg" class="form-grid" onsubmit="return false">
+        <div class="field full"><label>شكون نتا؟</label><div class="rg-kinds">${kinds.map((k, i) => `<label class="rg-kind"><input type="radio" name="kind" value="${k}"${i ? '' : ' checked'}><span>${KINDS[k].ic} ${esc(KINDS[k].one)}</span></label>`).join('')}</div></div>
+        ${fInput('name', 'الاسم (الوكالة، الشركة ولا الاسم الكامل)', '', { cls: 'full', req: true, attrs: 'autocomplete="organization"' })}
+        ${fInput('phone', 'الهاتف / واتساب', '', { type: 'tel', req: true, attrs: 'dir="ltr" autocomplete="tel"' })}
+        ${placeLists()}${fInput('city', 'المدينة', '', { list: 'dl-cities' })}
+        ${fSelect('zone', 'البلد', [{ v: 'ma', l: '🇲🇦 المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }], 'ma', { noEmpty: true })}
+        ${fInput('country', 'اسم الدولة (إلا كنتي خارج المغرب)', '', { list: 'dl-countries' })}
+        <label class="field full rg-terms"><span><input type="checkbox" id="rg-ok"> قريت <a href="#/terms" target="_blank">قانون التطبيق</a> ووافقت عليه</span></label>
+      </form>
+      <p class="muted auth-small">🎁 ${FREE_MONTHS} أشهر مجانية كتبدا اليوم، ومن بعد الاشتراك السنوي. الترتيب ديالك فعرض 777 كيتحسب من دابا.</p>
+      <button class="btn gold block" id="rg-go">✅ دخول للتطبيق</button>
+      <div class="btn-row auth-row"><button class="btn sm ghost" id="rg-out">↩️ خروج</button></div>`);
+    const cf = $('[name=country]').closest('.field'), zone = $('[name=zone]');
+    const paintZone = () => { cf.style.display = zone.value === 'out' ? '' : 'none'; };
+    zone.onchange = paintZone; paintZone();
+    $('#rg-out').onclick = gateLogout;
+    $('#rg-go').onclick = async () => {
+      const v = collect($('#rg')), b = $('#rg-go'), kind = ($('#rg [name=kind]:checked') || {}).value;
+      if (!kind) return toast('ختار شكون نتا');
+      if (!v.name || v.name.trim().length < 2) return toast('كتب الاسم');
+      if (String(v.phone || '').replace(/\D/g, '').length < 9) return toast('كتب رقم الهاتف كامل');
+      if (v.zone === 'out' && !(v.country || '').trim()) return toast('كتب اسم الدولة');
+      if (!$('#rg-ok').checked) return toast('خاصك توافق على قانون التطبيق');
+      b.disabled = true; b.textContent = '⏳ …';
+      try {
+        const r = await window.W777_SYNC.request('/rest/v1/rpc/w777_register', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_kind: kind, p_name: v.name.trim(), p_phone: v.phone, p_city: v.city || '', p_country: v.zone === 'out' ? v.country.trim() : 'المغرب' }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const e = String(d.message || d.error || r.status);
+          throw new Error(/phone/.test(e) ? 'رقم الهاتف غير صحيح' : /name/.test(e) ? 'الاسم قصير بزاف' : /exists/.test(e) ? 'هاد الحساب ديجا مسجّل' : /email/.test(e) ? 'الإيميل مازال ما تأكدش' : e);
+        }
+        myReset(); await refreshRole(true);
+        toast(`مرحبا بيك فمجموعة الوسيط ✓ الرمز ديالك: ${d.code || ''}`, 5000);
+        if (location.hash !== '#/') location.hash = '#/'; else route();
+      } catch (e) { b.disabled = false; b.textContent = '✅ دخول للتطبيق'; toast('تعذر: ' + e.message, 4500); }
+    };
+  }
+  // ⛔ المدة المجانية ولا الاشتراك سالاو: الحساب موقوف (البيانات محفوظة) حتى يمدّد المدير التاريخ
+  async function viewStopped() {
+    await refreshRole(true).catch(() => {});
+    const ag = S.agency, si = ag ? subInfo(ag) : null, staff = MY && MY.staff && !MY.member;
+    const msg = `سلام، بغيت نجدد الاشتراك ديالي فتطبيق مجموعة الوسيط${ag ? ` — الرمز: ${ag.code}` : ''}${MY && MY.email && !/@alwasset777\.ma$/.test(MY.email) ? ` — الإيميل: ${MY.email}` : ''}`;
+    gatedShell(`<h1>⏳ الحساب موقوف</h1>
+      <p>${staff ? 'الاشتراك ديال المكتب اللي خدام معاه سالا.' : ag && !ag.active ? 'الحساب ديالك موقوف من طرف الإدارة.' : `سالات ${ag && ag.sub_until ? 'مدة الاشتراك' : 'المدة المجانية'} ديال الحساب ديالك.`}</p>
+      ${si ? `<p class="muted auth-small">${esc(si.txt)}</p>` : ''}
+      <p class="muted">✅ البيانات ديالك محفوظة وما كتضيعش. باش تكمل، جدّد الاشتراك عند مكتب الوسيط 777:</p>
+      <a class="btn gold block wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 18)} واتساب: تجديد الاشتراك</a>
+      <div class="btn-row auth-row"><a class="btn sm" href="${telLink(W777_OFFICE)}">${ic('phone', 16)} ${W777_OFFICE}</a><a class="btn sm" href="${telLink(W777_OFFICE2)}">${ic('phone', 16)} ${W777_OFFICE2}</a></div>
+      <div class="btn-row auth-row"><button class="btn sm" id="st-re">🔄 جدّدت — دخلني</button><button class="btn sm ghost" id="st-out">↩️ خروج</button></div>`);
+    $('#st-out').onclick = gateLogout;
+    $('#st-re').onclick = async () => { const m = await myStatus(true); if (m && m.ok === false) toast('مازال ما تجدّدش — تواصل مع المكتب', 3500); else route(); };
+  }
+  // الرابط اللي فإيميل الدخول (بلاصة الكود) كيرجع بـ #access_token=…
+  async function authFromLink() {
+    const h = location.hash;
+    if (!/access_token=|error_description=/.test(h)) return;
+    const q = new URLSearchParams(h.replace(/^#\/?/, ''));
+    try { history.replaceState(null, '', location.pathname + location.search + '#/'); } catch (e) { location.hash = '#/'; }
+    if (!q.get('access_token')) { toast('الرابط سالا ولا تستعمل — طلب كود جديد', 5000); return; }
+    try {
+      const r = await window.W777_SYNC.otpFromLink(q);
+      if (r && r.mfa && !(await mfaLoop())) return;
+      myReset(); await refreshRole(true); toast('مرحبا بيك ✓');
+    } catch (e) { toast('الرابط سالا ولا تستعمل — طلب كود جديد', 5000); }
+  }
+
   async function route() {
     if (leaveGuard) { const g = leaveGuard; leaveGuard = null; await g(); }
+    if (/access_token=|error_description=/.test(location.hash)) await authFromLink();
     navTrack();
     const { parts, query } = parseHash();
+    if (await authGate(parts)) return;
     document.body.classList.toggle('in-studio', parts[0] === 'ad-maker' && (query.m === 'post' || query.m === 'reels' || query.m === 'project' || !!query.p));
     document.body.classList.toggle('in-game', parts[0] === 'game'); // اللعبة: الأزرار العائمة كيغطيو الحروف
     const [a, b, c] = parts;
@@ -2404,7 +2615,7 @@
       </form>
       <div class="btn-row" style="margin-top:12px">
         <button class="btn gold" id="cl-in">${ic('lock', 18)} دخول</button>
-        <button class="btn" id="cl-up">إنشاء حساب جديد</button>
+        <button class="btn" id="cl-otp" type="button">📩 الدخول بالإيميل (كود)</button>
       </div>
       <p class="muted" style="font-size:12.5px;margin-bottom:0">أول مرة فقط: أنشئ مشروعا على supabase.com ثم نفّذ ملف <b dir="ltr">supabase.sql</b> في SQL Editor (مرفق مع التطبيق).</p>
     </div>`;
@@ -2589,7 +2800,7 @@
       }
     };
     if (b('cl-in')) b('cl-in').onclick = () => go(false);
-    if (b('cl-up')) b('cl-up').onclick = () => go(true);
+    if (b('cl-otp')) b('cl-otp').onclick = () => viewAuth();
   }
   function setupSyncUi() {
     const Sy = window.W777_SYNC;
@@ -4442,7 +4653,7 @@
     try {
       const [admin, rows] = await Promise.all([
         Sy.request('/rest/v1/rpc/w777_is_admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()),
-        Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,sub_until,photo,logo,id_doc,id_doc_at,id_ok`).then(r => r.json())]);
+        Sy.request(`/rest/v1/w777_agencies?uid=eq.${u}&select=code,name,phone,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,sub_until,trial_until,photo,logo,id_doc,id_doc_at,id_ok`).then(r => r.json())]);
       const ag = admin === true ? null : (rows && rows[0]) || null;
       // «agency» = عضو فالشبكة (وكالة، وسيط، مقاولة ولا تشطيب) — النوع فـ S.kind
       S.role = admin === true ? 'admin' : ag ? 'agency' : 'solo';
@@ -5328,7 +5539,7 @@
   }
   async function loadDir(force) {
     if (!force && S.dir && Date.now() - S.dirAt < 300000) return S.dir;
-    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,seat_no,seat_zone,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,id_doc,id_doc_at' : ''}&order=code.asc`);
+    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,seat_no,seat_zone,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,trial_until,self_signup,id_doc,id_doc_at' : ''}&order=code.asc`);
     S.dirAt = Date.now();
     return S.dir;
   }
@@ -5620,17 +5831,29 @@
           ${placeLists()}${fInput('city', 'المدينة', a.city, { list: 'dl-cities' })}${fInput('country', 'الدولة', a.country || 'المغرب', { list: 'dl-countries', hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (70 وكالة الأولى خارج المغرب مجاني مدى الحياة)' : '' })}
           ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}
           ${fInput('sub_until', `الاشتراك (${subPrice(a)} درهم فالعام) خالص حتى`, a.sub_until, { type: 'date', hint: a.terms_at ? 'وافق على القانون: ' + dAr(a.terms_at) : 'مازال ما وافقش على القانون' })}
-          <div class="field" style="justify-content:flex-end"><button type="button" class="btn sm" id="age-year">💳 +1 عام</button></div></form>
+          ${fInput('trial_until', '🎁 نهاية المدة المجانية', a.trial_until, { type: 'date', hint: a.trial_until ? 'تاريخ خاص (حددتيه نتا)' : freeEnd(a) ? `فارغ = ${FREE_MONTHS} أشهر من الموافقة (${dAr(freeEnd(a).toISOString())})` : `فارغ = ${FREE_MONTHS} أشهر من نهار الموافقة على القانون` })}
+          <div class="field full adm-dates"><button type="button" class="btn sm" id="age-year">💳 +1 عام</button><button type="button" class="btn sm" id="age-6m">💳 +6 أشهر</button><button type="button" class="btn sm" id="age-free">🎁 +1 شهر مجاني</button><button type="button" class="btn sm danger" id="age-stop">⛔ وقف دابا</button></div>
+          ${a.self_signup ? `<p class="muted full" style="margin:0">✉️ تسجّل بوحدو بالإيميل: <b dir="ltr">${esc(a.email || '')}</b></p>` : ''}</form>
           <h4 style="margin:16px 0 8px">🖼️ الصورة والشعار</h4><div class="mm-grid" id="age-mm">${admMediaHtml(a)}</div>
           <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="age-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
           bindAdmMedia(box, a, draw);
-          $('#age-year', box).onclick = () => {
-            const i = $('[name=sub_until]', box), cur = i.value && new Date(i.value) > new Date() ? new Date(i.value) : new Date();
-            cur.setFullYear(cur.getFullYear() + 1); i.value = cur.toISOString().slice(0, 10);
+          // التمديد كيبدا من التاريخ الحالي إلا مازال ما سالاش، وإلا من اليوم
+          const addTo = (name, months) => {
+            const i = $(`[name=${name}]`, box), base = name === 'trial_until' && !i.value ? freeEnd(a) : i.value ? new Date(i.value) : null;
+            const cur = base && base > new Date() ? new Date(base) : new Date();
+            cur.setMonth(cur.getMonth() + months); i.value = cur.toISOString().slice(0, 10);
+          };
+          $('#age-year', box).onclick = () => addTo('sub_until', 12);
+          $('#age-6m', box).onclick = () => addTo('sub_until', 6);
+          $('#age-free', box).onclick = () => addTo('trial_until', 1);
+          $('#age-stop', box).onclick = () => {
+            const y = new Date(); y.setDate(y.getDate() - 1); const d = y.toISOString().slice(0, 10);
+            $('[name=trial_until]', box).value = d; const s = $('[name=sub_until]', box); if (s.value && new Date(s.value) > y) s.value = d;
+            toast('⛔ غادي يتوقف ملي تضغط «حفظ» (إلا ماكانش من 7 الأوائل المجانيين)', 4000);
           };
           $('#age-ok', box).onclick = async () => {
             const v = collect($('#age', box));
-            const body = { name: v.name || a.name, phone: v.phone || null, city: v.city || null, country: (v.country || '').trim() || 'المغرب', services: splitList(v.services).join('، ') || null, sub_until: v.sub_until || null };
+            const body = { name: v.name || a.name, phone: v.phone || null, city: v.city || null, country: (v.country || '').trim() || 'المغرب', services: splitList(v.services).join('، ') || null, sub_until: v.sub_until || null, trial_until: v.trial_until || null };
             try {
               await rq(`/rest/v1/w777_agencies?uid=eq.${a.uid}`, 'PATCH', body);
               Object.assign(a, body); S.dir = null; close(); draw(); toast('تم ✓');
@@ -5955,7 +6178,7 @@
     const a = window.W777_SYNC && window.W777_SYNC.account();
     return a && a.url ? `${a.url}/storage/v1/object/public/w777-brand/${String(p).split('/').map(encodeURIComponent).join('/')}` : '';
   };
-  const freeEnd = a => { if (!a || !a.terms_at) return null; const d = new Date(a.terms_at); d.setMonth(d.getMonth() + FREE_MONTHS); return d; };
+  const freeEnd = a => { if (!a) return null; if (a.trial_until) return new Date(a.trial_until + 'T23:59:59'); if (!a.terms_at) return null; const d = new Date(a.terms_at); d.setMonth(d.getMonth() + FREE_MONTHS); return d; };
   // البطاقة كتولي إجبارية من بعد الفترة المجانية (6 أشهر من الموافقة على القانون)
   const idRequired = a => !!a && !a.id_doc && !!freeEnd(a) && freeEnd(a) < new Date();
   const idLabel = a => isAbroad(a) ? 'جواز السفر (ولا البطاقة الوطنية)' : 'البطاقة الوطنية';

@@ -127,6 +127,28 @@
     syncNow();
     return st;
   }
+  // ✉️ الدخول بالإيميل بلا كلمة سر: كود 6 أرقام كيوصل للإيميل (ولا الرابط اللي فنفس الإيميل)
+  const mailOf = e => String(e || '').trim().toLowerCase();
+  async function otpSend(email) {
+    const { url, key } = defaults();
+    await authCall(cleanUrl(url), key, '/auth/v1/otp', { email: mailOf(email), create_user: true });
+  }
+  async function otpVerify(email, code) {
+    const { url, key } = defaults();
+    const d = await authCall(cleanUrl(url), key, '/auth/v1/verify', { type: 'email', email: mailOf(email), token: String(code || '').replace(/\D/g, '') });
+    return otpFinish(cleanUrl(url), key, d);
+  }
+  // الرابط اللي فالإيميل كيرجع للتطبيق بـ #access_token=…&refresh_token=…
+  async function otpFromLink(h) {
+    const { url, key } = defaults(), u = cleanUrl(url), access = h.get('access_token');
+    const user = await authReq(u, key, '/auth/v1/user', access, null, 'GET');
+    return otpFinish(u, key, { access_token: access, refresh_token: h.get('refresh_token'), expires_in: +h.get('expires_in') || 3600, expires_at: +h.get('expires_at') || 0, user });
+  }
+  function otpFinish(url, key, d) {
+    const f = ((d.user && d.user.factors) || []).find(x => x.status === 'verified' && x.factor_type === 'totp');
+    if (f) { pend = { url, key, d, fid: f.id }; return { mfa: true }; }
+    return finishSignIn(url, key, d);
+  }
   async function signUp(url, key, email, password) {
     url = cleanUrl(url); key = String(key || '').trim();
     const d = await authCall(url, key, '/auth/v1/signup', { email, password });
@@ -484,7 +506,7 @@
     isOn: () => !!st,
     account: () => st && { email: st.email, url: st.url },
     defaults,
-    signIn, signUp, signOut, mfaLogin, mfaCancel, mfaFactors, mfaEnroll, mfaConfirm, mfaRemove, syncNow, schedule, fetchFile, fetchPath, netPhotoUrl, normEmail,
+    signIn, signUp, signOut, otpSend, otpVerify, otpFromLink, mfaLogin, mfaCancel, mfaFactors, mfaEnroll, mfaConfirm, mfaRemove, syncNow, schedule, fetchFile, fetchPath, netPhotoUrl, normEmail,
     status: () => status,
     lastSync: () => DB.getMeta('sync_last', null),
     pending: async () => Object.keys(await DB.getMeta('sync_dirty', {})).length,

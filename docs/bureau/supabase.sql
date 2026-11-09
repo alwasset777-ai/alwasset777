@@ -1326,7 +1326,7 @@ alter table public.w777_agencies add column if not exists self_signup boolean no
 
 -- العضو ما يقدرش يبدل تاريخ المدة المجانية ولا علامة التسجيل الذاتي
 create or replace function public.w777_ag_dates() returns trigger language plpgsql security definer set search_path = public as $$
-begin if not w777_is_admin() then new.trial_until := old.trial_until; new.self_signup := old.self_signup; end if; return new; end $$;
+begin if auth.uid() is not null and not w777_is_admin() then new.trial_until := old.trial_until; new.self_signup := old.self_signup; end if; return new; end $$;
 revoke execute on function public.w777_ag_dates() from public, anon, authenticated;
 drop trigger if exists w777_ag_dates on public.w777_agencies;
 create trigger w777_ag_dates before update on public.w777_agencies for each row execute function public.w777_ag_dates();
