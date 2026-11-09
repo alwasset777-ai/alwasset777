@@ -81,7 +81,8 @@ Newer pages you must know (explain them with exact names, then offer open_page):
 - Stories: the round photos on the home page (+ ستوري to post text or a photo for 24 h); members like ❤️ (tap the heart or double-tap) and comment 💬; the owner can delete comments and gets notified of likes and comments.
 - Game «وصلة العقار»: real-estate word puzzle with pictures, stages and groups, members ranking; «منير — مساعد اللعبة» explains words and gives the answer; public link game.html to share with clients.
 - Guide videos: «🎬 فيديوهات الدليل» on the guide page (19 short videos, one per learning stage); the PDF guide and the 7 network invitations link to them by QR code.
-- Ad studio «إعلانات فورية», holiday rentals «الحجز الفوري (مفروش وعطل)», public catalog link, partners (phone photo upload links) are also in the app.
+- «إعلانات فورية» opens 3 circles: POST (ad studio for posts), REELS (VIDOMIDO video maker: property photos + property card → ready video for Reels/TikTok/Story/Facebook/YouTube, 5 s to 10 min, 9:16 / 1:1 / 16:9, 22 camera moves (drone, dolly, orbit…), on-screen text in Arabic/French/English, «المخرج الذكي» AI director that orders the photos like a real visit and writes the post caption; the video is made on the phone and saved to the gallery) and PROJECT (coming soon). When the user asks for a video/reel of a property, call open_page with page "reels" and the property ref (photos and details are filled automatically). The property page also has a «🎬 فيديو Reels» button.
+- Holiday rentals «الحجز الفوري (مفروش وعطل)», public catalog link, partners (phone photo upload links) are also in the app.
 
 Calculations — you can compute anything a real-estate office needs:
 - ALWAYS use the tools for numbers, never mental math: calculate (any arithmetic: commissions, percentages, price per m², rent yield, splits, conversions between DH and million centimes), loan_calc (mortgage), buying_fees (purchase costs). Show the result with the key inputs in one or two sentences (e.g. "عمولة 2.5% على 900 000 درهم = 22 500 درهم").
@@ -126,7 +127,7 @@ const TOOLS = [
   { name: "calculate", description: "Exact arithmetic. Give a math expression with numbers and + - * / % ( ) ^ (e.g. '900000*2.5/100', '(3500*12)/650000*100'). Returns the exact result. Use for every calculation.", input_schema: S({ expression: str("math expression"), label: str("what is being computed, optional") }, ["expression"]) },
   { name: "loan_calc", description: "Mortgage simulation (same formula as the app's «حساب التمويل»): monthly installment, interest, insurance, required monthly income (installment ≤ 40% of income). Defaults: down 20%, 20 years, 4.5%, insurance 0.3%/year.", input_schema: S({ price: num("property price in DH"), down_pct: num("down payment %"), years: num("duration in years"), rate: num("annual interest rate %"), insurance: num("annual insurance % of loan") }, ["price"]) },
   { name: "buying_fees", description: "Estimated purchase costs for the buyer in Morocco (registration, land registry, notary, stamps), same as the app's «مراحل تملك العقار» calculator.", input_schema: S({ price: num("price in DH"), kind: str("home (built residential, default) | pro (professional/commercial) | land"), cash: { type: "boolean", description: "true if paid in cash (non-traceable, +2%)" } }, ["price"]) },
-  { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | brokers | contractors | finishing | investors | notaries | associations | projects | events | news | stays | search | guide | terms | donations | disputes | contracts | learn | ownership | estimate | settings | new_property | new_request | new_appointment | rentals | finance | report | loan | map | ad_maker | messages | tamwil | game | stories"), ref: str("ref when page is property or request") }, ["page"]) },
+  { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | brokers | contractors | finishing | investors | notaries | associations | projects | events | news | stays | search | guide | terms | donations | disputes | contracts | learn | ownership | estimate | settings | new_property | new_request | new_appointment | rentals | finance | report | loan | map | ad_maker | reels | messages | tamwil | game | stories"), ref: str("ref when page is property or request; optional property ref for reels (video maker prefilled with that property's photos and details) or ad_maker") }, ["page"]) },
 ];
 
 // ---------- Gemini (Google AI Studio — فيه مستوى فابور) ----------
@@ -353,7 +354,7 @@ Deno.serve(async (req) => {
   const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
   if (req.method !== "POST") return json({ error: "method" }, 405);
 
-  let body: { messages?: unknown[]; lang?: string; ctx?: Record<string, unknown>; stream?: boolean; tts?: string; game?: GameCtx; ping?: boolean };
+  let body: { messages?: unknown[]; lang?: string; ctx?: Record<string, unknown>; stream?: boolean; tts?: string; game?: GameCtx; ping?: boolean; sample?: { prompt?: string; images?: string[] } };
   try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400); }
   // تسخين: التطبيق كيصيفطها ملي كيتحل المساعد باش أول جواب يجي بسرعة
   if (body.ping) return json({ ok: true });
@@ -424,6 +425,34 @@ Deno.serve(async (req) => {
       const audio = await tts(geminiKey, text, String(body.lang ?? "darija"));
       return new Response(audio, { headers: { ...CORS, "Content-Type": "audio/wav", "Cache-Control": "no-store" } });
     } catch (e) { return json({ error: "tts", status: (e as { status?: number }).status ?? 0 }, 502); }
+  }
+
+  // ---------- «المخرج الذكي» ديال REELS (VIDOMIDO): برومبت + حتى 4 صور ← JSON ديال المونتاج ----------
+  if (body.sample && typeof body.sample === "object") {
+    if (!geminiKey) return json({ error: "no_key" }, 503);
+    const { data: n } = await service.rpc("w777_agent_hit", { u: user.id, lim: DAILY_LIMIT });
+    if (n === -1) return json({ error: "quota" }, 429);
+    const prompt = String(body.sample.prompt ?? "").slice(0, 12000);
+    if (!prompt.trim()) return json({ error: "empty" }, 400);
+    const parts: Blk[] = [{ text: prompt }];
+    for (const u of (Array.isArray(body.sample.images) ? body.sample.images : []).slice(0, 4)) {
+      const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(u));
+      if (m && m[2].length < 2_500_000) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+    }
+    let last = 0;
+    for (const g of GEMINI_MODELS) {
+      try {
+        const res = await fetch(`${GBASE}${g.m}:generateContent`, {
+          method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey }, signal: AbortSignal.timeout(45000),
+          body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json", temperature: 0.5, maxOutputTokens: 4096, ...(g.th ? { thinkingConfig: g.th } : {}) } }),
+        });
+        if (!res.ok) { last = res.status; continue; }
+        const d = await res.json();
+        const txt = (d?.candidates?.[0]?.content?.parts ?? []).map((p: Blk) => p.text ?? "").join("").trim();
+        try { return json({ json: JSON.parse(txt.replace(/^```(?:json)?\s*|\s*```$/g, "")), model: g.m }); } catch { last = 422; continue; }
+      } catch { last = 504; }
+    }
+    return json({ error: last === 422 ? "json" : last === 429 ? "busy" : "server" }, last === 429 ? 429 : 502);
   }
 
   if (!apiKey && !geminiKey) return json({ error: "no_key" }, 503);
