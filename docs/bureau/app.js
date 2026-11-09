@@ -7957,11 +7957,59 @@
   }
   // «إعلانات فورية»: 3 دوائر (Project / Reels / Post) — Post هو صانع الإعلانات؛ الباقي كيتزاد من بعد
   const AD_KINDS = [['project', 'PROJECT', 'عرض PDF: عقار، مشروع، مستثمر'], ['reels', 'REELS', 'فيديوهات قصيرة'], ['post', 'POST', 'منشورات إعلانية']];
+  // العقار المختار فـ«إعلانات فورية» (كيتعقل فهاد الجلسة)
+  let adSel = '';
+  function adHref(k, id) { return '#/ad-maker?m=' + k + (id ? '&p=' + encodeURIComponent(id) : ''); }
   function viewAdMaker(query) {
     if (!query.p && !query.m) {
+      // الدوائر الثلاثة + العقارات المعروضة: كل عقار عندو POST / REELS / PROJECT معمّرين بالصور والمعلومات
+      const all = S.props.filter(x => !x.deleted).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+      const ACTIVE = ['available', 'reserved', 'negotiation'];
+      if (adSel && !all.some(x => x.id === adSel)) adSel = '';
       main().innerHTML = `
-        <div class="page-head"><div><h1>✨ إعلانات فورية</h1><div class="sub">ختار نوع الإعلان</div></div></div>
-        <div class="ad-kinds">${AD_KINDS.map(([k, t, d]) => `<a class="ad-kind" href="#/ad-maker?m=${k}"><img src="icons/ads-${k}.webp" alt="${t}" width="180" height="180"><b dir="ltr">${t}</b><small>${d}</small></a>`).join('')}</div>`;
+        <div class="page-head"><div><h1>✨ إعلانات فورية</h1><div class="sub">ختار العقار، ومن بعد نوع الإعلان — الصور والمعلومات كيتعمرو بوحدهم</div></div></div>
+        <div class="ad-selbar" id="ad-selbar" hidden></div>
+        <div class="ad-kinds">${AD_KINDS.map(([k, t, d]) => `<a class="ad-kind" data-k="${k}" href="${adHref(k, adSel)}"><img src="icons/ads-${k}.webp" alt="${t}" width="180" height="180"><b dir="ltr">${t}</b><small>${d}</small></a>`).join('')}</div>
+        <div class="card ad-props">
+          <div class="ad-props-h"><h3>🏠 العقارات المعروضة <span class="muted" id="ad-n"></span></h3>
+            <div class="ad-props-f"><input id="ad-q" type="search" placeholder="مرجع، حي، نوع…"><label class="ad-all"><input type="checkbox" id="ad-all"> حتى المباعة والمكرية</label></div></div>
+          <div id="ad-list"></div>
+        </div>`;
+      const paint = () => {
+        const q = $('#ad-q').value.trim().toLowerCase(), wantAll = $('#ad-all').checked;
+        const list = all.filter(x => (wantAll || ACTIVE.includes(x.status || 'available')) && (!q || [x.ref, x.title, typeAr(x.type), x.district, x.city].join(' ').toLowerCase().includes(q)));
+        $('#ad-n').textContent = list.length ? '(' + list.length + ')' : '';
+        $('#ad-list').innerHTML = list.slice(0, 80).map(x => {
+          const cv = coverOf(x), st = PSTATUS[x.status] || PSTATUS.available, nPh = (x.media || []).filter(m => m.kind === 'photo').length;
+          return `<div class="ad-prop${x.id === adSel ? ' on' : ''}" data-id="${esc(x.id)}" role="button" tabindex="0">
+            <div class="ad-th">${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="">` : ic('home', 22)}${nPh ? `<span>${ic('camera', 11)}${nPh}</span>` : ''}</div>
+            <div class="grow"><b>${esc(x.title || typeAr(x.type))}</b>
+              <div class="muted ad-meta">${esc(x.ref || '')} · ${esc([x.district, x.city].filter(Boolean).join('، ') || '—')}${x.status && x.status !== 'available' ? ` · <span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}</div>
+              <div class="ad-price">${esc(priceText(x).replace(/[⁦⁩]/g, ''))}</div></div>
+            <div class="ad-go">${AD_KINDS.map(([k, t]) => `<a class="ad-go-${k}" href="${adHref(k, x.id)}" dir="ltr">${t}</a>`).join('')}</div>
+          </div>`;
+        }).join('') || `<p class="muted card-pad">${all.length ? 'ما كاين حتى عقار بهاد البحث' : 'مازال ما كاين حتى عقار — <a href="#/property/new">زيد عقار</a>'}</p>`;
+        hydrateThumbs($('#ad-list'));
+      };
+      const selPaint = () => {
+        const p = all.find(x => x.id === adSel), bar = $('#ad-selbar');
+        $$('.ad-kind').forEach(el => { el.href = adHref(el.dataset.k, adSel); });
+        $$('.ad-prop').forEach(el => el.classList.toggle('on', el.dataset.id === adSel));
+        bar.hidden = !p;
+        if (p) {
+          bar.innerHTML = `<span>✅ <b>${esc(p.ref || '')}</b> — ${esc(p.title || typeAr(p.type))}</span><small>دابا ختار POST ولا REELS ولا PROJECT</small><button class="btn sm" id="ad-unsel" aria-label="إلغاء">✕</button>`;
+          $('#ad-unsel').onclick = () => { adSel = ''; selPaint(); };
+        }
+      };
+      $('#ad-list').addEventListener('click', e => {
+        if (e.target.closest('a')) return;
+        const row = e.target.closest('.ad-prop'); if (!row) return;
+        adSel = adSel === row.dataset.id ? '' : row.dataset.id; selPaint();
+        if (adSel) $('.ad-kinds').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      $('#ad-list').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('ad-prop')) e.target.click(); });
+      $('#ad-q').oninput = paint; $('#ad-all').onchange = paint;
+      paint(); selPaint();
       return;
     }
     if (query.m === 'reels') return viewReels(query);
@@ -7976,7 +8024,7 @@
     const p = query.p ? S.props.find(x => x.id === query.p) : null;
     studioProp = p; studioSent = false;
     main().innerHTML = `
-      <div class="page-head studio-head"><div><h1>✨ إعلانات فورية</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(المعلومات والصور كيتعمرو بوحدهم)</span>` : 'ختار عقار باش تتعمر المعلومات والصور بوحدهم، ولا عمّرهم بيدك'}</div></div>
+      <div class="page-head studio-head"><div><a class="muted" href="#/ad-maker">→ إعلانات فورية</a><h1>✨ POST — منشور إعلاني</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(المعلومات والصور كيتعمرو بوحدهم)</span>` : 'ختار عقار باش تتعمر المعلومات والصور بوحدهم، ولا عمّرهم بيدك'}</div></div>
         <div class="btn-row"><button class="btn sm" id="st-pick">🏠 ${p ? 'بدّل العقار' : 'ختار عقار'}</button><a class="btn sm" href="${STUDIO_URL}" target="_blank" rel="noopener">↗ فتح فصفحة جديدة</a></div></div>
       <iframe id="studio-frame" class="studio-frame" src="${STUDIO_URL}?embed=w777" title="صانع الإعلانات" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
     $('#st-pick').onclick = () => studioPick();
