@@ -24,6 +24,7 @@
   // التسجيل: كنفضلو المشاركة (فـ iPhone كتعطي «حفظ الفيديو» فالصور)، وإلا تحميل عادي
   var downloads = {
     save: function (o) {
+      if (embedded) try { window.parent.postMessage({ type: 'w777-made', kind: 'reels' }, ORIGIN); } catch (e) { /* */ }
       var file;
       try { file = new File([o.data], o.filename, { type: (o.data && o.data.type) || 'video/mp4' }); } catch (e) { file = null; }
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
