@@ -344,6 +344,7 @@
       const pdf = buildPdf(pages, title + ' — ' + ag().name);
       const name = ('PROJECT-' + (F.ref || S.kind) + '-' + new Date().toISOString().slice(0, 10)).replace(/[^\w.-]+/g, '-') + '.pdf';
       await savePdf(pdf, name);
+      try { if (window.parent !== window) window.parent.postMessage({ type: 'w777-made', kind: 'project' }, ORIGIN); } catch (e) { /* */ }
       msg.textContent = `✓ PDF جاهز: ${sl.length} صفحات · ${(pdf.size / 1048576).toFixed(1)} ميغا`;
     } catch (e) { msg.textContent = '⚠️ ما تصاوبش الـ PDF — عاود (ولا نقص الصور).'; }
     finally { btn.disabled = false; }
