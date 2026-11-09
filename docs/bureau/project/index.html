@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PROJECT — عرض PDF · مجموعة الوسيط</title>
+<style>
+@font-face{font-family:Tajawal;font-weight:400;src:url(../fonts/tajawal-arabic-400-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Tajawal;font-weight:400;src:url(../fonts/tajawal-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+20AC}
+@font-face{font-family:Tajawal;font-weight:500;src:url(../fonts/tajawal-arabic-500-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Tajawal;font-weight:500;src:url(../fonts/tajawal-latin-500-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+20AC}
+@font-face{font-family:Tajawal;font-weight:700;src:url(../fonts/tajawal-arabic-700-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Tajawal;font-weight:700;src:url(../fonts/tajawal-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+20AC}
+@font-face{font-family:Tajawal;font-weight:900;src:url(../fonts/tajawal-arabic-900-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:Tajawal;font-weight:900;src:url(../fonts/tajawal-latin-900-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+20AC}
+:root{--bg:#f4f4f5;--card:#fff;--ink:#111;--muted:#666;--line:#e3e3e6;--red:#c8102e;--soft:rgba(200,16,46,.08)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Tajawal,system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:12px 14px 90px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.top img{width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line);object-fit:contain}
+.top b{font-size:19px;font-weight:900}.top small{display:block;color:var(--muted);font-size:12px}
+.tabs{display:flex;gap:6px;margin-inline-start:auto}
+.tabs button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-weight:700}
+.tabs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.grid>div,.card{min-width:0}
+@media(min-width:980px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start}.side{position:sticky;top:10px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.card h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;font-size:13px;font-weight:900}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:#f6f6f7;border-radius:999px;padding:7px 13px;font-weight:700;font-size:14px}
+.chip[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:13px;font-weight:700;color:#333}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);background:#f8f8f9;border-radius:10px;padding:9px 11px;min-width:0}
+.f textarea{min-height:76px;resize:vertical}
+.fs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fs .full{grid-column:1/-1}
+@media(max-width:420px){.fs{grid-template-columns:1fr}}
+.hint{font-size:12px;color:var(--muted);margin:2px 0 0}
+.photos{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.ph{flex:none;width:96px;position:relative}
+.ph img{width:96px;height:72px;object-fit:cover;border-radius:8px;display:block;background:#ddd}
+.ph .tools{display:flex;justify-content:space-between;margin-top:3px}
+.ph button{border:1px solid var(--line);background:#fff;border-radius:6px;font-size:12px;padding:1px 6px}
+.ph .cv{position:absolute;top:3px;inset-inline-start:3px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:6px;padding:1px 5px}
+.add{flex:none;width:96px;height:72px;border:1.5px dashed #bbb;border-radius:8px;background:none;color:var(--muted);font-weight:700;font-size:13px}
+.btn{border:0;border-radius:12px;padding:11px 16px;font-weight:800;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.red{background:var(--red);color:#fff}.btn.ghost{background:#f1f1f2;border:1px solid var(--line)}
+.btn.big{font-size:17px;padding:14px 22px;width:100%}
+.btn:disabled{opacity:.55}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ai{border-color:var(--red);background:linear-gradient(180deg,var(--soft),#fff 70%)}
+.status{font-size:13px;color:var(--muted);min-height:1.2em}
+.slides{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slides canvas{width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff;display:block}
+.slides .s{position:relative}.slides .s span{position:absolute;bottom:4px;inset-inline-end:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;border-radius:6px;padding:0 6px}
+.big1 canvas{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+.msg{font-size:13px;margin-top:8px}
+.logo-prev{width:72px;height:72px;border-radius:50%;border:1px solid var(--line);background:#fff center/contain no-repeat;flex:none}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:50;max-width:calc(100% - 32px)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><img id="topLogo" src="../icons/icon-192.png" alt=""><div><b>PROJECT</b><small>عرض تقديمي PDF من الصور والمعلومات</small></div>
+    <div class="tabs"><button data-tab="create" aria-pressed="true">إنشاء</button><button data-tab="settings" aria-pressed="false">الإعدادات</button></div></div>
+
+  <section id="tab-create">
+    <div class="grid">
+      <div class="stack" style="display:flex;flex-direction:column;gap:12px">
+        <div class="card"><h2><span class="n">1</span>نوع العرض ولغته</h2>
+          <div class="chips" id="kind"><button class="chip" data-v="property">🏠 ملف عقار</button><button class="chip" data-v="project">🏗️ مشروع عقاري</button><button class="chip" data-v="investor">📈 ملف مستثمر</button></div>
+          <p class="hint">لغة الـ PDF:</p>
+          <div class="chips" id="lang"><button class="chip" data-v="ar">العربية</button><button class="chip" data-v="fr">Français</button><button class="chip" data-v="en">English</button></div>
+        </div>
+        <div class="card"><h2><span class="n">2</span>الصور</h2>
+          <div class="photos" id="photos"></div>
+          <input type="file" id="file" accept="image/*" multiple hidden>
+          <p class="hint">الصورة الأولى هي الغلاف. حتى 30 صورة. رتّبهم بحال زيارة: الواجهة، الصالون، الكوزينة، البيوت…</p>
+        </div>
+        <div class="card"><h2><span class="n">3</span>المعلومات</h2><div class="fs" id="form"></div></div>
+        <div class="card ai"><h2><span class="n">4</span>النصوص</h2>
+          <div class="row"><button class="btn red" id="aiGo">✨ الوكيل يكتب النصوص</button><span class="status" id="aiSt"></span></div>
+          <p class="hint">الوكيل كيشوف الصور والمعلومات وكيكتب بلغة العرض بلا ما يخترع حتى معلومة. راجع وبدّل اللي بغيتي.</p>
+          <div class="fs" id="texts" style="margin-top:10px"></div>
+        </div>
+      </div>
+      <div class="side" style="display:flex;flex-direction:column;gap:12px">
+        <div class="card"><h2>👁️ المعاينة <small class="hint" id="pcount" style="margin:0"></small></h2>
+          <div class="big1" id="big"></div>
+          <div class="slides" id="slides" style="margin-top:8px"></div></div>
+        <button class="btn red big" id="mk">📄 صاوب الـ PDF</button>
+        <div class="msg" id="mkMsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-settings" hidden>
+    <div class="card" style="max-width:760px">
+      <h2>🏢 الوكالة العقارية (كتبان فكل عرض)</h2>
+      <div class="row" style="margin-bottom:12px"><div class="logo-prev" id="logoPrev"></div>
+        <div class="row"><button class="btn ghost" id="logoPick">📷 اختار اللوغو</button><button class="btn ghost" id="logoDel">حذف</button></div>
+        <input type="file" id="logoFile" accept="image/*" hidden></div>
+      <div class="fs" id="agForm"></div>
+      <p class="hint">كيتحفظو فهاد الجهاز. إلا خليتيهم خاويين، كنستعملو معلومات المكتب من التطبيق.</p>
+      <div class="row" style="margin-top:10px"><button class="btn red" id="agSave">💾 حفظ</button><button class="btn ghost" id="agReset">رجّع معلومات المكتب</button></div>
+    </div>
+  </section>
+</div>
+<script src="../vendor/qrcode.js"></script>
+<script src="project.js"></script>
+</body>
+</html>
