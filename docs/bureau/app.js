@@ -749,7 +749,7 @@
     if (leaveGuard) { const g = leaveGuard; leaveGuard = null; await g(); }
     navTrack();
     const { parts, query } = parseHash();
-    document.body.classList.toggle('in-studio', parts[0] === 'ad-maker' && (query.m === 'post' || !!query.p));
+    document.body.classList.toggle('in-studio', parts[0] === 'ad-maker' && (query.m === 'post' || query.m === 'reels' || !!query.p));
     document.body.classList.toggle('in-game', parts[0] === 'game'); // اللعبة: الأزرار العائمة كيغطيو الحروف
     const [a, b, c] = parts;
     let nav = 'home';
@@ -1664,6 +1664,7 @@
           <button class="btn gold" id="p-pres">📺 عرض للزبون</button>
           <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
           <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
+          <a class="btn" href="#/ad-maker?m=reels&p=${encodeURIComponent(p.id)}">🎬 فيديو Reels</a>
           ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
           ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب التمويل</a>` : ''}
           ${EMBED ? '' : `<button class="btn" data-act="print">${ic('print', 18)} طباعة / PDF</button>`}
@@ -3676,6 +3677,10 @@
         const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new', new_appointment: '#/appointment/new', rentals: '#/rentals', finance: '#/finance', report: '#/report', loan: '#/loan', map: '#/map', ad_maker: '#/ad-maker', messages: '#/inbox', tamwil: '#/tamwil', game: '#/game', stories: '#/' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
+        else if (pg === 'reels' || (pg === 'ad_maker' && ref)) {
+          const p = ref ? byRef(S.props, ref) : null; if (ref && !p) return { error: 'not found' };
+          location.hash = '#/ad-maker?' + (pg === 'reels' ? 'm=reels' + (p ? '&' : '') : '') + (p ? 'p=' + encodeURIComponent(p.id) : '');
+        }
         else if (map[pg]) location.hash = map[pg];
         else return { error: 'unknown page' };
         return { opened: pg };
@@ -7958,6 +7963,7 @@
         <div class="ad-kinds">${AD_KINDS.map(([k, t, d]) => `<a class="ad-kind" href="#/ad-maker?m=${k}"><img src="icons/ads-${k}.webp" alt="${t}" width="180" height="180"><b dir="ltr">${t}</b><small>${d}</small></a>`).join('')}</div>`;
       return;
     }
+    if (query.m === 'reels') return viewReels(query);
     if (query.m && query.m !== 'post') {
       const K = AD_KINDS.find(x => x[0] === query.m) || AD_KINDS[0];
       main().innerHTML = `
@@ -7973,14 +7979,65 @@
       <iframe id="studio-frame" class="studio-frame" src="${STUDIO_URL}?embed=w777" title="صانع الإعلانات" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
     $('#st-pick').onclick = () => studioPick();
   }
-  function studioPick() {
+  /* ---------- 🎬 REELS: تطبيق VIDOMIDO (فيديو عقاري من الصور) داخل التطبيق ----------
+     كيتعمر بالعقار (الصور + البطاقة) ومعلومات الوكالة، و«المخرج الذكي» ديالو كيخدم بالوكيل ديالنا (Gemini) */
+  let reelsProp = null, reelsSent = false;
+  const REELS_TYPE = { Appartement: 1, Villa: 1, Riad: 1, Maison: 1, Terrain: 1, Bureau: 1, Immeuble: 1, Ferme: 1 };
+  async function reelsPayload(p) {
+    const ag = await studioAgency(), lang = (window.W777_TR && window.W777_TR.lang()) || 'ar', s = p ? (p.specs || {}) : {};
+    const L = lang === 'fr' || lang === 'en' ? lang : 'ar';
+    const msg = { type: 'w777-reels-prefill', lang: L, agency: { name: ag.name || '', slogan: ag.slogan || '', phones: (ag.phones || []).join(' · '), addr: [ag.address, ag.city].filter(Boolean).join(' · '), logo: ag.logo || '' } };
+    if (!p) return msg;
+    let t = studioType(p.type); if (t === 'Local Commercial') t = 'Local commercial'; if (!REELS_TYPE[t] && t !== 'Local commercial') t = 'Appartement';
+    const v = p.priceMax || p.priceMin, trx = p.transaction;
+    msg.listing = {
+      transaction: trx === 'seasonal' ? 'vacances' : /rent/.test(trx || '') ? 'location' : 'vente', type: t,
+      city: p.city || '', district: p.district || '', surface: areaOf(p) ? String(Math.round(areaOf(p))) : '',
+      rooms: String(num(s.bedrooms) || num(s.rooms) || ''), baths: String(num(s.bathrooms) || ''),
+      price: v ? String(Math.round(num(v))) : '', highlights: (p.features || []).slice(0, 6).join('\n'), ref: p.ref || '', lang: L,
+    };
+    const ph = (p.media || []).filter(m => m.kind === 'photo'), cv = coverOf(p);
+    if (cv) { ph.splice(ph.indexOf(cv), 1); ph.unshift(cv); }
+    msg.photos = (await Promise.all(ph.slice(0, 20).map(m => getBlob(m.id, false).then(b => b || getBlob(m.id, true)).catch(() => null)))).filter(Boolean);
+    return msg;
+  }
+  function viewReels(query) {
+    const p = query.p ? S.props.find(x => x.id === query.p) : null;
+    reelsProp = p; reelsSent = false;
+    main().innerHTML = `
+      <div class="page-head studio-head"><div><a class="muted" href="#/ad-maker">→ إعلانات فورية</a><h1>🎬 REELS — فيديو عقاري</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(الصور والمعلومات كيتعمرو بوحدهم)</span>` : 'صور العقار ← فيديو جاهز لـ Reels وTikTok والستوري'}</div></div>
+        <div class="btn-row"><button class="btn sm" id="rl-pick">🏠 ${p ? 'بدّل العقار' : 'ختار عقار'}</button><a class="btn sm" href="reels/index.html" target="_blank" rel="noopener">↗ فتح فصفحة جديدة</a></div></div>
+      <iframe id="reels-frame" class="studio-frame" src="reels/index.html" title="VIDOMIDO — فيديو عقاري" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
+    $('#rl-pick').onclick = () => studioPick('reels');
+  }
+  // رسائل VIDOMIDO: جاهز ← نعمرو العقار؛ «المخرج الذكي» ← الوكيل ديالنا
+  window.addEventListener('message', async e => {
+    const fr = $('#reels-frame');
+    if (!fr || e.source !== fr.contentWindow || e.origin !== location.origin) return;
+    const m = e.data || {};
+    if (m.type === 'w777-reels-ready') {
+      if (reelsSent) return; reelsSent = true;
+      try { fr.contentWindow.postMessage(await reelsPayload(reelsProp), location.origin); } catch (er) { /* */ }
+    } else if (m.type === 'w777-sample') {
+      const reply = o => { try { fr.contentWindow.postMessage(Object.assign({ type: 'w777-sample-res', id: m.id }, o), location.origin); } catch (er) { /* */ } };
+      const Sy = window.W777_SYNC;
+      if (!Sy || !Sy.isOn()) return reply({ ok: false, code: 'not_granted' });
+      try {
+        const res = await Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sample: { prompt: String(m.prompt || ''), images: (m.images || []).slice(0, 4) } }) });
+        const d = await res.json().catch(() => ({}));
+        if (res.ok && d && d.json && typeof d.json === 'object') reply({ ok: true, json: d.json });
+        else reply({ ok: false, code: res.status === 429 ? 'rate_limited' : d.error === 'json' ? 'invalid_json' : 'error' });
+      } catch (er) { reply({ ok: false, code: 'error' }); }
+    }
+  });
+  function studioPick(kind) {
     const list = S.props.filter(x => !x.deleted).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
     if (!list.length) return toast('مازال ما كاين حتى عقار — زيد عقار أولا');
     modal(`<h3>🏠 ختار العقار</h3><input id="stp-q" type="search" placeholder="مرجع، حي، نوع…" style="width:100%;margin-bottom:10px"><div id="stp-l" style="max-height:60vh;overflow:auto"></div>`, (box, close) => {
       const paint = () => {
         const q = $('#stp-q', box).value.trim().toLowerCase();
         $('#stp-l', box).innerHTML = list.filter(x => !q || [x.ref, x.title, typeAr(x.type), x.district, x.city].join(' ').toLowerCase().includes(q)).slice(0, 60)
-          .map(x => `<a class="list-row" href="#/ad-maker?p=${encodeURIComponent(x.id)}" data-close><div class="grow"><b>${esc(x.title || typeAr(x.type))}</b><div class="muted" style="font-size:12.5px">${esc(x.ref || '')} · ${esc([x.district, x.city].filter(Boolean).join('، '))} · ${esc(priceText(x).replace(/[⁦⁩]/g, ''))}</div></div></a>`).join('') || '<p class="muted">ما كاين والو</p>';
+          .map(x => `<a class="list-row" href="#/ad-maker?${kind === 'reels' ? 'm=reels&' : ''}p=${encodeURIComponent(x.id)}" data-close><div class="grow"><b>${esc(x.title || typeAr(x.type))}</b><div class="muted" style="font-size:12.5px">${esc(x.ref || '')} · ${esc([x.district, x.city].filter(Boolean).join('، '))} · ${esc(priceText(x).replace(/[⁦⁩]/g, ''))}</div></div></a>`).join('') || '<p class="muted">ما كاين والو</p>';
         $$('#stp-l a', box).forEach(a => a.addEventListener('click', () => close()));
       };
       $('#stp-q', box).oninput = paint; paint();
