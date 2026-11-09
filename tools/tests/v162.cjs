@@ -8,7 +8,7 @@ await p.goto('http://localhost:8777/bureau/#/ad-maker');await p.waitForTimeout(1
 const kinds=await p.$$eval('.ad-kind',e=>e.map(x=>x.querySelector('b').textContent));
 const imgsOk=await p.$$eval('.ad-kind img',e=>e.every(i=>i.complete&&i.naturalWidth>0));
 if(vw.width===390)await p.screenshot({path:S+'/ads-kinds.png'});
-await p.click('.ad-kind[href$="m=project"]');await p.waitForTimeout(500);const soon=!!(await p.$('.ad-soon'));
+await p.click('.ad-kind[href$="m=project"]');await p.waitForTimeout(500);const soon=!!(await p.$('#project-frame'));
 await p.goto('http://localhost:8777/bureau/#/ad-maker?m=post');await p.waitForTimeout(600);const frame=!!(await p.$('#studio-frame'));
 // التمويل
 await p.goto('http://localhost:8777/bureau/#/tamwil');await p.waitForTimeout(1200);
