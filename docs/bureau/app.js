@@ -8006,7 +8006,7 @@
     reelsProp = p; reelsSent = false;
     main().innerHTML = `
       <div class="page-head studio-head"><div><a class="muted" href="#/ad-maker">→ إعلانات فورية</a><h1>🎬 REELS — فيديو عقاري</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(الصور والمعلومات كيتعمرو بوحدهم)</span>` : 'صور العقار ← فيديو جاهز لـ Reels وTikTok والستوري'}</div></div>
-        <div class="btn-row"><button class="btn sm" id="rl-pick">🏠 ${p ? 'بدّل العقار' : 'ختار عقار'}</button><a class="btn sm" href="reels/index.html" target="_blank" rel="noopener">↗ فتح فصفحة جديدة</a></div></div>
+        <div class="btn-row"><button class="btn sm" id="rl-pick">🏠 ${p ? 'بدّل العقار' : 'ختار عقار'}</button><a class="btn sm" href="#/guide/${(gdLessons().find(l => /^REELS:/.test(l.t)) || { n: '' }).n}">🎓 الدروس</a><a class="btn sm" href="reels/guide-vidomido.pdf" target="_blank" rel="noopener">📘 الدليل</a><a class="btn sm" href="reels/index.html" target="_blank" rel="noopener">↗ فتح فصفحة جديدة</a></div></div>
       <iframe id="reels-frame" class="studio-frame" src="reels/index.html" title="VIDOMIDO — فيديو عقاري" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
     $('#rl-pick').onclick = () => studioPick('reels');
   }

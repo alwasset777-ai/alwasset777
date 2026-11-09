@@ -34,8 +34,17 @@ if(filled){await p.evaluate(()=>{const Sy=window.W777_SYNC;Sy.isOn=()=>true;Sy.r
  aiRes=await f3.evaluate(()=>({status:document.querySelector('#aiStatus').textContent,caption:document.querySelector('#captionText').value,first:(S.imageScenes.find(x=>!x.card||x.card==='hook')||{}).label}));
  sent=await p.evaluate(()=>window.__sent&&window.__sent.sample?{p:window.__sent.sample.prompt.length,imgs:window.__sent.sample.images.length}:null);
  await p.screenshot({path:S+'/reels-ai.png'});}
+// الدليل: زر PDF + الدروس (5) بالصور
+const guide=await p.evaluate(async()=>{const a=[...document.querySelectorAll('a')];const pdf=a.find(x=>/guide-vidomido\.pdf$/.test(x.getAttribute('href')||''));const les=a.find(x=>/#\/guide\/\d+$/.test(x.getAttribute('href')||'')&&/الدروس/.test(x.textContent));
+ const r=pdf?await fetch(pdf.href,{method:'HEAD'}):null;return {pdf:!!pdf,pdfOk:r?r.ok&&/pdf/.test(r.headers.get('content-type')||''):false,les:les?les.getAttribute('href'):null};});
+let lessons=null;
+if(guide.les){await p.evaluate(h=>{location.hash=h;},guide.les);await p.waitForTimeout(1200);
+ lessons=await p.evaluate(()=>({t:(document.querySelector('.gd-text h1')||{}).textContent,imgs:[...document.querySelectorAll('.gd-shots img')].map(i=>i.complete&&i.naturalWidth>0),steps:document.querySelectorAll('.gd-steps li').length}));
+ await p.screenshot({path:S+'/reels-lesson.png'});
+ await p.evaluate(()=>{location.hash='#/guide';});await p.waitForTimeout(900);lessons.cards=await p.evaluate(()=>[...document.querySelectorAll('.gd-card b')].filter(b=>/^REELS:/.test(b.textContent)).length);
+ await p.goto('http://localhost:8777/bureau/#/ad-maker?m=reels&p=t-p1');await p.waitForTimeout(1500);}
 const inStudio=await p.evaluate(()=>document.body.classList.contains('in-studio'));
-const ok=boot&&boot.mode!==undefined&&boot.ai&&boot.onb!==false&&inStudio&&pid&&pid.id&&((filled&&filled.mode==='annonce'&&filled.ref===pid.ref&&filled.photos===Math.min(pid.photos,20)&&aiRes&&/#مكناس/.test(aiRes.caption)&&sent&&sent.imgs>=1))&&!errs.length;if(!ok)bad++;
-console.log(ok?'OK ':'BAD','boot',JSON.stringify(boot),'prop',JSON.stringify(pid),'filled',JSON.stringify(filled),'ai',JSON.stringify(aiRes),'sent',JSON.stringify(sent),'inStudio',inStudio,errs.join('|'));
+const ok=boot&&boot.mode!==undefined&&boot.ai&&boot.onb!==false&&inStudio&&pid&&pid.id&&((filled&&filled.mode==='annonce'&&filled.ref===pid.ref&&filled.photos===Math.min(pid.photos,20)&&aiRes&&/#مكناس/.test(aiRes.caption)&&sent&&sent.imgs>=1))&&guide.pdf&&guide.pdfOk&&lessons&&/^REELS:/.test(lessons.t)&&lessons.imgs.length&&lessons.imgs.every(Boolean)&&lessons.steps>=4&&lessons.cards===5&&!errs.length;if(!ok)bad++;
+console.log(ok?'OK ':'BAD','boot',JSON.stringify(boot),'prop',JSON.stringify(pid),'filled',JSON.stringify(filled),'ai',JSON.stringify(aiRes),'sent',JSON.stringify(sent),'guide',JSON.stringify(guide),'lessons',JSON.stringify(lessons),'inStudio',inStudio,errs.join('|'));
 await p.evaluate(async()=>{const db=await new Promise(res=>{const q=indexedDB.open('wasset777_bureau');q.onsuccess=()=>res(q.result);});const tx=db.transaction(['properties','files'],'readwrite');tx.objectStore('properties').delete('t-p1');tx.objectStore('files').delete('t-f1');tx.objectStore('files').delete('t-f2');await new Promise(r=>{tx.oncomplete=r;});});
 await b.close();process.exit(bad?1:0);})();
