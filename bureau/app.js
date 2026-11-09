@@ -749,7 +749,7 @@
     if (leaveGuard) { const g = leaveGuard; leaveGuard = null; await g(); }
     navTrack();
     const { parts, query } = parseHash();
-    document.body.classList.toggle('in-studio', parts[0] === 'ad-maker' && (query.m === 'post' || query.m === 'reels' || !!query.p));
+    document.body.classList.toggle('in-studio', parts[0] === 'ad-maker' && (query.m === 'post' || query.m === 'reels' || query.m === 'project' || !!query.p));
     document.body.classList.toggle('in-game', parts[0] === 'game'); // اللعبة: الأزرار العائمة كيغطيو الحروف
     const [a, b, c] = parts;
     let nav = 'home';
@@ -1665,6 +1665,7 @@
           <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
           <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
           <a class="btn" href="#/ad-maker?m=reels&p=${encodeURIComponent(p.id)}">🎬 فيديو Reels</a>
+          <a class="btn" href="#/ad-maker?m=project&p=${encodeURIComponent(p.id)}">📄 عرض PDF</a>
           ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
           ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب التمويل</a>` : ''}
           ${EMBED ? '' : `<button class="btn" data-act="print">${ic('print', 18)} طباعة / PDF</button>`}
@@ -3677,9 +3678,9 @@
         const map = { home: '#/', properties: '#/properties', requests: '#/requests', appointments: '#/appointments', matching: '#/matching', agencies: '#/agencies', brokers: '#/brokers', contractors: '#/contractors', finishing: '#/finishing', projects: '#/projects', events: '#/events', news: '#/news', donations: '#/donations', disputes: '#/disputes', contracts: '#/contracts', learn: '#/learn', guide: '#/guide', search: '#/search', stays: '#/stays', investors: '#/investors', notaries: '#/notaries', associations: '#/associations', terms: '#/terms', ownership: '#/ownership', estimate: '#/estimate', settings: '#/settings', new_property: '#/property/new', new_request: '#/request/new', new_appointment: '#/appointment/new', rentals: '#/rentals', finance: '#/finance', report: '#/report', loan: '#/loan', map: '#/map', ad_maker: '#/ad-maker', messages: '#/inbox', tamwil: '#/tamwil', game: '#/game', stories: '#/' };
         if (pg === 'property') { const p = byRef(S.props, ref); if (!p) return { error: 'not found' }; location.hash = '#/property/' + p.id; }
         else if (pg === 'request') { const r = byRef(S.reqs, ref); if (!r) return { error: 'not found' }; location.hash = '#/request/' + r.id; }
-        else if (pg === 'reels' || (pg === 'ad_maker' && ref)) {
+        else if (pg === 'reels' || pg === 'project' || (pg === 'ad_maker' && ref)) {
           const p = ref ? byRef(S.props, ref) : null; if (ref && !p) return { error: 'not found' };
-          location.hash = '#/ad-maker?' + (pg === 'reels' ? 'm=reels' + (p ? '&' : '') : '') + (p ? 'p=' + encodeURIComponent(p.id) : '');
+          location.hash = '#/ad-maker?' + (pg !== 'ad_maker' ? 'm=' + pg + (p ? '&' : '') : '') + (p ? 'p=' + encodeURIComponent(p.id) : '');
         }
         else if (map[pg]) location.hash = map[pg];
         else return { error: 'unknown page' };
@@ -7955,7 +7956,7 @@
     return { type: 'w777-prefill', v: 1, ref: p.ref || '', data, photos };
   }
   // «إعلانات فورية»: 3 دوائر (Project / Reels / Post) — Post هو صانع الإعلانات؛ الباقي كيتزاد من بعد
-  const AD_KINDS = [['project', 'PROJECT', 'المشاريع العقارية'], ['reels', 'REELS', 'فيديوهات قصيرة'], ['post', 'POST', 'منشورات إعلانية']];
+  const AD_KINDS = [['project', 'PROJECT', 'عرض PDF: عقار، مشروع، مستثمر'], ['reels', 'REELS', 'فيديوهات قصيرة'], ['post', 'POST', 'منشورات إعلانية']];
   function viewAdMaker(query) {
     if (!query.p && !query.m) {
       main().innerHTML = `
@@ -7964,6 +7965,7 @@
       return;
     }
     if (query.m === 'reels') return viewReels(query);
+    if (query.m === 'project') return viewProject(query);
     if (query.m && query.m !== 'post') {
       const K = AD_KINDS.find(x => x[0] === query.m) || AD_KINDS[0];
       main().innerHTML = `
@@ -8010,14 +8012,50 @@
       <iframe id="reels-frame" class="studio-frame" src="reels/index.html" title="VIDOMIDO — فيديو عقاري" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
     $('#rl-pick').onclick = () => studioPick('reels');
   }
-  // رسائل VIDOMIDO: جاهز ← نعمرو العقار؛ «المخرج الذكي» ← الوكيل ديالنا
+  /* ---------- 📄 PROJECT: عرض تقديمي PDF (ملف عقار / مشروع / ملف مستثمر) ---------- */
+  let projProp = null, projSent = false;
+  async function projectPayload(p) {
+    const A = await studioAgency(), lang = (window.W777_TR && window.W777_TR.lang()) || 'ar';
+    const msg = { type: 'w777-project-prefill', lang: lang === 'fr' || lang === 'en' ? lang : 'ar',
+      agency: { name: A.name || '', slogan: A.slogan || '', phones: (A.phones || []).join(' · '), whatsapp: A.whatsapp || '', email: A.email || '', website: A.website || '', address: [A.address, A.city].filter(Boolean).join(' · '), logo: A.logo || '' } };
+    if (!p) return msg;
+    const s = p.specs || {}, v = p.priceMax || p.priceMin, trx = p.transaction;
+    msg.kind = 'property';
+    msg.fields = {
+      title: p.title || '', trx: trx === 'seasonal' ? 'seasonal' : /rent/.test(trx || '') ? 'rent' : 'sale', ptype: typeAr(p.type) || '',
+      price: v ? String(Math.round(num(v))) : '', city: p.city || '', district: p.district || '',
+      surface: num(p.areaBuilt) || num(p.areaUseful) || num(p.areaTotal) ? String(Math.round(num(p.areaBuilt) || num(p.areaUseful) || num(p.areaTotal))) : '',
+      land: num(p.areaTotal) && num(p.areaBuilt) && num(p.areaTotal) > num(p.areaBuilt) ? String(Math.round(num(p.areaTotal))) : '',
+      rooms: String(num(s.rooms) || ''), bedrooms: String(num(s.bedrooms) || ''), baths: String(num(s.bathrooms) || ''), floor: s.floor != null ? String(s.floor) : '',
+      year: s.year ? String(s.year) : '', legal: p.titleStatus || '', ref: p.ref || '', features: (p.features || []).join('\n'),
+    };
+    msg.description = p.description || '';
+    const ph = (p.media || []).filter(m => m.kind === 'photo'), cv = coverOf(p);
+    if (cv) { ph.splice(ph.indexOf(cv), 1); ph.unshift(cv); }
+    msg.photos = (await Promise.all(ph.slice(0, 30).map(m => getBlob(m.id, false).then(b => b || getBlob(m.id, true)).catch(() => null)))).filter(Boolean);
+    return msg;
+  }
+  function viewProject(query) {
+    const p = query.p ? S.props.find(x => x.id === query.p) : null;
+    projProp = p; projSent = false;
+    main().innerHTML = `
+      <div class="page-head studio-head"><div><a class="muted" href="#/ad-maker">→ إعلانات فورية</a><h1>📄 PROJECT — عرض PDF</h1><div class="sub">${p ? `🏠 ${esc(p.ref || '')} — ${esc(p.title || typeAr(p.type))} <span class="muted">(الصور والمعلومات كيتعمرو بوحدهم)</span>` : 'الصور + المعلومات ← عرض تقديمي PDF: ملف عقار، مشروع عقاري ولا ملف مستثمر'}</div></div>
+        <div class="btn-row"><button class="btn sm" id="pj-pick">🏠 ${p ? 'بدّل العقار' : 'ختار عقار'}</button><a class="btn sm" href="#/guide/${(gdLessons().find(l => /^PROJECT:/.test(l.t)) || { n: '' }).n}">🎓 الدروس</a><a class="btn sm" href="project/index.html" target="_blank" rel="noopener">↗ فتح فصفحة جديدة</a></div></div>
+      <iframe id="project-frame" class="studio-frame" src="project/index.html" title="PROJECT — عرض PDF" allow="clipboard-read; clipboard-write; web-share; fullscreen"></iframe>`;
+    $('#pj-pick').onclick = () => studioPick('project');
+  }
+  // رسائل التطبيقات المدمجة (REELS / PROJECT): جاهز ← نعمرو العقار؛ «الوكيل يكتب» ← w777-agent
   window.addEventListener('message', async e => {
-    const fr = $('#reels-frame');
-    if (!fr || e.source !== fr.contentWindow || e.origin !== location.origin) return;
+    if (e.origin !== location.origin) return;
+    const fr = [$('#reels-frame'), $('#project-frame')].find(f => f && e.source === f.contentWindow);
+    if (!fr) return;
     const m = e.data || {};
     if (m.type === 'w777-reels-ready') {
       if (reelsSent) return; reelsSent = true;
       try { fr.contentWindow.postMessage(await reelsPayload(reelsProp), location.origin); } catch (er) { /* */ }
+    } else if (m.type === 'w777-project-ready') {
+      if (projSent) return; projSent = true;
+      try { fr.contentWindow.postMessage(await projectPayload(projProp), location.origin); } catch (er) { /* */ }
     } else if (m.type === 'w777-sample') {
       const reply = o => { try { fr.contentWindow.postMessage(Object.assign({ type: 'w777-sample-res', id: m.id }, o), location.origin); } catch (er) { /* */ } };
       const Sy = window.W777_SYNC;
@@ -8037,7 +8075,7 @@
       const paint = () => {
         const q = $('#stp-q', box).value.trim().toLowerCase();
         $('#stp-l', box).innerHTML = list.filter(x => !q || [x.ref, x.title, typeAr(x.type), x.district, x.city].join(' ').toLowerCase().includes(q)).slice(0, 60)
-          .map(x => `<a class="list-row" href="#/ad-maker?${kind === 'reels' ? 'm=reels&' : ''}p=${encodeURIComponent(x.id)}" data-close><div class="grow"><b>${esc(x.title || typeAr(x.type))}</b><div class="muted" style="font-size:12.5px">${esc(x.ref || '')} · ${esc([x.district, x.city].filter(Boolean).join('، '))} · ${esc(priceText(x).replace(/[⁦⁩]/g, ''))}</div></div></a>`).join('') || '<p class="muted">ما كاين والو</p>';
+          .map(x => `<a class="list-row" href="#/ad-maker?${kind === 'reels' || kind === 'project' ? 'm=' + kind + '&' : ''}p=${encodeURIComponent(x.id)}" data-close><div class="grow"><b>${esc(x.title || typeAr(x.type))}</b><div class="muted" style="font-size:12.5px">${esc(x.ref || '')} · ${esc([x.district, x.city].filter(Boolean).join('، '))} · ${esc(priceText(x).replace(/[⁦⁩]/g, ''))}</div></div></a>`).join('') || '<p class="muted">ما كاين والو</p>';
         $$('#stp-l a', box).forEach(a => a.addEventListener('click', () => close()));
       };
       $('#stp-q', box).oninput = paint; paint();
