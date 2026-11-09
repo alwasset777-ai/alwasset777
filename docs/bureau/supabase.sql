@@ -1316,3 +1316,90 @@ language sql stable security definer set search_path = public as $$
   select c.name, c.photo, to_jsonb(c.face), c.ai_enabled, c.updated_at from w777_agent_config c where c.id = 1 $$;
 revoke all on function public.w777_agent_face() from public;
 grant execute on function public.w777_agent_face() to authenticated;
+
+-- ============================================================
+-- v169 (2026-11): التسجيل بالإيميل (كود 6 أرقام فكل دخول) + إيقاف كامل ملي تسالي المدة المجانية ولا الاشتراك
+-- المدير بوحدو كيتحكم فالتواريخ: trial_until (نهاية المدة المجانية) و sub_until (الاشتراك خالص حتى)
+-- ============================================================
+alter table public.w777_agencies add column if not exists trial_until date;   -- كيبدلو غير المدير (فارغ = 6 أشهر من الموافقة على القانون)
+alter table public.w777_agencies add column if not exists self_signup boolean not null default false; -- تسجّل بوحدو بالإيميل
+
+-- العضو ما يقدرش يبدل تاريخ المدة المجانية ولا علامة التسجيل الذاتي
+create or replace function public.w777_ag_dates() returns trigger language plpgsql security definer set search_path = public as $$
+begin if not w777_is_admin() then new.trial_until := old.trial_until; new.self_signup := old.self_signup; end if; return new; end $$;
+revoke execute on function public.w777_ag_dates() from public, anon, authenticated;
+drop trigger if exists w777_ag_dates on public.w777_agencies;
+create trigger w777_ag_dates before update on public.w777_agencies for each row execute function public.w777_ag_dates();
+
+-- واش الحساب مازال مفتوح؟ (نفس الحساب ديال التطبيق: subInfo)
+-- مازال ما وافقش على القانون (المدة ما بداتش) · مجاني مدى الحياة (7 الأوائل / 70 وكالة خارج المغرب) · خالص · ولا مازال فالمدة المجانية
+create or replace function public.w777_sub_ok(a public.w777_agencies) returns boolean language sql stable security definer set search_path = public as $$
+  select a.terms_at is null
+    or (a.seat_zone = 'ma' and a.seat_no <= 7) or (a.seat_zone = 'out' and a.seat_no <= 70)
+    or (a.sub_until is not null and a.sub_until >= current_date)
+    or coalesce(a.trial_until, (a.terms_at + interval '6 months')::date) >= current_date $$;
+revoke execute on function public.w777_sub_ok(public.w777_agencies) from public, anon;
+grant execute on function public.w777_sub_ok(public.w777_agencies) to authenticated;
+
+create or replace function public.w777_can_use() returns boolean language sql stable security definer set search_path = public as
+$$ select w777_is_admin() or exists(select 1 from w777_agencies a where a.uid = auth.uid() and a.active and w777_sub_ok(a)) $$;
+
+-- الموظف كيوقف حتى هو ملي يتوقف المكتب ديالو (المكتب ديال المدير ما عندوش سطر فـ w777_agencies)
+create or replace function public.w777_staff_owner() returns uuid language sql stable security definer set search_path = public as
+$$ select s.owner from w777_staff s where s.uid = auth.uid() and s.active
+     and coalesce((select a.active and w777_sub_ok(a) from w777_agencies a where a.uid = s.owner), true) $$;
+
+-- الحساب موقوف؟ (عضو ولا موظف ديال عضو اللي سالات المدة ديالو ولا توقف) — كيمنع حتى المزامنة ديال البيانات الخاصة
+create or replace function public.w777_not_stopped() returns boolean language sql stable security definer set search_path = public as $$
+  select w777_is_admin() or not exists (
+    select 1 from w777_agencies a
+    where (a.uid = auth.uid() or a.uid = (select s.owner from w777_staff s where s.uid = auth.uid()))
+      and not (a.active and w777_sub_ok(a))) $$;
+revoke execute on function public.w777_not_stopped() from public, anon;
+grant execute on function public.w777_not_stopped() to authenticated;
+drop policy if exists w777_stop on public.w777_records;
+create policy w777_stop on public.w777_records as restrictive for all to authenticated
+  using ((select public.w777_not_stopped())) with check ((select public.w777_not_stopped()));
+
+-- حالة الحساب ديالي (للتطبيق: الشاشة ديال «الحساب موقوف»)
+create or replace function public.w777_my_status() returns json language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'admin', w777_is_admin(),
+    'staff', exists(select 1 from w777_staff s where s.uid = auth.uid()),
+    'member', exists(select 1 from w777_agencies a where a.uid = auth.uid()),
+    'ok', w777_not_stopped(),
+    'email', (select u.email from auth.users u where u.id = auth.uid())) $$;
+revoke execute on function public.w777_my_status() from public, anon;
+grant execute on function public.w777_my_status() to authenticated;
+
+-- ✍️ التسجيل الذاتي: من بعد ما يأكد الإيميل بالكود، العضو كيعمر بطاقتو وكيوافق على القانون ← كيتصاوب الحساب فالحين
+-- (الرمز كيكمل من آخر رقم فالفئة، والمقعد ديال عرض 777 كيتعطى بتاريخ الموافقة)
+create or replace function public.w777_register(p_kind text, p_name text, p_phone text, p_city text, p_country text) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); em text; pre text; n int; c text;
+begin
+  if me is null then raise exception 'auth'; end if;
+  select u.email into em from auth.users u where u.id = me and u.email_confirmed_at is not null;
+  if em is null or em like '%@alwasset777.ma' then raise exception 'email'; end if;
+  if exists(select 1 from w777_agencies where uid = me) then raise exception 'exists'; end if;
+  if exists(select 1 from w777_staff where uid = me) or exists(select 1 from w777_admins where uid = me) then raise exception 'role'; end if;
+  pre := case p_kind when 'agency' then '' when 'broker' then 'W' when 'contractor' then 'B' when 'finishing' then 'F'
+                     when 'investor' then 'I' when 'notary' then 'N' when 'association' then 'J' end;
+  if pre is null then raise exception 'kind'; end if;
+  p_name := left(btrim(coalesce(p_name, '')), 80);
+  if length(p_name) < 2 then raise exception 'name'; end if;
+  p_phone := nullif(left(regexp_replace(coalesce(p_phone, ''), '[^0-9+ ]', '', 'g'), 20), '');
+  if p_phone is null or length(regexp_replace(p_phone, '\D', '', 'g')) < 9 then raise exception 'phone'; end if;
+  p_city := nullif(left(btrim(coalesce(p_city, '')), 60), '');
+  p_country := coalesce(nullif(left(btrim(coalesce(p_country, '')), 60), ''), 'المغرب');
+  perform pg_advisory_xact_lock(hashtext('w777_code_' || p_kind));
+  select coalesce(max(nullif(regexp_replace(code, '\D', '', 'g'), '')::int), 0) + 1 into n from w777_agencies where kind = p_kind;
+  c := pre || lpad(n::text, 3, '0');
+  insert into w777_agencies (uid, code, name, phone, email, kind, city, country, active, self_signup)
+    values (me, c, p_name, p_phone, em, p_kind, p_city, p_country, true, true);
+  -- الموافقة على القانون (بتاريخ السيرفر) ← المقعد ديال عرض 777 + بداية 6 أشهر مجانية
+  update w777_agencies set terms_at = now() where uid = me;
+  return (select json_build_object('code', a.code, 'seat_no', a.seat_no, 'seat_zone', a.seat_zone, 'terms_at', a.terms_at) from w777_agencies a where a.uid = me);
+end $$;
+revoke execute on function public.w777_register(text, text, text, text, text) from public, anon;
+grant execute on function public.w777_register(text, text, text, text, text) to authenticated;
