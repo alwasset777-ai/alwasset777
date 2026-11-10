@@ -1824,3 +1824,23 @@ body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mo
 .sb-bar i { display: block; height: 100%; background: linear-gradient(90deg, #c8102e, #e0a800); }
 .fin-sim { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 14px; border: 2px solid var(--gold); }
 .fin-sim span { flex: 1 1 220px; line-height: 1.7; }
+
+/* 🔑 الإدارة: خانة كل مشترك مسجّل (المعلومات + الاشتراك) */
+.mb-card { padding: 14px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.mb-card:first-child { border-top: 0; }
+.mb-card.new { background: linear-gradient(90deg, rgba(200,16,46,.05), transparent 60%); }
+.mb-card.off { opacity: .6; }
+.mb-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mb-top .grow { min-width: 0; display: flex; flex-direction: column; }
+.mb-top .grow b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-top .badge { flex: none; }
+.mb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: 6px; }
+.mb-grid > div { background: var(--surface-2); border-radius: 12px; padding: 8px 10px; min-width: 0; display: flex; flex-direction: column; }
+.mb-grid small { color: var(--muted); font-size: 12px; }
+.mb-grid b { font-size: 14px; overflow-wrap: anywhere; }
+.mb-grid b[dir="ltr"] { text-align: start; }
+.mb-grid .mb-warn { background: rgba(217,138,20,.14); }
+.mb-card .btn-row { margin: 0; }
+.btn-row[hidden] { display: none !important; }
+.kv.kv-sm { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.kv.kv-sm > div { padding: 8px 10px; }
