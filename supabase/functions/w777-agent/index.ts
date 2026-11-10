@@ -24,7 +24,8 @@ Darija rules:
 - Money: say prices the Moroccan way too — "70 مليون" (سنتيم) next to the DH amount when useful (1 مليون = 10 000 DH); rents in درهم.
 - Understand users who write Darija in Latin letters / Arabizi (3=ع، 7=ح، 9=ق، 8=ه، 2=ء; e.g. "bghit chi chqa f hamria ta7t 50 mlyon"), mixed with French words (appartement, terrain, rdv, location, vente) — but always answer in Arabic script.
 - 100% Darija in Arabic script: NEVER write English or French words or sentences, not even one word. Transliterate every Latin name from the data into Arabic letters the way Moroccans say it (Avenue Saadiyine → شارع السعديين، Marjane → مرجان، Hamria → حمرية، Résidence Al Amal → إقامة الأمل، rdv → موعد، appartement → شقة). Only property refs (W777-0012), request refs (DM-0012) and numbers stay as they are. Exception: a contract written between the contract markers keeps its own language (see the Contracts rules).
-- Short sentences, friendly tone (مرحبا، الله يعاونك، بالتوفيق)، no long formal paragraphs. Your text is read aloud by a Moroccan voice, so avoid tables, symbols and **bold** markers.
+- Correct real-estate Darija words (never invent words): التسبيق / الأداء الأول (down payment — NEVER «تسقيعة»)، القرض / الكريدي، القسط الشهري / الطريطة، المساحة (area — NEVER «التحتاني»)، بيوت النعاس، الصالون، الكوزينة، الحمام، الطابق، التحفيظ، التسجيل، الموثق، العربون، الوعد بالبيع، عقد البيع. Spell religious greetings correctly: السلام عليكم ورحمة الله.
+- Short sentences, friendly tone (الله يعاونك، بالتوفيق)، no long formal paragraphs. Your text is read aloud by a Moroccan voice, so avoid tables, symbols and **bold** markers.
 - Say times and dates the Moroccan way: "فالعشرة ديال الصباح"، "فالجوج ونص ديال العشية"، "غدا"، "نهار الخميس" (not "مع 10:00").
 - Examples of the tone you must use:
   • "عندك اليوم جوج مواعيد: الأول فالعشرة ديال الصباح مع يوسف فمرجان، والثاني فالتلاتة ونص مع نادية فالمكتب. واش نحل ليك صفحة المواعيد؟"
@@ -41,12 +42,18 @@ You help the logged-in agency manage its own data: properties (عقارات), cl
 
 How to work:
 - Use the tools to read real data before answering; never invent properties, prices, clients or phone numbers.
-- Tools that change data (create_request, create_appointment, update_property_status) show a confirmation dialog to the user in the app. Call them directly when the user asks; if the result says "cancelled", tell the user nothing was changed.
+- Tools that change data (create_property, create_request, create_appointment, update_property_status) show a confirmation dialog to the user in the app. Call them directly when the user asks; if the result says "cancelled", tell the user nothing was changed.
 - Prices are in Moroccan dirhams (DH). People often speak in "مليون سنتيم": 1 مليون سنتيم = 10 000 DH.
 - Property refs look like W777-0012; request refs look like DM-0012. Dates are YYYY-MM-DD, times HH:MM.
 - Owner names and phone numbers are private to the agency that owns the property: never reveal them for network properties of other agencies.
 - Keep answers short and practical: lists with ref, type, district, price. Offer the next useful action (open the page, match, book a visit).
 - When the user wants to see something, use open_page so the app shows it.
+- Do it, don't ask: when the user asks to open a page, make a Reels video, a PDF presentation or an ad post of a property, or to add/change something, call the tool right away (open_page with page reels / project / post and the property ref, create_property, create_request…) instead of asking «واش نحل ليك…؟». Ask only when a required detail is missing.
+- Honesty about actions: if you did not receive a tool result in this turn, NEVER say «تم / زدت / سجلت / حسبت / حليت» — call the tool first. Numbers (prices, installments, fees, commissions) must come from a tool result, never from memory.
+- Real function calls only: NEVER write a tool call as text (e.g. «[open_page(...)]», «(جاري فتح الصفحة…)», «غادي نستعمل الأداة») — actually call the function, then answer from its result. Never claim you opened, created or computed something without the tool result.
+- Never ask «واش نأكد / واش نحفظ / واش نحل ليك؟» before a data-changing tool or open_page: the app itself shows the confirmation dialog, so call the tool directly.
+- The app shows the confirmation dialog BEFORE a data-changing tool returns: a result with "created"/"updated" means it is already saved — say it is done (never «خاصك تأكد»); "cancelled" means the user refused.
+- Always use the matching tool instead of memory: buying_fees for purchase costs / notary / registration, loan_calc for any loan, calculate for any other number, get_contract_template for any contract template question (even just listing them), directory_search for members of the network (agencies, brokers, notaries, contractors, finishing companies, investors, associations) by city or service, create_property to add a property (owner name + phone are required: ask for them if missing).
 - The app also has the Wasset 777 network sections: directories of brokers, contractors (مقاولات) and finishing companies (تشطيب), projects seeking funding, real-estate events, daily real-estate news (Morocco + world), الهبة (housing donations that go through the Wasset 777 office), النزاعات (real-estate disputes), investors (المستثمرون: budgets for financing, partnership, buying or long-term renting), notaries (الموثقون: suggested by proximity to a property; members send them consultations or contract-notarization requests), housing associations (الجمعيات السكنية: cooperatives/وداديات looking for land, contractors, notaries and financing for their members' housing projects), furnished/holiday bookings (stays) and the app rules page (terms: report every deal to the office, the office may contact the owner if the assigned member is absent while keeping that member's commission, unlimited number of members; subscription 199 DH per year after 6 free months for everyone; «عرض 777 للأوائل» by registration order (day of accepting the terms) in each category: first 7 = free for life, next 70 = 50% off for life, next 700 = 25% off for life, everyone after = 25% off for 4 years; the first 70 agencies outside Morocco = free for life, no office liability for contracts made without it). Open them with open_page.
 - For legal questions give general guidance under Moroccan law (e.g. law 67.12 residential/professional rent, 49.16 commercial lease, 18.00/106.12 co-ownership, 39.08 real rights code, 44.00/107.12 off-plan sales, Dahir of 12 August 1913 / 14.07 land registration), say it is general guidance and not formal legal advice, and for complex cases suggest escalating from the disputes page to a specialist (lawyer, notary, adoul, accountant, legal or real-estate advisor) via the Wasset 777 office.
 - If something is outside what the tools can do, say so plainly and suggest where in the app to do it.
@@ -55,7 +62,7 @@ Personality — you are the app's beloved guide:
 - Talk like a real, friendly Moroccan colleague: warm, natural and fluent, never robotic. Vary your phrasing, react to what the user says ("مزيان!", "فهمتك", "ما تخافش، ساهلة"), and show you care about their work.
 - Guide with confidence and precision through every page, button, step and service of the app. Never guess an app feature: if you are not sure where something is, use the relevant lessons / app_help first, then answer with the exact button names.
 - When the user seems lost or new, guide them step by step and offer to open the page for them (open_page). After finishing a task, suggest the natural next step in one short sentence.
-- Use your own name when you introduce yourself (given in the context), and be humble and positive; never blame the user.
+- Do NOT introduce yourself or start with a greeting (مرحبا / أهلا / أنا منير…) unless the user greets you or asks who you are — then use your own name from the context once. Otherwise the first words are the answer itself. Be humble and positive; never blame the user.
 
 Speaking style (your answers are also read aloud by a voice and shown next to a talking avatar):
 - Answer FAST and SHORT: first sentence = the direct answer. Usually 1–4 short sentences; use a short list only when listing items (max 5 items, then offer to show more / open the page).
@@ -111,15 +118,17 @@ const TOOLS = [
   { name: "get_request", description: "Full details of one client request by ref.", input_schema: S({ ref: str("e.g. DM-0012") }, ["ref"]) },
   { name: "matches_for_request", description: "Best matching properties for a client request, with match score (%).", input_schema: S({ ref: str("request ref") }, ["ref"]) },
   { name: "matches_for_property", description: "Client requests that match a property, with match score (%).", input_schema: S({ ref: str("property ref") }, ["ref"]) },
-  { name: "create_request", description: "Create a new client request (asks the user to confirm in the app).",
+  { name: "create_request", description: "Create a new client request (the app asks the user to confirm before saving; the result says created or cancelled).",
     input_schema: S({ client_name: str("client full name"), phone: str("phone"), transaction: str("sale (client wants to buy) | rent | rent_furnished | seasonal"), property_type: str("apartment | villa | house | land_urban | shop | office | studio | riad | ..."), city: str("city in Arabic"), districts: str("wanted districts, comma separated"), budget_max: num("max budget in DH"), bedrooms_min: num("min bedrooms"), notes: str("extra notes") }, ["client_name", "transaction"]) },
   { name: "list_appointments", description: "List appointments between two dates (default: today and the next 7 days).", input_schema: S({ date_from: str("YYYY-MM-DD"), date_to: str("YYYY-MM-DD") }) },
-  { name: "create_appointment", description: "Create an appointment with a reminder (asks the user to confirm in the app).",
+  { name: "create_appointment", description: "Create an appointment with a reminder (the app asks the user to confirm before saving; the result says created or cancelled).",
     input_schema: S({ client_name: str("client name"), phone: str("phone"), date: str("YYYY-MM-DD"), time: str("HH:MM"), type: str("visit | meeting | call | signing | other"), place: str("place"), property_ref: str("optional property ref"), request_ref: str("optional request ref"), remind_minutes: num("reminder before, in minutes (default 30)"), notes: str("notes") }, ["client_name", "date", "time"]) },
-  { name: "update_property_status", description: "Change a property's status (asks the user to confirm in the app).", input_schema: S({ ref: str("property ref"), status: str("available | reserved | negotiation | sold | rented | withdrawn") }, ["ref", "status"]) },
+  { name: "update_property_status", description: "Change a property's status (the app asks the user to confirm before saving; the result says updated or cancelled).", input_schema: S({ ref: str("property ref"), status: str("available | reserved | negotiation | sold | rented | withdrawn") }, ["ref", "status"]) },
   { name: "market_price", description: "Compare a price with the Moroccan market (DH per m², by city/district, Yakeey/Agenz + ANCFCC). Give price and area to get the % above/below market.", input_schema: S({ city: str("city in Arabic"), district: str("district"), property_type: str("apartment | villa | house | ..."), area: num("m²"), price: num("DH") }, ["city", "property_type"]) },
   { name: "office_stats", description: "Dashboard numbers: available properties, open requests, strong matches, today's appointments and follow-ups.", input_schema: S({}) },
   { name: "network_search", description: "Search properties shared by the other partner agencies of the network (no owner data). Only works for network members.", input_schema: S({ query: str("keywords"), city: str("city"), transaction: str("sale | rent | ..."), limit: num("default 10") }) },
+  { name: "directory_search", description: "Search the Wasset 777 network directory of members (public info: name, category, city, district, phone, services). Use for «شكون الموثقين / الوكالات / المقاولين / الوسطاء فمدينة…». Only for network members.", input_schema: S({ kind: str("agency | broker | notary | contractor | finishing | investor | association (optional)"), city: str("city in Arabic, optional"), query: str("name or service keywords, optional"), limit: num("default 10") }) },
+  { name: "create_property", description: "Add a new property to the agency (the app asks the user to confirm before saving; the result says created with its ref, or cancelled). Owner name and phone are required (kept private).", input_schema: S({ property_type: str("apartment | apartment_furnished | studio | duplex | villa | house | riad | plot_house | plot_villa | shop | office | farm | ... (default apartment)"), transaction: str("sale | rent | rent_furnished | seasonal"), city: str("city in Arabic"), district: str("district"), price: num("price in DH (convert million centimes: 1 مليون = 10 000 DH)"), area: num("built/living area m²"), land_area: num("land m², optional"), bedrooms: num("bedrooms"), bathrooms: num("bathrooms"), floor: str("floor, optional"), features: str("comma separated, e.g. مصعد، باركينغ، شرفة"), owner_name: str("owner full name"), owner_phone: str("owner phone"), title: str("optional"), description: str("optional, Arabic"), notes: str("private notes, optional") }, ["owner_name", "owner_phone", "city"]) },
   { name: "app_help", description: "Search the app's user guide (how to use any feature, where a button is, what a page does). Returns the most relevant lessons with steps.", input_schema: S({ query: str("keywords of the question, e.g. 'add property photos', 'watermark', 'staff account'") }, ["query"]) },
   { name: "finance_summary", description: "The office finances for a month: income, expenses, net profit, year profit, rentals collected.", input_schema: S({ month: str("YYYY-MM, default current month") }) },
   { name: "rentals_summary", description: "Rental management: active leases, late tenants with months due, collected this month.", input_schema: S({}) },
@@ -130,6 +139,11 @@ const TOOLS = [
   { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | brokers | contractors | finishing | investors | notaries | associations | projects | events | news | stays | search | guide | terms | donations | disputes | contracts | learn | ownership | estimate | settings | new_property | new_request | new_appointment | rentals | finance | report | loan | map | ad_maker | post | reels | project | messages | tamwil | game | stories"), ref: str("ref when page is property or request; optional property ref for post (ad image studio prefilled with the property), reels (video maker prefilled with that property's photos and details), project (PDF presentation prefilled with the property) or ad_maker") }, ["page"]) },
 ];
 
+// أسئلة كتحتاج أداة (معطيات المكتب، حساب، إضافة، فتح صفحة…) — بالدارجة/العربية/الفرنسية/الإنجليزية
+const NEED_TOOL = /شحال|كم\s|احسب|حسب|قرض|كريدي|قسط|القسط|طريطة|مصاريف|موثق|تسجيل|تحفيظ|كوميسيون|عمولة|سمسرة|ثمن|متر|مواعيد|موعد|زيد|أضف|اضف|سجل|قلب|ابحث|بحث|لقا|عندي|ديالي|حل(?:\s|ي|ل)|افتح|فتح|صاوب|دير ليا|W777-|DM-|عقار|شقة|دار\s|فيلا|بقعة|محل|طلب|زبون|زبناء|كراء|كاري|مالية|ربح|مداخيل|مصاريف|الشبكة|موثقين|وكالات|وسطاء|مقاول|عقد|نموذج|حالة|مباع|محجوز|combien|calcul|cr[ée]dit|frais|notaire|rdv|rendez|ajout|cherch|trouv|ouvr|contrat|bien|how much|loan|mortgage|fees|appointment|add |search|find|open|contract|property/i;
+// تحية ولا شكر فقط ← بلا أداة
+const NO_TOOL = /^\s*(سلام|السلام عليكم|مرحبا|اهلا|أهلا|شكرا|شكراً|بارك الله|الله يعطيك الصحة|bonjour|salut|merci|hello|hi|thanks)[\s!.؟?،,]*$/i;
+
 // ---------- Gemini (Google AI Studio — فيه مستوى فابور) ----------
 // التطبيق كيبقى يخدم بصيغة Claude (text / tool_use / tool_result)؛ هنا كنترجمو للصيغة ديال Gemini ورجوع.
 // Google كيبدل النماذج وكيضغطو أحياناً (503 high demand): كنجربو لائحة بالترتيب، الأسرع هو الأول،
@@ -137,14 +151,15 @@ const TOOLS = [
 type GM = { m: string; th?: Record<string, unknown> | null };
 const GEMINI_MODELS: GM[] = [
   ...(Deno.env.get("W777_GEMINI_MODEL") ? [{ m: Deno.env.get("W777_GEMINI_MODEL")!, th: null }] : []),
-  // جربناهم: 3.5-flash كيجاوب فـ 2 ثواني (دقيق وسريع)؛ 3.8/3.7 كيطولو بزاف فالمستوى المجاني → فالأخير
+  // جربناهم: 3.5-flash كيجاوب فـ 2 ثواني (دقيق وسريع). ملي كيكون مشغول (429/503 فالمستوى المجاني) كنمشيو لـ lite (سريع)؛
+  // وباش ما يخترعش النتائج، الأسئلة اللي خاصها معطيات ولا حساب كتجبرو يستعمل أداة فالخطوة الأولى (needsTool ← mode ANY)
   { m: "gemini-3.5-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-3.1-flash-lite", th: { thinkingLevel: "minimal" } },
   { m: "gemini-3.5-flash-lite", th: { thinkingLevel: "minimal" } },
   { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-flash-latest", th: null },
   { m: "gemini-flash-lite-latest", th: null },
+  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
 ];
 const TTS_MODELS = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts", "gemini-2.5-flash-preview-tts", "gemini-3.1-flash-tts-preview"];
 const TTS_VOICE = Deno.env.get("W777_TTS_VOICE") || "Charon"; // صوت رجل، هادئ وواضح
@@ -185,7 +200,7 @@ function toGemini(messages: Blk[], model: string) {
   return contents;
 }
 // كيرجع أول جواب صالح من لائحة النماذج (مع إعادة المحاولة بلا إعدادات التفكير إلا ما قبلهاش النموذج)
-async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true, fast = false) {
+async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true, fast = false, force = false) {
   let last = { status: 0, message: "" };
   const trace: string[] = [];
   for (const [gi, g] of GEMINI_MODELS.entries()) {
@@ -194,7 +209,7 @@ async function geminiOpen(key: string, system: string, messages: Blk[], stream: 
       const payload = JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: toGemini(messages, g.m),
-        ...(withTools ? { tools: G_TOOLS, toolConfig: { functionCallingConfig: { mode: "AUTO" } } } : {}),
+        ...(withTools ? { tools: G_TOOLS, toolConfig: { functionCallingConfig: { mode: force ? "ANY" : "AUTO" } } } : {}),
         generationConfig: { maxOutputTokens: withTools ? 8192 : 900, temperature: 0.6, ...(th ? { thinkingConfig: th } : {}) },
       });
       const ac = new AbortController();
@@ -240,21 +255,21 @@ const finish = (content: Blk[]) => {
   if (!content.length) content.push({ type: "text", text: "" });
   return { content, stop_reason: hasTool ? "tool_use" : content.some((b) => b.text) ? "end_turn" : "refusal" };
 };
-async function gemini(key: string, system: string, messages: Blk[], withTools = true) {
-  const { res, model, trace } = await geminiOpen(key, system, messages, false, withTools);
+async function gemini(key: string, system: string, messages: Blk[], withTools = true, force = false) {
+  const { res, model, trace } = await geminiOpen(key, system, messages, false, withTools, false, force);
   const data = await res.json().catch(() => ({}));
   const content: Blk[] = [];
   pushParts(content, data?.candidates?.[0]?.content?.parts ?? [], model);
   return { ...finish(content), usage: data?.usageMetadata, model, trace };
 }
 // البث المباشر (SSE): النص كيوصل للتطبيق كلمة بكلمة، والنهاية فيها البلوكات كاملين
-function geminiSSE(key: string, system: string, messages: Blk[], extra: Record<string, unknown>, cors: Record<string, string>, withTools = true, fast = false) {
+function geminiSSE(key: string, system: string, messages: Blk[], extra: Record<string, unknown>, cors: Record<string, string>, withTools = true, fast = false, force = false) {
   const enc = new TextEncoder();
   const body = new ReadableStream({
     async start(ctl) {
       const send = (o: unknown) => ctl.enqueue(enc.encode(`data: ${JSON.stringify(o)}\n\n`));
       try {
-        const { res, model } = await geminiOpen(key, system, messages, true, withTools, fast);
+        const { res, model } = await geminiOpen(key, system, messages, true, withTools, fast, force);
         const content: Blk[] = [];
         const rd = res.body!.pipeThrough(new TextDecoderStream()).getReader();
         let buf = "";
@@ -464,7 +479,7 @@ Deno.serve(async (req) => {
   const lang = LANGS[body.lang ?? "darija"] ?? LANGS.darija;
   const ctx = body.ctx ?? {};
   const turnInfo = [
-    ctx.agent_name ? `Your name is ${String(ctx.agent_name).slice(0, 40)}; introduce yourself with it.` : "",
+    ctx.agent_name ? `Your name is ${String(ctx.agent_name).slice(0, 40)} (say it only if the user greets you or asks who you are; otherwise answer directly, no greeting).` : "",
     `Reply in ${lang}. Today is ${String(ctx.today ?? "")}. Agency: ${String(ctx.agency ?? "")}. Role: ${String(ctx.role ?? "")}. Current page: ${String(ctx.page ?? "")}.`,
     ctx.snap ? `Live snapshot of the office right now (use it directly, no tool call needed for these numbers): ${JSON.stringify(ctx.snap).slice(0, 3000)}` : "",
     /^#\/(learn|guide)/.test(String(ctx.page ?? "")) ? "The user is on a learning page: use Teacher mode." : "",
@@ -472,10 +487,16 @@ Deno.serve(async (req) => {
     ctx.help ? `Relevant lessons from the app's user guide (use them to explain how to use the app): ${JSON.stringify(ctx.help).slice(0, 5000)}` : "",
   ].filter(Boolean).join("\n");
 
+  // السؤال خاصو معطيات المكتب ولا حساب ولا فعل؟ (الخطوة الأولى فقط) ← الأداة إجبارية باش حتى النموذج السريع ما يخترعش
+  const lastMsg = messages[messages.length - 1] as Blk;
+  const lastIsQuestion = lastMsg?.role === "user" && (typeof lastMsg.content === "string" || !(lastMsg.content ?? []).some((b: Blk) => b.type === "tool_result"));
+  const qText = typeof lastMsg?.content === "string" ? lastMsg.content : ((lastMsg?.content ?? []) as Blk[]).filter((b: Blk) => b.type === "text").map((b: Blk) => b.text).join(" ");
+  const hasFile = Array.isArray(lastMsg?.content) && (lastMsg.content as Blk[]).some((b: Blk) => b.type === "image" || b.type === "document");
+  const needsTool = lastIsQuestion && !hasFile && qText.length < 400 && NEED_TOOL.test(qText) && !NO_TOOL.test(qText);
   if (!apiKey) {
-    if (body.stream) return geminiSSE(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages, { used, provider: "gemini" }, CORS);
+    if (body.stream) return geminiSSE(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages, { used, provider: "gemini" }, CORS, true, false, needsTool);
     try {
-      const r = await gemini(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages);
+      const r = await gemini(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages, true, needsTool);
       return json({ ...r, used, provider: "gemini" });
     } catch (e) {
       const st = (e as { status?: number }).status ?? 0;
