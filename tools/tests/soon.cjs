@@ -29,12 +29,12 @@ const L=[{uid:'a1',code:'801',name:'تسالي قريب',phone:'0611111111',kind
 await mock(a,true,null,L);
 await a.goto('http://localhost:8777/bureau/?gate=1#access_token=a&refresh_token=b&expires_in=3600');await a.waitForTimeout(2200);
 await a.goto('http://localhost:8777/bureau/?gate=1#/agencies/manage');await a.waitForTimeout(2500);
-const opts=await a.evaluate(()=>[...document.querySelectorAll('[name=agf] option')].map(o=>o.textContent).slice(0,4));
-const pick=async v=>{await a.selectOption('[name=agf]',v);await a.waitForTimeout(300);return a.evaluate(()=>({rows:[...document.querySelectorAll('#aglist .list-row b')].map(x=>x.textContent),remind:document.querySelectorAll('#aglist a.wa').length&&[...document.querySelectorAll('#aglist a.wa')].map(x=>x.textContent.trim()),copy:!document.getElementById('ag-soonrow').hidden}));};
+const opts=await a.evaluate(()=>['soon','expired','self'].map(v=>(document.querySelector(`[name=agf] option[value=${v}]`)||{}).textContent||''));
+const pick=async v=>{await a.selectOption('[name=agf]',v);await a.waitForTimeout(300);return a.evaluate(()=>({rows:[...document.querySelectorAll('#aglist .mb-card .mb-top b, #aglist .list-row b')].map(x=>x.textContent),remind:document.querySelectorAll('#aglist a.wa').length&&[...document.querySelectorAll('#aglist a.wa')].map(x=>x.textContent.trim()),copy:!document.getElementById('ag-soonrow').hidden}));};
 const soon=await pick('soon');await a.screenshot({path:S+'/soon-admin.png'});
 const exp=await pick('expired');const self=await pick('self');
-const ok=bar&&/باقي 3 أيام|باقي 2 أيام|باقي 4 أيام/.test(bar.txt)&&bar.wa&&bar.scroll&&hidden&&/\(1\)/.test(opts[1])&&/\(1\)/.test(opts[2])&&/\(1\)/.test(opts[3])
- &&soon.rows.join()==='تسالي قريب'&&/تذكير/.test(soon.remind[0])&&soon.copy&&exp.rows.join()==='سالات المدة'&&exp.copy&&self.rows.join()==='مسجّل بالإيميل'&&!self.copy&&!errs.length;
+const ok=bar&&/باقي 3 أيام|باقي 2 أيام|باقي 4 أيام/.test(bar.txt)&&bar.wa&&bar.scroll&&hidden&&/\(1\)/.test(opts[0])&&/\(1\)/.test(opts[1])&&/\(1\)/.test(opts[2])
+ &&soon.rows.join()==='تسالي قريب'&&/تذكير/.test(soon.remind[0])&&soon.copy&&exp.rows.join()==='سالات المدة'&&exp.copy&&self.rows.join()==='مسجّل بالإيميل'&&/الترحيب/.test(self.remind[0])&&!self.copy&&!errs.length;
 if(!ok)bad++;
 console.log(ok?'OK ':'BAD','bar',JSON.stringify(bar),'hidden',hidden,'opts',JSON.stringify(opts),'soon',JSON.stringify(soon),'exp',JSON.stringify(exp),'self',JSON.stringify(self),errs.join('|'));
 await b.close();process.exit(bad?1:0);})();

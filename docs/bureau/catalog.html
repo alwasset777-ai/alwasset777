@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>العقارات المعروضة | مجموعة الوسيط 777</title>
+  <title>العقارات المعروضة | مجموعة الوسيط</title>
   <meta name="description" content="عقارات للبيع والكراء — شقق، فيلات، أراضي ومحلات. تواصل مباشرة مع المكتب عبر واتساب.">
   <meta name="theme-color" content="#000000">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="العقارات المعروضة — مجموعة الوسيط 777">
+  <meta property="og:title" content="العقارات المعروضة — مجموعة الوسيط">
   <meta property="og:description" content="شقق، فيلات، أراضي ومحلات للبيع والكراء. شوف الصور وتواصل مباشرة عبر واتساب.">
   <meta property="og:image" content="https://alwasset777-ai.github.io/alwasset777/bureau/icons/icon-512.png?v=9">
   <meta name="twitter:card" content="summary">
@@ -51,7 +51,7 @@
 </head>
 <body>
   <div class="cw"><div id="cb"><div class="card empty">⏳ جاري التحميل…</div></div>
-    <div class="c-foot">مدعوم بتطبيق <b>مجموعة الوسيط 777</b> للخدمات العقارية</div></div>
+    <div class="c-foot">مدعوم بتطبيق <b>مجموعة الوسيط</b> للخدمات العقارية</div></div>
   <script src="../app/config.js" onerror="void 0"></script>
   <script src="data.js"></script>
   <script>
@@ -113,7 +113,7 @@
       const r = ALL.find(x => x.id === id); if (!r) { location.hash = ''; return; }
       const d = r.data || {}, ph = r.photos || [], tel = OW && OW.phone;
       const msg = `السلام عليكم، مهتم بالعقار ${d.ref || ''}: ${d.title || ''}\n${location.href}`;
-      document.title = (d.title || 'عقار') + ' | ' + (OW ? OW.name : 'الوسيط 777');
+      document.title = (d.title || 'عقار') + ' | ' + (OW ? OW.name : 'مجموعة الوسيط');
       box.innerHTML = `<div class="btn-row" style="margin-bottom:12px"><a class="btn" href="#">→ كل العقارات</a><button class="btn" id="c-share">↗ مشاركة</button></div>
         <div class="c-det"><div>${ph.length ? `<div class="c-gal" id="gal">${ph.map(p => `<img src="${esc(img(p))}" alt="" loading="lazy">`).join('')}</div><div class="c-gal-n" id="gn">1 / ${ph.length}</div>` : '<div class="card empty"><div class="big">🏠</div></div>'}</div>
         <div><div class="card card-pad"><span class="badge gold">${esc(short(d.transaction))}</span> <span class="badge">${esc(d.ref || '')}</span>
@@ -127,7 +127,7 @@
       $('#c-share').onclick = async () => { try { if (navigator.share) { await navigator.share({ title: d.title, url: location.href }); return; } } catch (e) { if (e.name === 'AbortError') return; } navigator.clipboard.writeText(location.href); alert('تنسخ الرابط ✓'); };
       window.scrollTo(0, 0);
     }
-    function route() { const m = location.hash.match(/p=([^&]+)/); if (m) detail(decodeURIComponent(m[1])); else { document.title = (OW ? OW.name : 'مجموعة الوسيط 777') + ' — العقارات المعروضة'; list(); } }
+    function route() { const m = location.hash.match(/p=([^&]+)/); if (m) detail(decodeURIComponent(m[1])); else { document.title = (OW ? OW.name : 'مجموعة الوسيط') + ' — العقارات المعروضة'; list(); } }
     async function start() {
       if (!URL_ || !/^[0-9a-f-]{36}$/i.test(owner)) { box.innerHTML = '<div class="card empty"><div class="big">🔗</div><h3>الرابط ناقص</h3><p>طلب من المكتب الرابط الكامل ديال الكتالوج.</p></div>'; return; }
       try {
