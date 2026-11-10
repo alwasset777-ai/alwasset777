@@ -1,4 +1,4 @@
-// كل أدوات الوكيل (21) كتخدم فالتطبيق: خادم مزيف كيطلبهم كاملين، كنأكدو الإضافات، وكنقراو النتائج (بلا أخطاء)
+// كل أدوات الوكيل (23) كتخدم فالتطبيق: خادم مزيف كيطلبهم كاملين، كنأكدو الإضافات، وكنقراو النتائج (بلا أخطاء)
 const {chromium}=require('playwright');const F=require('../tuto/fake.cjs');const BASE='http://localhost:8777/bureau/';
 (async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});const p=await b.newPage({viewport:{width:390,height:844}});
 const errs=[];p.on('pageerror',e=>errs.push(e.message));let results=null,calls=null;
@@ -17,7 +17,7 @@ calls=[['search_properties',{}],['search_properties',{city:'مكناس',price_ma
  ['list_appointments',{}],['create_appointment',{client_name:'زبون تجريبي',date:tom,time:'10:00',type:'visit'}],['update_property_status',{ref:refs.P,status:'reserved'}],
  ['market_price',{city:'مكناس',district:'حمرية',property_type:'apartment',area:100,price:900000}],['office_stats',{}],['network_search',{}],['app_help',{query:'زيد صور العقار'}],
  ['finance_summary',{}],['rentals_summary',{}],['get_contract_template',{}],['get_contract_template',{id:'01-bail-habitation'}],['calculate',{expression:'(3500*12)/650000*100'}],
- ['loan_calc',{price:900000}],['buying_fees',{price:900000}],['open_page',{page:'reels',ref:refs.P}]];
+ ['loan_calc',{price:900000}],['buying_fees',{price:900000}],['directory_search',{kind:'agency'}],['create_property',{property_type:'villa',transaction:'sale',city:'مكناس',district:'بني محمد',price:2500000,area:300,bedrooms:4,owner_name:'مالك تجريبي',owner_phone:'0677889900'}],['open_page',{page:'reels',ref:refs.P}]];
 await p.route(/functions\/v1\/w777-agent/,async r=>{const bd=JSON.parse(r.request().postData()||'{}');if(bd.ping||bd.tts!==undefined)return r.fulfill({json:{ok:true}});
   const last=(bd.messages||[]).slice(-1)[0];
   if(last&&Array.isArray(last.content)&&last.content[0]&&last.content[0].type==='tool_result'){results=last.content.map(x=>{try{return JSON.parse(x.content);}catch(e){return {raw:x.content};}});return r.fulfill({json:{content:[{type:'text',text:'تم ✓'}],stop_reason:'end_turn'}});}
