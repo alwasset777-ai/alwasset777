@@ -339,7 +339,8 @@
     const up = await DB.getMeta('sync_uploaded', {});
     const fail = await DB.getMeta('sync_fail', {});
     const skip = await DB.getMeta('sync_skip', {});
-    const owners = [...(await DB.all('properties')), ...(await DB.all('requests'))];
+    // العقارات، الطلبات، وعقود الكراء (الوثائق والصور ديالهم)
+    const owners = [...(await DB.all('properties')), ...(await DB.all('requests')), ...((await DB.getMeta('leases', [])) || []).filter(x => !x.deleted)];
     // غير الملفات اللي كاينة فهاد الجهاز (بلا ما نقلبو على آلاف الصور اللي جات من السحابة)
     const local = new Set((await DB.fileIndex()).map(f => f.id));
     const now = Date.now();

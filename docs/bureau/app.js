@@ -240,7 +240,7 @@
     if (miss && Date.now() - miss < 600000) return null;
     const blob = await Sy.fetchFile(id, thumb);
     if (!blob) { MISSING.set(id, Date.now()); return null; }
-    const owner = [...S.props, ...S.reqs].find(p => (p.media || []).some(m => m.id === id));
+    const owner = [...S.props, ...S.reqs, ...(S.leases || [])].find(p => (p.media || []).some(m => m.id === id));
     const meta = owner && owner.media.find(m => m.id === id);
     rec = rec || { id, owner: owner ? owner.id : '', kind: meta ? meta.kind : 'photo', name: meta ? meta.name : id, mime: blob.type, size: blob.size, blob: null, thumb: null };
     if (thumb && blob.size < 400 * 1024) rec.thumb = blob; else rec.blob = blob;
@@ -570,12 +570,13 @@
       const ago = m => { const d = new Date(); d.setMonth(d.getMonth() - m); return d.toISOString(); };
       const A = (n, z, m, sub) => ({ seat_no: n, seat_zone: z || 'ma', terms_at: ago(m || 1), sub_until: sub || null });
       const c = [[A(7), 0, true], [A(8), 100, true], [A(77), 100, true], [A(78), 149, true], [A(777), 149, true], [A(778), 149, true],
-        [A(800, 'ma', 60), 199, false], [A(70, 'out', 30), 0, true], [A(71, 'out'), 149, true], [A(500, 'ma', 8), 149, false], [{ terms_at: null }, 199, true]]
+        [A(800, 'ma', 60), 199, false], [A(7, 'out', 30), 0, true], [A(8, 'out', 30), 100, false], [A(70, 'out'), 100, true], [A(78, 'out'), 149, true], [A(500, 'ma', 8), 149, false], [{ terms_at: null }, 199, true]]
         .map(([a, price, ok]) => subPrice(a) === price && subInfo(a).ok === ok);
       return { ok: c.every(Boolean), c };
     },
     board: () => offerBoard([{ seat_no: 1, seat_zone: 'ma', name: 'وكالة النخيل', city: 'مكناس' }, { seat_no: 2, seat_zone: 'ma', name: 'Agence 2' }, { seat_no: 3, seat_zone: 'ma', name: 'دار السعادة' }, { seat_no: 1, seat_zone: 'out', name: 'Atlas Immo' }, {}], 'agency'),
     msg: () => offerMsg([{ seat_no: 1, seat_zone: 'ma' }, { seat_no: 2, seat_zone: 'ma' }], 'agency'),
+    perk: (a, mini) => perkCard(a, mini),
     furnCheck: () => {
     const P = (type, trx, furn) => ({ id: 'x' + type + trx + furn, type, transaction: trx, city: 'مكناس', status: 'available', specs: furn ? { furnished: furn } : {} });
     const R = (types, trx) => ({ id: 'r' + types + trx, types, transaction: trx, city: 'مكناس' });
@@ -1230,7 +1231,7 @@
     const saleValue = avail.filter(p => p.transaction === 'sale').reduce((s, p) => s + (num(p.priceMax) || num(p.priceMin) || 0), 0);
     const todayAppts = S.appts.filter(a => a.status === 'planned' && a.date === today()).sort((x, y) => (x.time || '').localeCompare(y.time || ''));
 
-    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + `
+    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
       <div class="hero">
         <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
         <div class="hero-big3">
@@ -5805,6 +5806,7 @@
         <p class="muted" style="font-size:13px">✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.${kind === 'notary' ? '<br>✔️ الموقع (GPS) والحي كيخليوك تتقترح أوتوماتيكيا مع العقارات القريبة ليك.' : ''}${kind === 'investor' ? '<br>✔️ زيد عروض الاستثمار ديالك فـ «💼 فرص الاستثمار» باش يتواصلو معاك أصحاب المشاريع.' : ''}</p>
       </div>
       ${memberMediaCard()}
+      ${perkCard(ag)}
       <div class="card card-pad" style="margin-top:14px"><div class="kv"><div><small>📜 القانون</small><b>${ag.terms_at ? '✅ موافق ' + dAr(ag.terms_at) : '⏳ مازال'}</b></div><div><small>💳 الاشتراك</small><b style="font-size:13.5px">${esc((subInfo(ag) || {}).txt || '')}</b></div></div>
         <div class="btn-row" style="margin-top:10px"><a class="btn sm" href="#/terms">⚖️ قانون التطبيق</a><a class="btn sm" href="#/terms/groups">👥 مجموعات المشتركين</a></div></div>`;
     bindMoney(main());
@@ -5859,7 +5861,7 @@
         : kind === 'investor' ? 'من بعد كمّلو «حسابي» (الميزانية ونوع الاستثمار) وزيدو عروضكم فـ «فرص الاستثمار».'
           : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
             : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.') +
-      `\n🎁 عرض 777: 6 أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? '، و70 وكالة الأولى خارج المغرب مجاني مدى الحياة' : ''} — الترتيب حسب نهار الموافقة على القانون` +
+      `\n🎁 عرض 777: 6 أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? '، ونفس العرض خارج المغرب (7 الأوائل مجاني، 70 -50%، 700 -25% مدى الحياة)' : ''} — الترتيب حسب نهار الموافقة على القانون` +
       `\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` +
       (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
     main().innerHTML = head + `
@@ -5919,7 +5921,7 @@
       $$('[data-edit]').forEach(b => b.onclick = () => {
         const a = ags.find(x => x.uid === b.dataset.edit);
         modal(`<h3>${K.ic} <span dir="ltr">${esc(a.code)}</span></h3><form id="age" class="form-grid">${fInput('name', 'الاسم', a.name, { req: true })}${fInput('phone', 'الهاتف', a.phone, { type: 'tel' })}
-          ${placeLists()}${fInput('city', 'المدينة', a.city, { list: 'dl-cities' })}${fInput('country', 'الدولة', a.country || 'المغرب', { list: 'dl-countries', hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (70 وكالة الأولى خارج المغرب مجاني مدى الحياة)' : '' })}
+          ${placeLists()}${fInput('city', 'المدينة', a.city, { list: 'dl-cities' })}${fInput('country', 'الدولة', a.country || 'المغرب', { list: 'dl-countries', hint: kind === 'agency' ? '«المغرب» ولا اسم الدولة (خارج المغرب: 7 الأوائل مجاني مدى الحياة)' : '' })}
           ${fInput('services', 'الخدمات', a.services, { cls: 'full' })}
           ${fInput('sub_until', `الاشتراك (${subPrice(a)} درهم فالعام) خالص حتى`, a.sub_until, { type: 'date', hint: a.terms_at ? 'وافق على القانون: ' + dAr(a.terms_at) : 'مازال ما وافقش على القانون' })}
           ${fInput('trial_until', '🎁 نهاية المدة المجانية', a.trial_until, { type: 'date', hint: a.trial_until ? 'تاريخ خاص (حددتيه نتا)' : freeEnd(a) ? `فارغ = ${FREE_MONTHS} أشهر من الموافقة (${dAr(freeEnd(a).toISOString())})` : `فارغ = ${FREE_MONTHS} أشهر من نهار الموافقة على القانون` })}
@@ -6196,7 +6198,7 @@
     ['📣', 'الإبلاغ عن العمليات', 'كل عملية (بيع، كراء، شراكة، تمويل، توثيق…) تمّت بين طرفين عن طريق التطبيق، ولا بسبب معلومة منشورة فيه، خاص المشترك يبلّغ بيها مكتب الوسيط 777 فور إتمامها.'],
     ['🔑', 'غياب المشترك المكلّف بالعقار', 'فحالة عدم ظهور المشترك المكلّف بالعقار (ما كيجاوبش ولا غايب)، يجوز لمكتب الوسيط 777 الولوج لمعلومات صاحب العقار والتواصل معه لإتمام العملية، مع حفظ عمولة المشترك المكلّف كاملة.'],
     ['💳', 'الاشتراك', 'كيوفّر مكتب الوسيط 777 هاد الخدمة مقابل 199 درهم فالعام، كتخلص من بعد 6 أشهر مجانية للجميع كتبدا من نهار الموافقة على هاد القانون. عدد المشتركين بلا حد.'],
-    ['🎁', 'عرض 777 للأوائل', 'الترتيب حسب نهار الموافقة على القانون، فكل فئة بوحدها: 7 الأوائل الخدمة مجانية مدى الحياة · 70 اللي موراهم تخفيض 50% مدى الحياة · 700 اللي موراهم تخفيض 25% مدى الحياة · وكل من تسجّل من بعد تخفيض 25% لمدة 4 سنين. و70 وكالة الأولى خارج المغرب الاشتراك مجاني مدى الحياة.'],
+    ['🎁', 'عرض 777 للأوائل', 'الترتيب حسب نهار الموافقة على القانون، فكل فئة بوحدها: 7 الأوائل الخدمة مجانية مدى الحياة · 70 اللي موراهم تخفيض 50% مدى الحياة · 700 اللي موراهم تخفيض 25% مدى الحياة · وكل من تسجّل من بعد تخفيض 25% لمدة 4 سنين. وخارج المغرب نفس الدرجات بترتيب خاص: 7 الأوائل مجاني مدى الحياة · 70 اللي موراهم تخفيض 50% مدى الحياة · 700 اللي موراهم تخفيض 25% مدى الحياة. رقم الاشتراك ديالك والامتياز ديالو كيبانو فـ «الحساب ديالي».'],
     ['🪪', 'التعريف بالهوية', 'الإدلاء بصورة البطاقة الوطنية، أو جواز السفر بالنسبة للمشتركين من دول أخرى، وذلك لضمان المصداقية والشفافية والنزاهة. كتولي إجبارية من بعد انتهاء الأشهر الستة المجانية، والصورة كيشوفها غير مكتب الوسيط 777 (ما كتبانش للمشتركين).'],
     ['⚠️', 'حدود المسؤولية', 'لا يتحمل مكتب الوسيط 777 أي مسؤولية فحالة تمّ التعاقد بدون علمه ولا بدون الرجوع إليه.'],
   ];
@@ -6213,11 +6215,12 @@
   function seatTier(a) {
     const n = a && a.seat_no;
     if (!n) return null;
-    if (a.seat_zone === 'out') return n <= 70 ? { pay: 0, ic: '🌍', t: `وكالة رقم ${n} من 70 الأوائل خارج المغرب — مجاني مدى الحياة` } : { pay: 0.75, years: 4, ic: '🎟️', t: `مقعد رقم ${n} — تخفيض 25% لمدة 4 سنين` };
-    if (n <= 7) return { pay: 0, ic: '🥇', t: `مقعد رقم ${n} من 7 الأوائل — التطبيق مجاني مدى الحياة` };
-    if (n <= 77) return { pay: 0.5, ic: '🥈', t: `مقعد رقم ${n} — تخفيض 50% مدى الحياة` };
-    if (n <= 777) return { pay: 0.75, ic: '🥉', t: `مقعد رقم ${n} — تخفيض 25% مدى الحياة` };
-    return { pay: 0.75, years: 4, ic: '🎟️', t: `مقعد رقم ${n} — تخفيض 25% لمدة 4 سنين` };
+    // نفس الدرجات داخل وخارج المغرب، وكل منطقة عندها الترتيب ديالها
+    const z = a.seat_zone === 'out' ? ' (خارج المغرب)' : '';
+    if (n <= 7) return { pay: 0, ic: z ? '🌍' : '🥇', t: `مقعد رقم ${n}${z} من 7 الأوائل — التطبيق مجاني مدى الحياة`, s: 'مجاني مدى الحياة' };
+    if (n <= 77) return { pay: 0.5, ic: '🥈', t: `مقعد رقم ${n}${z} — تخفيض 50% مدى الحياة`, s: 'تخفيض 50% مدى الحياة' };
+    if (n <= 777) return { pay: 0.75, ic: '🥉', t: `مقعد رقم ${n}${z} — تخفيض 25% مدى الحياة`, s: 'تخفيض 25% مدى الحياة' };
+    return { pay: 0.75, years: 4, ic: '🎟️', t: `مقعد رقم ${n}${z} — تخفيض 25% لمدة 4 سنين`, s: 'تخفيض 25% لمدة 4 سنين' };
   }
   // ثمن العام دابا (درهم) حسب الامتياز
   function subPrice(a) {
@@ -6225,6 +6228,16 @@
     if (!tr) return SUB_BASE;
     if (tr.years && a.terms_at) { const end = new Date(a.terms_at); end.setFullYear(end.getFullYear() + tr.years); if (end < new Date()) return SUB_BASE; }
     return Math.round(SUB_BASE * tr.pay);
+  }
+  // 🎟️ بطاقة «رقم الاشتراك ديالي»: الرقم، المنطقة، الامتياز، وثمن العام (كتبان للمشترك فالرئيسية، الحساب والقانون)
+  function perkCard(a, mini) {
+    const tr = seatTier(a); if (!a || !tr) return '';
+    const price = subPrice(a), zone = a.seat_zone === 'out' ? '🌍 خارج المغرب' : '🇲🇦 المغرب';
+    const K = KINDS[kindOf(a)] || {};
+    if (mini) return `<a class="perk-mini" href="#/terms"><b class="perk-n">${a.seat_no}</b><span><small>رقم الاشتراك ديالك فعرض 777 · ${esc(K.ar || '')} ${zone}</small><b>${tr.ic} ${esc(tr.s)}${price ? ` · ${price} د/العام بلاصة ${SUB_BASE}` : ''}</b></span></a>`;
+    const yrs = tr.years && a.terms_at ? (() => { const e = new Date(a.terms_at); e.setFullYear(e.getFullYear() + tr.years); return dAr(e.toISOString()); })() : '';
+    return `<div class="card perk-card"><div class="perk-top"><b class="perk-n big">${a.seat_no}</b><div><small>🎟️ رقم الاشتراك ديالك فعرض 777</small><h3>${tr.ic} ${esc(tr.s)}</h3><small>${esc(K.ar || '')} · ${zone} · الترتيب حسب نهار الموافقة على القانون${a.terms_at ? ` (${dAr(a.terms_at)})` : ''}</small></div></div>
+      <div class="kv"><div><small>💳 ثمن العام ديالك</small><b>${price ? `${price} درهم <s class="muted">${SUB_BASE}</s>` : '🎁 مجاني'}</b></div><div><small>⏳ مدة الامتياز</small><b>${tr.years ? `حتى ${yrs || tr.years + ' سنين'}` : 'مدى الحياة ✓'}</b></div><div><small>🎁 للجميع</small><b>${FREE_MONTHS} أشهر مجانية فالبداية</b></div></div></div>`;
   }
   const tierBadge = a => { const tr = seatTier(a); return tr ? `<span class="badge gold" title="${esc(tr.t)}">${tr.ic} ${a.seat_no}</span> ` : ''; };
   function subInfo(a) {
@@ -6247,7 +6260,7 @@
       (left(0, 7) ? `🥇 باقي ${left(0, 7)} مقاعد فقط: التطبيق مجاني مدى الحياة\n` : '') +
       (left(7, 77) ? `🥈 ${left(7, 77)} مقعد: تخفيض 50% مدى الحياة\n` : '') +
       `🥉 ${left(77, 777)} مقعد: تخفيض 25% مدى الحياة\n🎁 6 أشهر مجانية للجميع\n` +
-      (kind === 'agency' && o < 70 ? `🌍 باقي ${70 - o} مقعد مجاني مدى الحياة للوكالات خارج المغرب\n` : '') +
+      (kind === 'agency' && o < 7 ? `🌍 خارج المغرب: باقي ${7 - o} مقاعد مجانية مدى الحياة (ومن بعد -50% و-25% مدى الحياة)\n` : '') +
       `👉 ${appBase()}join.html?k=${kind}\n📞 0777777959 · 0777777848`;
   }
   // لوحة العرض فالدليل: شحال تسجل وشحال باقي فكل امتياز (فهاد الفئة)
@@ -6261,7 +6274,7 @@
     return `<div class="offer-777"><div class="of-h"><b>🎁 عرض 777 للأوائل</b><span>المسجلين: ${ma + out} · عدد الأعضاء بلا حد · 6 أشهر مجانية للجميع · <a href="join.html?k=${kind}" target="_blank" rel="noopener">صفحة الانضمام ↗</a></span></div>${hon}
       <div class="of-g">${row('🥇', '7 الأوائل: مجاني مدى الحياة', 0, 7)}${row('🥈', '70 الموالين: -50% مدى الحياة', 7, 77)}${row('🥉', '700 الموالين: -25% مدى الحياة', 77, 777)}
         <div class="of-t"><b>🎟️ من بعد: -25% لمدة 4 سنين</b><small>لكل من تسجّل</small></div>
-        ${kind === 'agency' ? `<div class="of-t${out >= 70 ? ' full' : ''}"><b>🌍 70 وكالة خارج المغرب: مجاني مدى الحياة</b><small>${out >= 70 ? 'تعمّرو' : `باقي ${70 - out} مقعد`}</small></div>` : ''}</div></div>`;
+        ${kind === 'agency' ? `<div class="of-t${out >= 7 ? ' full' : ''}"><b>🌍 خارج المغرب: 7 الأوائل مجاني مدى الحياة · 70 -50% · 700 -25%</b><small>${out >= 7 ? `مسجلين: ${out}` : `باقي ${7 - out} مقاعد مجانية`}</small></div>` : ''}</div></div>`;
   }
   /* ---------- صورة المشترك، الشعار، والبطاقة الوطنية / جواز السفر ---------- */
   const brandUrl = p => {
@@ -6689,7 +6702,7 @@
         <ol class="tr-more">${TERMS_MORE.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ol>
       </div>
       <div class="card card-pad tr-me" style="margin-top:14px">
-        ${ag ? `<h3 class="section-title">🪪 الحساب ديالي</h3>
+        ${ag ? `${perkCard(ag)}<h3 class="section-title">🪪 الحساب ديالي</h3>
           <div class="kv"><div><small>الرمز</small><b dir="ltr">${esc(ag.code || '')}</b></div><div><small>القانون</small><b>${ag.terms_at ? '✅ موافق ' + dAr(ag.terms_at) : '⏳ مازال'}</b></div><div><small>الاشتراك</small><b style="font-size:13.5px">${esc(si.txt)}</b></div></div>
           ${ag.terms_at ? '' : `<button class="btn gold" id="tr-ok" style="margin-top:12px">✅ قريت القانون ووافقت عليه</button>`}`
           : S.role === 'admin' ? '<p class="muted" style="margin:0">👑 المدير: الموافقة ديال كل مشترك والاشتراك كيبانو فـ «الإدارة» ديال كل خانة.</p>'
@@ -7879,7 +7892,7 @@
 
   async function cleanOrphans() {
     try {
-      const all = [...S.props, ...S.reqs];
+      const all = [...S.props, ...S.reqs, ...live('leases')];
       const ids = new Set(all.map(p => p.id));
       const keep = new Set(all.flatMap(p => (p.media || []).map(m => m.id)));
       const idx = await DB.fileIndex();
@@ -8611,45 +8624,70 @@
     };
     const clr = $('#fin-clr'); if (clr) clr.onclick = async () => { if (await confirmBox('نمسح المعلومات اللي عمرتي على هاد الجهة؟', 'مسح', true)) saveFin(null); };
   }
+  // 🏦 حساب التمويل الساهل: الثمن ← التسبيق (بالدرهم ولا %) ← المدة ← الفائدة ← القسط الشهري مباشرة
   function viewLoan(query) {
-    const pre = { price: num(query.price) || '', down: 20, years: 20, rate: 4.5, ins: 0.3 };
+    const st = { price: num(query.price) || '', down: '', years: 20, rate: 4.5, ins: 0.3 };
+    if (st.price) st.down = Math.round(st.price * 0.2);
+    const chips = (k, list, cur, f) => `<div class="lq-chips" data-k="${k}">${list.map(v => `<button type="button" class="${String(v) === String(cur) ? 'on' : ''}" data-v="${v}">${f(v)}</button>`).join('')}</div>`;
     main().innerHTML = `
-      <div class="page-head"><div><h1>🏦 حساب التمويل</h1><div class="sub">القسط الشهري، الفوائد، والدخل اللازم باش البنك يوافق</div></div></div>
-      <div class="detail-grid">
-        <div class="card card-pad form"><form id="lf" class="form-grid">
-          ${fInput('price', 'ثمن العقار (درهم)', pre.price, { money: true, cls: 'full' })}
-          ${fInput('down', 'التسبيق (%)', pre.down, { type: 'number', hint: 'عادة 10% حتى 30%' })}
-          ${fSelect('years', 'مدة القرض', [5, 7, 10, 12, 15, 20, 25, 30].map(y => ({ v: y, l: y + ' عام' })), pre.years, { noEmpty: true })}
-          ${fInput('rate', 'نسبة الفائدة السنوية (%)', pre.rate, { type: 'number', hint: 'الأبناك فالمغرب: تقريبا 4% حتى 6%' })}
-          ${fInput('ins', 'التأمين على الحياة (% فالعام)', pre.ins, { type: 'number' })}
-        </form>
-        <p class="muted" style="font-size:12px;margin:12px 0 0">⚠️ حساب تقريبي للتوجيه فقط — العرض النهائي كيعطيه البنك.</p></div>
+      <div class="page-head"><div><h1>🏦 حساب القرض</h1><div class="sub">دخل الثمن والتسبيق، والقسط الشهري كيبان مباشرة</div></div></div>
+      <div class="lq">
+        <div class="card card-pad lq-form">
+          <div class="lq-f"><label>1️⃣ ثمن العقار</label><div class="lq-in"><input id="lq-price" inputmode="numeric" placeholder="مثلا 700 000" value="${st.price ? fmtRaw(st.price) : ''}"><span>درهم</span></div><small id="lq-price-h" class="muted"></small></div>
+          <div class="lq-f"><label>2️⃣ التسبيق (اللي عندك)</label><div class="lq-in"><input id="lq-down" inputmode="numeric" placeholder="مثلا 140 000" value="${st.down ? fmtRaw(st.down) : ''}"><span>درهم</span></div>
+            <div class="lq-chips" id="lq-dp">${[0, 10, 20, 30].map(v => `<button type="button" data-p="${v}">${v}%</button>`).join('')}</div><small id="lq-down-h" class="muted"></small></div>
+          <div class="lq-f"><label>3️⃣ مدة القرض</label>${chips('years', [10, 15, 20, 25], st.years, v => v + ' عام')}</div>
+          <div class="lq-row">
+            <div class="lq-f"><label>4️⃣ الفائدة فالعام</label><div class="lq-in sm"><input id="lq-rate" inputmode="decimal" value="${st.rate}"><span>%</span></div>${chips('rate', [4, 4.5, 5, 6], st.rate, v => v + '%')}</div>
+            <div class="lq-f"><label>5️⃣ التأمين فالعام</label><div class="lq-in sm"><input id="lq-ins" inputmode="decimal" value="${st.ins}"><span>%</span></div><small class="muted">عادة 0,3% حتى 0,5%</small></div>
+          </div>
+          <p class="muted" style="font-size:12px;margin:10px 0 0">⚠️ حساب تقريبي للتوجيه فقط — العرض النهائي كيعطيه البنك.</p>
+        </div>
         <div id="lres"></div>
       </div>
       <div class="card" id="ltab" style="margin-top:16px"></div>`;
-    bindMoney(main());
-    const form = $('#lf');
+    const P = $('#lq-price'), Dn = $('#lq-down'), Rt = $('#lq-rate'), In = $('#lq-ins');
+    const val = el => num(String(el.value).replace(/[\s  ]/g, '').replace(',', '.'));
+    const fmtIn = el => { const v = val(el); if (v != null && v >= 1000) { el.value = fmtRaw(Math.round(v)); } };
+    const M = n => fmt(Math.round(n));
     const draw = () => {
-      const L = loanCalc(collect(form));
-      if (!L.price) { $('#lres').innerHTML = `<div class="card empty"><div class="big">🏦</div><h3>دخل ثمن العقار</h3><p>غادي نحسبو القسط الشهري مباشرة.</p></div>`; $('#ltab').innerHTML = ''; return; }
-      const M = n => fmt(Math.round(n));
-      $('#lres').innerHTML = `<div class="card card-pad ln-card">
-        <div class="ln-top"><div><small>القسط الشهري</small><b class="ln-big">${M(L.monthly)} <span>درهم</span></b><small class="muted">منها ${M(L.insM)} د تأمين · لمدة ${L.years} عام</small></div>
-          ${donut([['المبلغ', L.principal, 'var(--gold)'], ['الفوائد', L.interest, '#e9c46a'], ['التأمين', L.insTot, '#8a8a8a']])}</div>
-        <div class="ln-leg"><span><i style="background:var(--gold)"></i> المبلغ المقترض</span><span><i style="background:#e9c46a"></i> الفوائد</span><span><i style="background:#8a8a8a"></i> التأمين</span></div>
-        <div class="kv" style="margin-top:14px">
-          <div><small>التسبيق (${L.downPct}%)</small><b>${M(L.down)} د</b></div>
+      const price = val(P) || 0; let down = val(Dn) || 0;
+      // كتب 20 ولا 30؟ ← نسبة مئوية (الناس كيكتبوها هكا بزاف)
+      if (price && down > 0 && down <= 100) down = price * down / 100;
+      down = Math.min(down, price);
+      const downPct = price ? down / price * 100 : 0;
+      $('#lq-price-h').textContent = price ? `= ${fmtRaw(Math.round(price / 10000 * 10) / 10)} مليون سنتيم` : '';
+      $('#lq-down-h').textContent = price ? `= ${(Math.round(downPct * 10) / 10)}% من الثمن · القرض: ${fmtRaw(Math.round(price - down))} درهم` : '';
+      $$('#lq-dp button').forEach(b => b.classList.toggle('on', price > 0 && Math.abs(downPct - +b.dataset.p) < 0.05));
+      if (!price) { $('#lres').innerHTML = `<div class="card empty"><div class="big">🏦</div><h3>دخل ثمن العقار</h3><p>والتسبيق، والقسط الشهري كيبان هنا مباشرة.</p></div>`; $('#ltab').innerHTML = ''; return; }
+      const L = loanCalc({ price, down: downPct, years: st.years, rate: val(Rt) == null ? 4.5 : val(Rt), ins: val(In) == null ? 0.3 : val(In) });
+      const cmp = [10, 15, 20, 25].map(y => [y, loanCalc({ price, down: downPct, years: y, rate: L.rate, ins: val(In) == null ? 0.3 : val(In) }).monthly]);
+      $('#lres').innerHTML = `<div class="card card-pad ln-card lq-res">
+        <small>💳 القسط الشهري</small><b class="ln-big">${M(L.monthly)} <span>درهم / الشهر</span></b>
+        <small class="muted">لمدة ${L.years} عام · منها ${M(L.insM)} د تأمين</small>
+        <div class="lq-cmp">${cmp.map(([y, m]) => `<button type="button" class="${y === L.years ? 'on' : ''}" data-y="${y}"><small>${y} عام</small><b>${M(m)}</b></button>`).join('')}</div>
+        <div class="kv" style="margin-top:12px">
           <div><small>مبلغ القرض</small><b>${M(L.principal)} د</b></div>
-          <div><small>مجموع الفوائد</small><b>${M(L.interest)} د</b></div>
-          <div><small>التكلفة الإجمالية للقرض</small><b>${M(L.principal + L.interest + L.insTot)} د</b></div>
+          <div><small>التسبيق (${Math.round(L.downPct)}%)</small><b>${M(L.down)} د</b></div>
           <div><small>الدخل الشهري اللازم (القسط ≤ 40%)</small><b style="color:var(--green)">${M(L.income)} د</b></div>
-          <div><small>مصاريف التسجيل والموثق (تقريبا)</small><b>${M(L.price * 0.075)} د</b></div>
+          <div><small>مجموع الفوائد</small><b>${M(L.interest)} د</b></div>
+          <div><small>مصاريف التسجيل والموثق (~7%)</small><b>${M(L.price * 0.07)} د</b></div>
+          <div><small>الكاش اللازم (التسبيق + المصاريف)</small><b>${M(L.down + L.price * 0.07)} د</b></div>
         </div>
-        <div class="btn-row" style="margin-top:14px"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`🏦 محاكاة قرض — ${offName()}\nثمن العقار: ${fmtRaw(L.price)} د\nالتسبيق: ${fmtRaw(Math.round(L.down))} د (${L.downPct}%)\nمبلغ القرض: ${fmtRaw(Math.round(L.principal))} د\nالمدة: ${L.years} عام · الفائدة ${L.rate}%\n➡️ القسط الشهري: ${fmtRaw(Math.round(L.monthly))} د\nالدخل اللازم: ${fmtRaw(Math.round(L.income))} د/شهر\n📞 ${offPhone()}`)}">${ic('wa', 16)} صيفط للزبون</a></div></div>`;
+        <div class="btn-row" style="margin-top:12px"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`🏦 محاكاة قرض — ${offName()}\nثمن العقار: ${fmtRaw(L.price)} د\nالتسبيق: ${fmtRaw(Math.round(L.down))} د (${Math.round(L.downPct)}%)\nالقرض: ${fmtRaw(Math.round(L.principal))} د على ${L.years} عام بـ ${L.rate}%\n👉 القسط الشهري: ${fmtRaw(Math.round(L.monthly))} د\nالدخل اللازم: ${fmtRaw(Math.round(L.income))} د/الشهر\n(حساب تقريبي — العرض النهائي عند البنك)`)}">${ic('wa', 16)} صيفط للزبون</a></div></div>`;
+      $$('.lq-cmp [data-y]').forEach(b => b.onclick = () => { st.years = +b.dataset.y; $$('[data-k="years"] button').forEach(x => x.classList.toggle('on', +x.dataset.v === st.years)); draw(); });
       $('#ltab').innerHTML = `<div class="pair-head"><b>📅 جدول السداد عام بعام</b></div><div class="ln-rows">${L.yearly.map(x => `<div class="list-row"><b style="width:64px">العام ${x.y}</b>
-        <div class="grow"><div class="ln-bar"><i style="width:${(x.pp / (x.pp + x.ip) * 100).toFixed(1)}%"></i></div><small class="muted">رأس المال ${M(x.pp)} · الفوائد ${M(x.ip)}</small></div><small>الباقي <b>${M(x.bal)}</b></small></div>`).join('')}</div>`;
+        <div class="grow"><div class="ln-bar"><i style="width:${(x.pp / ((x.pp + x.ip) || 1) * 100).toFixed(1)}%"></i></div><small class="muted">رأس المال ${M(x.pp)} · الفوائد ${M(x.ip)}</small></div><small>الباقي <b>${M(x.bal)}</b></small></div>`).join('')}</div>`;
     };
-    $$('input, select', form).forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', debounce(draw, 120)));
+    const d = debounce(draw, 120);
+    [P, Dn, Rt, In].forEach(el => { el.addEventListener('input', d); el.addEventListener('blur', () => { if (el === P || el === Dn) fmtIn(el); }); });
+    $$('#lq-dp button').forEach(b => b.onclick = () => { const price = val(P); if (!price) return P.focus(); Dn.value = fmtRaw(Math.round(price * +b.dataset.p / 100)); draw(); });
+    $$('.lq-chips[data-k]').forEach(g => g.onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (g.dataset.k === 'years') st.years = +b.dataset.v; else Rt.value = b.dataset.v;
+      $$('button', g).forEach(x => x.classList.toggle('on', x === b)); draw();
+    });
+    Rt.addEventListener('input', () => $$('[data-k="rate"] button').forEach(x => x.classList.toggle('on', x.dataset.v === Rt.value)));
     draw();
   }
 
@@ -9053,8 +9091,31 @@
       ${fInput('feePct', 'عمولة التدبير ديال المكتب (%)', l.feePct, { type: 'number' })}
       ${fInput('start', 'بداية العقد', l.start, { type: 'date' })}${fInput('end', 'نهاية العقد (اختياري)', l.end, { type: 'date' })}
       ${fText('notes', 'ملاحظات', l.notes)}</form>
+      <div class="ls-files"><b>📎 الوثائق والصور (العقد، البطاقة، بيان الحالة، الوصولات…)</b>
+        <div class="btn-row" style="margin-top:8px"><label class="btn sm">${ic('upload', 15)} وثيقة / صورة<input type="file" id="ls-up" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple hidden></label>
+          <label class="btn sm gold">${ic('camera', 15)} صوّر بالكاميرا<input type="file" id="ls-cam" accept="image/*" capture="environment" hidden></label></div>
+        <div class="progress hidden" id="ls-prog"><div style="width:0"></div></div><div class="media-grid" id="ls-grid"></div></div>
       <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="lsf-ok">${ic('check', 16)} حفظ</button></div>`, (box, close) => {
       bindMoney(box);
+      // الملفات كتتحفظ فالجهاز (وكتترفع للسحابة مع العقد)؛ إلا ما تسجلش العقد، التنظيف الأوتوماتيكي كيمسحها
+      const media = (l.media || []).slice();
+      const paint = () => { const g = $('#ls-grid', box); g.innerHTML = media.map(m => `<div class="media-item">${m.isImage ? `<img class="hidden" data-thumb="${m.id}" alt="">` : `<div class="doc">${ic('file', 30)}<span>${esc(m.name)}</span></div>`}<button type="button" class="x" data-lrm="${m.id}" title="حذف">${ic('trash', 15)}</button></div>`).join(''); hydrateThumbs(g); };
+      paint();
+      $('#ls-grid', box).addEventListener('click', async e => { const rm = e.target.closest('[data-lrm]'); if (!rm || !(await confirmBox('حذف هذا الملف؟', 'حذف'))) return; const i = media.findIndex(m => m.id === rm.dataset.lrm); if (i >= 0) media.splice(i, 1); paint(); });
+      const addFiles = async files => {
+        const prog = $('#ls-prog', box); prog.classList.remove('hidden'); let done = 0;
+        for (const f of files) {
+          const fid = uid(), isImage = f.type.startsWith('image/');
+          const rec = { id: fid, owner: l.id, kind: 'doc', name: f.name || ('photo-' + today() + '.jpg'), mime: f.type, size: f.size };
+          if (isImage) { const big = await compressImage(f, 1920, 0.85), small = await compressImage(f, 480, 0.75); rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size; }
+          else rec.blob = f;
+          await DB.put('files', rec);
+          media.push({ id: fid, kind: 'doc', name: rec.name, mime: rec.mime, size: rec.size, isImage });
+          done++; prog.firstElementChild.style.width = (done / files.length * 100) + '%';
+        }
+        setTimeout(() => prog.classList.add('hidden'), 400); paint();
+      };
+      ['#ls-up', '#ls-cam'].forEach(s => { const inp = $(s, box); inp.onchange = () => { if (inp.files.length) addFiles(Array.from(inp.files)); inp.value = ''; }; });
       const ps = $('[name=propId]', box);
       ps.onchange = () => { const p = S.props.find(x => x.id === ps.value); if (!p) return; $('[name=propLabel]', box).value = [p.ref, p.title || typeAr(p.type), p.district].filter(Boolean).join(' — ');
         if (p.owner) { if (!$('[name="owner.name"]', box).value) $('[name="owner.name"]', box).value = p.owner.name || ''; if (!$('[name="owner.phone"]', box).value) $('[name="owner.phone"]', box).value = p.owner.phone || ''; }
@@ -9062,7 +9123,7 @@
       $('#lsf-ok', box).onclick = async () => {
         const v = collect($('#lsf', box));
         if (!v.tenant.name || !v.rent) { toast('دخل اسم المكتري والسومة'); return; }
-        Object.assign(l, v); await saveListItem('leases', l); close(); toast('تم ✓'); location.hash = '#/rental/' + l.id; route();
+        Object.assign(l, v, { media }); await saveListItem('leases', l); close(); toast('تم ✓'); location.hash = '#/rental/' + l.id; route();
       };
     });
   }
@@ -9082,11 +9143,22 @@
           <div><small>الضمانة</small><b>${l.deposit ? M0(l.deposit) + ' د' : '—'}</b></div><div><small>من</small><b>${esc(l.start || '—')}</b></div><div><small>حتى</small><b>${esc(l.end || '—')}</b></div>
           <div><small>عمولة التدبير</small><b>${esc(l.feePct || 0)}%</b></div><div><small>المتأخر</small><b class="${arr.length ? 'txt-red' : ''}">${arr.length ? arr.length + ' شهر · ' + M0(arr.length * (num(l.rent) || 0)) + ' د' : 'لا شيء ✓'}</b></div></div>
         <div class="btn-row" style="margin-top:12px">${t.phone ? `<a class="btn sm" href="${telLink(t.phone)}">${ic('phone', 14)} المكتري</a>` : ''}${l.owner && l.owner.phone ? `<a class="btn sm" href="${telLink(l.owner.phone)}">${ic('phone', 14)} المالك</a>` : ''}</div>
-        ${l.notes ? `<p class="desc">${esc(l.notes)}</p>` : ''}</div>
+        ${l.notes ? `<p class="desc">${esc(l.notes)}</p>` : ''}
+        <div class="ls-files"><b>📎 الوثائق والصور (${(l.media || []).length})</b>
+          ${(l.media || []).length ? `<div class="media-grid" id="ls-view">${l.media.map(m => `<a href="#" class="media-item" data-lf="${m.id}">${m.isImage ? `<img class="hidden" data-thumb="${m.id}" alt="">` : `<div class="doc">${ic('file', 30)}<span>${esc(m.name)}</span></div>`}</a>`).join('')}</div>` : '<p class="muted" style="margin:6px 0 0;font-size:13px">ما كاين حتى ملف. «تعديل» ← زيد العقد، البطاقة، بيان الحالة بالصور…</p>'}
+          <div class="btn-row" style="margin-top:8px"><button class="btn sm" id="l-files">${ic('camera', 15)} زيد وثيقة / صورة</button></div></div></div>
       <div class="card"><div class="pair-head"><b>📅 الأداء الشهري</b></div>${months.map(m => { const st = leaseState(l, m), pay = (l.payments || {})[m]; return `<div class="list-row">
         <div class="grow"><b>${ymAr(m)}</b><small class="muted">${pay ? `تخلص ${M0(pay.paid)} د · ${esc(pay.date || '')}${pay.method ? ' · ' + esc(pay.method) : ''}` : ''}</small></div><span class="badge ${LST[st][1]}">${LST[st][0]}</span>
         ${pay ? `<button class="btn sm" data-rcpt="${m}">🧾 وصل</button><button class="btn sm" data-unpay="${m}">✕</button>` : st !== 'na' ? `<button class="btn sm gold" data-pay="${m}">✓ تخلص</button>` : ''}</div>`; }).join('')}</div></div>`;
     $('#l-edit').onclick = () => leaseForm(l);
+    $('#l-files').onclick = () => leaseForm(l);
+    const lv = $('#ls-view'); if (lv) { hydrateThumbs(lv); lv.onclick = async e => {
+      const a = e.target.closest('[data-lf]'); if (!a) return; e.preventDefault();
+      const d = l.media.find(x => x.id === a.dataset.lf), url = await fileUrl(d.id);
+      if (!url) return toast('الملف ما كاينش فهاد الجهاز — تسنا المزامنة');
+      if (d.mime && (d.mime.startsWith('image/') || d.mime === 'application/pdf')) window.open(url, '_blank');
+      else { const a2 = document.createElement('a'); a2.href = url; a2.download = d.name; a2.click(); }
+    }; }
     $('#l-end').onclick = async () => { l.ended = !l.ended; await saveListItem('leases', l); viewRental(id); };
     $('#l-del').onclick = async () => { if (!(await confirmBox('حذف عقد الكراء نهائيا؟', 'حذف'))) return; await delListItem('leases', id); location.hash = '#/rentals'; };
     $$('[data-pay]').forEach(b => b.onclick = () => modal(`<h3>✓ أداء ${ymAr(b.dataset.pay)}</h3><form id="pf" class="form-grid">

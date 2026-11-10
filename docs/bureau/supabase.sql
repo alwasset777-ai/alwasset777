@@ -1403,3 +1403,12 @@ begin
 end $$;
 revoke execute on function public.w777_register(text, text, text, text, text) from public, anon;
 grant execute on function public.w777_register(text, text, text, text, text) to authenticated;
+
+-- v176: عرض 777 خارج المغرب ولا بنفس الدرجات (7 الأوائل مجاني مدى الحياة، 70 -50%، 700 -25%) بلاصة «70 مجاني»
+create or replace function public.w777_sub_ok(a public.w777_agencies) returns boolean language sql stable security definer set search_path = public as $$
+  select a.terms_at is null
+    or (a.seat_no is not null and a.seat_no <= 7)
+    or (a.sub_until is not null and a.sub_until >= current_date)
+    or coalesce(a.trial_until, (a.terms_at + interval '6 months')::date) >= current_date $$;
+revoke execute on function public.w777_sub_ok(public.w777_agencies) from public, anon;
+grant execute on function public.w777_sub_ok(public.w777_agencies) to authenticated;
