@@ -1771,3 +1771,43 @@ body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mo
 /* أزرار «دليل الاستعمال» فوق الخلفية الكحلة: النص كان أبيض فوق أبيض */
 .gd-hero .btn:not(.gold) { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.35); }
 .gd-hero .btn:not(.gold):hover { background: rgba(255,255,255,.18); }
+
+/* 🎟️ رقم الاشتراك ديال المشترك فعرض 777 */
+.perk-mini { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 10px 14px; border-radius: 16px; text-decoration: none; color: #fff; background: linear-gradient(135deg, #1b1b1f, #3a0a14); box-shadow: 0 8px 20px -10px rgba(200,16,46,.6); }
+.perk-mini span { display: flex; flex-direction: column; min-width: 0; }
+.perk-mini small { opacity: .8; font-size: 12px; }
+.perk-mini b { font-size: 14.5px; }
+.perk-n { flex: none; min-width: 46px; height: 46px; padding: 0 8px; border-radius: 14px; display: grid; place-items: center; font-weight: 900; font-size: 20px; color: #3a2a00; background: linear-gradient(145deg, #ffe08a, #e0a800); box-shadow: inset 0 -3px 0 rgba(0,0,0,.18); }
+.perk-n.big { min-width: 64px; height: 64px; font-size: 28px; border-radius: 18px; }
+.perk-card { padding: 16px; margin: 0 0 14px; border: 2px solid #e0a800; }
+.perk-top { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.perk-top h3 { margin: 2px 0; font-size: 19px; }
+.perk-top small { color: var(--muted); }
+
+/* 📎 وثائق وصور عقد الكراء */
+.ls-files { margin-top: 14px; padding: 12px; border-radius: 14px; background: var(--surface-2); }
+.ls-files .media-grid { margin-top: 8px; }
+
+/* 🏦 حساب القرض الساهل */
+.lq { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 900px) { .lq { grid-template-columns: 1fr 1fr; align-items: start; } }
+.lq-f { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.lq-f label { font-weight: 800; font-size: 15px; }
+.lq-in { display: flex; align-items: center; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); padding: 0 12px; }
+.lq-in:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,16,46,.12); }
+.lq-in input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-size: 22px; font-weight: 900; padding: 10px 0; color: var(--text); direction: ltr; text-align: right; }
+.lq-in.sm input { font-size: 18px; }
+.lq-in span { color: var(--muted); font-weight: 800; }
+.lq-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.lq-chips button, .lq-cmp button { border: 2px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 14px; font: inherit; font-weight: 800; cursor: pointer; }
+.lq-chips button.on, .lq-cmp button.on { background: var(--gold); border-color: var(--gold); color: #fff; }
+.lq-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .lq-row { grid-template-columns: 1fr; } }
+.lq-res { position: sticky; top: 70px; }
+.lq-res > small { display: block; }
+.lq-cmp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+.lq-cmp button { border-radius: 12px; padding: 6px 4px; display: flex; flex-direction: column; align-items: center; }
+.lq-cmp button small { font-size: 11.5px; opacity: .8; } .lq-cmp button b { font-size: 14px; }
+.lq { grid-template-columns: minmax(0, 1fr); } .lq > * { min-width: 0; } .lq-in input { width: 100%; }
+@media (min-width: 900px) { .lq { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.lq-row > * { min-width: 0; }
