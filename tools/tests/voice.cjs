@@ -28,7 +28,7 @@ async function run(name,url,{login=false,chip=1,textDelay=1200,ttsDelay=0}={}){
   await c.close();}
 await run('pub instant answer',BASE+'game.html',{chip:0});
 await run('pub server 1.2s',BASE+'game.html',{chip:1,textDelay:1200});
-await run('app (no login) server 1.2s',BASE+'#/game',{chip:1,textDelay:1200});
-await run('app login, natural voice slow 5s',BASE+'#/game',{login:true,chip:1,textDelay:600,ttsDelay:5000});
-await run('app login instant answer',BASE+'#/game',{login:true,chip:0,ttsDelay:5000});
+await run('app (no login) server 1.2s',BASE+'#/game/wasla',{chip:1,textDelay:1200});
+await run('app login, natural voice slow 5s',BASE+'#/game/wasla',{login:true,chip:1,textDelay:600,ttsDelay:5000});
+await run('app login instant answer',BASE+'#/game/wasla',{login:true,chip:0,ttsDelay:5000});
 await b.close();process.exit(bad?1:0);})();

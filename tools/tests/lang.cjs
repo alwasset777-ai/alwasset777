@@ -19,7 +19,7 @@ const same=await p.evaluate(()=>!!window.__k);const enText=await p.evaluate(()=>
 // إعادة التحميل: اللغة باقية والترجمة من الذاكرة (بلا طلبات جداد كثار)
 const r0=reqs;await p.reload();await p.waitForTimeout(1500);const en2=await arab();const reqAfter=reqs-r0;
 // اللعبة ما كتترجمش
-await p.evaluate(()=>{location.hash='#/game';});await p.waitForTimeout(2500);const game=await p.evaluate(()=>{const r=document.querySelector('#cw-root');return r?{tr:/\[(fr|en)\]/.test(r.innerText),len:r.innerText.length}:null;});
+await p.evaluate(()=>{location.hash='#/game/wasla';});await p.waitForTimeout(2500);const game=await p.evaluate(()=>{const r=document.querySelector('#cw-root');return r?{tr:/\[(fr|en)\]/.test(r.innerText),len:r.innerText.length}:null;});
 // الرجوع للعربية
 await p.evaluate(()=>{location.hash='#/';});await p.waitForTimeout(800);
 await p.click('#btn-lang');await p.waitForTimeout(300);await p.click('[data-lang="ar"]');await p.waitForTimeout(800);const ar=await arab();

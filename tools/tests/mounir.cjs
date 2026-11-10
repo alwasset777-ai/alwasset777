@@ -1,6 +1,6 @@
 const {chromium}=require('playwright');
 (async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
-for (const [url,name] of [['http://localhost:8777/bureau/#/game','app'],['http://localhost:8777/bureau/game.html','pub']]){
+for (const [url,name] of [['http://localhost:8777/bureau/#/game/wasla','app'],['http://localhost:8777/bureau/game.html','pub']]){
 const c=await b.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});const p=await c.newPage();
 const errs=[];p.on('pageerror',e=>errs.push(e.message));
 let sent=null;

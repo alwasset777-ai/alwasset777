@@ -11,6 +11,7 @@
 - تطبيق المكتب (PWA، JavaScript بلا framework): `docs/bureau/` — منشور على GitHub Pages: https://alwasset777-ai.github.io/alwasset777/bureau/
   - `app.js` (كل الصفحات + الوكيل «منير»)، `sync.js` (Supabase)، `db.js` (IndexedDB)، `styles.css`، `sw.js` (رقم الـ cache `w777-bureau-vNNN` خاصو يتزاد مع كل نشر).
   - اللعبة «وصلة العقار»: `wasla.js` + `wasla-levels.js` (مولّد بـ `python3 tools/wasla_build.py` من `tools/wasla-data/`)، الصور فـ `docs/bureau/game/img/` (+ `credits.json`)، الصفحة العمومية `game.html`.
+  - «الوسيط GAMES» (`#/game`): صفحة 7 شعارات + 6 ألعاب بالمراحل فـ `games.js` (شحال يسوى؟، كاشف النصب، الحاسبة السريعة، صح ولا غلط، مليونير العقار، بني دارك؛ النجوم فـ localStorage `w777_games`)، وصلة العقار ولات فـ `#/game/wasla`. الصفحة العمومية `games.html`. الشعار المشترك `icons/games/wordmark.webp`.
   - نصوص نماذج العقود: `files/contrats/texts.json` (مولّد بـ `python3 tools/contracts_text.py`).
 - «التمويل العقاري» (`#/tamwil`): البيانات فـ `tools/finance/institutions.json` ← `python3 tools/finance/build_app_data.py` كيولد `docs/bureau/finance-data.js` (معلومات تعريفية فقط، بلا نسب حتى يأكدها المكتب). الشعارات فـ `docs/bureau/icons/fin/*.webp`. ملفات PDF (الدليل + طلبات الاتفاقيات) كتتولد بـ `python3 tools/finance/guide.py` و `letters.py` وما كتدخلش للتطبيق.
 - الوكيل الذكي: Supabase Edge Function `supabase/functions/w777-agent/index.ts` (Gemini فابور أولاً؛ Claude غير إلا زاد المدير مفتاحو). الأدوات كتتنفذ فالمتصفح (`agRunTool` فـ `app.js`).
@@ -19,7 +20,7 @@
 ## أوامر
 - فحص سريع: `node --check docs/bureau/app.js docs/bureau/wasla.js`
 - اختبارات المتصفح (Playwright، chromium فـ `/opt/pw-browsers/chromium`):
-  `cd docs && python3 -m http.server 8777 &` ثم `NODE_PATH=$(npm root -g) node tools/tests/crawl.cjs` (كل الصفحات والقوائم والصفحات العمومية)، `tools/tests/mascot.cjs` (اللعبة)، `tools/tests/custag.cjs` (وكيل المشترك فاللعبة)، `tools/tests/mounir.cjs` (منير فاللعبة)، `tools/tests/mfa.cjs` (التحقق بخطوتين بخادم مزيف)، `tools/tests/voice.cjs` (منير كيتكلم فـ 2 ثواني على الأكثر)، `tools/tests/agcalc.cjs` (أدوات الحساب ديال الوكيل)، `tools/tests/psel.cjs` (التحديد والمسح فوق صور العقارات)، `tools/tests/sel4.cjs` (التحديد والمسح فالطلبات والمواعيد والمطابقة)، `tools/tests/update.cjs` (زر «تحديث كامل للتطبيق»).
+  `cd docs && python3 -m http.server 8777 &` ثم `NODE_PATH=$(npm root -g) node tools/tests/crawl.cjs` (كل الصفحات والقوائم والصفحات العمومية)، `tools/tests/mascot.cjs` (اللعبة)، `tools/tests/custag.cjs` (وكيل المشترك فاللعبة)، `tools/tests/mounir.cjs` (منير فاللعبة)، `tools/tests/mfa.cjs` (التحقق بخطوتين بخادم مزيف)، `tools/tests/voice.cjs` (منير كيتكلم فـ 2 ثواني على الأكثر)، `tools/tests/agcalc.cjs` (أدوات الحساب ديال الوكيل)، `tools/tests/psel.cjs` (التحديد والمسح فوق صور العقارات)، `tools/tests/sel4.cjs` (التحديد والمسح فالطلبات والمواعيد والمطابقة)، `tools/tests/update.cjs` (زر «تحديث كامل للتطبيق»)، `tools/tests/games.cjs` (الوسيط GAMES: 7 شعارات + كل لعبة حتى النتيجة + games.html).
 - النشر: PR → دمج (squash) فـ `main` → `tools/deploy-pages.sh "Deploy: …"` (ينشر `docs/bureau` لـ gh-pages).
 - الـ Edge Function: كتنشر عبر Composio (`SUPABASE_DEPLOY_FUNCTION` بالنص ديال الملف من commit، ومن بعد `SUPABASE_UPDATE_A_FUNCTION` بـ `verify_jwt: false`)، والفحص: `POST {}` ← `401 {"error":"auth"}` و `POST {"ping":true}` ← `{"ok":true}`.
 
