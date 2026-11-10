@@ -149,6 +149,7 @@
 .ac-cc{display:flex;gap:10px;align-items:center;padding:12px;border-radius:16px;background:var(--surface,#fff);border:1px solid var(--line,#e6e6e6);text-decoration:none;color:inherit;min-width:0}
 .ac-cc.me{border-color:#0a7a2f;box-shadow:0 0 0 2px rgba(10,122,47,.15)}.ac-cc.off{opacity:.55}
 .ac-cc .md{font-size:30px;flex:none}.ac-cc .tx{flex:1;min-width:0;display:flex;flex-direction:column}.ac-cc .tx b{font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ac-cc small{color:var(--muted,#777);font-size:12.5px}.ac-cc .no{font-family:ui-monospace,monospace;font-size:11.5px;text-align:start}
+.ac-cert .vf{display:flex;align-items:flex-end;gap:1.4cqw}.ac-cert .qr{width:8.5cqw;height:8.5cqw;flex:none;background:#fff}.ac-cert .qr svg{width:100%;height:100%;display:block}.ac-cert .vf small{display:block;font-size:1.25cqw;color:#777}
 .ac-cert .seal{flex:none;width:13cqw;height:13cqw;transform:rotate(-12deg);opacity:.93;filter:drop-shadow(0 .3cqw .6cqw rgba(200,16,46,.25))}.ac-cert .seal svg{width:100%;height:100%;display:block}
 @media print{body.ac-printing *{visibility:hidden!important}body.ac-printing .ac-cert,body.ac-printing .ac-cert *{visibility:visible!important}
  body.ac-printing .ac-cert{position:fixed;inset:0;margin:0;max-width:none;width:100%;border-radius:0;box-shadow:none}}
@@ -309,8 +310,16 @@
           <div class="nm">${esc(c.name)}</div>
           <div class="tx">أتم بنجاح برنامج «من مندوب عقاري إلى صاحب وكالة» (7 وحدات · 42 درساً)، واجتاز اختبارات جميع الوحدات بمعدل <b>${pct(c.avg)}</b>.</div>
           <div class="mods">${M.map(x => `<span>${x.icon} ${x.m} · ${esc(x.t.split(':')[0])}</span>`).join('')}</div>
-          <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(c.no || '')}</b></div><div class="seal" aria-label="ختم مجموعة الوسيط"><svg viewBox="0 0 200 200" direction="ltr"><defs><path id="act1" d="M23,100 a77,77 0 1,1 154,0"/><path id="act2" d="M16,100 a84,84 0 0,0 168,0"/><clipPath id="acclip"><circle cx="100" cy="100" r="58"/></clipPath></defs><circle cx="100" cy="100" r="96" fill="#fff" stroke="#c8102e" stroke-width="6"/><text font-size="17" font-weight="900" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act1" startOffset="50%">مجموعة الوسيط</textPath></text><text font-size="13" font-weight="800" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act2" startOffset="50%">★ أكاديمية التكوين ★</textPath></text><circle cx="100" cy="100" r="62" fill="#fff" stroke="#c8102e" stroke-width="2.5"/><image href="icons/logo.png" x="40" y="40" width="120" height="120" clip-path="url(#acclip)"/></svg></div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
+          <div class="ft"><div class="vf">${c.no ? `<span class="qr" data-qr="${esc(verifyUrl(c.no))}"></span>` : ''}<div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(c.no || '')}</b>${c.no ? '<small>🔎 سكاني باش تتحقق</small>' : ''}</div></div><div class="seal" aria-label="ختم مجموعة الوسيط"><svg viewBox="0 0 200 200" direction="ltr"><defs><path id="act1" d="M23,100 a77,77 0 1,1 154,0"/><path id="act2" d="M16,100 a84,84 0 0,0 168,0"/><clipPath id="acclip"><circle cx="100" cy="100" r="58"/></clipPath></defs><circle cx="100" cy="100" r="96" fill="#fff" stroke="#c8102e" stroke-width="6"/><text font-size="17" font-weight="900" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act1" startOffset="50%">مجموعة الوسيط</textPath></text><text font-size="13" font-weight="800" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act2" startOffset="50%">★ أكاديمية التكوين ★</textPath></text><circle cx="100" cy="100" r="62" fill="#fff" stroke="#c8102e" stroke-width="2.5"/><image href="icons/logo.png" x="40" y="40" width="120" height="120" clip-path="url(#acclip)"/></svg></div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
         </div>${ro ? `<div class="wm" aria-hidden="true">${'<span>للعرض فقط · مجموعة الوسيط</span>'.repeat(12)}</div>` : ''}</div>`;
+  }
+  // رابط التحقق العمومي + رمز QR فالشهادة (vendor/qrcode.js كيتحمل غير ملي خاص)
+  const verifyUrl = no => new URL('verify.html?no=' + encodeURIComponent(no), location.href).href;
+  function fillQr(root) {
+    const els = root.querySelectorAll('[data-qr]'); if (!els.length) return;
+    const go = () => els.forEach(el => { try { const q = window.qrcode(0, 'M'); q.addData(el.dataset.qr); q.make(); el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch (e) { /* */ } });
+    if (window.qrcode) return go();
+    const sc = document.createElement('script'); sc.src = 'vendor/qrcode.js'; sc.onload = go; document.head.appendChild(sc);
   }
   // طبع الشهادة (A4 بالعرض) — غير لصاحبها وللمدير
   function printCert() {
@@ -349,6 +358,7 @@
         setAll(s2 => { const dd = (s2.cert && s2.cert.date) || Date.now(); s2.cert = { name: v, date: dd, no: certNo(v, dd) }; });
         if (host.mood) host.mood('prize'); draw();
       };
+      fillQr(root);
       const pr = root.querySelector('#ac-pr'); if (pr) pr.onclick = printCert;
       const sh = root.querySelector('#ac-sh'); if (sh) sh.onclick = () => {
         const t = `🎓 الحمد لله! حصلت على «شهادة الوكيل العقاري المحترف» من أكاديمية الوسيط (7 وحدات) — ${name} · ${no}`;
@@ -403,6 +413,7 @@
         <div class="ac-card"><h3 style="margin:0">🏆 ${esc(c.cert_name)}</h3><p class="muted" style="margin:4px 0 0">رقم الشهادة <b dir="ltr">${esc(c.cert_no)}</b>${c.mine ? ' · شهادتك' : ''}${c.hidden ? ' · 🚫 مخبية على المشتركين' : ''}</p></div>
         ${certHtml({ name: c.cert_name, no: c.cert_no, date: c.cert_date, avg: +c.avg || 0 }, !can)}
         <div class="ac-row" style="justify-content:center">${can ? '<button class="ac-btn" id="ac-pr">🖨️ تحميل / طبع PDF</button>' : '<span class="ac-tag lk">🔒 التحميل غير لصاحب الشهادة وللمدير</span>'}${host.admin ? `<button class="ac-btn w" id="ac-hide">${c.hidden ? '👁️ رجّعها للوحة' : '🚫 خبّيها من اللوحة'}</button>` : ''}</div></div>`;
+      fillQr(root);
       const pr = root.querySelector('#ac-pr'); if (pr) pr.onclick = printCert;
       const hd = root.querySelector('#ac-hide'); if (hd) hd.onclick = async () => {
         hd.disabled = true;
@@ -412,7 +423,8 @@
     }
     const dt = d => d ? new Date(+d).toLocaleDateString('ar-MA', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
     root.innerHTML = `<div class="ac">${crumb.replace(' ‹ <a href="#/learn/certs">🏆 لوحة الشهادات</a>', ' ‹ 🏆 لوحة الشهادات')}
-      <div class="ac-card"><h3 style="margin:0">🏆 لوحة الشهادات (${rows.filter(r => !r.hidden).length})</h3><p class="muted" style="margin:6px 0 0;line-height:1.7">المشتركين اللي كملو الوحدات السبعة ونجحو فالاختبارات. أي واحد يقدر يشوف الشهادة، والتحميل غير لصاحبها وللمدير.</p></div>
+      <div class="ac-card"><h3 style="margin:0">🏆 لوحة الشهادات (${rows.filter(r => !r.hidden).length})</h3><p class="muted" style="margin:6px 0 0;line-height:1.7">المشتركين اللي كملو الوحدات السبعة ونجحو فالاختبارات. أي واحد يقدر يشوف الشهادة، والتحميل غير لصاحبها وللمدير.</p>
+        <div class="ac-row" style="margin-top:10px"><a class="ac-btn w" href="verify.html" target="_blank" rel="noopener">🔎 تحقق من شهادة برقمها</a></div></div>
       ${rows.length ? `<div class="ac-certs">${rows.map(r => `<a class="ac-cc${r.mine ? ' me' : ''}${r.hidden ? ' off' : ''}" href="#/learn/certs/${encodeURIComponent(r.cert_no)}">
         <span class="md">🏅</span><span class="tx"><b>${esc(r.cert_name)}</b><small>${esc(dt(r.cert_date))}${r.cert_date ? ' · ' : ''}المعدل ${pct(+r.avg || 0)}</small><small dir="ltr" class="no">${esc(r.cert_no)}</small></span>
         ${r.mine ? '<span class="ac-tag ok">شهادتك</span>' : r.hidden ? '<span class="ac-tag lk">مخبية</span>' : ''}</a>`).join('')}</div>`
