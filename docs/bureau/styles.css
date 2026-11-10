@@ -1755,3 +1755,16 @@ body.gated #main { margin-inline: auto; }
 .pc-mi.del { color: #c8102e; }
 .pc-mi.del:hover { background: #fdecee; }
 .psel-on .pc-mi[data-psel] { color: #c8102e; }
+
+/* «⋯» فالطلبات والمواعيد والمطابقة + الضغطة الطويلة */
+.sel-tools.in-row.pm-wrap { position: relative; }
+.sel-tools.in-row .pc-more, .sel-tools.on-corner .pc-more { background: #fff; box-shadow: 0 0 0 1px #e5e5e5, 0 3px 8px -4px rgba(0,0,0,.35); }
+.pm-open { z-index: 20; position: relative; overflow: visible !important; }
+.pm-open .prop-cover { overflow: visible; }
+.sel-tools.in-row .pc-menu { top: 46px; }
+#plist .prop-card, #rlist [data-sid], .appt-list [data-sid], #mlist [data-sid] { -webkit-touch-callout: none; }
+body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mode .appt-list [data-sid], body.psel-mode #mlist [data-sid] { user-select: none; -webkit-user-select: none; }
+.prop-card.psel-on { outline: 3px solid #c8102e; outline-offset: -3px; }
+/* القائمة ما تتقطعش (content-visibility / overflow ديال اللائحة) */
+.pm-open { content-visibility: visible !important; contain: none !important; }
+#rlist:has(.pm-open), .appt-list:has(.pm-open), #mlist:has(.pm-open), #plist:has(.pm-open) { overflow: visible !important; }
