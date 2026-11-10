@@ -3792,6 +3792,7 @@
     list_appointments: 'كنشوف المواعيد…', create_appointment: 'كنزيد الموعد…', update_property_status: 'كنبدل حالة العقار…', market_price: 'كنقارن مع ثمن السوق…',
     office_stats: 'كنحسب الأرقام ديال المكتب…', network_search: 'كنقلب فالشبكة…', app_help: 'كنقلب فدليل التطبيق…', finance_summary: 'كنحسب المالية…',
     rentals_summary: 'كنشوف الكراء…', open_page: 'كنحل الصفحة…', get_contract_template: 'كنقرا نموذج العقد…',
+    directory_search: 'كنقلب فدليل الأعضاء…', create_property: 'كنزيد العقار…',
   };
   // حساب دقيق بلا eval: + - * / % ^ والأقواس (2.5% = 0.025، و«م» مليون سنتيم ماشي هنا: الوكيل كيحولها لدرهم)
   function agCalc(expr) {
@@ -3892,6 +3893,31 @@
         return { total: list.length, results: list.slice(0, lim).map(x => ({ agency: x.agency, agency_phone: x.phone, ref: (x.data || {}).ref, type: typeAr(x.type), city: x.city, district: (x.data || {}).district, price: priceText(netAsProp(x)) })) };
       }
       case 'app_help': return { lessons: agGuide(a.query || '', 3) };
+      // 📇 دليل أعضاء مجموعة الوسيط (وكالات، وسطاء، موثقين، مقاولات…) — معلومات عمومية فقط
+      case 'directory_search': {
+        if (!inNetwork()) return { error: 'not a network member' };
+        const dir = await loadDir();
+        const k = KINDS[a.kind] ? a.kind : '', tk = tokens(a.query || ''), c = norm(a.city || '');
+        const list = dir.filter(x => x.active && isNamed(x) && (!k || kindOf(x) === k) && (!c || norm([x.city, x.district].join(' ')).includes(c))
+          && (!tk.length || hit(norm([x.name, x.city, x.district, x.services, x.about].join(' ')), tk)));
+        return { total: list.length, results: list.slice(0, lim).map(x => ({ name: x.name, kind: KINDS[kindOf(x)].one, city: x.city || '', district: x.district || '', phone: x.phone || '', services: x.services || '' })) };
+      }
+      // 🏠 إضافة عقار من المحادثة (التطبيق كيطلب التأكيد قبل الحفظ)
+      case 'create_property': {
+        if (!a.owner_name || !a.owner_phone) return { error: 'owner_name and owner_phone are required (private, only for the agency)' };
+        const type = TYPE[a.property_type] ? a.property_type : 'apartment', trx = TRX[a.transaction] ? a.transaction : 'sale';
+        const ok = await agAsk(`🤖 زيد عقار: ${typeAr(type)} ${trxShort(trx)}${a.district ? ' — ' + a.district : ''}${a.city ? ' — ' + a.city : ''}${a.price ? ' — ' + fmt(a.price) + ' د' : ''}؟`);
+        if (!ok) return { cancelled: true };
+        const o = { id: uid(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: 'available', type, transaction: trx,
+          city: a.city || S.settings.officeCity || '', district: a.district || '', priceMin: num(a.price) || null, priceUnit: 'درهم',
+          areaBuilt: num(a.area) || null, areaTotal: num(a.land_area) || null, specs: { bedrooms: num(a.bedrooms) || '', bathrooms: num(a.bathrooms) || '', floor: a.floor != null ? String(a.floor) : '' },
+          features: a.features ? String(a.features).split(/[،,]/).map(x => x.trim()).filter(Boolean) : [], owner: { name: a.owner_name, phone: a.owner_phone },
+          notes: a.notes || '', media: [], cover: null, broker: { has: false } };
+        o.ref = await DB.nextRef('W777', maxRef(S.props));
+        o.title = a.title || autoTitle(o); o.description = a.description || buildDescription(o);
+        await DB.saveRec('properties', o); await rememberDistricts(o.city, [o.district]); await loadAll();
+        return { created: o.ref, next: 'add photos from the property page (open_page property)', matches: matchesForProp(o).length };
+      }
       case 'calculate': {
         const v = agCalc(a.expression);
         return v == null ? { error: 'invalid expression', expression: a.expression } : { expression: a.expression, result: v, result_text: fmtRaw(Math.round(v * 100) / 100), ...(a.label ? { label: a.label } : {}) };
