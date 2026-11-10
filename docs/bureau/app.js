@@ -2536,6 +2536,12 @@
           <div class="btn-row"><button class="btn gold" id="upd-full">🔄 تحديث كامل للتطبيق</button></div>
         </div>`}
 
+        <div class="card card-pad brand-card">
+          <h3 class="section-title">🎨 دليل الهوية (الشعار والألوان)</h3>
+          <p class="muted" style="margin-top:0">نسخ الشعار (المدوّر، وبلا دائرة داكن وأبيض) للتحميل، الألوان بالرموز، الخط، وشنو يتدار وشنو ما يتدارش — صيفطو لأي مصمم ولا مطبعة.</p>
+          <div class="btn-row"><a class="btn gold" href="brand.html" target="_blank" rel="noopener">🎨 فتح دليل الهوية</a><button class="btn" type="button" id="brand-share">🔗 شارك الرابط</button></div>
+        </div>
+
         <div class="card card-pad">
           <h3 class="section-title">${ic('database')} النسخ الاحتياطي ونقل البيانات بين الأجهزة</h3>
           <p class="muted" style="margin-top:0">البيانات محفوظة داخل هذا الجهاز فقط. لنقلها من الهاتف إلى الماك بوك (أو العكس): صدّر نسخة احتياطية هنا، ثم استوردها في الجهاز الآخر. ${lastBackup ? `<br>آخر نسخة: <b>${esc(lastBackup.slice(0, 16).replace('T', ' '))}</b>` : '<br><b style="color:var(--amber)">⚠️ لم تقم بأي نسخة احتياطية بعد.</b>'}</p>
@@ -2638,6 +2644,11 @@
     $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
     appVersion().then(v => { const e = $('#upd-ver'); if (e) e.textContent = v; });
     const uf = $('#upd-full'); if (uf) uf.onclick = fullUpdate;
+    const bs = $('#brand-share'); if (bs) bs.onclick = async () => { // رابط دليل الهوية للمصممين
+      const url = appBase() + 'brand.html', text = '🎨 دليل الهوية ديال مجموعة الوسيط (الشعار، الألوان، الخط):';
+      try { if (navigator.share) { await navigator.share({ title: 'دليل الهوية — مجموعة الوسيط', text, url }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+      window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
+    };
     if (!EMBED) $('#bk-full').onclick = () => exportBackup(true);
     $('#bk-light').onclick = () => exportBackup(false);
     $('#bk-import').onchange = e => { if (e.target.files[0]) importBackup(e.target.files[0]); };
