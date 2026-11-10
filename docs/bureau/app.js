@@ -1029,7 +1029,7 @@
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
     else if (a === 'tamwil') { nav = 'loan'; await viewTamwil(parts, query); }
-    else if (a === 'game') { nav = 'game'; viewGame(); }
+    else if (a === 'game') { nav = 'game'; await viewGame(b); }
     else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(query); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
     else if (a === 'rentals') { nav = 'rentals'; viewRentals(); }
@@ -1185,7 +1185,7 @@
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
-        hubPic('#/game', 'games', 'وصلة العقار', 'لعبة أسئلة عقارية', '#c8102e'), finHub(),
+        hubPic('#/game', 'games', 'الوسيط GAMES', '7 ألعاب عقارية: تلعب وتتعلم', '#c8102e'), finHub(),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
       net: ['✦ مجموعة الوسيط', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
@@ -6650,7 +6650,7 @@
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="وصلة العقار" aria-label="وصلة العقار"><img src="icons/hub/games.webp?v=1" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=1" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -8462,15 +8462,26 @@
       $('#stp-q', box).oninput = paint; paint();
     });
   }
-  /* ---------- 🧩 وصلة العقار (wasla.js) + ترتيب مشترك بين المشتركين ---------- */
-  async function viewGame() {
-    // اللعبة كتتحمل غير ملي كتحلها (التطبيق كيتحل أسرع)
+  /* ---------- 🎮 الوسيط GAMES: صفحة 7 الشعارات + 6 ألعاب (games.js) + 🧩 وصلة العقار (wasla.js) ---------- */
+  async function viewGame(id) {
+    if (id !== 'wasla') {
+      if (!window.W777_GAMES) {
+        main().innerHTML = '<div class="card card-pad muted">⏳ كتتحمل الألعاب…</div>';
+        try { await loadScript('games.js'); } catch (e) { /* الرسالة لتحت */ }
+        if (!/^#\/game/.test(location.hash)) return;
+      }
+      if (!window.W777_GAMES) { main().innerHTML = '<div class="card card-pad">تعذر تحميل الألعاب — عاود حل التطبيق.</div>'; return; }
+      main().innerHTML = '<div id="gm-root"></div>';
+      if (id) window.W777_GAMES.mount($('#gm-root'), id); else window.W777_GAMES.hub($('#gm-root'), { share: location.href.split('#')[0].replace(/index\.html$/, '') + 'games.html' });
+      return;
+    }
+    // وصلة العقار: كتتحمل غير ملي كتحلها (التطبيق كيتحل أسرع)
     if (!window.W777_CW) {
       main().innerHTML = '<div class="card card-pad muted">⏳ كتتحمل اللعبة…</div>';
       try { await loadScript('wasla-levels.js'); await loadScript('wasla.js'); } catch (e) { /* الرسالة لتحت */ }
       if (!/^#\/game/.test(location.hash)) return;
     }
-    main().innerHTML = '<div id="cw-root"></div>';
+    main().innerHTML = '<a class="gm-back" href="#/game">→ الوسيط GAMES · 7 ألعاب</a><div id="cw-root"></div>';
     if (!window.W777_CW) { main().innerHTML = '<div class="card card-pad">تعذر تحميل اللعبة — عاود حل التطبيق.</div>'; return; }
     const Sy = window.W777_SYNC, on = !!(Sy && Sy.isOn());
     const rpc = async (fn, body) => (await Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })).json();

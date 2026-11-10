@@ -27,7 +27,7 @@ const mine=await p.$$eval('.fin-mine > div',x=>x.length);const badge=await p.tex
 await p.screenshot({path:S+'/tamwil-one.png',fullPage:true});
 const finOk=!!leg&&mine>=3&&/✅/.test(badge);console.log(finOk?'OK ':'BAD','finance legend',!!leg,'mine',mine,'badge',badge);if(!finOk)bad++;
 // اللعبة: الضغط على موضوع كيدخل للعب مباشرة
-await p.evaluate(()=>location.hash='#/game');await p.waitForTimeout(1500);
+await p.evaluate(()=>location.hash='#/game/wasla');await p.waitForTimeout(1500);
 const cl=await p.$('.wl-modal [data-x], [data-x]');if(cl)await cl.click().catch(()=>{});await p.waitForTimeout(300);
 await p.click('[data-g="0"]');await p.waitForTimeout(600);
 const inPlay=!!(await p.$('[data-pback]'))&&!(await p.$('.wl-stages'));await p.screenshot({path:S+'/game.png'});
