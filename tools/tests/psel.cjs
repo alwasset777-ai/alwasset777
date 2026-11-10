@@ -9,11 +9,11 @@ await p.evaluate(()=>location.hash='#/properties?status=');await p.waitForTimeou
 await p.evaluate(()=>{const c=[...document.querySelectorAll('[data-st]')].find(x=>x.dataset.st==='');if(c)c.click();});await p.waitForTimeout(600);
 const n0=await p.$$eval('#plist .prop-card',x=>x.length);
 // مسح عقار واحد
-await p.click('#plist .prop-card >> nth=0 >> .pc-del');await p.waitForTimeout(400);
+await p.click('#plist .prop-card >> nth=0 >> .pc-more');await p.click('#plist .prop-card >> nth=0 >> .pc-mi.del');await p.waitForTimeout(400);
 const ok1=await p.$('#cf-ok');if(ok1)await ok1.click();await p.waitForTimeout(1200);
 const n1=await p.$$eval('#plist .prop-card',x=>x.length);
 // تحديد جوج ← الشريط ← حذف المحدد
-await p.click('#plist .prop-card >> nth=0 >> .pc-sel');await p.click('#plist .prop-card >> nth=1 >> .pc-sel');await p.waitForTimeout(300);
+await p.click('#plist .prop-card >> nth=0 >> .pc-more');await p.click('#plist .prop-card >> nth=0 >> .pc-mi[data-psel]');await p.click('#plist .prop-card >> nth=1 >> .pc-more');await p.click('#plist .prop-card >> nth=1 >> .pc-mi[data-psel]');await p.waitForTimeout(300);
 const bar=await p.textContent('#psel-bar').catch(()=>'');const url=await p.evaluate(()=>location.hash);
 if(vw.width===390){await p.waitForTimeout(2800);await p.screenshot({path:(process.env.S||'/tmp')+'/psel.png'});}
 await p.click('#psel-bar [data-pb=del]');await p.waitForTimeout(400);
