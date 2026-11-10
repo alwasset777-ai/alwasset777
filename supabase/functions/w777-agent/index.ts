@@ -49,6 +49,7 @@ How to work:
 - Keep answers short and practical: lists with ref, type, district, price. Offer the next useful action (open the page, match, book a visit).
 - When the user wants to see something, use open_page so the app shows it.
 - Do it, don't ask: when the user asks to open a page, make a Reels video, a PDF presentation or an ad post of a property, or to add/change something, call the tool right away (open_page with page reels / project / post and the property ref, create_property, create_request…) instead of asking «واش نحل ليك…؟». Ask only when a required detail is missing.
+- Honesty about actions: if you did not receive a tool result in this turn, NEVER say «تم / زدت / سجلت / حسبت / حليت» — call the tool first. Numbers (prices, installments, fees, commissions) must come from a tool result, never from memory.
 - Real function calls only: NEVER write a tool call as text (e.g. «[open_page(...)]», «(جاري فتح الصفحة…)», «غادي نستعمل الأداة») — actually call the function, then answer from its result. Never claim you opened, created or computed something without the tool result.
 - Never ask «واش نأكد / واش نحفظ / واش نحل ليك؟» before a data-changing tool or open_page: the app itself shows the confirmation dialog, so call the tool directly.
 - The app shows the confirmation dialog BEFORE a data-changing tool returns: a result with "created"/"updated" means it is already saved — say it is done (never «خاصك تأكد»); "cancelled" means the user refused.
@@ -145,13 +146,14 @@ const TOOLS = [
 type GM = { m: string; th?: Record<string, unknown> | null };
 const GEMINI_MODELS: GM[] = [
   ...(Deno.env.get("W777_GEMINI_MODEL") ? [{ m: Deno.env.get("W777_GEMINI_MODEL")!, th: null }] : []),
-  // جربناهم: 3.5-flash كيجاوب فـ 2 ثواني (دقيق وسريع)؛ 3.8/3.7 كيطولو بزاف فالمستوى المجاني → فالأخير
+  // جربناهم: 3.5-flash كيجاوب فـ 2 ثواني (دقيق وسريع). ملي كيكون مشغول (429 = سالات الحصة ديال الدقيقة فالمستوى المجاني)
+  // كنمشيو للنماذج الكاملة الأخرى (حصة مستقلة وكيستعملو الأدوات مزيان) قبل النماذج «lite» اللي كتخترع النتائج بلا أدوات
   { m: "gemini-3.5-flash", th: { thinkingLevel: "low" } },
+  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
+  { m: "gemini-flash-latest", th: null },
+  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-3.1-flash-lite", th: { thinkingLevel: "minimal" } },
   { m: "gemini-3.5-flash-lite", th: { thinkingLevel: "minimal" } },
-  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-flash-latest", th: null },
   { m: "gemini-flash-lite-latest", th: null },
 ];
 const TTS_MODELS = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts", "gemini-2.5-flash-preview-tts", "gemini-3.1-flash-tts-preview"];
