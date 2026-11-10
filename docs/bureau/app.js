@@ -776,13 +776,34 @@
   }
   function gatedShell(html) {
     document.body.classList.add('gated');
+    const sb = $('#sub-bar'); if (sb) sb.remove();
     main().innerHTML = `<div class="auth-wrap"><div class="card auth-card"><img src="${LOGO}" alt="" class="auth-logo">${html}</div>
       <p class="auth-foot"><a href="#/terms">⚖️ قانون التطبيق</a> · 📞 ${officeTels()}</p></div>`;
   }
   const mailOk = e => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e);
+  // 🛡️ Cloudflare Turnstile (اختياري): كيخدم غير إلا تحط «Site Key» فـ app/config.js (والسري فـ Supabase)
+  const CAP_KEY = () => String((window.__ALWASSET_SUPABASE__ || {}).turnstile || '').trim();
+  let capTok = '';
+  const capLoad = () => new Promise((res, rej) => {
+    if (window.turnstile) return res();
+    const sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
+    sc.onload = () => res(); sc.onerror = rej; document.head.appendChild(sc);
+  });
+  async function capMount(el) {
+    capTok = '';
+    if (!CAP_KEY() || !el) return;
+    try {
+      await capLoad();
+      el.innerHTML = '';
+      window.turnstile.render(el, { sitekey: CAP_KEY(), language: 'ar', callback: t => { capTok = t; }, 'expired-callback': () => { capTok = ''; }, 'error-callback': () => { capTok = ''; } });
+    } catch (e) { toast('تعذر تحميل الحماية — عاود حل الصفحة', 4000); }
+  }
+  const capNeed = () => { if (CAP_KEY() && !capTok) { toast('أكّد بلي نتا ماشي روبو (المربع اللي فوق الزر)', 3500); return true; } return false; };
+  const capReset = () => { capTok = ''; try { if (window.turnstile) window.turnstile.reset(); } catch (e) { /* */ } };
   let authMail = '', authSentAt = 0;
   function authErr(e) {
     const m = String((e && e.message) || e || '');
+    if (/captcha/i.test(m)) return 'التحقق (ماشي روبو) ما تقبلش — عاود.';
     if (/rate limit|security purposes|too many|429/i.test(m)) return 'بزاف ديال الطلبات — تسنى شوية (دقيقة ولا أكثر) وعاود.';
     if (/expired|invalid|otp|token/i.test(m)) return 'الكود غالط ولا سالا الوقت ديالو — طلب كود جديد.';
     if (/signups? not allowed|disabled/i.test(m)) return 'التسجيل موقوف دابا — تواصل مع مكتب الوسيط 777.';
@@ -830,7 +851,10 @@
       i.onkeydown = e => { if (e.key === 'Enter') go(); };
       const tick = () => { if (!document.body.contains(again)) return; const left = 60 - Math.floor((Date.now() - authSentAt) / 1000); again.disabled = left > 0; again.textContent = left > 0 ? `🔁 عاود صيفط الكود (${left})` : '🔁 عاود صيفط الكود'; if (left > 0) setTimeout(tick, 1000); };
       tick();
-      again.onclick = async () => { again.disabled = true; try { await Sy.otpSend(authMail); authSentAt = Date.now(); toast('تصيفط كود جديد ✓'); } catch (e) { toast(authErr(e), 4500); } tick(); };
+      again.onclick = async () => {
+        if (CAP_KEY()) { viewAuth(); return toast('أكّد ومن بعد «صيفط ليا الكود»'); }
+        again.disabled = true; try { await Sy.otpSend(authMail); authSentAt = Date.now(); toast('تصيفط كود جديد ✓'); } catch (e) { toast(authErr(e), 4500); } tick();
+      };
       $('#au-back').onclick = () => viewAuth();
       return;
     }
@@ -841,24 +865,28 @@
           ${fInput('email', 'الرمز ولا البريد', '', { cls: 'full', attrs: 'dir="ltr" autocapitalize="off" autocomplete="username"' })}
           ${fInput('password', 'كلمة السر', '', { cls: 'full', type: 'password', attrs: 'dir="ltr" autocomplete="current-password"' })}
         </form>
+        <div id="au-cap" class="au-cap"></div>
         <button class="btn gold block" id="au-pin">${ic('lock', 18)} دخول</button>
         <div class="btn-row auth-row"><button class="btn sm" id="au-back">📩 الدخول بالإيميل (كود)</button></div>`);
       $('#au-back').onclick = () => viewAuth();
+      capMount($('#au-cap'));
       $('#au-pin').onclick = async () => {
         const v = collect($('#au-pwf')), b = $('#au-pin');
         if (!v.email || !v.password) return toast('عمّر الرمز وكلمة السر');
+        if (capNeed()) return;
         b.disabled = true;
         try {
-          const d = Sy.defaults(), r = await Sy.signIn(d.url, d.key, v.email, v.password);
+          const d = Sy.defaults(), r = await Sy.signIn(d.url, d.key, v.email, v.password, capTok); capTok = '';
           if (r && r.mfa && !(await mfaLoop())) { b.disabled = false; return; }
           toast('مرحبا بيك ✓'); await afterLogin();
-        } catch (e) { b.disabled = false; toast(/Invalid login/i.test(String(e.message)) ? 'الرمز أو كلمة السر غير صحيحة' : authErr(e), 4500); }
+        } catch (e) { b.disabled = false; capReset(); toast(/Invalid login/i.test(String(e.message)) ? 'الرمز أو كلمة السر غير صحيحة' : authErr(e), 4500); }
       };
       return;
     }
     gatedShell(`<h1>تطبيق مجموعة الوسيط</h1>
       <p class="muted">دخل بالإيميل ديالك: كيوصلك كود من 6 أرقام. <b>ماكايناش كلمة السر.</b></p>
       <input id="au-mail" type="email" dir="ltr" autocomplete="email" autocapitalize="off" placeholder="exemple@gmail.com" value="${esc(authMail)}" aria-label="الإيميل">
+      <div id="au-cap" class="au-cap"></div>
       <button class="btn gold block" id="au-send">📩 صيفط ليا الكود</button>
       <p class="muted auth-small">أول مرة؟ نفس الطريقة: الإيميل ← الكود ← كتعمر البطاقة ديالك وكتدخل. 🎁 ${FREE_MONTHS} أشهر مجانية.</p>
       <div class="btn-row auth-row"><button class="btn sm ghost" id="au-pw">🔐 عندي رمز العضوية وكلمة السر</button></div>`);
@@ -868,11 +896,13 @@
       const m = i.value.trim().toLowerCase();
       if (!mailOk(m)) return toast('كتب إيميل صحيح (مثلاً name@gmail.com)');
       if (/@alwasset777\.ma$/.test(m)) return viewAuth('pw');
+      if (capNeed()) return;
       b.disabled = true; b.textContent = '⏳ كنصيفطو الكود…';
-      try { await Sy.otpSend(m); authMail = m; authSentAt = Date.now(); viewAuth('code'); }
-      catch (e) { b.disabled = false; b.textContent = '📩 صيفط ليا الكود'; toast(authErr(e), 5000); }
+      try { await Sy.otpSend(m, capTok); capTok = ''; authMail = m; authSentAt = Date.now(); viewAuth('code'); }
+      catch (e) { b.disabled = false; b.textContent = '📩 صيفط ليا الكود'; capReset(); toast(authErr(e), 5000); }
     };
     b.onclick = send; i.onkeydown = e => { if (e.key === 'Enter') send(); };
+    capMount($('#au-cap'));
     $('#au-pw').onclick = () => viewAuth('pw');
   }
   function gateLogout() {
@@ -939,6 +969,21 @@
       <div class="btn-row auth-row"><button class="btn sm" id="st-re">🔄 جدّدت — دخلني</button><button class="btn sm ghost" id="st-out">↩️ خروج</button></div>`);
     $('#st-out').onclick = gateLogout;
     $('#st-re').onclick = async () => { const m = await myStatus(true); if (m && m.ok === false) toast('مازال ما تجدّدش — تواصل مع المكتب', 3500); else route(); };
+  }
+  // ⏰ 7 أيام قبل ما تسالي المدة: شريط فوق الصفحة مع زر واتساب للمكتب (كيتسد لهاد النهار)
+  function subBar() {
+    let bar = $('#sub-bar');
+    const a = S.role === 'agency' ? S.agency : null, e = a && a.active ? subEnd(a) : null;
+    let off = ''; try { off = localStorage.getItem('w777_subbar_off') || ''; } catch (er) { /* */ }
+    const today = new Date().toISOString().slice(0, 10);
+    if (!e || e.days > 7 || e.days < 0 || off === today + '|' + e.end.toISOString().slice(0, 10)) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'sub-bar'; bar.className = 'sub-bar'; }
+    if (main().firstChild !== bar) main().prepend(bar);
+    const what = e.paid ? 'الاشتراك ديالك' : 'المدة المجانية ديالك', left = e.days <= 0 ? 'كتسالي اليوم' : e.days === 1 ? 'باقي نهار واحد' : `باقي ${e.days} أيام`;
+    const msg = `سلام، بغيت نجدد الاشتراك ديالي فتطبيق مجموعة الوسيط — الرمز: ${a.code}${a.email && !/@alwasset777\.ma$/.test(a.email) ? ' — الإيميل: ' + a.email : ''}`;
+    bar.innerHTML = `<span>⏰ <b>${left}</b> فـ${what} (حتى ${dAr(e.end.toISOString())}). من بعد الحساب كيتوقف حتى تجدّد.</span>
+      <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} جدّد دابا</a><button class="btn sm ghost" id="sub-bar-x" aria-label="إخفاء">✕</button>`;
+    $('#sub-bar-x').onclick = () => { try { localStorage.setItem('w777_subbar_off', today + '|' + e.end.toISOString().slice(0, 10)); } catch (er) { /* */ } bar.remove(); };
   }
   // الرابط اللي فإيميل الدخول (بلاصة الكود) كيرجع بـ #access_token=…
   async function authFromLink() {
@@ -1016,6 +1061,7 @@
     lvPage();
     agPageMood(a);
     fx3dPage();
+    subBar();
   }
   /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
   // بلا كود داخل HTML (onclick/onerror): كلشي هنا — باش سياسة الأمان (CSP) تمنع أي سكريبت مدسوس
@@ -5790,15 +5836,24 @@
           <div><small>📜 وافقو على القانون</small><b>${ags.filter(a => a.terms_at).length}</b></div></div>
         <div class="btn-row" style="margin-top:10px"><button class="btn gold sm" id="ag-add">➕ زيد حسابات جداد</button><a class="btn sm wa" id="ag-offer" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(offerMsg(ags, kind))}">📣 رسالة العرض</a><span class="muted" style="font-size:12.5px">عدد الأعضاء بلا حد — الرمز كيكمل من آخر رقم</span></div>
         <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف، مدينة…' })}
-          ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
+          ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'soon', l: `⏳ كتسالي ف30 يوم (${ags.filter(a => { const e = subEnd(a); return a.active && e && e.days >= 0 && e.days <= 30; }).length})` },
+            { v: 'expired', l: `⛔ سالات المدة (${ags.filter(a => { const e = subEnd(a); return e && e.days < 0; }).length})` }, { v: 'self', l: `✉️ تسجّلو بالإيميل (${ags.filter(a => a.self_signup).length})` },
+            { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
             ...(kind === 'agency' ? [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }] : [])], '', { noEmpty: true })}</div>
+        <div class="btn-row" id="ag-soonrow" style="margin-top:8px" hidden><button class="btn sm" id="ag-copy">📋 نسخ اللائحة (الاسم، الهاتف، التاريخ)</button></div>
       </div>
       <div class="card" id="aglist"></div>`;
     let shown = 60;
+    const remindMsg = a => { const e = subEnd(a); return `السلام عليكم ${a.name}،\n${e && e.days < 0 ? `⏳ سالات ${e.paid ? 'مدة الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط (${dAr(e.end.toISOString())}) والحساب توقف.` : `⏰ ${e && e.paid ? 'الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط كتسالي نهار ${e ? dAr(e.end.toISOString()) : ''}.`}\n💳 الاشتراك السنوي: ${subPrice(a)} درهم.\nباش تجددو تواصلو معانا: 0777777959 · 0777777848\nالبيانات ديالكم محفوظة ✅`; };
     const draw = () => {
       const q = norm($('[name=agq]').value || ''), f = $('[name=agf]').value;
-      const res = ags.filter(a => (!q || norm([a.code, a.name, a.phone, a.city, a.country].join(' ')).includes(q)) &&
-        (f !== 'named' || isNamed(a)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active) && (f !== 'ma' || !isAbroad(a)) && (f !== 'out' || isAbroad(a)));
+      const end = a => subEnd(a), soon = a => { const e = end(a); return a.active && e && e.days >= 0 && e.days <= 30; }, gone = a => { const e = end(a); return e && e.days < 0; };
+      const res = ags.filter(a => (!q || norm([a.code, a.name, a.phone, a.email, a.city, a.country].join(' ')).includes(q)) &&
+        (f !== 'named' || isNamed(a)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active) && (f !== 'ma' || !isAbroad(a)) && (f !== 'out' || isAbroad(a)) &&
+        (f !== 'soon' || soon(a)) && (f !== 'expired' || gone(a)) && (f !== 'self' || a.self_signup));
+      if (f === 'soon' || f === 'expired') res.sort((x, y) => end(x).end - end(y).end);
+      $('#ag-soonrow').hidden = !(f === 'soon' || f === 'expired') || !res.length;
+      $('#ag-copy').onclick = () => navigator.clipboard.writeText(res.map(a => `${a.code} · ${a.name} · ${a.phone || '—'} · ${dAr(end(a).end.toISOString())}`).join('\n')).then(() => toast(`تنسخات ${res.length} سطر ✓`), () => toast('تعذر النسخ'));
       $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
         ${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy" style="width:40px;height:40px">` : ''}
         <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${isAbroad(a) ? `<span class="badge blue">🌍 ${esc(a.country)}</span>` : ''} ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
@@ -5809,7 +5864,8 @@
           ${a.id_doc ? `<button class="btn sm" data-idv="${a.uid}">🪪 عرض</button>${a.id_ok ? '' : `<button class="btn sm gold" data-idok="${a.uid}">✔ تأكيد</button>`}` : ''}
           <button class="btn sm" data-show="${a.uid}">${ic('eye', 15)}</button>
           <button class="btn sm" data-edit="${a.uid}">${ic('edit', 15)}</button>
-          <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${a.phone ? waPhone(a.phone) : ''}?text=${encodeURIComponent(credMsg(a))}">${ic('wa', 15)} صيفط الدخول</a>
+          ${(soon(a) || gone(a)) ? `<span class="badge ${gone(a) ? 'red' : 'amber'}">${gone(a) ? '⛔ سالات' : `⏳ ${end(a).days} يوم`}</span>${a.phone ? `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}?text=${encodeURIComponent(remindMsg(a))}">${ic('wa', 15)} ⏰ تذكير</a>` : ''}`
+            : `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${a.phone ? waPhone(a.phone) : ''}?text=${encodeURIComponent(a.self_signup ? remindMsg(a) : credMsg(a))}">${ic('wa', 15)} ${a.self_signup ? 'واتساب' : 'صيفط الدخول'}</a>`}
           <button class="btn sm" data-tog="${a.uid}">${a.active ? 'إيقاف' : 'تفعيل'}</button>
         </div></div>`).join('') + (res.length > shown ? `<div style="padding:12px;text-align:center"><button class="btn" id="agmore">عرض المزيد (${res.length - shown})</button></div>` : '') || '<div class="empty">ما كاين والو</div>';
       const more = $('#agmore'); if (more) more.onclick = () => { shown += 100; draw(); };
@@ -6178,6 +6234,14 @@
     const a = window.W777_SYNC && window.W777_SYNC.account();
     return a && a.url ? `${a.url}/storage/v1/object/public/w777-brand/${String(p).split('/').map(encodeURIComponent).join('/')}` : '';
   };
+  // آخر نهار مفتوح للحساب (أبعد تاريخ بين المدة المجانية والاشتراك) — null = مجاني مدى الحياة ولا مازال ما بداش
+  function subEnd(a) {
+    if (!a || !a.terms_at) return null;
+    const tr = seatTier(a); if (tr && subPrice(a) === 0) return null;
+    const paid = a.sub_until ? new Date(a.sub_until + 'T23:59:59') : null, free = freeEnd(a);
+    const end = paid && (!free || paid > free) ? paid : free;
+    return end ? { end, paid: end === paid, days: Math.ceil((end - Date.now()) / 864e5) } : null;
+  }
   const freeEnd = a => { if (!a) return null; if (a.trial_until) return new Date(a.trial_until + 'T23:59:59'); if (!a.terms_at) return null; const d = new Date(a.terms_at); d.setMonth(d.getMonth() + FREE_MONTHS); return d; };
   // البطاقة كتولي إجبارية من بعد الفترة المجانية (6 أشهر من الموافقة على القانون)
   const idRequired = a => !!a && !a.id_doc && !!freeEnd(a) && freeEnd(a) < new Date();

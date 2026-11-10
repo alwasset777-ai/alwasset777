@@ -7,4 +7,6 @@
 window.__ALWASSET_SUPABASE__ = {
   url: "https://dctbfhnglogauksdtjdi.supabase.co",      // مثال: "https://abcdefgh.supabase.co"
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjdGJmaG5nbG9nYXVrc2R0amRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MjcyNzgsImV4cCI6MjEwNjIwMzI3OH0.eMyW6esDPnwFWEvsqJ-ySFOLblT7PdLVuEk8w9v4-OQ",  // مثال: "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+  // 🛡️ Cloudflare Turnstile (اختياري، فابور): «Site Key» العمومي فقط — السري كيتحط فـ Supabase وماشي هنا
+  turnstile: "",
 };
