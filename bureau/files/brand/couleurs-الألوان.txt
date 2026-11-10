@@ -1,0 +1,14 @@
+مجموعة الوسيط — الألوان / Couleurs Al Wasset Groupe
+
+الأحمر / Rouge        #C8102E   RGB 200,16,46
+الأحمر الغامق / Rouge foncé  #A00D24   RGB 160,13,36
+الأكحل / Noir         #111111   RGB 17,17,17
+الرمادي الفاتح / Gris clair  #F5F5F5   RGB 245,245,245
+الأبيض / Blanc        #FFFFFF   RGB 255,255,255
+
+الخط / Police : Tajawal (فابور — fonts.google.com/specimen/Tajawal)
+
+القاعدة: الشعار فيه 777 أصلاً — ما تكتبش «777» حدا الشعار. كتب «مجموعة الوسيط».
+Règle : le logo contient déjà 777 — ne jamais écrire « 777 » à côté du logo. Écrire « مجموعة الوسيط / Al Wasset Groupe ».
+
+الدليل الكامل / Charte complète : https://alwasset777-ai.github.io/alwasset777/bureau/brand.html
