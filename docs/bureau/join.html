@@ -87,8 +87,8 @@
         + `<div class="j-row"><i>🎟️</i><div><b>كل من تسجّل بعدهم</b><small>تخفيض 25% لمدة 4 سنوات</small></div><div class="left">∞</div></div>`;
       if (k[0] === 'agency') {
         const o = cnt('agency', 'out');
-        h += `<div class="j-row${o >= 70 ? ' full' : ''}"><i>🌍</i><div><b>70 وكالة خارج المغرب</b><small>مجاني مدى الحياة</small></div><div class="left">${o >= 70 ? 'تعمّرو' : `${70 - o}<small> مقعد باقي</small>`}</div>
-          <div class="j-bar"><span style="width:${Math.round(Math.min(70, o) * 100 / 70)}%"></span></div></div>`;
+        h += `<div class="j-row${o >= 7 ? ' full' : ''}"><i>🌍</i><div><b>خارج المغرب: 7 الأوائل</b><small>مجاني مدى الحياة · ومن بعد 70 بـ -50% و700 بـ -25% مدى الحياة</small></div><div class="left">${o >= 7 ? 'تعمّرو' : `${7 - o}<small> مقعد باقي</small>`}</div>
+          <div class="j-bar"><span style="width:${Math.round(Math.min(7, o) * 100 / 7)}%"></span></div></div>`;
       }
       return h;
     }
@@ -98,7 +98,7 @@
         <div class="j-hero"><div class="j-top"><img src="icons/logo.png" alt=""><div><h1>🎁 عرض 777 للأوائل</h1><small>مجموعة الوسيط — 7 فئات مهنية فتطبيق واحد · عدد المشتركين غير محدود</small></div></div>
           <div class="j-tiers"><div><b>🥇 7 الأوائل</b><span>مجاني مدى الحياة</span></div><div><b>🥈 70 الموالين</b><span>-50% مدى الحياة</span></div>
             <div><b>🥉 700 الموالين</b><span>-25% مدى الحياة</span></div><div><b>🎟️ من بعد</b><span>-25% لمدة 4 سنوات</span></div>
-            <div><b>🎁 الجميع</b><span>6 أشهر مجانية</span></div><div><b>🌍 70 وكالة خارج المغرب</b><span>مجاني مدى الحياة</span></div></div>
+            <div><b>🎁 الجميع</b><span>6 أشهر مجانية</span></div><div><b>🌍 خارج المغرب</b><span>نفس العرض: 7 مجاني · 70 -50% · 700 -25%</span></div></div>
           <div class="j-cta"><a class="btn gold" href="${esc(APP)}">✉️ سجّل دابا بالإيميل</a><a class="btn wa" href="${wa(k)}" target="_blank" rel="noopener">💬 سول المكتب</a><a class="btn" href="tuto/">🎬 الفيديوهات</a></div></div>
         <div class="j-tabs" id="jt">${K.map(x => `<button data-k="${x[0]}" class="${x[0] === cur ? 'on' : ''}">${x[1]} ${x[2]}</button>`).join('')}</div>
         <div class="card j-k"><h2>${k[1]} ${k[2]}</h2><p>${k[4]} الترتيب حسب تاريخ التسجيل فهاد الفئة · المسجلين: ${cnt(k[0], 'ma') + cnt(k[0], 'out')}</p>
