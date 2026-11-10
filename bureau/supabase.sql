@@ -1463,3 +1463,74 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.w777_certs() from public, anon;
 grant execute on function public.w777_certs() to authenticated;
+
+-- ============================================================
+-- v182: التحقق العمومي من الشهادة + شارة «متكوّن معتمد» + خبر «مبروك» أوتوماتيكي
+-- ============================================================
+-- التحقق برقم الشهادة كامل (حتى الزوار، بلا لائحة): الاسم، التاريخ، المعدل فقط
+create or replace function public.w777_cert_check(no text)
+returns table (cert_no text, cert_name text, cert_date bigint, avg numeric)
+language sql stable security definer set search_path = public as $$
+  select a.cert_no, a.cert_name,
+         case when (a.progress->'cert'->>'date') ~ '^\d{10,14}(\.\d+)?$' then (a.progress->'cert'->>'date')::numeric::bigint end,
+         a.avg
+  from w777_academy a
+  where char_length(coalesce(no, '')) between 8 and 40 and a.cert_no = upper(btrim(no))
+    and a.passed >= 7 and coalesce(a.cert_name, '') <> ''
+    and not exists (select 1 from w777_cert_hidden h where h.cert_no = a.cert_no)
+  limit 1
+$$;
+revoke all on function public.w777_cert_check(text) from public;
+grant execute on function public.w777_cert_check(text) to anon, authenticated;
+
+-- اللي عندهم الشهادة (للشارة فالدليل) — للمسجلين فقط
+create or replace function public.w777_cert_uids()
+returns setof uuid language sql stable security definer set search_path = public as $$
+  select a.uid from w777_academy a
+  where auth.uid() is not null and a.passed >= 7 and a.cert_no is not null and coalesce(a.cert_name, '') <> ''
+    and not exists (select 1 from w777_cert_hidden h where h.cert_no = a.cert_no)
+$$;
+revoke all on function public.w777_cert_uids() from public, anon;
+grant execute on function public.w777_cert_uids() to authenticated;
+
+-- خبر «مبروك» كيتكتب من القاعدة (ماشي من التيليفون)، وكيتمسح ملي المدير يخبّي الشهادة
+create or replace function public.w777_cert_news_row(p_no text, p_name text)
+returns void language sql security definer set search_path = public as $$
+  insert into w777_news (title, summary, url, source, scope, lang, published)
+  values ('🎓 شهادة جديدة: ' || left(p_name, 80) || ' — الوكيل العقاري المحترف',
+          'مبروك! إتمام برنامج «من مندوب عقاري إلى صاحب وكالة» (7 وحدات · 42 درساً) والنجاح فجميع الاختبارات. رقم الشهادة: ' || p_no || ' — اضغط باش تتحقق منها.',
+          'https://alwasset777-ai.github.io/alwasset777/bureau/verify.html?no=' || p_no, 'أكاديمية الوسيط', 'ma', 'ar', current_date)
+  on conflict (url) do nothing
+$$;
+revoke all on function public.w777_cert_news_row(text, text) from public, anon, authenticated;
+
+create or replace function public.w777_cert_news()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare base constant text := 'https://alwasset777-ai.github.io/alwasset777/bureau/verify.html?no=';
+begin
+  if tg_table_name = 'w777_academy' then
+    if tg_op = 'UPDATE' and old.cert_no is not null and old.cert_no is distinct from new.cert_no then
+      delete from w777_news where url = base || old.cert_no;
+    end if;
+    if new.passed >= 7 and new.cert_no is not null and coalesce(new.cert_name, '') <> ''
+       and (tg_op = 'INSERT' or old.cert_no is distinct from new.cert_no or old.passed < 7)
+       and not exists (select 1 from w777_cert_hidden h where h.cert_no = new.cert_no) then
+      perform w777_cert_news_row(new.cert_no, new.cert_name);
+    end if;
+    return new;
+  elsif tg_op = 'INSERT' then
+    delete from w777_news where url = base || new.cert_no;
+    return new;
+  else
+    perform w777_cert_news_row(a.cert_no, a.cert_name) from w777_academy a
+      where a.cert_no = old.cert_no and a.passed >= 7 and coalesce(a.cert_name, '') <> '';
+    return old;
+  end if;
+end $$;
+revoke all on function public.w777_cert_news() from public, anon, authenticated;
+drop trigger if exists w777_cert_news_ac on public.w777_academy;
+create trigger w777_cert_news_ac after insert or update of cert_no, cert_name, passed on public.w777_academy
+  for each row execute function public.w777_cert_news();
+drop trigger if exists w777_cert_news_hd on public.w777_cert_hidden;
+create trigger w777_cert_news_hd after insert or delete on public.w777_cert_hidden
+  for each row execute function public.w777_cert_news();

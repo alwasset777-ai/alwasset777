@@ -199,6 +199,7 @@ main { flex: 1; min-width: 0; padding: 18px 16px calc(var(--nav-h) + var(--safe-
 }
 .badge.green { background: rgba(31,157,104,.12); color: var(--green); border-color: transparent; }
 .badge.amber { background: rgba(217,138,20,.14); color: var(--amber); border-color: transparent; }
+.badge.cert-b { background: rgba(200,16,46,.10); color: var(--gold); border-color: transparent; text-decoration: none; white-space: nowrap; }
 .badge.red { background: rgba(214,69,69,.12); color: var(--red); border-color: transparent; }
 .badge.blue { background: rgba(47,111,214,.12); color: var(--blue); border-color: transparent; }
 .badge.purple { background: rgba(122,79,214,.12); color: var(--purple); border-color: transparent; }
