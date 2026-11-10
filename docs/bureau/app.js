@@ -5652,10 +5652,18 @@
     (await Promise.all(pages)).forEach(rows => out.push(...rows));
     return out;
   }
+  // شارة «متكوّن معتمد» (نجح فالأكاديمية كاملة)
+  const certBadge = uid => S.certUids && S.certUids.has(uid) ? ' <a class="badge cert-b" href="#/learn/certs" title="نجح فأكاديمية الوسيط وخدا شهادة الوكيل العقاري المحترف">🎓 متكوّن معتمد</a>' : '';
   async function loadDir(force) {
     if (!force && S.dir && Date.now() - S.dirAt < 300000) return S.dir;
     S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,seat_no,seat_zone,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,trial_until,self_signup,id_doc,id_doc_at' : ''}&order=code.asc`);
     S.dirAt = Date.now();
+    // 🎓 اللي عندهم شهادة الأكاديمية (الشارة فالدليل)
+    try {
+      const r = await window.W777_SYNC.request('/rest/v1/rpc/w777_cert_uids', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const j = r.ok ? await r.json() : [];
+      S.certUids = new Set((Array.isArray(j) ? j : []).map(x => typeof x === 'string' ? x : x && (x.w777_cert_uids || Object.values(x)[0])).filter(Boolean));
+    } catch (e) { S.certUids = S.certUids || new Set(); }
     return S.dir;
   }
   // باب الدخول لكل خانات الشبكة
@@ -5786,7 +5794,7 @@
         const msg = `السلام عليكم ${a.name}، شفت الحساب ديالكم فدليل ${K.ar} ديال الوسيط 777.`;
         return `<div class="card dir-card">
           <div class="dir-top">${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy">` : `<div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>`}
-            <div class="grow"><b>${esc(a.name)}</b>${a.id_ok ? ' <span class="badge green" title="هوية مؤكدة من مكتب الوسيط 777">🪪✔</span>' : ''}<small class="muted"><span dir="ltr">${esc(a.code)}</span> · ${isAbroad(a) ? '🌍' : '📍'} ${esc(placeOf(a))}</small></div></div>
+            <div class="grow"><b>${esc(a.name)}</b>${a.id_ok ? ' <span class="badge green" title="هوية مؤكدة من مكتب الوسيط 777">🪪✔</span>' : ''}${certBadge(a.uid)}<small class="muted"><span dir="ltr">${esc(a.code)}</span> · ${isAbroad(a) ? '🌍' : '📍'} ${esc(placeOf(a))}</small></div></div>
           ${splitList(a.services).length ? `<div class="chips wrap">${splitList(a.services).map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>` : ''}
           ${kind === 'investor' && (a.budget || a.invest_modes) ? `<div class="iv-mini">${a.budget ? `💰 حتى ${nm(a.budget)} درهم` : ''}${a.invest_modes ? `<span>${esc(a.invest_modes)}</span>` : ''}</div>` : ''}
           ${kind === 'notary' && (a.district || kmOf(a) != null) ? `<div class="iv-mini">📍 ${esc([a.district, a.city].filter(Boolean).join('، '))}${kmOf(a) != null ? ` · <b>${kmTxt(kmOf(a))}</b>` : ''}</div>` : ''}

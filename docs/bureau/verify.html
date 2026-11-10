@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>التحقق من الشهادة | أكاديمية الوسيط</title>
+  <meta name="description" content="تحقق من صحة شهادة «الوكيل العقاري المحترف» الصادرة عن أكاديمية الوسيط — مجموعة الوسيط، مكناس. اكتب رقم الشهادة ولا سكاني رمز QR.">
+  <meta name="theme-color" content="#111111">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="icons/icon-192.png?v=9" type="image/png">
+  <link rel="stylesheet" href="fonts.css">
+  <style>
+    /* صفحة عمومية: التحقق من شهادة الأكاديمية برقمها (بلا لائحة، بلا معلومات خاصة) */
+    :root { --red: #c8102e; --ink: #111; --mut: #6b6b6b; --line: #e6e6e6; --ok: #0a7a2f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #f3f3f3; color: var(--ink); font-family: 'Tajawal', 'Noto Sans Arabic', system-ui, sans-serif; line-height: 1.7; }
+    img { max-width: 100%; height: auto; }
+    header { background: #111; border-bottom: 5px solid var(--red); }
+    header .in { max-width: 640px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 12px; color: #fff; }
+    header img { height: 40px; width: auto; }
+    header b { font-size: 16px; }
+    main { max-width: 640px; margin: 0 auto; padding: 18px 16px 40px; }
+    .card { background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 26px rgba(0,0,0,.06); }
+    h1 { margin: 0 0 4px; font-size: 24px; font-weight: 900; }
+    .mut { color: var(--mut); margin: 0; font-size: 14.5px; }
+    form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    input { flex: 1 1 220px; min-height: 48px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 12px; font: 700 16px ui-monospace, Menlo, Consolas, monospace; direction: ltr; text-transform: uppercase; }
+    input:focus { outline: none; border-color: var(--red); }
+    button { appearance: none; border: 0; cursor: pointer; min-height: 48px; padding: 0 18px; border-radius: 12px; background: var(--red); color: #fff; font: 800 15px Tajawal, sans-serif; }
+    .res { margin-top: 14px; }
+    .ok, .no, .wait { border-radius: 18px; padding: 18px; }
+    .ok { background: #fff; border: 2px solid var(--ok); }
+    .ok .st { display: flex; align-items: center; gap: 10px; color: var(--ok); font-weight: 900; font-size: 18px; }
+    .ok .st i { font-style: normal; width: 38px; height: 38px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; font-size: 22px; flex: none; }
+    .ok .nm { font-size: 26px; font-weight: 900; margin: 12px 0 2px; }
+    .ok dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 10px 0 0; font-size: 15px; }
+    .ok dt { color: var(--mut); } .ok dd { margin: 0; font-weight: 800; }
+    .ok .seal { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); color: var(--mut); font-size: 13.5px; }
+    .ok .seal img { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--red); object-fit: cover; }
+    .no { background: #fff; border: 2px solid var(--red); }
+    .no b { color: var(--red); font-size: 18px; }
+    .wait { background: #fff; color: var(--mut); }
+    .lat { direction: ltr; unicode-bidi: isolate; display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .foot { margin-top: 18px; font-size: 13.5px; color: var(--mut); text-align: center; }
+    .foot a { color: var(--ink); font-weight: 800; }
+  </style>
+</head>
+<body>
+  <header><div class="in"><img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580"><b>أكاديمية الوسيط · التحقق من الشهادة</b></div></header>
+  <main>
+    <div class="card">
+      <h1>🔎 تحقق من الشهادة</h1>
+      <p class="mut">اكتب رقم الشهادة كيف مكتوب فيها (مثلاً <span class="lat">W777-AC-2026-XXXXXX</span>) ولا سكاني رمز QR اللي فالشهادة.</p>
+      <form id="f" autocomplete="off"><input id="no" name="no" maxlength="40" placeholder="W777-AC-…" aria-label="رقم الشهادة" required><button type="submit">تحقق</button></form>
+    </div>
+    <div class="res" id="res" aria-live="polite"></div>
+    <p class="foot">الشهادة شهادة تكوين داخلية ديال مجموعة الوسيط (مكناس). لأي سؤال: <a href="https://wa.me/212777777959" target="_blank" rel="noopener">واتساب المكتب</a> · <a href="./">التطبيق</a></p>
+  </main>
+  <script src="../app/config.js" onerror="void 0"></script>
+  <script>
+  (function () {
+    'use strict';
+    var C = window.__ALWASSET_SUPABASE__ || {};
+    var URL_ = String(C.url || '').replace(/\/+$/, ''), KEY = C.anonKey || '';
+    var res = document.getElementById('res'), inp = document.getElementById('no');
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var pct = function (x) { return Math.round((+x || 0) * 100) + '%'; };
+    function show(html) { res.innerHTML = html; }
+    function check(no) {
+      no = String(no || '').trim().toUpperCase();
+      if (no.length < 8) { show('<div class="no"><b>✖ الرقم ناقص</b><p class="mut">اكتب رقم الشهادة كامل.</p></div>'); return; }
+      if (!URL_ || !KEY) { show('<div class="no"><b>تعذر الاتصال</b><p class="mut">عاود من بعد.</p></div>'); return; }
+      show('<div class="wait">⏳ كنتحقق…</div>');
+      fetch(URL_ + '/rest/v1/rpc/w777_cert_check', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ no: no }) })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (rows) {
+          var c = rows && rows[0];
+          if (!c) { show('<div class="no"><b>✖ هاد الشهادة ما كايناش</b><p class="mut">الرقم <span class="lat">' + esc(no) + '</span> ما كيتطابق مع حتى شهادة صادرة عن أكاديمية الوسيط. تأكد من الرقم، ولا تواصل مع المكتب.</p></div>'); return; }
+          var dt = c.cert_date ? new Date(+c.cert_date).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+          show('<div class="ok"><div class="st"><i>✓</i>شهادة صحيحة</div>' +
+            '<div class="nm">' + esc(c.cert_name) + '</div><p class="mut">شهادة إتمام تكوين «الوكيل العقاري المحترف» — من مندوب عقاري إلى صاحب وكالة (7 وحدات · 42 درساً)</p>' +
+            '<dl><dt>رقم الشهادة</dt><dd><span class="lat">' + esc(c.cert_no) + '</span></dd><dt>التاريخ</dt><dd>' + esc(dt) + '</dd><dt>المعدل</dt><dd>' + pct(c.avg) + '</dd></dl>' +
+            '<div class="seal"><img src="icons/logo.png" alt=""><span>صادرة عن أكاديمية الوسيط — مجموعة الوسيط، مكناس</span></div></div>');
+        })
+        .catch(function () { show('<div class="no"><b>تعذر التحقق دابا</b><p class="mut">تأكد من الإنترنت وعاود.</p></div>'); });
+    }
+    document.getElementById('f').onsubmit = function (e) {
+      e.preventDefault(); var v = inp.value.trim().toUpperCase(); check(v);
+      try { history.replaceState(null, '', '?no=' + encodeURIComponent(v)); } catch (err) { /* */ }
+    };
+    var q = new URLSearchParams(location.search).get('no');
+    if (q) { inp.value = q.toUpperCase(); check(q); }
+  })();
+  </script>
+</body>
+</html>
