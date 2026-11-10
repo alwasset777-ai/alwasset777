@@ -192,4 +192,4 @@ async function addPhotos(page, base) {
   await page.reload(); await page.waitForTimeout(1500);
 }
 
-module.exports = { install, login, addPhotos, ME };
+module.exports = { install, login, addPhotos, ME, agencies };

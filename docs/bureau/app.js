@@ -5656,7 +5656,7 @@
   const certBadge = uid => S.certUids && S.certUids.has(uid) ? ' <a class="badge cert-b" href="#/learn/certs" title="نجح فأكاديمية الوسيط وخدا شهادة الوكيل العقاري المحترف">🎓 متكوّن معتمد</a>' : '';
   async function loadDir(force) {
     if (!force && S.dir && Date.now() - S.dirAt < 300000) return S.dir;
-    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,seat_no,seat_zone,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,trial_until,self_signup,id_doc,id_doc_at' : ''}&order=code.asc`);
+    S.dir = await fetchAll(`/rest/v1/w777_agencies?select=uid,code,name,phone,email,active,kind,country,city,district,gps,budget,invest_modes,services,about,terms_at,seat_no,seat_zone,photo,logo,id_ok${S.role === 'admin' ? ',sub_until,trial_until,self_signup,id_doc,id_doc_at,created_at' : ''}&order=code.asc`);
     S.dirAt = Date.now();
     // 🎓 اللي عندهم شهادة الأكاديمية (الشارة فالدليل)
     try {
@@ -5703,7 +5703,7 @@
     if (kind === 'investor') tabs.push(['', '💼 فرص الاستثمار']);
     if (kind === 'notary') tabs.push(S.role === 'admin' ? ['all', '📋 كل الطلبات'] : S.kind === 'notary' ? ['inbox', '📥 الطلبات الواردة'] : ['sent', '📤 طلباتي']);
     tabs.push(['dir', '📇 الدليل']);
-    if (S.role === 'admin') tabs.push(['manage', '🔑 الإدارة (777)']);
+    if (S.role === 'admin') tabs.push(['manage', '🔑 الإدارة']);
     else if (S.kind === kind) tabs.push(['me', K.ic + ' حسابي']);
     const tab = pickTab(tabs, parts[1] || '', kind === 'agency' || kind === 'investor' ? '' : kind === 'notary' && S.kind === 'notary' ? 'inbox' : 'dir');
     const sub = kind === 'investor' ? 'المستثمرون كيحطّو الميزانية ديالهم (تمويل، شراكة، شراء ولا كراء طويل) وكيزيدو العقارات ديالهم فـ «العقارات».'
@@ -5897,42 +5897,85 @@
     const pw = Object.fromEntries(secrets.map(s => [s.uid, s.password]));
     const appUrl = location.href.split('#')[0];
     const shares = kind === 'agency' || kind === 'broker';
-    const credMsg = a => `السلام عليكم ${a.name}،\nمرحبا بكم فشبكة ${K.ar} ديال الوسيط 777 ${K.ic}\nالتطبيق: ${appUrl}\nالإعدادات ← المزامنة السحابية:\nالرمز: ${loginOf(a)}\nكلمة السر: ${pw[a.uid] || ''}\n` +
-      (shares ? 'من بعد كمّلو «حسابي» وزيدو العقارات ديالكم، غادي يبانو لجميع الأعضاء (بلا معلومات المالك).'
-        : kind === 'investor' ? 'من بعد كمّلو «حسابي» (الميزانية ونوع الاستثمار) وزيدو عروضكم فـ «فرص الاستثمار».'
-          : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
-            : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.') +
-      `\n🎁 عرض 777: 6 أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? '، ونفس العرض خارج المغرب (7 الأوائل مجاني، 70 -50%، 700 -25% مدى الحياة)' : ''} — الترتيب حسب نهار الموافقة على القانون` +
-      `\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` +
-      (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
+    // ✉️ التسجيل الجديد: الإيميل ← كود 6 أرقام ← البطاقة (بلا رمز ولا كلمة سر فواتساب)
+    const nextStep = shares ? 'من بعد كمّلو «حسابي» وزيدو العقارات ديالكم، غادي يبانو لجميع الأعضاء (بلا معلومات المالك).'
+      : kind === 'investor' ? 'من بعد كمّلو «حسابي» (الميزانية ونوع الاستثمار) وزيدو عروضكم فـ «فرص الاستثمار».'
+        : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
+          : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.';
+    const groupsTxt = () => (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
+    const offerTxt = `🎁 عرض 777: ${FREE_MONTHS} أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? ' (ونفس العرض خارج المغرب)' : ''} — الترتيب حسب نهار التسجيل`;
+    const inviteMsg = a => `السلام عليكم${a && isNamed(a) ? ' ' + a.name : ''}،\nمرحبا بكم فشبكة ${K.ar} ديال مجموعة الوسيط ${K.ic}\n\n📲 التسجيل ساهل (بلا كلمة سر):\n1️⃣ حلّو التطبيق: ${appUrl}\n2️⃣ كتبو الإيميل ديالكم ← «صيفط ليا الكود»\n3️⃣ كتبو الكود (6 أرقام) اللي وصلكم فالإيميل\n4️⃣ ختارو «${K.one}» وعمّرو البطاقة (الاسم، الهاتف، المدينة) ووافقو على القانون ✅\n\n${nextStep}\n${offerTxt}\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` + groupsTxt();
+    const welcomeMsg = a => { const tr = seatTier(a), si = subInfo(a), e = subEnd(a);
+      return `السلام عليكم ${a.name}،\nمرحبا بكم فمجموعة الوسيط ${K.ic} — الحساب ديالكم مفعّل ✅\n🆔 الرمز: ${loginOf(a)}${a.email ? `\n✉️ الدخول بالإيميل: ${a.email} (كيوصلكم كود من 6 أرقام، بلا كلمة السر)` : ''}` +
+        (tr ? `\n🎟️ رقم المقعد ديالكم فعرض 777: ${a.seat_no} — ${tr.s}` : '') +
+        `\n${si ? si.txt.replace(/ — تواصل مع مكتب الوسيط 777/, '') : ''}${e && !e.paid && e.days >= 0 ? ` (باقي ${e.days} يوم)` : ''}` +
+        `\n📲 التطبيق: ${appUrl}\n${nextStep}\n📞 أي سؤال: 0777777959 · 0777777848` + groupsTxt(); };
+    // 👥 المسجّل = تسجّل بالإيميل ولا وافق على القانون (الحسابات القديمة الفارغة بالرموز كتبقى فـ«🗝️»)
+    const isReg = a => !!(a.self_signup || a.terms_at);
+    const regAt = a => a.terms_at || a.created_at || null;
+    const isNew = a => isReg(a) && regAt(a) && Date.now() - new Date(regAt(a)) < 7 * 864e5;
     main().innerHTML = head + seatBoard(ags) + `
       <div class="card card-pad" style="margin-bottom:14px">
-        <div class="kv"><div><small>الحسابات</small><b>${ags.length}</b></div><div><small>مفعلة</small><b>${ags.filter(a => a.active).length}</b></div>
-          <div><small>كمّلو المعلومات</small><b>${ags.filter(isNamed).length}</b></div>
-          ${kind === 'agency' ? `<div><small>🇲🇦 / 🌍</small><b>${ags.filter(a => !isAbroad(a)).length} / ${ags.filter(isAbroad).length}</b></div>` : ''}
-          <div><small>اللي زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div>
-          <div><small>📜 وافقو على القانون</small><b>${ags.filter(a => a.terms_at).length}</b></div></div>
-        <div class="btn-row" style="margin-top:10px"><button class="btn gold sm" id="ag-add">➕ زيد حسابات جداد</button><a class="btn sm wa" id="ag-offer" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(offerMsg(ags, kind))}">📣 رسالة العرض</a><span class="muted" style="font-size:12.5px">عدد الأعضاء بلا حد — الرمز كيكمل من آخر رقم</span></div>
-        <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'رقم، اسم، هاتف، مدينة…' })}
-          ${fSelect('agf', 'عرض', [{ v: '', l: 'الكل' }, { v: 'soon', l: `⏳ كتسالي ف30 يوم (${ags.filter(a => { const e = subEnd(a); return a.active && e && e.days >= 0 && e.days <= 30; }).length})` },
+        <div class="kv kv-sm"><div><small>👥 المسجلين</small><b>${ags.filter(isReg).length}</b></div><div><small>🆕 هاد السيمانة</small><b>${ags.filter(isNew).length}</b></div>
+          <div><small>🎁 فالمدة المجانية</small><b>${ags.filter(a => isReg(a) && subInfo(a).trial).length}</b></div><div><small>💳 خالصين</small><b>${ags.filter(a => isReg(a) && subInfo(a).ok && !subInfo(a).trial && !subInfo(a).free).length}</b></div>
+          <div><small>♾️ مجاني مدى الحياة</small><b>${ags.filter(a => isReg(a) && subInfo(a).free).length}</b></div><div><small>⛔ متوقفين / سالاو</small><b>${ags.filter(a => isReg(a) && (!a.active || !subInfo(a).ok)).length}</b></div>
+          ${kind === 'agency' ? `<div><small>🇲🇦 / 🌍</small><b>${ags.filter(a => isReg(a) && !isAbroad(a)).length} / ${ags.filter(a => isReg(a) && isAbroad(a)).length}</b></div>` : ''}
+          <div><small>🏠 زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div></div>
+        <div class="btn-row" style="margin-top:10px"><a class="btn gold sm wa" id="ag-inv" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(inviteMsg())}">📲 رسالة الدعوة (التسجيل بالإيميل)</a><a class="btn sm wa" id="ag-offer" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(offerMsg(ags, kind))}">📣 رسالة العرض</a>
+          <span class="muted" style="font-size:12.5px">كل واحد تسجّل فالتطبيق كيبان هنا بوحدو مع المعلومات والاشتراك ديالو.</span></div>
+        <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'اسم، إيميل، هاتف، مدينة، رمز…' })}
+          ${fSelect('agf', 'عرض', [{ v: 'reg', l: `👥 المسجلين (${ags.filter(isReg).length})` }, { v: 'new', l: `🆕 هاد السيمانة (${ags.filter(isNew).length})` },
+            { v: 'soon', l: `⏳ كتسالي ف30 يوم (${ags.filter(a => { const e = subEnd(a); return a.active && e && e.days >= 0 && e.days <= 30; }).length})` },
             { v: 'expired', l: `⛔ سالات المدة (${ags.filter(a => { const e = subEnd(a); return e && e.days < 0; }).length})` }, { v: 'self', l: `✉️ تسجّلو بالإيميل (${ags.filter(a => a.self_signup).length})` },
-            { v: 'named', l: 'اللي عندهم اسم' }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
-            ...(kind === 'agency' ? [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }] : [])], '', { noEmpty: true })}</div>
+            { v: 'idwait', l: `🪪 بطاقة كتسنى التأكيد (${ags.filter(a => a.id_doc && !a.id_ok).length})` }, { v: 'active', l: 'عندهم عقارات' }, { v: 'off', l: 'موقوفة' },
+            ...(kind === 'agency' ? [{ v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }] : []),
+            { v: 'old', l: `🗝️ الحسابات القديمة بالرموز (${ags.filter(a => !isReg(a)).length})` }, { v: 'all', l: `الكل (${ags.length})` }], query.f || 'reg', { noEmpty: true })}</div>
+        <div class="btn-row" id="ag-oldrow" style="margin-top:8px" hidden><button class="btn sm" id="ag-add">➕ زيد حسابات بالرموز (الطريقة القديمة)</button><span class="muted" style="font-size:12.5px">ما بقاتش ضرورية: التسجيل دابا بالإيميل. الرسالة ما فيهاش كلمة السر.</span></div>
         <div class="btn-row" id="ag-soonrow" style="margin-top:8px" hidden><button class="btn sm" id="ag-copy">📋 نسخ اللائحة (الاسم، الهاتف، التاريخ)</button></div>
       </div>
       <div class="card" id="aglist"></div>`;
     let shown = 60;
     const remindMsg = a => { const e = subEnd(a); return `السلام عليكم ${a.name}،\n${e && e.days < 0 ? `⏳ سالات ${e.paid ? 'مدة الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط (${dAr(e.end.toISOString())}) والحساب توقف.` : `⏰ ${e && e.paid ? 'الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط كتسالي نهار ${e ? dAr(e.end.toISOString()) : ''}.`}\n💳 الاشتراك السنوي: ${subPrice(a)} درهم.\nباش تجددو تواصلو معانا: 0777777959 · 0777777848\nالبيانات ديالكم محفوظة ✅`; };
+    // 🪪 خانة المشترك المسجّل: المعلومات + الاشتراك + الأزرار
+    const memberCard = a => {
+      const si = subInfo(a), e = subEnd(a), tr = seatTier(a), at = regAt(a);
+      const st = !a.active ? ['red', '⛔ موقوف'] : !si.ok ? ['red', `⏳ ${subPrice(a)} د مستحق`] : si.free ? ['blue', '♾️ مجاني مدى الحياة'] : si.trial ? ['blue', '🎁 المدة المجانية'] : ['green', '💳 خالص'];
+      const left = e ? (e.days < 0 ? `سالات ${dAr(e.end.toISOString())}` : `${e.paid ? 'الاشتراك' : 'المجاني'} حتى ${dAr(e.end.toISOString())} · باقي ${e.days} يوم`) : si.free ? 'بلا تاريخ نهاية' : '';
+      const warn = e && e.days <= 30;
+      return `<div class="mb-card${a.active ? '' : ' off'}${isNew(a) ? ' new' : ''}">
+        <div class="mb-top">${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy">` : `<div class="dir-av">${esc((a.name || '?').trim().charAt(0))}</div>`}
+          <div class="grow"><b>${esc(a.name)}</b>${isNew(a) ? ' <span class="badge gold">🆕 جديد</span>' : ''}<small class="muted"><span dir="ltr">${esc(loginOf(a))}</span> · ${esc(K.one)}${a.self_signup ? ' · ✉️ تسجّل بالإيميل' : ''}</small></div>
+          <span class="badge ${st[0]}">${st[1]}</span></div>
+        <div class="mb-grid">
+          <div><small>✉️ الإيميل</small><b dir="ltr">${esc(a.email || '—')}</b></div>
+          <div><small>📞 الهاتف</small><b dir="ltr">${esc(a.phone || '—')}</b></div>
+          <div><small>📍 المكان</small><b>${esc(placeOf(a) || '—')}</b></div>
+          <div><small>📅 التسجيل</small><b>${at ? esc(dAr(at)) : '—'}</b></div>
+          <div><small>🎟️ المقعد</small><b>${tr ? `${tr.ic} ${a.seat_no} · ${esc(tr.s)}` : '—'}</b></div>
+          <div class="${warn ? 'mb-warn' : ''}"><small>💳 الاشتراك</small><b>${esc(left || si.txt)}</b><small>${subPrice(a) ? `${subPrice(a)} درهم فالعام` : 'مجاني'}</small></div>
+          <div><small>🪪 الهوية</small><b>${a.id_doc ? (a.id_ok ? '✅ مؤكدة' : '🕓 كتسنى التأكيد') : idRequired(a) ? '❌ ناقصة (إجبارية)' : '— ما زال'}</b></div>
+          <div><small>🏠 العقارات</small><b>${counts[a.uid] || 0}</b></div>
+        </div>
+        <div class="btn-row">
+          ${a.phone ? `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}?text=${encodeURIComponent(warn ? remindMsg(a) : welcomeMsg(a))}">${ic('wa', 15)} ${warn ? '⏰ تذكير' : 'رسالة الترحيب'}</a>` : ''}
+          ${a.id_doc ? `<button class="btn sm" data-idv="${a.uid}">🪪 عرض</button>${a.id_ok ? '' : `<button class="btn sm gold" data-idok="${a.uid}">✔ تأكيد</button>`}` : ''}
+          <button class="btn sm" data-edit="${a.uid}">${ic('edit', 15)} تعديل / الاشتراك</button>
+          <button class="btn sm" data-tog="${a.uid}">${a.active ? 'إيقاف' : 'تفعيل'}</button>
+        </div></div>`;
+    };
     const draw = () => {
-      const q = norm($('[name=agq]').value || ''), f = $('[name=agf]').value;
+      const q = norm($('[name=agq]').value || ''), f = $('[name=agf]').value || 'reg';
       const end = a => subEnd(a), soon = a => { const e = end(a); return a.active && e && e.days >= 0 && e.days <= 30; }, gone = a => { const e = end(a); return e && e.days < 0; };
       const res = ags.filter(a => (!q || norm([a.code, a.name, a.phone, a.email, a.city, a.country].join(' ')).includes(q)) &&
         (f !== 'named' || isNamed(a)) && (f !== 'active' || counts[a.uid]) && (f !== 'off' || !a.active) && (f !== 'ma' || !isAbroad(a)) && (f !== 'out' || isAbroad(a)) &&
-        (f !== 'soon' || soon(a)) && (f !== 'expired' || gone(a)) && (f !== 'self' || a.self_signup));
+        (f !== 'soon' || soon(a)) && (f !== 'expired' || gone(a)) && (f !== 'self' || a.self_signup) &&
+        (f !== 'reg' || isReg(a)) && (f !== 'new' || isNew(a)) && (f !== 'old' || !isReg(a)) && (f !== 'idwait' || (a.id_doc && !a.id_ok)));
       if (f === 'soon' || f === 'expired') res.sort((x, y) => end(x).end - end(y).end);
+      else if (f !== 'old' && f !== 'all') res.sort((x, y) => String(regAt(y) || '').localeCompare(String(regAt(x) || '')));
+      $('#ag-oldrow').hidden = f !== 'old';
       $('#ag-soonrow').hidden = !(f === 'soon' || f === 'expired') || !res.length;
       $('#ag-copy').onclick = () => navigator.clipboard.writeText(res.map(a => `${a.code} · ${a.name} · ${a.phone || '—'} · ${dAr(end(a).end.toISOString())}`).join('\n')).then(() => toast(`تنسخات ${res.length} سطر ✓`), () => toast('تعذر النسخ'));
-      $('#aglist').innerHTML = res.slice(0, shown).map(a => `<div class="list-row" style="flex-wrap:wrap;gap:8px">
+      $('#aglist').innerHTML = res.slice(0, shown).map(a => isReg(a) ? memberCard(a) : `<div class="list-row" style="flex-wrap:wrap;gap:8px">
         ${a.photo || a.logo ? `<img class="dir-av dir-img" src="${esc(brandUrl(a.photo || a.logo))}" alt="" loading="lazy" style="width:40px;height:40px">` : ''}
         <div class="grow"><span class="badge" dir="ltr">${esc(a.code)}</span> <b>${esc(a.name)}</b> ${isAbroad(a) ? `<span class="badge blue">🌍 ${esc(a.country)}</span>` : ''} ${a.active ? '' : '<span class="badge red">موقوفة</span>'} ${counts[a.uid] ? `<span class="badge green">${counts[a.uid]} عقار</span>` : ''}
           ${a.terms_at ? `${tierBadge(a)}<span class="badge ${subInfo(a).ok ? (subInfo(a).trial || subInfo(a).free ? 'blue' : 'green') : 'red'}" title="${esc(subInfo(a).txt)}">${subInfo(a).ok ? (subInfo(a).free ? '♾️ مجاني' : subInfo(a).trial ? '🎁 مجاني' : '💳 خالص') : `⏳ ${subPrice(a)} مستحق`}</span>` : ''}
@@ -5943,7 +5986,7 @@
           <button class="btn sm" data-show="${a.uid}">${ic('eye', 15)}</button>
           <button class="btn sm" data-edit="${a.uid}">${ic('edit', 15)}</button>
           ${(soon(a) || gone(a)) ? `<span class="badge ${gone(a) ? 'red' : 'amber'}">${gone(a) ? '⛔ سالات' : `⏳ ${end(a).days} يوم`}</span>${a.phone ? `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(a.phone)}?text=${encodeURIComponent(remindMsg(a))}">${ic('wa', 15)} ⏰ تذكير</a>` : ''}`
-            : `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${a.phone ? waPhone(a.phone) : ''}?text=${encodeURIComponent(a.self_signup ? remindMsg(a) : credMsg(a))}">${ic('wa', 15)} ${a.self_signup ? 'واتساب' : 'صيفط الدخول'}</a>`}
+            : `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${a.phone ? waPhone(a.phone) : ''}?text=${encodeURIComponent(inviteMsg(a))}">${ic('wa', 15)} 📲 دعوة للتسجيل</a>`}
           <button class="btn sm" data-tog="${a.uid}">${a.active ? 'إيقاف' : 'تفعيل'}</button>
         </div></div>`).join('') + (res.length > shown ? `<div style="padding:12px;text-align:center"><button class="btn" id="agmore">عرض المزيد (${res.length - shown})</button></div>` : '') || '<div class="empty">ما كاين والو</div>';
       const more = $('#agmore'); if (more) more.onclick = () => { shown += 100; draw(); };
@@ -6736,7 +6779,7 @@
           ${fInput('tg_group', 'رابط مجموعة تيليغرام', g.tg, { ph: 'https://t.me/+…', cls: 'full' })}
           ${fInput('fb_group', 'رابط مجموعة فيسبوك', g.fb, { ph: 'https://www.facebook.com/groups/…', cls: 'full' })}
           <div class="field"><button class="btn gold">${ic('check', 16)} حفظ الروابط</button></div></form>
-        <p class="muted" style="font-size:12.5px;margin-bottom:0">💡 مجموعة واتساب فيها حد 1024 عضو — مع 4662 حساب استعمل «مجتمع واتساب» (Community) ولا قناة. تيليغرام كيقبل حتى 200 000 عضو.<br>الروابط كتزاد أوتوماتيكيا فرسالة «صيفط الدخول» لكل مشترك جديد.</p>` : ''}
+        <p class="muted" style="font-size:12.5px;margin-bottom:0">💡 مجموعة واتساب فيها حد 1024 عضو — مع 4662 حساب استعمل «مجتمع واتساب» (Community) ولا قناة. تيليغرام كيقبل حتى 200 000 عضو.<br>الروابط كتزاد أوتوماتيكيا فـ«رسالة الدعوة» و«رسالة الترحيب» لكل مشترك.</p>` : ''}
     </div>`;
   }
   async function viewTerms(sub) {
