@@ -178,7 +178,7 @@
       <div class="gm-hub">${GAMES.map((g, i) => {
         const s = starsOf(g.id);
         return `<a class="gm-lg" href="${g.id === 'wasla' && o.wasla ? o.wasla : '#/game/' + g.id}" style="--i:${i};--c:${g.color}" aria-label="${esc(g.name)} — ${esc(g.style)}">
-          <span class="gm-disc">${g.id !== 'wasla' && !s ? '<span class="gm-new">جديد</span>' : ''}<span class="ic" aria-hidden="true">${g.icon}</span><b class="nm">${esc(g.name)}</b><i class="ln"></i><img src="${WM}" alt="الوسيط 777" decoding="async"><span class="st">${esc(g.style)}</span></span>
+          <span class="gm-disc">${g.id !== 'wasla' && !s ? '<span class="gm-new">جديد</span>' : ''}<span class="ic" aria-hidden="true">${g.icon}</span><b class="nm">${esc(g.name)}</b><i class="ln"></i><img src="${WM}" alt="مجموعة الوسيط" decoding="async"><span class="st">${esc(g.style)}</span></span>
           <span class="gm-sc">${g.id === 'wasla' ? `<b>★</b> ${s}` : `<b>${starTxt(Math.min(3, Math.round(s / STAGES)))}</b> ${s}/${STAGES * 3}`}</span></a>`;
       }).join('')}</div>
       <div class="gm-intro">🎮 كل لعبة فيها ${STAGES} مراحل كتفتح وحدة بوحدة. ربح النجوم ⭐، تعلم قواعد العقار، وتحدى صحابك!</div>

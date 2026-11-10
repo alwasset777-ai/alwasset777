@@ -72,7 +72,7 @@
       const saved = JSON.parse(localStorage.getItem(LS) || '{}');
       box.innerHTML = `
         <div class="pt-head"><img src="icons/logo.png?v=10" alt="" style="height:48px;border-radius:50%">
-          <div><h1>مرحبا ${esc(info.name)} 👋</h1><div class="sub">أضف عقاراتك لمكتب الوسيط 777 — Ajoutez vos biens à l'agence Al Wasset 777</div></div></div>
+          <div><h1>مرحبا ${esc(info.name)} 👋</h1><div class="sub">أضف عقاراتك لمجموعة الوسيط — Ajoutez vos biens au groupe Al Wasset</div></div></div>
         <form class="card card-pad" id="f">
           <div class="form-grid">
             <div class="field"><label class="req">نوع العملية</label><select name="transaction" required>${D.TRANSACTIONS.map(t => `<option value="${t.id}">${esc(t.ar)}</option>`).join('')}</select></div>
