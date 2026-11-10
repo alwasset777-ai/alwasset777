@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>دليل الهوية | مجموعة الوسيط</title>
+  <meta name="description" content="دليل الهوية البصرية لمجموعة الوسيط (مكناس): نسخ الشعار، الألوان، الخط، المساحة، وشنو يتدار وشنو ما يتدارش — للمصممين والشركاء.">
+  <meta name="theme-color" content="#111111">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="دليل الهوية — مجموعة الوسيط · Charte graphique Al Wasset Groupe">
+  <meta property="og:description" content="الشعار، الألوان، الخط وقواعد الاستعمال — للمصممين والمطابع والشركاء.">
+  <meta property="og:image" content="https://alwasset777-ai.github.io/alwasset777/bureau/icons/brand/logo-flat.png">
+  <link rel="icon" href="icons/icon-192.png?v=9" type="image/png">
+  <link rel="stylesheet" href="fonts.css">
+  <style>
+    /* دليل الهوية: صفحة مستقلة (بلا styles.css) باش تبقى نقية للمصممين */
+    :root { --red: #c8102e; --red-d: #a00d24; --ink: #111111; --ink-2: #3d3d3d; --mut: #777; --line: #e6e6e6; --bg: #f5f5f5; }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Tajawal', 'Noto Sans Arabic', system-ui, sans-serif; line-height: 1.7; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+    a { color: inherit; }
+    img { height: auto; max-width: 100%; }
+    .lat { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+    header.hero { background: #fff; border-bottom: 6px solid var(--red); }
+    .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: center; padding-top: 34px; padding-bottom: 34px; }
+    .hero img { width: 100%; max-width: 440px; justify-self: center; }
+    .kick { font-size: 13px; font-weight: 800; letter-spacing: .08em; color: var(--red); margin: 0 0 6px; }
+    .hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.15; margin: 0 0 10px; font-weight: 900; }
+    .hero p { margin: 0 0 16px; color: var(--ink-2); }
+    .act { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn { appearance: none; border: 0; cursor: pointer; font: 800 14px Tajawal, sans-serif; padding: 10px 16px; border-radius: 12px; background: var(--ink); color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+    .btn.red { background: var(--red); }
+    .btn.ghost { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+    .btn.sm { font-size: 12.5px; padding: 7px 11px; min-height: 36px; border-radius: 10px; }
+
+    section { padding: 34px 0 6px; }
+    .sec-h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    .sec-h b { font-size: 13px; color: var(--red); font-weight: 900; }
+    .sec-h h2 { margin: 0; font-size: 24px; font-weight: 900; }
+    .sec-h span { margin-inline-start: auto; color: var(--mut); font-size: 13px; }
+    .lead { color: var(--ink-2); margin: 0 0 16px; }
+
+    .grid { display: grid; gap: 14px; }
+    .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .g5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card { background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 26px rgba(0,0,0,.06); }
+    .card .pad { padding: 14px 16px 16px; }
+    .card h3 { margin: 0 0 2px; font-size: 17px; font-weight: 900; }
+    .card .mut { color: var(--mut); font-size: 13px; margin: 0 0 10px; }
+
+    .lv { height: 210px; display: grid; place-items: center; padding: 22px; }
+    .lv img { width: auto; max-width: 100%; max-height: 166px; }
+    .lv.w { background: #fff; border-bottom: 1px solid var(--line); }
+    .lv.k { background: var(--ink); }
+    .lv.chk { background-color: #fff; background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 18px 18px; background-position: 0 0, 0 9px, 9px -9px, -9px 0; border-bottom: 1px solid var(--line); }
+    .lv.r { background: var(--red); }
+
+    .sw { height: 120px; display: flex; align-items: flex-end; padding: 10px 12px; font-weight: 900; font-size: 13px; }
+    .code { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+    .code code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; direction: ltr; }
+    .copy { border: 0; background: var(--bg); border-radius: 8px; padding: 4px 9px; font: 800 12px Tajawal, sans-serif; cursor: pointer; min-height: 30px; }
+    .copy.ok { background: #1f9d68; color: #fff; }
+    .bar { display: flex; height: 26px; border-radius: 10px; overflow: hidden; margin-top: 14px; box-shadow: inset 0 0 0 1px #ddd; }
+
+    .type .pad { padding: 18px; }
+    .ty1 { font-size: 40px; font-weight: 900; line-height: 1.2; margin: 0; }
+    .ty2 { font-size: 22px; font-weight: 700; margin: 4px 0; }
+    .ty3 { font-size: 16px; font-weight: 400; color: var(--ink-2); margin: 0; }
+    .wts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .wts span { background: var(--bg); border-radius: 10px; padding: 6px 12px; font-size: 18px; }
+
+    .space { background: #fff; display: grid; place-items: center; padding: 36px 14px; }
+    .space .box { position: relative; padding: 34px; outline: 2px dashed var(--red); outline-offset: 0; }
+    .space .box img { display: block; width: min(300px, 62vw); outline: 1px solid rgba(200,16,46,.35); }
+    .space .x { position: absolute; background: rgba(200,16,46,.10); color: var(--red); font: 900 13px Tajawal, sans-serif; display: grid; place-items: center; }
+    .space .x.t { top: 0; left: 0; right: 0; height: 34px; } .space .x.b { bottom: 0; left: 0; right: 0; height: 34px; }
+    .space .x.l { top: 34px; bottom: 34px; left: 0; width: 34px; } .space .x.r2 { top: 34px; bottom: 34px; right: 0; width: 34px; }
+    .rules { margin: 0; padding: 0 18px 0 0; }
+    .rules li { margin: 4px 0; }
+
+    .dd .lv { height: 170px; position: relative; }
+    .dd .tag { position: absolute; top: 10px; inset-inline-start: 10px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 17px; }
+    .dd .yes .tag { background: #1f9d68; } .dd .no .tag { background: var(--red); }
+    .dd .no .lv::after { content: ""; position: absolute; inset: 12px; background: linear-gradient(to top left, transparent calc(50% - 2px), rgba(200,16,46,.85) calc(50% - 2px), rgba(200,16,46,.85) calc(50% + 2px), transparent calc(50% + 2px)); pointer-events: none; }
+    .dd h3 { font-size: 15px; }
+    .lock777 { display: flex; align-items: center; gap: 8px; }
+    .lock777 img { height: 74px; }
+    .lock777 b { background: var(--red); color: #fff; font-size: 24px; padding: 2px 10px; border-radius: 8px; }
+    .busy { background: url("game/img/arch.webp") center/cover, linear-gradient(135deg, #7a8, #c96, #57a); }
+
+    .names td, .names th { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; font-size: 14.5px; }
+    .names th { font-size: 13px; color: var(--mut); font-weight: 800; }
+    .names table { width: 100%; border-collapse: collapse; }
+    .ok { color: #1f9d68; font-weight: 900; } .bad { color: var(--red); font-weight: 900; }
+
+    footer { margin-top: 40px; background: var(--ink); color: #fff; border-top: 5px solid var(--red); }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding-top: 22px; padding-bottom: 28px; }
+    footer img { height: 46px; }
+    footer p { margin: 0; flex: 1 1 260px; color: #ddd; font-size: 14px; }
+    .toast { position: fixed; bottom: 18px; left: 50%; translate: -50% 0; background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 800; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
+    .toast.on { opacity: 1; }
+
+    @media (max-width: 820px) {
+      .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-top: 22px; padding-bottom: 24px; }
+      .hero img { max-width: 300px; }
+      .g3 { grid-template-columns: minmax(0, 1fr); }
+      .g5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .g2 { grid-template-columns: minmax(0, 1fr); }
+      .sec-h { flex-wrap: wrap; } .sec-h span { margin-inline-start: 0; flex-basis: 100%; }
+    }
+    @media print {
+      body { background: #fff; } .act, .btn, .copy, footer .act { display: none !important; }
+      section { break-inside: avoid; } .card { box-shadow: none; border: 1px solid var(--line); }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <img src="icons/brand/logo-flat.png" alt="شعار مجموعة الوسيط" width="996" height="580">
+      <div>
+        <p class="kick">CHARTE GRAPHIQUE · دليل الهوية</p>
+        <h1>مجموعة الوسيط<br><span class="lat" style="font-size:.6em;color:var(--red)">Al Wasset Groupe</span></h1>
+        <p>القواعد اللي كتخلي الشعار ديالنا واضح ومحترم فكل بلاصة: الإعلانات، اللافتات، البطاقات، الأغلفة والشبكات. صيفطو هاد الصفحة لأي مصمم ولا مطبعة.</p>
+        <div class="act">
+          <a class="btn red" href="#logos">⬇️ تحميل الشعارات</a>
+          <button class="btn" id="share" type="button">🔗 شارك الدليل</button>
+          <button class="btn ghost" id="print" type="button">🖨️ طبع / PDF</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="logos">
+      <div class="sec-h"><b>01</b><h2>نسخ الشعار</h2><span>Versions du logo</span></div>
+      <p class="lead">3 نسخ رسمية. الشعار فيه الرقم 777 أصلاً، ما خاصو حتى زيادة. اختار النسخة حسب الخلفية.</p>
+      <div class="grid g3">
+        <div class="card">
+          <div class="lv w"><img src="icons/logo.png" alt="الشعار المدوّر" width="512" height="512" style="max-height:170px;border-radius:50%"></div>
+          <div class="pad">
+            <h3>الشعار المدوّر</h3>
+            <p class="mut">الأيقونة، صورة الحساب، الختم والتطبيق.</p>
+            <div class="act"><a class="btn sm" href="icons/logo.png" download="logo-wasset-rond.png">⬇️ PNG</a></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="lv chk"><img src="icons/brand/logo-flat.png" alt="الشعار بلا دائرة (داكن)" width="996" height="580"></div>
+          <div class="pad">
+            <h3>بلا دائرة — داكن</h3>
+            <p class="mut">على الخلفيات البيضاء ولا الفاتحة: الأغلفة، الوثائق، اللاصقات.</p>
+            <div class="act"><a class="btn sm" href="icons/brand/logo-flat.png" download="logo-wasset-sombre.png">⬇️ PNG</a><a class="btn sm ghost" href="icons/brand/logo-flat.webp" download="logo-wasset-sombre.webp">WebP</a></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="lv k"><img src="icons/brand/logo-flat-white.png" alt="الشعار بلا دائرة (أبيض)" width="996" height="580"></div>
+          <div class="pad">
+            <h3>بلا دائرة — أبيض</h3>
+            <p class="mut">على الخلفيات الكحلة ولا الحمرة ولا فوق الصور الداكنة.</p>
+            <div class="act"><a class="btn sm" href="icons/brand/logo-flat-white.png" download="logo-wasset-blanc.png">⬇️ PNG</a><a class="btn sm ghost" href="icons/brand/logo-flat-white.webp" download="logo-wasset-blanc.webp">WebP</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="colors">
+      <div class="sec-h"><b>02</b><h2>الألوان</h2><span>Couleurs</span></div>
+      <p class="lead">أبيض، أحمر، أكحل. الأحمر للتأكيد غير (عنوان، زر، خط)، ماشي للخلفية كاملة.</p>
+      <div class="grid g5" id="sw"></div>
+      <div class="bar" aria-label="النسب"><i style="flex:55;background:#fff"></i><i style="flex:25;background:#111"></i><i style="flex:10;background:#f5f5f5"></i><i style="flex:8;background:#c8102e"></i><i style="flex:2;background:#a00d24"></i></div>
+      <p class="mut" style="font-size:13px;margin-top:6px;color:var(--mut)">النسب التقريبية: أبيض 55% · أكحل 25% · رمادي فاتح 10% · أحمر 10%</p>
+    </section>
+
+    <section id="type">
+      <div class="sec-h"><b>03</b><h2>الخط</h2><span>Typographie</span></div>
+      <div class="grid g2">
+        <div class="card type"><div class="pad">
+          <p class="kick">TAJAWAL — عربي و Latin</p>
+          <p class="ty1">شقة للبيع فمكناس</p>
+          <p class="ty2">3 بيوت · 95 م² · الطابق 2</p>
+          <p class="ty3">خط واحد لكل شيء: العناوين بالسميك (900)، والنص العادي (400).</p>
+          <div class="wts"><span style="font-weight:400">عادي 400</span><span style="font-weight:700">متوسط 700</span><span style="font-weight:900">سميك 900</span></div>
+        </div></div>
+        <div class="card type"><div class="pad">
+          <p class="kick">FRANÇAIS</p>
+          <p class="ty1 lat">Appartement à vendre</p>
+          <p class="ty2 lat">3 chambres · 95 m² · 2ᵉ étage</p>
+          <p class="ty3">Tajawal فابور على Google Fonts — كيقرا مزيان فالتيليفون والطبع.</p>
+          <div class="act" style="margin-top:12px"><a class="btn sm ghost" href="https://fonts.google.com/specimen/Tajawal" target="_blank" rel="noopener">⬇️ تحميل Tajawal (فابور)</a></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section id="space">
+      <div class="sec-h"><b>04</b><h2>المساحة والحجم</h2><span>Zone de protection · taille minimale</span></div>
+      <div class="grid g2">
+        <div class="card"><div class="space"><div class="box"><img src="icons/brand/logo-flat.png" alt="" width="996" height="580"><i class="x t">X</i><i class="x b">X</i><i class="x l">X</i><i class="x r2">X</i></div></div></div>
+        <div class="card"><div class="pad">
+          <h3>خلي الشعار يتنفس</h3>
+          <ul class="rules">
+            <li>حول الشعار فراغ <b>X</b> = علو كلمة «al wasset» الصغيرة. حتى حاجة ما تدخل لهاد الفراغ (نص، رقم، صورة).</li>
+            <li>أصغر حجم: <b>120 بيكسل</b> (ولا <b>3 سم</b> فالطبع) للشعار بلا دائرة، و<b>48 بيكسل</b> (1.5 سم) للمدوّر.</li>
+            <li>على الإعلان: الشعار فالزاوية، بين <b>12% و18%</b> من عرض الصورة.</li>
+            <li>فوق صورة مزحومة: حط الشعار على شريط أبيض ولا أكحل، ولا استعمل النسخة المدوّرة.</li>
+          </ul>
+        </div></div>
+      </div>
+    </section>
+
+    <section id="dodont">
+      <div class="sec-h"><b>05</b><h2>ديرو / ما ديروش</h2><span>À faire · À éviter</span></div>
+      <div class="grid g3 dd">
+        <div class="card yes"><div class="lv w"><i class="tag">✓</i><img src="icons/brand/logo-flat.png" alt="" style="max-height:110px"></div><div class="pad"><h3>الداكن على الأبيض</h3><p class="mut">النسخة الأصلية، بلا تبديل.</p></div></div>
+        <div class="card yes"><div class="lv k"><i class="tag">✓</i><img src="icons/brand/logo-flat-white.png" alt="" style="max-height:110px"></div><div class="pad"><h3>الأبيض على الأكحل</h3><p class="mut">للخلفيات الداكنة والفيديوهات.</p></div></div>
+        <div class="card yes"><div class="lv w"><i class="tag">✓</i><div style="text-align:center"><img src="icons/brand/logo-flat.png" alt="" style="max-height:80px;display:block;margin:auto"><b style="font-size:18px">مجموعة الوسيط</b></div></div><div class="pad"><h3>الاسم: «مجموعة الوسيط»</h3><p class="mut">هادا هو الاسم اللي كيتكتب حدا الشعار.</p></div></div>
+        <div class="card no"><div class="lv w"><i class="tag">✕</i><div class="lock777"><img src="icons/brand/logo-flat.png" alt=""><b>777</b></div></div><div class="pad"><h3>ما تكتبش 777 حدا الشعار</h3><p class="mut">الشعار فيه 777 أصلاً — ولا فالختم، ولا فالغلاف، ولا فالعلامة المائية.</p></div></div>
+        <div class="card no"><div class="lv w"><i class="tag">✕</i><img src="icons/brand/logo-flat.png" alt="" style="max-height:110px;width:90%;height:70px;object-fit:fill"></div><div class="pad"><h3>ما تمططش الشعار</h3><p class="mut">كبّر ولا صغّر بنفس النسبة ديما.</p></div></div>
+        <div class="card no"><div class="lv w"><i class="tag">✕</i><img src="icons/brand/logo-flat.png" alt="" style="max-height:110px;filter:hue-rotate(150deg) saturate(2)"></div><div class="pad"><h3>ما تبدلش الألوان</h3><p class="mut">غير الأحمر والأكحل والأبيض ديال الدليل.</p></div></div>
+        <div class="card no"><div class="lv w"><i class="tag">✕</i><img src="icons/brand/logo-flat.png" alt="" style="max-height:100px;transform:rotate(-14deg)"></div><div class="pad"><h3>ما تدورش الشعار</h3><p class="mut">ديما مستقيم (الختم ديال الشهادة هو الاستثناء الوحيد).</p></div></div>
+        <div class="card no"><div class="lv w"><i class="tag">✕</i><img src="icons/brand/logo-flat.png" alt="" style="max-height:110px;filter:drop-shadow(4px 4px 0 #f0b400) drop-shadow(-3px -3px 0 #3a7bd5)"></div><div class="pad"><h3>بلا ظلال ولا زواق</h3><p class="mut">لا ظل، لا لمعة، لا إطار ملون.</p></div></div>
+        <div class="card no"><div class="lv busy"><i class="tag">✕</i><img src="icons/brand/logo-flat.png" alt="" style="max-height:100px"></div><div class="pad"><h3>ماشي فوق صورة مزحومة</h3><p class="mut">زيد شريط أبيض ولا استعمل المدوّر.</p></div></div>
+      </div>
+    </section>
+
+    <section id="names" class="names">
+      <div class="sec-h"><b>06</b><h2>الكتابة الصحيحة</h2><span>Nom &amp; mentions</span></div>
+      <div class="card"><table>
+        <tr><th>البلاصة</th><th>كيتكتب</th><th>ما كيتكتبش</th></tr>
+        <tr><td>حدا الشعار (لافتة، غلاف، ختم، شهادة)</td><td class="ok">مجموعة الوسيط · <span class="lat">Al Wasset Groupe</span></td><td class="bad">الوسيط 777 · <span class="lat">Al Wasset 777</span></td></tr>
+        <tr><td>العلامة المائية على الصور</td><td class="ok">الشعار وحدو ولا «مجموعة الوسيط»</td><td class="bad">الشعار + 777</td></tr>
+        <tr><td>اسم العرض للأعضاء</td><td class="ok">عرض 777</td><td>—</td></tr>
+        <tr><td>أرقام الهاتف</td><td class="ok lat">0777 77 79 59 · 0777 77 78 48</td><td>—</td></tr>
+        <tr><td>الشبكات (الاسم القصير)</td><td class="ok">الوسيط · <span class="lat">Al Wasset</span></td><td class="bad">بزاف ديال الأشكال المختلفة</td></tr>
+      </table></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580" style="width:auto">
+      <p>مكتب الوسيط للخدمات العقارية — مكناس · سؤال على الهوية ولا بغيتي ملفات بجودة كبيرة؟ تواصل معانا.</p>
+      <div class="act">
+        <a class="btn red" href="https://wa.me/212777777959" target="_blank" rel="noopener">📞 واتساب</a>
+        <a class="btn ghost" href="./">🏢 التطبيق</a>
+      </div>
+    </div>
+  </footer>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function () {
+      // الألوان + نسخ الرمز بضغطة
+      var C = [
+        ['الأحمر', '#c8102e', '200, 16, 46', '#fff'],
+        ['الأحمر الغامق', '#a00d24', '160, 13, 36', '#fff'],
+        ['الأكحل', '#111111', '17, 17, 17', '#fff'],
+        ['الرمادي الفاتح', '#f5f5f5', '245, 245, 245', '#111'],
+        ['الأبيض', '#ffffff', '255, 255, 255', '#111']
+      ];
+      var sw = document.getElementById('sw');
+      sw.innerHTML = C.map(function (c) {
+        return '<div class="card"><div class="sw" style="background:' + c[1] + ';color:' + c[3] + (c[1] === '#ffffff' ? ';border-bottom:1px solid #e6e6e6' : '') + '">' + c[0] + '</div><div class="pad">' +
+          '<div class="code"><code>' + c[1].toUpperCase() + '</code><button class="copy" type="button" data-v="' + c[1].toUpperCase() + '">نسخ</button></div>' +
+          '<div class="code"><code>RGB ' + c[2] + '</code><button class="copy" type="button" data-v="rgb(' + c[2] + ')">نسخ</button></div></div></div>';
+      }).join('');
+      var toast = document.getElementById('toast'), tt;
+      function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove('on'); }, 1600); }
+      function copy(v, btn) {
+        var done = function () { if (btn) { btn.classList.add('ok'); btn.textContent = '✓'; setTimeout(function () { btn.classList.remove('ok'); btn.textContent = 'نسخ'; }, 1400); } say('تنسخ: ' + v); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done, function () { fallback(v); done(); });
+        else { fallback(v); done(); }
+      }
+      function fallback(v) { var t = document.createElement('textarea'); t.value = v; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); }
+      document.addEventListener('click', function (e) {
+        var b = e.target.closest('.copy'); if (b) copy(b.dataset.v, b);
+      });
+      document.getElementById('print').onclick = function () { window.print(); };
+      document.getElementById('share').onclick = function () {
+        var url = location.href.split('#')[0], d = { title: 'دليل الهوية — مجموعة الوسيط', text: 'الشعار، الألوان والخط ديال مجموعة الوسيط:', url: url };
+        if (navigator.share) navigator.share(d).catch(function () {});
+        else copy(url);
+      };
+    })();
+  </script>
+</body>
+</html>
