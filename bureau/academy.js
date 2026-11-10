@@ -13,8 +13,29 @@
   const load = () => { try { return JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { return {}; } };
   const save = s => { try { localStorage.setItem(LS, JSON.stringify(s)); } catch (e) { /* */ } };
   const st = m => { const s = load(); return s[m] || { les: {}, best: 0, pass: 0, tries: 0 }; };
-  const setAll = fn => { const s = load(); fn(s); save(s); };
-  const setSt = (m, fn) => { const s = load(); s[m] = s[m] || { les: {}, best: 0, pass: 0, tries: 0 }; fn(s[m], s); save(s); };
+  // ☁️ التزامن مع السحابة (host.sync): كل تبديل كيترفع من بعد 1.5 ثانية، وأول فتح كيجيب التقدم من الأجهزة الأخرى
+  let HOST = null, PULLED = false, PUSH_T = null;
+  const summary = () => {
+    const s = load(), M = (A() && A().modules) || [], ok = M.filter(x => s[x.m] && s[x.m].pass);
+    return { progress: s, passed: ok.length, avg: M.length ? Math.round(M.reduce((a, x) => a + ((s[x.m] && s[x.m].best) || 0), 0) / M.length * 1000) / 1000 : 0, cert_no: (s.cert && s.cert.no) || null, cert_name: (s.cert && s.cert.name) || null };
+  };
+  const schedPush = () => { if (!HOST || !HOST.sync) return; clearTimeout(PUSH_T); PUSH_T = setTimeout(() => { HOST.sync.push(summary()).catch(() => { }); }, 1500); };
+  // الدمج: الدروس = الاتحاد، أحسن نتيجة = الأكبر، النجاح = أول تاريخ، المحاولات = الأكثر
+  function merge(r) {
+    const s = load(); let more = false;
+    Object.keys(r || {}).forEach(k => {
+      if (!/^M\d$/.test(k)) return;
+      const a = s[k] || { les: {}, best: 0, pass: 0, tries: 0 }, b = r[k] || {};
+      const les = Object.assign({}, b.les || {}, a.les || {});
+      const n = { les, best: Math.max(a.best || 0, b.best || 0), pass: (a.pass && b.pass) ? Math.min(a.pass, b.pass) : (a.pass || b.pass || 0), tries: Math.max(a.tries || 0, b.tries || 0) };
+      if (JSON.stringify(n) !== JSON.stringify(s[k] || null)) { s[k] = n; more = true; }
+    });
+    if (!s.cert && r && r.cert) { s.cert = r.cert; more = true; }
+    if (more) save(s);
+    return more;
+  }
+  const setAll = fn => { const s = load(); fn(s); save(s); schedPush(); };
+  const setSt = (m, fn) => { const s = load(); s[m] = s[m] || { les: {}, best: 0, pass: 0, tries: 0 }; fn(s[m], s); save(s); schedPush(); };
   const mods = () => A().modules;
   const idx = m => mods().findIndex(x => x.m === m);
   const isOpen = i => i === 0 || !!st(mods()[i - 1].m).pass;
@@ -121,7 +142,7 @@
 .ac-cert .mods span{font-size:1.2cqw;font-weight:800;border:.15cqw solid #111;border-radius:99cqw;padding:.3cqw 1.2cqw}
 .ac-cert .ft{margin-top:auto;width:100%;display:flex;justify-content:space-between;align-items:flex-end;font-size:1.6cqw;line-height:1.6;color:#333}
 .ac-cert .ft b{display:block;font-size:1.9cqw;color:#111}
-.ac-cert .seal{flex:none;width:10cqw;height:10cqw;border-radius:50%;background:radial-gradient(circle,#ffcf6b,#b8860b);display:grid;place-items:center;color:#3a2a00;font-weight:900;font-size:1.8cqw;box-shadow:0 0 0 .5cqw #fff,0 0 0 .8cqw #b8860b;line-height:1.2}
+.ac-cert .seal{flex:none;width:13cqw;height:13cqw;transform:rotate(-12deg);opacity:.93;filter:drop-shadow(0 .3cqw .6cqw rgba(200,16,46,.25))}.ac-cert .seal svg{width:100%;height:100%;display:block}
 @media print{body.ac-printing *{visibility:hidden!important}body.ac-printing .ac-cert,body.ac-printing .ac-cert *{visibility:visible!important}
  body.ac-printing .ac-cert{position:fixed;inset:0;margin:0;max-width:none;width:100%;border-radius:0;box-shadow:none}}
 `;
@@ -151,7 +172,7 @@
         <div class="ac-road">${M.map((x, i) => `${i ? '<b></b>' : ''}<a href="#/learn/${x.m}" class="${st(x.m).pass ? 'ok' : i === cur ? 'cur' : isOpen(i) ? '' : 'lk'}"><i>${st(x.m).pass ? '✓' : isOpen(i) ? x.icon : '🔒'}</i>${x.m}</a>`).join('')}</div>
         <div class="ac-prog"><i style="width:${passed / M.length * 100}%"></i></div>
         <div class="ac-row" style="margin-top:12px">${cur >= 0 ? `<a class="ac-btn" href="#/learn/${M[cur].m}">▶ ${passed ? 'كمّل' : 'ابدأ'}: ${esc(M[cur].m)} — ${esc(M[cur].t)}</a>` : `<a class="ac-btn" href="#/learn/cert">🏆 الشهادة ديالك</a>`}
-          <button class="ac-btn w" data-ask="1">🤖 تعلم مع منير</button></div>
+          <button class="ac-btn w" data-ask="1">🤖 تعلم مع منير</button>${host.team ? '<a class="ac-btn w" href="#/learn/team">📊 تقدم الفريق</a>' : ''}</div>
         <small style="display:block;margin-top:8px;opacity:.75">${passed} / ${M.length} وحدات ناجحة</small></div>
       <div class="ac-grid">${M.map((x, i) => card(x, i)).join('')}</div>
       <a class="ac-card" href="#/learn/cert" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit">
@@ -300,7 +321,7 @@
           <div class="nm">${esc(name)}</div>
           <div class="tx">أتم بنجاح برنامج «من مندوب عقاري إلى صاحب وكالة» (7 وحدات · 42 درساً)، واجتاز اختبارات جميع الوحدات بمعدل <b>${pct(avg)}</b>.</div>
           <div class="mods">${M.map(x => `<span>${x.icon} ${x.m} · ${esc(x.t.split(':')[0])}</span>`).join('')}</div>
-          <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(no)}</b></div><div class="seal">الوسيط<br>777<br>✓</div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
+          <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(no)}</b></div><div class="seal" aria-label="ختم مجموعة الوسيط"><svg viewBox="0 0 200 200" direction="ltr"><defs><path id="act1" d="M23,100 a77,77 0 1,1 154,0"/><path id="act2" d="M16,100 a84,84 0 0,0 168,0"/><clipPath id="acclip"><circle cx="100" cy="100" r="58"/></clipPath></defs><circle cx="100" cy="100" r="96" fill="#fff" stroke="#c8102e" stroke-width="6"/><text font-size="17" font-weight="900" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act1" startOffset="50%">مجموعة الوسيط 777</textPath></text><text font-size="13" font-weight="800" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act2" startOffset="50%">★ أكاديمية التكوين ★</textPath></text><circle cx="100" cy="100" r="62" fill="#fff" stroke="#c8102e" stroke-width="2.5"/><image href="icons/logo.png" x="40" y="40" width="120" height="120" clip-path="url(#acclip)"/></svg></div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
         </div></div>
         <div class="ac-row" style="justify-content:center"><button class="ac-btn" id="ac-pr">🖨️ طباعة / حفظ PDF</button><button class="ac-btn w" id="ac-sh">📤 شارك الخبر</button></div>
         <p class="ac-note" style="text-align:center">فالتيليفون: «طباعة» ← «حفظ كـ PDF» (ولا مشاركة ← طباعة). الشهادة شهادة تكوين داخلية ديال مجموعة الوسيط 777.</p>` : ''}</div>`;
@@ -350,12 +371,40 @@
     fillCred(root);
   }
 
+  // 📊 تقدم الفريق (المدير: الكل · صاحب الوكالة: الفريق ديالو)
+  async function team(root, host) {
+    if (!host.team) return home(root, host);
+    root.innerHTML = '<div class="ac"><div class="ac-card muted">⏳ كيتحمل تقدم الفريق…</div></div>';
+    let rows = [];
+    try { rows = await host.team(); } catch (e) { root.innerHTML = `<div class="ac"><div class="ac-card">تعذر التحميل: ${esc(e.message || e)}</div></div>`; return; }
+    const M = mods();
+    root.innerHTML = `<div class="ac"><div class="ac-crumb"><a href="#/learn">🎓 الأكاديمية</a> ‹ 📊 تقدم الفريق</div>
+      <div class="ac-card"><h3>📊 تقدم المتكونين (${rows.length})</h3><p class="muted" style="margin:0;line-height:1.7">${rows.filter(r => r.passed >= M.length).length} كملو الأكاديمية · ${rows.filter(r => r.passed && r.passed < M.length).length} فالطريق · التقدم كيتزامن من التطبيق ديال كل واحد.</p></div>
+      ${rows.length ? `<div class="ac-lessons">${rows.map(r => { const p = r.progress || {}; return `<div class="ac-l" style="align-items:flex-start"><span class="n" style="${r.passed >= M.length ? 'background:#0a7a2f;color:#fff' : ''}">${r.passed >= M.length ? '🏆' : r.passed}</span>
+        <span style="flex:1;min-width:0"><b>${esc(r.name || 'متكون')}</b><small>${esc(r.sub || '')}${r.updated_at ? ' · آخر نشاط ' + new Date(r.updated_at).toLocaleDateString('ar-MA') : ''}</small>
+          <span style="display:flex;gap:3px;flex-wrap:wrap;margin-top:6px">${M.map(x => { const s = p[x.m] || {}; return `<span class="ac-tag ${s.pass ? 'ok' : Object.keys(s.les || {}).length ? 'go' : 'lk'}" title="${esc(x.t)}">${s.pass ? '✓' : Object.keys(s.les || {}).length + '/' + x.lessons.length} ${x.m}</span>`; }).join('')}</span>
+          <small>المعدل: ${pct(+r.avg || 0)}${r.cert_no ? ` · 🏆 شهادة <span dir="ltr">${esc(r.cert_no)}</span>` : ''}</small></span></div>`; }).join('')}</div>` : '<div class="ac-card muted">مازال حتى واحد ما بدا الأكاديمية.</div>'}</div>`;
+  }
+
   function mount(root, parts, host) {
     css(); GEN++;
     host = host || {}; host.ask = host.ask || (() => { }); host.mood = host.mood || null;
+    HOST = host;
+    if (host.sync && !PULLED) {
+      PULLED = true;
+      const h0 = location.hash;
+      host.sync.pull().then(r => {
+        const changed = r && r.progress ? merge(r.progress) : false;
+        // هاد الجهاز عندو تقدم ماشي فالسحابة ← نرفعوه
+        const s = load(), local = Object.keys(s).some(k => /^M\d$/.test(k));
+        if (local && (!r || JSON.stringify(r.progress || {}) !== JSON.stringify(s))) schedPush();
+        if (changed && location.hash === h0 && root.isConnected) mount(root, parts, host);
+      }).catch(() => { PULLED = false; });
+    }
     const m = parts[1], sub = parts[2];
     if (!m) return home(root, host);
     if (m === 'cert') return cert(root, host);
+    if (m === 'team') return team(root, host);
     if (sub === 'exam') return exam(root, host, m);
     if (sub != null && sub !== '' && !isNaN(+sub)) return lesson(root, host, m, +sub);
     return module(root, host, m);

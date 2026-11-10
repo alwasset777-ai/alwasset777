@@ -1412,3 +1412,25 @@ create or replace function public.w777_sub_ok(a public.w777_agencies) returns bo
     or coalesce(a.trial_until, (a.terms_at + interval '6 months')::date) >= current_date $$;
 revoke execute on function public.w777_sub_ok(public.w777_agencies) from public, anon;
 grant execute on function public.w777_sub_ok(public.w777_agencies) to authenticated;
+
+-- v177: 🎓 تقدم الأكاديمية فالسحابة (ما كيضيعش ملي كيتبدل الجهاز) — كل واحد كيكتب ديالو،
+-- المدير كيشوف الكل، وصاحب الوكالة كيشوف الفريق ديالو (w777_staff)
+create table if not exists public.w777_academy (
+  uid uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  progress jsonb not null default '{}'::jsonb check (pg_column_size(progress) < 40000),
+  passed int not null default 0 check (passed between 0 and 7),
+  avg numeric(4,3) not null default 0 check (avg between 0 and 1),
+  cert_no text check (cert_no is null or char_length(cert_no) <= 40),
+  cert_name text check (cert_name is null or char_length(cert_name) <= 80),
+  updated_at timestamptz not null default now()
+);
+alter table public.w777_academy enable row level security;
+drop policy if exists w777_ac_sel on public.w777_academy;
+create policy w777_ac_sel on public.w777_academy for select to authenticated using (
+  uid = auth.uid() or w777_is_admin() or exists (select 1 from w777_staff s where s.uid = w777_academy.uid and s.owner = auth.uid()));
+drop policy if exists w777_ac_ins on public.w777_academy;
+create policy w777_ac_ins on public.w777_academy for insert to authenticated with check (uid = auth.uid());
+drop policy if exists w777_ac_upd on public.w777_academy;
+create policy w777_ac_upd on public.w777_academy for update to authenticated using (uid = auth.uid()) with check (uid = auth.uid());
+revoke all on public.w777_academy from anon, public;
+grant select, insert, update on public.w777_academy to authenticated;
