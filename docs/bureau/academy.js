@@ -1,5 +1,5 @@
 /* ============================================================
-   أكاديمية الوسيط 777 — واجهة التكوين (#/learn)
+   أكاديمية الوسيط — واجهة التكوين (#/learn)
    W777_ACADEMY.mount(root, parts, host)  ← الصفحات: الرئيسية، الوحدة، الدرس، الاختبار، الشهادة
    W777_ACADEMY.printModule(root, m)       ← نسخة الطباعة (PDF) ديال وحدة
    host: { ask(prompt), mood(name), name, office }
@@ -178,7 +178,7 @@
       <a class="ac-card" href="#/learn/cert" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit">
         <span style="font-size:40px">🏆</span><span><b style="font-size:17px">شهادة الوكيل العقاري المحترف</b><br><small class="muted">${allPassed() ? 'مبروك! صاوب الشهادة باسمك واطبعها PDF.' : `كتتفتح ملي تنجح فالوحدات السبعة (${passed}/7).`}</small></span></a>
       <p class="ac-note">ℹ️ ${esc(A().note)}</p></div>`;
-    root.querySelector('[data-ask]').onclick = () => host.ask('سلام أستاذ منير! أنا كنتكون فأكاديمية الوسيط 777 (7 وحدات: المهنة والأخلاقيات، القانون، التعمير، الأرقام، التجارة، التسويق، إنشاء الوكالة). شرح ليا من فين نبدا، وعطيني سؤال صغير باش تعرف المستوى ديالي.');
+    root.querySelector('[data-ask]').onclick = () => host.ask('سلام أستاذ منير! أنا كنتكون فأكاديمية الوسيط (7 وحدات: المهنة والأخلاقيات، القانون، التعمير، الأرقام، التجارة، التسويق، إنشاء الوكالة). شرح ليا من فين نبدا، وعطيني سؤال صغير باش تعرف المستوى ديالي.');
   }
   function card(x, i) {
     const s = st(x.m), n = Object.keys(s.les || {}).length, open = isOpen(i);
@@ -246,7 +246,7 @@
       });
       box.appendChild(d);
     });
-    root.querySelector('[data-ask]').onclick = () => host.ask(`أستاذ منير، شرح ليا بالدارجة وبكلام ساهل درس «${l.t}» من وحدة ${m} «${x.t}» فأكاديمية الوسيط 777، بمثال من مكناس، ومن بعد سولني سؤال واحد باش نتأكد فهمت.`);
+    root.querySelector('[data-ask]').onclick = () => host.ask(`أستاذ منير، شرح ليا بالدارجة وبكلام ساهل درس «${l.t}» من وحدة ${m} «${x.t}» فأكاديمية الوسيط، بمثال من مكناس، ومن بعد سولني سؤال واحد باش نتأكد فهمت.`);
   }
 
   // ---------- الاختبار ----------
@@ -315,16 +315,16 @@
           <button class="ac-btn" id="ac-mk">✍️ صاوب الشهادة</button></div></div>
         ${name ? `<div class="ac-cert" id="ac-cert"><div class="fr"></div><div class="in">
           <img class="lg" src="icons/logo.png" alt="">
-          <div class="k">${esc(A().title)} · مجموعة الوسيط 777</div>
+          <div class="k">${esc(A().title)} · مجموعة الوسيط</div>
           <h2>شهادة إتمام تكوين الوكيل العقاري المحترف</h2>
-          <div class="to">تشهد أكاديمية الوسيط 777 بأن</div>
+          <div class="to">تشهد أكاديمية الوسيط بأن</div>
           <div class="nm">${esc(name)}</div>
           <div class="tx">أتم بنجاح برنامج «من مندوب عقاري إلى صاحب وكالة» (7 وحدات · 42 درساً)، واجتاز اختبارات جميع الوحدات بمعدل <b>${pct(avg)}</b>.</div>
           <div class="mods">${M.map(x => `<span>${x.icon} ${x.m} · ${esc(x.t.split(':')[0])}</span>`).join('')}</div>
-          <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(no)}</b></div><div class="seal" aria-label="ختم مجموعة الوسيط"><svg viewBox="0 0 200 200" direction="ltr"><defs><path id="act1" d="M23,100 a77,77 0 1,1 154,0"/><path id="act2" d="M16,100 a84,84 0 0,0 168,0"/><clipPath id="acclip"><circle cx="100" cy="100" r="58"/></clipPath></defs><circle cx="100" cy="100" r="96" fill="#fff" stroke="#c8102e" stroke-width="6"/><text font-size="17" font-weight="900" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act1" startOffset="50%">مجموعة الوسيط 777</textPath></text><text font-size="13" font-weight="800" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act2" startOffset="50%">★ أكاديمية التكوين ★</textPath></text><circle cx="100" cy="100" r="62" fill="#fff" stroke="#c8102e" stroke-width="2.5"/><image href="icons/logo.png" x="40" y="40" width="120" height="120" clip-path="url(#acclip)"/></svg></div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
+          <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(no)}</b></div><div class="seal" aria-label="ختم مجموعة الوسيط"><svg viewBox="0 0 200 200" direction="ltr"><defs><path id="act1" d="M23,100 a77,77 0 1,1 154,0"/><path id="act2" d="M16,100 a84,84 0 0,0 168,0"/><clipPath id="acclip"><circle cx="100" cy="100" r="58"/></clipPath></defs><circle cx="100" cy="100" r="96" fill="#fff" stroke="#c8102e" stroke-width="6"/><text font-size="17" font-weight="900" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act1" startOffset="50%">مجموعة الوسيط</textPath></text><text font-size="13" font-weight="800" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act2" startOffset="50%">★ أكاديمية التكوين ★</textPath></text><circle cx="100" cy="100" r="62" fill="#fff" stroke="#c8102e" stroke-width="2.5"/><image href="icons/logo.png" x="40" y="40" width="120" height="120" clip-path="url(#acclip)"/></svg></div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
         </div></div>
         <div class="ac-row" style="justify-content:center"><button class="ac-btn" id="ac-pr">🖨️ طباعة / حفظ PDF</button><button class="ac-btn w" id="ac-sh">📤 شارك الخبر</button></div>
-        <p class="ac-note" style="text-align:center">فالتيليفون: «طباعة» ← «حفظ كـ PDF» (ولا مشاركة ← طباعة). الشهادة شهادة تكوين داخلية ديال مجموعة الوسيط 777.</p>` : ''}</div>`;
+        <p class="ac-note" style="text-align:center">فالتيليفون: «طباعة» ← «حفظ كـ PDF» (ولا مشاركة ← طباعة). الشهادة شهادة تكوين داخلية ديال مجموعة الوسيط.</p>` : ''}</div>`;
       root.querySelector('#ac-mk').onclick = () => {
         const v = root.querySelector('#ac-nm').value.trim().replace(/\s+/g, ' ');
         if (v.length < 3) return root.querySelector('#ac-nm').focus();
@@ -338,7 +338,7 @@
         setTimeout(() => { window.print(); setTimeout(() => { document.body.classList.remove('ac-printing'); pg.remove(); }, 800); }, 60);
       };
       const sh = root.querySelector('#ac-sh'); if (sh) sh.onclick = () => {
-        const t = `🎓 الحمد لله! حصلت على «شهادة الوكيل العقاري المحترف» من أكاديمية الوسيط 777 (7 وحدات) — ${name} · ${no}`;
+        const t = `🎓 الحمد لله! حصلت على «شهادة الوكيل العقاري المحترف» من أكاديمية الوسيط (7 وحدات) — ${name} · ${no}`;
         if (navigator.share) navigator.share({ text: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
       };
     };

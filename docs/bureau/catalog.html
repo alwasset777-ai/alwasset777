@@ -83,7 +83,7 @@
     function hero() {
       const ph = OW && OW.phone;
       return `<div class="c-hero"><div class="c-top"><img src="${esc(OW && OW.logo || 'icons/logo.png?v=10')}" alt="">
-        <div><h1>${esc(OW ? OW.name : 'مجموعة الوسيط 777')}</h1><small>🏠 ${ALL.length} عقار معروض${OW && OW.city ? ' · 📍 ' + esc(OW.city) : ''}</small></div></div>
+        <div><h1>${esc(OW ? OW.name : 'مجموعة الوسيط')}</h1><small>🏠 ${ALL.length} عقار معروض${OW && OW.city ? ' · 📍 ' + esc(OW.city) : ''}</small></div></div>
         ${ph ? `<div class="btn-row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(ph)}">واتساب</a><a class="btn" href="tel:${esc(ph.replace(/[^\d+]/g, ''))}">📞 <span dir="ltr">${esc(ph)}</span></a></div>` : ''}</div>`;
     }
     function card(r, i) {
