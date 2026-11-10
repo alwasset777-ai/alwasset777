@@ -6477,7 +6477,7 @@
     const officeUid = (groups.find(g => g.office) || {}).uid || '';
     const withLogo = live.filter(a => a.logo || a.photo || groups.some(g => g.uid === a.uid))
       .sort((x, y) => (groups.some(g => g.uid === y.uid) ? 2 : 0) + (y.logo ? 1 : 0) - (groups.some(g => g.uid === x.uid) ? 2 : 0) - (x.logo ? 1 : 0));
-    const tiles = [`<a class="pr-item pr-office${officeUid ? ring(officeUid) : ''}" href="#/terms" title="مجموعة الوسيط 777"><img src="${LOGO}" alt=""></a>`,
+    const tiles = [`<a class="pr-item pr-office${officeUid ? ring(officeUid) : ''}" href="#/terms" title="مجموعة الوسيط"><img src="${LOGO}" alt=""></a>`,
       ...withLogo.map(a => `<a class="pr-item${ring(a.uid)}" href="#/${(KINDS[kindOf(a)] || KINDS.agency).route}/dir" title="${esc(a.name)}">${a.logo || a.photo ? `<img src="${esc(brandUrl(a.logo || a.photo))}" alt="" loading="lazy">` : `<b class="pr-letter">${esc((a.name || '؟').trim()[0])}</b>`}</a>`)];
     const myKind = S.kind && KINDS[S.kind];
     const plus = myKind && !(S.agency || {}).logo ? `<a class="pr-item pr-add" href="#/${myKind.route}/me" title="زيد الشعار ديالك">＋<small>شعارك</small></a>` : '';
@@ -6519,7 +6519,7 @@
     list.forEach(x => { if (!by.has(x.owner)) by.set(x.owner, []); by.get(x.owner).push(x); });
     return [...by].map(([uid, items]) => {
       const a = (dir || S.dir || []).find(d => d.uid === uid);
-      return { uid, items, office: !a, name: a ? a.name : 'مجموعة الوسيط 777', logo: a ? (a.logo || a.photo ? brandUrl(a.logo || a.photo) : '') : LOGO };
+      return { uid, items, office: !a, name: a ? a.name : 'مجموعة الوسيط', logo: a ? (a.logo || a.photo ? brandUrl(a.logo || a.photo) : '') : LOGO };
     }).sort((x, y) => (y.office ? 1 : 0) - (x.office ? 1 : 0) || String(y.items[y.items.length - 1].created_at).localeCompare(String(x.items[x.items.length - 1].created_at)));
   }
   const stAgo = t => { const m = Math.max(1, Math.round((Date.now() - new Date(t)) / 60000)); return m < 60 ? `قبل ${m} دقيقة` : `قبل ${Math.round(m / 60)} ساعة`; };
@@ -6720,7 +6720,7 @@
       <div class="page-head"><h1>⚖️ قانون التطبيق وشروط الاشتراك</h1>${on ? roleBadge() : ''}</div>
       <div class="card tr-hero">
         <img src="${LOGO}" alt="" class="tr-logo">
-        <div><b>مجموعة الوسيط 777 — AL WASSET 777 GROUPE</b><small>القانون الداخلي لمشتركي التطبيق · النسخة ${TERMS_V}</small></div>
+        <div><b>مجموعة الوسيط — AL WASSET GROUPE</b><small>القانون الداخلي لمشتركي التطبيق · النسخة ${TERMS_V}</small></div>
       </div>
       <div class="tr-grid">${TERMS_MAIN.map(([i, t, d], k) => `<div class="card card-pad tr-art"><span class="tr-n">${k + 1}</span><div class="tr-ic">${i}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></div>`).join('')}</div>
       <div class="card card-pad" style="margin-top:14px">
@@ -7761,7 +7761,7 @@
     const el = document.createElement('div');
     el.className = 'lock';
     let code = '';
-    el.innerHTML = `<div class="logo-pill" style="height:84px"><img src="${LOGO}" alt="الوسيط 777"></div><h2 style="margin:0">${esc(title)}</h2>
+    el.innerHTML = `<div class="logo-pill" style="height:84px"><img src="${LOGO}" alt="مجموعة الوسيط"></div><h2 style="margin:0">${esc(title)}</h2>
       <div class="dots">${'<span></span>'.repeat(4)}</div>
       <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map(k => k === '' ? '<span></span>' : `<button data-k="${k}">${k}</button>`).join('')}</div>`;
     const dots = () => $$('.dots span', el).forEach((d, i) => d.classList.toggle('on', i < code.length));
@@ -8728,7 +8728,7 @@
   function brandOf() {
     if (S.role === 'agency') { const a = S.agency || {}; return { logo: a.logo ? brandUrl(a.logo) : '', name: a.name || myAgencyName(), mark: a.name || myAgencyName() }; }
     if (S.staffBrand) { const a = S.staffBrand; return { logo: a.logo ? brandUrl(a.logo) : '', name: a.name || 'وكالة', mark: a.name || 'وكالة' }; }
-    return { logo: LOGO, name: 'مجموعة الوسيط 777', mark: 'الوسيط 777' };
+    return { logo: LOGO, name: 'مجموعة الوسيط', mark: 'مجموعة الوسيط' };
   }
   async function watermark(blob, force) {
     if (!force && S.settings.watermark === false) return blob;
