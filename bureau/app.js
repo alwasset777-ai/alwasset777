@@ -1321,7 +1321,7 @@
     const sp = p.specs || {};
     const a = areaOf(p);
     return `<a class="card prop-card${tools === true ? selOn(p.id) : ''}" href="#/property/${p.id}"${tools === true ? ` data-sid="${p.id}"` : ''}>
-      <div class="prop-cover">${tools === true ? selTools(p.id, 'on-cover', favBtn(p)) : `<span class="sel-tools on-cover">${favBtn(p)}</span>`}
+      <div class="prop-cover">${tools === true ? propMenu(p) : `<span class="sel-tools on-cover">${favBtn(p)}</span>`}
         ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">${cv.wm ? '' : logoMark()}` : `<div class="ph">${ic('image', 40)}</div>`}
         <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${mktBadge(p)}</div>
         <span class="ref">${esc(p.ref)}</span>
@@ -1351,6 +1351,20 @@
   const logoMark = () => { const B = brandOf(); return B.logo ? `<span class="logo-mark"><img src="${esc(B.logo)}" alt=""></span>` : `<span class="logo-mark txt">${esc(String(B.mark || '').slice(0, 14))}</span>`; };
   const selTools = (id, cls = '', pre = '') => `<span class="sel-tools ${cls}">${pre}<button type="button" class="pc-sel" data-psel="${esc(id)}" aria-label="تحديد" title="تحديد">${ic('check', 16)}</button><button type="button" class="pc-del" data-pdel="${esc(id)}" aria-label="مسح" title="مسح">${ic('trash', 16)}</button></span>`;
   const selOn = id => S.psel.has(id) ? ' psel-on' : '';
+  // زر واحد «⋯» فوق صورة العقار: المفضلة + التحديد + المسح فقائمة صغيرة (الشارة كتبين ★ المفضلة و✓ المحدد)
+  const favLbl = on => on ? '★ حيد من المفضلة' : '☆ زيد للمفضلة';
+  const propMenu = p => `<span class="sel-tools on-cover pm-wrap"><button type="button" class="pc-more${p.fav ? ' fav' : ''}" data-pmore="${esc(p.id)}" aria-label="خيارات: المفضلة، التحديد، المسح" aria-haspopup="menu" aria-expanded="false"><i aria-hidden="true">•••</i></button>
+    <span class="pc-menu" role="menu" hidden><button type="button" class="pc-mi fav-mi" role="menuitem" data-pfav="${esc(p.id)}">${favLbl(p.fav)}</button><button type="button" class="pc-mi" role="menuitem" data-psel="${esc(p.id)}">${ic('check', 16)} تحديد</button><button type="button" class="pc-mi del" role="menuitem" data-pdel="${esc(p.id)}">${ic('trash', 16)} مسح</button></span></span>`;
+  const pmClose = () => $$('.pc-menu:not([hidden])').forEach(m => { m.hidden = true; const b = m.parentNode.querySelector('.pc-more'); if (b) b.setAttribute('aria-expanded', 'false'); const c = m.closest('.prop-card'); if (c) c.classList.remove('pm-open'); });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-pmore]');
+    if (!b) { if (!(e.target.closest && e.target.closest('.pc-menu'))) pmClose(); return; }
+    e.preventDefault(); e.stopImmediatePropagation();
+    const m = b.parentNode.querySelector('.pc-menu'), open = m.hidden;
+    pmClose();
+    if (open) { m.hidden = false; b.setAttribute('aria-expanded', 'true'); const c = b.closest('.prop-card'); if (c) c.classList.add('pm-open'); }
+  }, true);
+  window.addEventListener('hashchange', () => pmClose());
   async function delFrom(store, ids, label, one) {
     const items = ids.map(id => (store === 'requests' ? S.reqs : S.appts).find(x => x.id === id)).filter(Boolean);
     if (!items.length) return 0;
@@ -1418,7 +1432,8 @@
     const p = S.props.find(x => x.id === b.dataset.pfav); if (!p) return;
     p.fav = !p.fav;
     try { await DB.saveRec('properties', p); } catch (err) { p.fav = !p.fav; return toast(err && err.message === 'staff-perm' ? 'ما عندكش الصلاحية تبدل هاد العقار' : 'ما تسجلش، عاود'); }
-    b.classList.toggle('on', p.fav); b.textContent = p.fav ? '★' : '☆'; b.title = p.fav ? 'حيد من المفضلة' : 'زيد للمفضلة';
+    if (b.classList.contains('pc-mi')) { b.textContent = favLbl(p.fav); const c = b.closest('.prop-card'), mb = c && c.querySelector('.pc-more'); if (mb) mb.classList.toggle('fav', p.fav); pmClose(); }
+    else { b.classList.toggle('on', p.fav); b.textContent = p.fav ? '★' : '☆'; b.title = p.fav ? 'حيد من المفضلة' : 'زيد للمفضلة'; }
     toast(p.fav ? 'تزاد للمفضلة ★' : 'تحيد من المفضلة');
     if (!p.fav && S.propFilters.fav && /^#\/properties/.test(location.hash)) { const c = b.closest('.prop-card'); if (c) c.remove(); }
   }, true);
@@ -1432,7 +1447,7 @@
       e.preventDefault(); e.stopPropagation();
       const id = c.dataset.sid; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id); selPaint(); pselBar(); return;
     }
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault(); e.stopPropagation(); pmClose();
     if (t.dataset.pdel) return delSelected(kind, [t.dataset.pdel]);
     if (t.dataset.psel) { const id = t.dataset.psel; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id); selPaint(); return pselBar(); }
     const k = t.dataset.pb;
