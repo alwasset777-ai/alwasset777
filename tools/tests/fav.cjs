@@ -5,11 +5,11 @@ const p=await b.newPage({viewport:{width:390,height:844}});const errs=[];p.on('p
 await p.route(/googleapis|gstatic|supabase/,r=>r.abort());
 await p.goto('http://localhost:8777/bureau/');await p.waitForTimeout(1200);await p.click('#seed');await p.waitForTimeout(1200);
 await p.evaluate(()=>location.hash='#/properties?status=');await p.waitForTimeout(900);
-const st0=await p.$$eval('#plist .pc-fav.on',x=>x.length);
-await p.click('#plist .prop-card >> nth=0 >> .pc-fav');await p.waitForTimeout(500);
+const st0=await p.$$eval('#plist .pc-more.fav',x=>x.length);
+await p.click('#plist .prop-card >> nth=0 >> .pc-more');await p.click('#plist .prop-card >> nth=0 >> .pc-mi[data-pfav]');await p.waitForTimeout(500);
 const url=await p.evaluate(()=>location.hash);
 await p.reload();await p.waitForTimeout(1500);await p.evaluate(()=>location.hash='#/properties?status=');await p.waitForTimeout(900);
-const st1=await p.$$eval('#plist .pc-fav.on',x=>x.length);
+const st1=await p.$$eval('#plist .pc-more.fav',x=>x.length);
 await p.screenshot({path:S+'/fav.png'});
 const favOk=st1===st0+1&&url.startsWith('#/properties');
 console.log(favOk?'OK ':'BAD','star',st0,'→',st1,'stayed',url);if(!favOk)bad++;

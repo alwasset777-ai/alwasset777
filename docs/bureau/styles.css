@@ -1732,3 +1732,26 @@ body.gated #main { margin-inline: auto; }
 .au-cap { display: flex; justify-content: center; min-height: 0; margin: 0 0 10px; } .au-cap:empty { display: none; }
 /* رجوع من «وصلة العقار» لصفحة الألعاب */
 .gm-back{display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;background:#111;color:#fff;text-decoration:none;font-weight:800;font-size:14px;border-radius:999px;padding:7px 14px;border-bottom:3px solid #c8102e}
+
+/* زر واحد «⋯» فوق صورة العقار: المفضلة + التحديد + المسح */
+.pm-wrap { z-index: 6; }
+.prop-card.pm-open { z-index: 20; position: relative; overflow: visible; }
+.prop-card.pm-open .prop-cover { overflow: visible; }
+.pc-more { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; background: rgba(255,255,255,.94); color: #222;
+  box-shadow: 0 4px 12px -4px rgba(0,0,0,.45); transition: transform .15s, background .2s; -webkit-tap-highlight-color: transparent; }
+.pc-more i { font-style: normal; font-weight: 900; font-size: 12px; letter-spacing: 1px; line-height: 1; }
+.pc-more:hover { transform: scale(1.08); }
+.pc-more.fav::after { content: '★'; position: absolute; top: -4px; inset-inline-end: -4px; width: 19px; height: 19px; border-radius: 50%; background: linear-gradient(145deg, #ffd54a, #f0a500); color: #fff; font-size: 12px; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
+.psel-on .pc-more { background: #c8102e; color: #fff; }
+.psel-on .pc-more i { font-size: 0; }
+.psel-on .pc-more i::before { content: '✓'; font-size: 20px; }
+.pc-menu { position: absolute; top: 46px; inset-inline-end: 0; min-width: 178px; background: #fff; border-radius: 14px; padding: 6px; display: flex; flex-direction: column; gap: 2px;
+  box-shadow: 0 14px 34px -10px rgba(0,0,0,.45), 0 0 0 1px rgba(0,0,0,.06); animation: pmIn .14s ease-out; }
+.pc-menu[hidden] { display: none; }
+@keyframes pmIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+.pc-mi { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; font: inherit; font-weight: 800; font-size: 15px; color: #222; cursor: pointer; text-align: start; }
+.pc-mi:hover, .pc-mi:focus-visible { background: #f3f3f3; }
+.pc-mi.fav-mi { color: #b07a00; }
+.pc-mi.del { color: #c8102e; }
+.pc-mi.del:hover { background: #fdecee; }
+.psel-on .pc-mi[data-psel] { color: #c8102e; }
