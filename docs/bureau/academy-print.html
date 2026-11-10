@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>أكاديمية الوسيط 777 — نسخة الطباعة</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    html, body { background: #fff !important; padding: 0; margin: 0; }
+    body::before, body::after { display: none !important; }
+    .ac { max-width: none; }
+    .pp-l { break-before: page; padding: 10mm 12mm; }
+    .pp-l .ac-ph { max-height: 70mm; }
+    .ac-sec, .ac-info, .ac-q { break-inside: avoid; }
+    .pp-cover .ac-hero { padding: 20mm 16mm; min-height: 296mm !important; box-shadow: none; }
+    @page { size: A4; margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="academy-data.js"></script>
+  <script src="academy.js"></script>
+  <script>
+    // ?m=M1 ← نسخة PDF ديال الوحدة (كتستعمل غير لتوليد الملفات فـ files/formation)
+    const m = (location.search.match(/m=(M\d)/) || [])[1] || 'M1';
+    window.W777_ACADEMY.printModule(document.getElementById('root'), m);
+  </script>
+</body>
+</html>

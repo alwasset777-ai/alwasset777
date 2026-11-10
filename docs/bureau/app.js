@@ -1022,7 +1022,7 @@
     else if (a === 'matching') { nav = 'matching'; viewMatching(query); }
     else if (a === 'ownership') { nav = 'ownership'; viewOwnership(); }
     else if (a === 'contracts') { nav = 'contracts'; viewContracts(); }
-    else if (a === 'learn') { nav = 'learn'; viewLearn(); }
+    else if (a === 'learn') { nav = 'learn'; await viewLearn(parts); }
     else if (a === 'guide') { nav = 'guide'; viewGuide(b); }
     else if (a === 'search') { nav = 'search'; await viewSearch(query); }
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
@@ -4334,14 +4334,6 @@
     { f: '36-conge-paternite', ar: 'طلب الاستفادة من رخصة الأبوة', fr: 'Demande de congé de paternité', law: '', ic: '👶', g: 'admin' },
   ];
   const CT_GROUPS = [['deed', '⚖️ نماذج المحررات الرسمية — قابلة للتعديل (Word)'], ['base', '📘 الدليل الأساسي (01–08)'], ['rent', '🏠 الكراء'], ['sale', '🔑 البيع والشراء'], ['agency', '🤝 الوكالة والوساطة'], ['admin', '🗂️ طلبات والتزامات إدارية'], ['other', '🧱 أخرى']];
-  const MODULES = [
-    { m: 'M1', ar: 'القانون العقاري وعقود البيع', d: '3 أيام · 21 ساعة', parts: ['الإطار القانوني للعقارات فالمغرب', 'عقد البيع: المراحل والالتزامات', 'حقوق الرهن والضمانات', 'الملكية المشتركة', 'قانون الكراء السكني والتجاري', 'المسؤولية والأخطاء المهنية'] },
-    { m: 'M2', ar: 'التعمير والتشخيص التقني للعقارات', d: 'يومان · 14 ساعة', parts: ['أنظمة التعمير والتخطيط العمراني', 'رخص البناء والتجزئة وتغيير الاستعمال', 'الشهادات والمستندات الإدارية للعقار', 'التشخيص التقني الإلزامي', 'قراءة مخططات البناء والتدقيق التقني'] },
-    { m: 'M3', ar: 'تقييم وخبرة العقارات', d: '3 أيام · 21 ساعة', parts: ['مبادئ التقييم العقاري وأهميته', 'طريقة المقارنة البيعية', 'طريقة رسملة الإيرادات', 'طريقة التكلفة للعقارات الجديدة', 'العوامل المؤثرة فالقيمة العقارية', 'إعداد تقرير الرأي فالقيمة'] },
-    { m: 'M4', ar: 'التجارة والتنقيب العقاري', d: '3 أيام · 21 ساعة', parts: ['تقنيات التنقيب عن العملاء', 'بناء شبكة العلاقات المهنية', 'تقنيات التفاوض العقاري', 'إدارة ملف البيع من A إلى Z', 'خدمة العملاء والاحتفاظ بهم', 'مؤشرات الأداء والتحليل التجاري'] },
-    { m: 'M5', ar: 'التسويق العقاري والرقمنة', d: '3 أيام · 21 ساعة', parts: ['أسس التسويق العقاري', 'التسويق الرقمي ووسائل التواصل الاجتماعي', 'إنشاء المحتوى العقاري الاحترافي', 'الإعلانات المدفوعة والاستهداف', 'الموقع الإلكتروني والمنصات العقارية', 'التحليل الرقمي وقياس النتائج'] },
-    { m: 'M6', ar: 'التمويل العقاري وتيسير الحصول على القرض', d: '3 أيام · 21 ساعة', parts: ['أنواع التمويل العقاري فالمغرب', 'القروض البنكية ومعايير الأهلية', 'حساب القدرة الاقتراضية', 'الرهن العقاري والضمانات', 'مرافقة العميل فالحصول على التمويل', 'التخطيط المالي للمستثمر العقاري'] },
-  ];
   // طباعة PDF مباشرة (iframe)، وإلا كيتحل فصفحة جديدة
   function printPdf(url) {
     if (/iPhone|iPad|Android/i.test(navigator.userAgent)) { window.open(url, '_blank'); toast('من الملف: زر المشاركة ⬆️ ← «طباعة»', 4000); return; }
@@ -4384,36 +4376,17 @@
     bindAgCard(main(), { ct: '' });
     $$('[data-agfill]').forEach(b => b.onclick = () => { const c = CONTRACTS.find(x => x.f === b.dataset.agfill) || {}; agStart(`بغيت نعمّر نموذج «${c.ar}» (${c.f}). قرا النموذج وسولني على المعلومات اللي خاصاك وحدة بوحدة، ومن بعد عطيني العقد كامل معمّر.`); });
   }
-  function viewLearn() {
-    let done = {};
-    try { done = JSON.parse(localStorage.getItem('w777_learn') || '{}'); } catch (e) { /* */ }
-    const n = MODULES.filter(x => done[x.m]).length;
-    main().innerHTML = `
-      <div class="page-head"><h1>🎓 تعلم مهنة الوكيل العقاري</h1></div>
-      ${agCard('🎓 تعلم مع منير — الأستاذ ديالك', 'كيشرح ليك المهنة والتطبيق خطوة بخطوة، بأمثلة من مكناس، وكيدير ليك اختبارات صغيرة.', '▶ بدا الدرس', 'learn')}
-      <div class="card card-pad" style="margin-bottom:14px">
-        <b>برنامج تكوين الوكيل العقاري المحترف — وكالة الوسيط 777، مكناس</b>
-        <p class="muted" style="margin:6px 0 10px">6 وحدات · 17 يوم · 119 ساعة. حل كل وحدة، قراها، ومن بعد علّم عليها ✓.</p>
-        <div class="track learn-track"><div class="fill" style="width:${n / MODULES.length * 100}%"></div></div>
-        <small class="muted">${n} / ${MODULES.length} وحدات مكملة</small>
-      </div>
-      <div class="doc-grid">${MODULES.map(x => `
-        <div class="card card-pad doc-card ${done[x.m] ? 'done' : ''}">
-          <div class="doc-ic mod">${x.m}</div>
-          <div class="grow"><b>${esc(x.ar)}</b><small class="muted">⏱️ ${esc(x.d)}</small>
-            <ol class="mod-parts">${x.parts.map(p => `<li>${esc(p)}</li>`).join('')}</ol>
-            ${docBtns(`files/formation/${x.m}.pdf`, `AlWasset777-Formation-${x.m}.pdf`)}
-            <label class="learn-done"><input type="checkbox" data-done-m="${x.m}" ${done[x.m] ? 'checked' : ''}> قريت هاد الوحدة ✓</label>
-          </div>
-        </div>`).join('')}</div>`;
-    bindPrint(main());
-    bindAgCard(main(), { learn: 'سلام أستاذ منير! بغيت نتعلم مهنة الوكيل العقاري. بدا معايا من الوحدة اللي كتناسبني وشرح ليا خطوة بخطوة.' });
-    $$('[data-done-m]').forEach(cb => cb.onchange = () => {
-      done[cb.dataset.doneM] = cb.checked ? Date.now() : undefined;
-      if (cb.checked) agMood('prize', null, 4200);
-      try { localStorage.setItem('w777_learn', JSON.stringify(done)); } catch (e) { /* */ }
-      viewLearn();
-    });
+  /* ---------- 🎓 أكاديمية الوسيط 777: 7 وحدات، دروس بالصور، اختبار لكل وحدة (70%) ← الوحدة الموالية، وشهادة (academy.js) ---------- */
+  async function viewLearn(parts) {
+    if (!window.W777_ACADEMY || !window.W777_ACAD) {
+      main().innerHTML = '<div class="card card-pad muted">⏳ كتتحمل الأكاديمية…</div>';
+      try { await loadScript('academy-data.js'); await loadScript('academy.js'); } catch (e) { /* الرسالة لتحت */ }
+      if (!/^#\/learn/.test(location.hash)) return;
+    }
+    if (!window.W777_ACADEMY) { main().innerHTML = '<div class="card card-pad">تعذر تحميل الأكاديمية — عاود حل التطبيق.</div>'; return; }
+    main().innerHTML = '<div id="ac-root"></div>';
+    window.W777_ACADEMY.mount($('#ac-root'), parts || [], { ask: t => agStart(t), mood: m => agMood(m, null, 4200), name: '' });
+    window.scrollTo(0, 0);
   }
 
   /* ============================================================

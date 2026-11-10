@@ -1768,3 +1768,6 @@ body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mo
 /* القائمة ما تتقطعش (content-visibility / overflow ديال اللائحة) */
 .pm-open { content-visibility: visible !important; contain: none !important; }
 #rlist:has(.pm-open), .appt-list:has(.pm-open), #mlist:has(.pm-open), #plist:has(.pm-open) { overflow: visible !important; }
+/* أزرار «دليل الاستعمال» فوق الخلفية الكحلة: النص كان أبيض فوق أبيض */
+.gd-hero .btn:not(.gold) { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.35); }
+.gd-hero .btn:not(.gold):hover { background: rgba(255,255,255,.18); }
