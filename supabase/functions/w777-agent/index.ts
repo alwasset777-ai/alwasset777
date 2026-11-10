@@ -139,6 +139,11 @@ const TOOLS = [
   { name: "open_page", description: "Open a page of the app for the user.", input_schema: S({ page: str("home | properties | property | requests | request | appointments | matching | agencies | brokers | contractors | finishing | investors | notaries | associations | projects | events | news | stays | search | guide | terms | donations | disputes | contracts | learn | ownership | estimate | settings | new_property | new_request | new_appointment | rentals | finance | report | loan | map | ad_maker | post | reels | project | messages | tamwil | game | stories"), ref: str("ref when page is property or request; optional property ref for post (ad image studio prefilled with the property), reels (video maker prefilled with that property's photos and details), project (PDF presentation prefilled with the property) or ad_maker") }, ["page"]) },
 ];
 
+// أسئلة كتحتاج أداة (معطيات المكتب، حساب، إضافة، فتح صفحة…) — بالدارجة/العربية/الفرنسية/الإنجليزية
+const NEED_TOOL = /شحال|كم\s|احسب|حسب|قرض|كريدي|قسط|القسط|طريطة|مصاريف|موثق|تسجيل|تحفيظ|كوميسيون|عمولة|سمسرة|ثمن|متر|مواعيد|موعد|زيد|أضف|اضف|سجل|قلب|ابحث|بحث|لقا|عندي|ديالي|حل(?:\s|ي|ل)|افتح|فتح|صاوب|دير ليا|W777-|DM-|عقار|شقة|دار\s|فيلا|بقعة|محل|طلب|زبون|زبناء|كراء|كاري|مالية|ربح|مداخيل|مصاريف|الشبكة|موثقين|وكالات|وسطاء|مقاول|عقد|نموذج|حالة|مباع|محجوز|combien|calcul|cr[ée]dit|frais|notaire|rdv|rendez|ajout|cherch|trouv|ouvr|contrat|bien|how much|loan|mortgage|fees|appointment|add |search|find|open|contract|property/i;
+// تحية ولا شكر فقط ← بلا أداة
+const NO_TOOL = /^\s*(سلام|السلام عليكم|مرحبا|اهلا|أهلا|شكرا|شكراً|بارك الله|الله يعطيك الصحة|bonjour|salut|merci|hello|hi|thanks)[\s!.؟?،,]*$/i;
+
 // ---------- Gemini (Google AI Studio — فيه مستوى فابور) ----------
 // التطبيق كيبقى يخدم بصيغة Claude (text / tool_use / tool_result)؛ هنا كنترجمو للصيغة ديال Gemini ورجوع.
 // Google كيبدل النماذج وكيضغطو أحياناً (503 high demand): كنجربو لائحة بالترتيب، الأسرع هو الأول،
@@ -146,15 +151,15 @@ const TOOLS = [
 type GM = { m: string; th?: Record<string, unknown> | null };
 const GEMINI_MODELS: GM[] = [
   ...(Deno.env.get("W777_GEMINI_MODEL") ? [{ m: Deno.env.get("W777_GEMINI_MODEL")!, th: null }] : []),
-  // جربناهم: 3.5-flash كيجاوب فـ 2 ثواني (دقيق وسريع). ملي كيكون مشغول (429 = سالات الحصة ديال الدقيقة فالمستوى المجاني)
-  // كنمشيو للنماذج الكاملة الأخرى (حصة مستقلة وكيستعملو الأدوات مزيان) قبل النماذج «lite» اللي كتخترع النتائج بلا أدوات
+  // جربناهم: 3.5-flash كيجاوب فـ 2 ثواني (دقيق وسريع). ملي كيكون مشغول (429/503 فالمستوى المجاني) كنمشيو لـ lite (سريع)؛
+  // وباش ما يخترعش النتائج، الأسئلة اللي خاصها معطيات ولا حساب كتجبرو يستعمل أداة فالخطوة الأولى (needsTool ← mode ANY)
   { m: "gemini-3.5-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
-  { m: "gemini-flash-latest", th: null },
-  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
   { m: "gemini-3.1-flash-lite", th: { thinkingLevel: "minimal" } },
   { m: "gemini-3.5-flash-lite", th: { thinkingLevel: "minimal" } },
+  { m: "gemini-3.7-flash", th: { thinkingLevel: "low" } },
+  { m: "gemini-flash-latest", th: null },
   { m: "gemini-flash-lite-latest", th: null },
+  { m: "gemini-3.8-flash", th: { thinkingLevel: "low" } },
 ];
 const TTS_MODELS = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts", "gemini-2.5-flash-preview-tts", "gemini-3.1-flash-tts-preview"];
 const TTS_VOICE = Deno.env.get("W777_TTS_VOICE") || "Charon"; // صوت رجل، هادئ وواضح
@@ -195,7 +200,7 @@ function toGemini(messages: Blk[], model: string) {
   return contents;
 }
 // كيرجع أول جواب صالح من لائحة النماذج (مع إعادة المحاولة بلا إعدادات التفكير إلا ما قبلهاش النموذج)
-async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true, fast = false) {
+async function geminiOpen(key: string, system: string, messages: Blk[], stream: boolean, withTools = true, fast = false, force = false) {
   let last = { status: 0, message: "" };
   const trace: string[] = [];
   for (const [gi, g] of GEMINI_MODELS.entries()) {
@@ -204,7 +209,7 @@ async function geminiOpen(key: string, system: string, messages: Blk[], stream: 
       const payload = JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: toGemini(messages, g.m),
-        ...(withTools ? { tools: G_TOOLS, toolConfig: { functionCallingConfig: { mode: "AUTO" } } } : {}),
+        ...(withTools ? { tools: G_TOOLS, toolConfig: { functionCallingConfig: { mode: force ? "ANY" : "AUTO" } } } : {}),
         generationConfig: { maxOutputTokens: withTools ? 8192 : 900, temperature: 0.6, ...(th ? { thinkingConfig: th } : {}) },
       });
       const ac = new AbortController();
@@ -250,21 +255,21 @@ const finish = (content: Blk[]) => {
   if (!content.length) content.push({ type: "text", text: "" });
   return { content, stop_reason: hasTool ? "tool_use" : content.some((b) => b.text) ? "end_turn" : "refusal" };
 };
-async function gemini(key: string, system: string, messages: Blk[], withTools = true) {
-  const { res, model, trace } = await geminiOpen(key, system, messages, false, withTools);
+async function gemini(key: string, system: string, messages: Blk[], withTools = true, force = false) {
+  const { res, model, trace } = await geminiOpen(key, system, messages, false, withTools, false, force);
   const data = await res.json().catch(() => ({}));
   const content: Blk[] = [];
   pushParts(content, data?.candidates?.[0]?.content?.parts ?? [], model);
   return { ...finish(content), usage: data?.usageMetadata, model, trace };
 }
 // البث المباشر (SSE): النص كيوصل للتطبيق كلمة بكلمة، والنهاية فيها البلوكات كاملين
-function geminiSSE(key: string, system: string, messages: Blk[], extra: Record<string, unknown>, cors: Record<string, string>, withTools = true, fast = false) {
+function geminiSSE(key: string, system: string, messages: Blk[], extra: Record<string, unknown>, cors: Record<string, string>, withTools = true, fast = false, force = false) {
   const enc = new TextEncoder();
   const body = new ReadableStream({
     async start(ctl) {
       const send = (o: unknown) => ctl.enqueue(enc.encode(`data: ${JSON.stringify(o)}\n\n`));
       try {
-        const { res, model } = await geminiOpen(key, system, messages, true, withTools, fast);
+        const { res, model } = await geminiOpen(key, system, messages, true, withTools, fast, force);
         const content: Blk[] = [];
         const rd = res.body!.pipeThrough(new TextDecoderStream()).getReader();
         let buf = "";
@@ -482,10 +487,16 @@ Deno.serve(async (req) => {
     ctx.help ? `Relevant lessons from the app's user guide (use them to explain how to use the app): ${JSON.stringify(ctx.help).slice(0, 5000)}` : "",
   ].filter(Boolean).join("\n");
 
+  // السؤال خاصو معطيات المكتب ولا حساب ولا فعل؟ (الخطوة الأولى فقط) ← الأداة إجبارية باش حتى النموذج السريع ما يخترعش
+  const lastMsg = messages[messages.length - 1] as Blk;
+  const lastIsQuestion = lastMsg?.role === "user" && (typeof lastMsg.content === "string" || !(lastMsg.content ?? []).some((b: Blk) => b.type === "tool_result"));
+  const qText = typeof lastMsg?.content === "string" ? lastMsg.content : ((lastMsg?.content ?? []) as Blk[]).filter((b: Blk) => b.type === "text").map((b: Blk) => b.text).join(" ");
+  const hasFile = Array.isArray(lastMsg?.content) && (lastMsg.content as Blk[]).some((b: Blk) => b.type === "image" || b.type === "document");
+  const needsTool = lastIsQuestion && !hasFile && qText.length < 400 && NEED_TOOL.test(qText) && !NO_TOOL.test(qText);
   if (!apiKey) {
-    if (body.stream) return geminiSSE(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages, { used, provider: "gemini" }, CORS);
+    if (body.stream) return geminiSSE(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages, { used, provider: "gemini" }, CORS, true, false, needsTool);
     try {
-      const r = await gemini(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages);
+      const r = await gemini(geminiKey!, `${SYSTEM}\n\n${turnInfo}`, messages, true, needsTool);
       return json({ ...r, used, provider: "gemini" });
     } catch (e) {
       const st = (e as { status?: number }).status ?? 0;
