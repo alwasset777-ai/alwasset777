@@ -1434,3 +1434,32 @@ drop policy if exists w777_ac_upd on public.w777_academy;
 create policy w777_ac_upd on public.w777_academy for update to authenticated using (uid = auth.uid()) with check (uid = auth.uid());
 revoke all on public.w777_academy from anon, public;
 grant select, insert, update on public.w777_academy to authenticated;
+
+-- ============================================================
+-- v181: لوحة الشهادات — كل مشترك كيشوف شهادات اللي نجحو (الاسم، الرقم، التاريخ، المعدل فقط، بلا التقدم)
+-- التحميل/الطبع غير لصاحب الشهادة وللمدير (فالواجهة). المدير يقدر يخبّي شهادة (w777_cert_hidden).
+-- ============================================================
+create table if not exists public.w777_cert_hidden (
+  cert_no text primary key check (char_length(cert_no) <= 40),
+  hidden_at timestamptz not null default now()
+);
+alter table public.w777_cert_hidden enable row level security;
+drop policy if exists w777_ch_admin on public.w777_cert_hidden;
+create policy w777_ch_admin on public.w777_cert_hidden for all to authenticated using (w777_is_admin()) with check (w777_is_admin());
+revoke all on public.w777_cert_hidden from anon, public;
+grant select, insert, delete on public.w777_cert_hidden to authenticated;
+
+create or replace function public.w777_certs()
+returns table (cert_no text, cert_name text, cert_date bigint, avg numeric, mine boolean, hidden boolean)
+language sql stable security definer set search_path = public as $$
+  select a.cert_no, a.cert_name,
+         case when (a.progress->'cert'->>'date') ~ '^\d{10,14}(\.\d+)?$' then (a.progress->'cert'->>'date')::numeric::bigint end,
+         a.avg, a.uid = auth.uid(), h.cert_no is not null
+  from w777_academy a left join w777_cert_hidden h on h.cert_no = a.cert_no
+  where auth.uid() is not null and a.passed >= 7 and a.cert_no is not null and coalesce(a.cert_name, '') <> ''
+    and (h.cert_no is null or w777_is_admin() or a.uid = auth.uid())
+  order by 3 desc nulls last
+  limit 1000
+$$;
+revoke all on function public.w777_certs() from public, anon;
+grant execute on function public.w777_certs() to authenticated;
