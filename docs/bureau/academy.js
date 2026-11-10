@@ -142,6 +142,13 @@
 .ac-cert .mods span{font-size:1.2cqw;font-weight:800;border:.15cqw solid #111;border-radius:99cqw;padding:.3cqw 1.2cqw}
 .ac-cert .ft{margin-top:auto;width:100%;display:flex;justify-content:space-between;align-items:flex-end;font-size:1.6cqw;line-height:1.6;color:#333}
 .ac-cert .ft b{display:block;font-size:1.9cqw;color:#111}
+.ac-cert.ro{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.ac-cert .wm{position:absolute;inset:-20%;display:flex;flex-wrap:wrap;align-content:space-around;justify-content:space-around;gap:6cqw 4cqw;transform:rotate(-24deg);pointer-events:none;z-index:2}
+.ac-cert .wm span{font-size:3cqw;font-weight:900;color:rgba(200,16,46,.16);white-space:nowrap}
+@media print{.ac-cert.ro{display:none!important}}
+.ac-certs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px;margin-top:12px}
+.ac-cc{display:flex;gap:10px;align-items:center;padding:12px;border-radius:16px;background:var(--surface,#fff);border:1px solid var(--line,#e6e6e6);text-decoration:none;color:inherit;min-width:0}
+.ac-cc.me{border-color:#0a7a2f;box-shadow:0 0 0 2px rgba(10,122,47,.15)}.ac-cc.off{opacity:.55}
+.ac-cc .md{font-size:30px;flex:none}.ac-cc .tx{flex:1;min-width:0;display:flex;flex-direction:column}.ac-cc .tx b{font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ac-cc small{color:var(--muted,#777);font-size:12.5px}.ac-cc .no{font-family:ui-monospace,monospace;font-size:11.5px;text-align:start}
 .ac-cert .seal{flex:none;width:13cqw;height:13cqw;transform:rotate(-12deg);opacity:.93;filter:drop-shadow(0 .3cqw .6cqw rgba(200,16,46,.25))}.ac-cert .seal svg{width:100%;height:100%;display:block}
 @media print{body.ac-printing *{visibility:hidden!important}body.ac-printing .ac-cert,body.ac-printing .ac-cert *{visibility:visible!important}
  body.ac-printing .ac-cert{position:fixed;inset:0;margin:0;max-width:none;width:100%;border-radius:0;box-shadow:none}}
@@ -172,7 +179,7 @@
         <div class="ac-road">${M.map((x, i) => `${i ? '<b></b>' : ''}<a href="#/learn/${x.m}" class="${st(x.m).pass ? 'ok' : i === cur ? 'cur' : isOpen(i) ? '' : 'lk'}"><i>${st(x.m).pass ? '✓' : isOpen(i) ? x.icon : '🔒'}</i>${x.m}</a>`).join('')}</div>
         <div class="ac-prog"><i style="width:${passed / M.length * 100}%"></i></div>
         <div class="ac-row" style="margin-top:12px">${cur >= 0 ? `<a class="ac-btn" href="#/learn/${M[cur].m}">▶ ${passed ? 'كمّل' : 'ابدأ'}: ${esc(M[cur].m)} — ${esc(M[cur].t)}</a>` : `<a class="ac-btn" href="#/learn/cert">🏆 الشهادة ديالك</a>`}
-          <button class="ac-btn w" data-ask="1">🤖 تعلم مع منير</button>${host.team ? '<a class="ac-btn w" href="#/learn/team">📊 تقدم الفريق</a>' : ''}</div>
+          <button class="ac-btn w" data-ask="1">🤖 تعلم مع منير</button>${host.certs ? '<a class="ac-btn w" href="#/learn/certs">🏆 لوحة الشهادات</a>' : ''}${host.team ? '<a class="ac-btn w" href="#/learn/team">📊 تقدم الفريق</a>' : ''}</div>
         <small style="display:block;margin-top:8px;opacity:.75">${passed} / ${M.length} وحدات ناجحة</small></div>
       <div class="ac-grid">${M.map((x, i) => card(x, i)).join('')}</div>
       <a class="ac-card" href="#/learn/cert" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit">
@@ -291,6 +298,26 @@
 
   // ---------- الشهادة ----------
   const certNo = (name, d) => { let h = 2166136261; for (const ch of name + '|' + d) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return 'W777-AC-' + new Date(d).getFullYear() + '-' + (h >>> 0).toString(36).toUpperCase().slice(0, 6); };
+  // الشهادة (نفس الشكل فصفحة صاحبها وفلوحة الشهادات). ro = للعرض فقط (علامة مائية، بلا طبع)
+  function certHtml(c, ro) {
+    const M = mods(), dt = new Date(c.date || Date.now()).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' });
+    return `<div class="ac-cert${ro ? ' ro' : ''}" id="ac-cert"${ro ? ' oncontextmenu="return false"' : ''}><div class="fr"></div><div class="in">
+          <img class="lg" src="icons/logo.png" alt="">
+          <div class="k">${esc(A().title)} · مجموعة الوسيط</div>
+          <h2>شهادة إتمام تكوين الوكيل العقاري المحترف</h2>
+          <div class="to">تشهد أكاديمية الوسيط بأن</div>
+          <div class="nm">${esc(c.name)}</div>
+          <div class="tx">أتم بنجاح برنامج «من مندوب عقاري إلى صاحب وكالة» (7 وحدات · 42 درساً)، واجتاز اختبارات جميع الوحدات بمعدل <b>${pct(c.avg)}</b>.</div>
+          <div class="mods">${M.map(x => `<span>${x.icon} ${x.m} · ${esc(x.t.split(':')[0])}</span>`).join('')}</div>
+          <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(c.no || '')}</b></div><div class="seal" aria-label="ختم مجموعة الوسيط"><svg viewBox="0 0 200 200" direction="ltr"><defs><path id="act1" d="M23,100 a77,77 0 1,1 154,0"/><path id="act2" d="M16,100 a84,84 0 0,0 168,0"/><clipPath id="acclip"><circle cx="100" cy="100" r="58"/></clipPath></defs><circle cx="100" cy="100" r="96" fill="#fff" stroke="#c8102e" stroke-width="6"/><text font-size="17" font-weight="900" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act1" startOffset="50%">مجموعة الوسيط</textPath></text><text font-size="13" font-weight="800" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act2" startOffset="50%">★ أكاديمية التكوين ★</textPath></text><circle cx="100" cy="100" r="62" fill="#fff" stroke="#c8102e" stroke-width="2.5"/><image href="icons/logo.png" x="40" y="40" width="120" height="120" clip-path="url(#acclip)"/></svg></div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
+        </div>${ro ? `<div class="wm" aria-hidden="true">${'<span>للعرض فقط · مجموعة الوسيط</span>'.repeat(12)}</div>` : ''}</div>`;
+  }
+  // طبع الشهادة (A4 بالعرض) — غير لصاحبها وللمدير
+  function printCert() {
+    const pg = document.createElement('style'); pg.textContent = '@page{size:A4 landscape;margin:0}'; document.head.appendChild(pg);
+    document.body.classList.add('ac-printing');
+    setTimeout(() => { window.print(); setTimeout(() => { document.body.classList.remove('ac-printing'); pg.remove(); }, 800); }, 60);
+  }
   function cert(root, host) {
     css();
     const M = mods(), passed = M.filter(x => st(x.m).pass).length;
@@ -313,16 +340,7 @@
           <label style="display:block;font-weight:800;margin-top:6px">الاسم الكامل كيف غادي يبان فالشهادة</label>
           <div class="ac-row" style="margin-top:6px"><input id="ac-nm" class="input" style="flex:1 1 220px;min-height:46px;border-radius:12px;padding:0 12px;font:inherit;font-size:16px" maxlength="60" value="${esc(name || host.name || '')}" placeholder="مثلا: يوسف العلوي">
           <button class="ac-btn" id="ac-mk">✍️ صاوب الشهادة</button></div></div>
-        ${name ? `<div class="ac-cert" id="ac-cert"><div class="fr"></div><div class="in">
-          <img class="lg" src="icons/logo.png" alt="">
-          <div class="k">${esc(A().title)} · مجموعة الوسيط</div>
-          <h2>شهادة إتمام تكوين الوكيل العقاري المحترف</h2>
-          <div class="to">تشهد أكاديمية الوسيط بأن</div>
-          <div class="nm">${esc(name)}</div>
-          <div class="tx">أتم بنجاح برنامج «من مندوب عقاري إلى صاحب وكالة» (7 وحدات · 42 درساً)، واجتاز اختبارات جميع الوحدات بمعدل <b>${pct(avg)}</b>.</div>
-          <div class="mods">${M.map(x => `<span>${x.icon} ${x.m} · ${esc(x.t.split(':')[0])}</span>`).join('')}</div>
-          <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(dt)}</b>رقم الشهادة: <b dir="ltr">${esc(no)}</b></div><div class="seal" aria-label="ختم مجموعة الوسيط"><svg viewBox="0 0 200 200" direction="ltr"><defs><path id="act1" d="M23,100 a77,77 0 1,1 154,0"/><path id="act2" d="M16,100 a84,84 0 0,0 168,0"/><clipPath id="acclip"><circle cx="100" cy="100" r="58"/></clipPath></defs><circle cx="100" cy="100" r="96" fill="#fff" stroke="#c8102e" stroke-width="6"/><text font-size="17" font-weight="900" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act1" startOffset="50%">مجموعة الوسيط</textPath></text><text font-size="13" font-weight="800" fill="#c8102e" direction="ltr" text-anchor="middle"><textPath href="#act2" startOffset="50%">★ أكاديمية التكوين ★</textPath></text><circle cx="100" cy="100" r="62" fill="#fff" stroke="#c8102e" stroke-width="2.5"/><image href="icons/logo.png" x="40" y="40" width="120" height="120" clip-path="url(#acclip)"/></svg></div><div style="text-align:end">المكوّن<b>${esc(A().trainer.split(' — ')[0])}</b>${esc(A().trainer.split(' — ')[1] || '')}</div></div>
-        </div></div>
+        ${name ? certHtml({ name, no, date: d, avg }) : ''}${name ? `
         <div class="ac-row" style="justify-content:center"><button class="ac-btn" id="ac-pr">🖨️ طباعة / حفظ PDF</button><button class="ac-btn w" id="ac-sh">📤 شارك الخبر</button></div>
         <p class="ac-note" style="text-align:center">فالتيليفون: «طباعة» ← «حفظ كـ PDF» (ولا مشاركة ← طباعة). الشهادة شهادة تكوين داخلية ديال مجموعة الوسيط.</p>` : ''}</div>`;
       root.querySelector('#ac-mk').onclick = () => {
@@ -331,12 +349,7 @@
         setAll(s2 => { const dd = (s2.cert && s2.cert.date) || Date.now(); s2.cert = { name: v, date: dd, no: certNo(v, dd) }; });
         if (host.mood) host.mood('prize'); draw();
       };
-      const pr = root.querySelector('#ac-pr'); if (pr) pr.onclick = () => {
-        // الصفحة بالعرض غير للشهادة (ما كتأثرش على طباعة الصفحات الأخرى)
-        const pg = document.createElement('style'); pg.textContent = '@page{size:A4 landscape;margin:0}'; document.head.appendChild(pg);
-        document.body.classList.add('ac-printing');
-        setTimeout(() => { window.print(); setTimeout(() => { document.body.classList.remove('ac-printing'); pg.remove(); }, 800); }, 60);
-      };
+      const pr = root.querySelector('#ac-pr'); if (pr) pr.onclick = printCert;
       const sh = root.querySelector('#ac-sh'); if (sh) sh.onclick = () => {
         const t = `🎓 الحمد لله! حصلت على «شهادة الوكيل العقاري المحترف» من أكاديمية الوسيط (7 وحدات) — ${name} · ${no}`;
         if (navigator.share) navigator.share({ text: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
@@ -369,6 +382,41 @@
       <section class="pp-l"><h2>📝 أسئلة المراجعة (${x.exam.length})</h2>${x.exam.map((q, k) => `<p style="margin:6px 0;line-height:1.7"><b>${k + 1}. ${esc(q[0])}</b><br>✔️ ${esc(q[1][0])} — <small>${esc(q[2])}</small></p>`).join('')}
         <p class="ac-note">${esc(A().note)}</p></section></div>`;
     fillCred(root);
+  }
+
+
+  // 🎓 لوحة الشهادات: كل مشترك كيشوف شهادات اللي نجحو؛ التحميل غير لصاحبها وللمدير
+  let CERTS = null;
+  async function loadCerts(host, force) { if (!CERTS || force) CERTS = await host.certs(); return CERTS; }
+  async function certs(root, host, no) {
+    if (!host.certs) return home(root, host);
+    root.innerHTML = '<div class="ac"><div class="ac-card muted">⏳ كيتحملو الشهادات…</div></div>';
+    let rows = [];
+    try { rows = await loadCerts(host, !no); } catch (e) { root.innerHTML = `<div class="ac"><div class="ac-card">تعذر التحميل: ${esc(e.message || e)}</div></div>`; return; }
+    if (!root.isConnected) return;
+    const crumb = `<div class="ac-crumb"><a href="#/learn">🎓 الأكاديمية</a> ‹ <a href="#/learn/certs">🏆 لوحة الشهادات</a></div>`;
+    if (no) {
+      const c = rows.find(r => r.cert_no === no);
+      if (!c) { root.innerHTML = `<div class="ac">${crumb}<div class="ac-card">هاد الشهادة ما كايناش (ولا مخبية).</div></div>`; return; }
+      const can = c.mine || host.admin;
+      root.innerHTML = `<div class="ac">${crumb}
+        <div class="ac-card"><h3 style="margin:0">🏆 ${esc(c.cert_name)}</h3><p class="muted" style="margin:4px 0 0">رقم الشهادة <b dir="ltr">${esc(c.cert_no)}</b>${c.mine ? ' · شهادتك' : ''}${c.hidden ? ' · 🚫 مخبية على المشتركين' : ''}</p></div>
+        ${certHtml({ name: c.cert_name, no: c.cert_no, date: c.cert_date, avg: +c.avg || 0 }, !can)}
+        <div class="ac-row" style="justify-content:center">${can ? '<button class="ac-btn" id="ac-pr">🖨️ تحميل / طبع PDF</button>' : '<span class="ac-tag lk">🔒 التحميل غير لصاحب الشهادة وللمدير</span>'}${host.admin ? `<button class="ac-btn w" id="ac-hide">${c.hidden ? '👁️ رجّعها للوحة' : '🚫 خبّيها من اللوحة'}</button>` : ''}</div></div>`;
+      const pr = root.querySelector('#ac-pr'); if (pr) pr.onclick = printCert;
+      const hd = root.querySelector('#ac-hide'); if (hd) hd.onclick = async () => {
+        hd.disabled = true;
+        try { await host.hideCert(c.cert_no, !c.hidden); CERTS = null; certs(root, host, no); } catch (e) { hd.disabled = false; alert('تعذر: ' + (e.message || e)); }
+      };
+      return;
+    }
+    const dt = d => d ? new Date(+d).toLocaleDateString('ar-MA', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+    root.innerHTML = `<div class="ac">${crumb.replace(' ‹ <a href="#/learn/certs">🏆 لوحة الشهادات</a>', ' ‹ 🏆 لوحة الشهادات')}
+      <div class="ac-card"><h3 style="margin:0">🏆 لوحة الشهادات (${rows.filter(r => !r.hidden).length})</h3><p class="muted" style="margin:6px 0 0;line-height:1.7">المشتركين اللي كملو الوحدات السبعة ونجحو فالاختبارات. أي واحد يقدر يشوف الشهادة، والتحميل غير لصاحبها وللمدير.</p></div>
+      ${rows.length ? `<div class="ac-certs">${rows.map(r => `<a class="ac-cc${r.mine ? ' me' : ''}${r.hidden ? ' off' : ''}" href="#/learn/certs/${encodeURIComponent(r.cert_no)}">
+        <span class="md">🏅</span><span class="tx"><b>${esc(r.cert_name)}</b><small>${esc(dt(r.cert_date))}${r.cert_date ? ' · ' : ''}المعدل ${pct(+r.avg || 0)}</small><small dir="ltr" class="no">${esc(r.cert_no)}</small></span>
+        ${r.mine ? '<span class="ac-tag ok">شهادتك</span>' : r.hidden ? '<span class="ac-tag lk">مخبية</span>' : ''}</a>`).join('')}</div>`
+        : `<div class="ac-card muted" style="text-align:center;padding:22px">مازال حتى واحد ما خدا الشهادة — كون الأول! 💪<br><a class="ac-btn" href="#/learn" style="margin-top:10px">▶ ابدأ التكوين</a></div>`}</div>`;
   }
 
   // 📊 تقدم الفريق (المدير: الكل · صاحب الوكالة: الفريق ديالو)
@@ -405,6 +453,7 @@
     if (!m) return home(root, host);
     if (m === 'cert') return cert(root, host);
     if (m === 'team') return team(root, host);
+    if (m === 'certs') return certs(root, host, sub ? decodeURIComponent(sub) : '');
     if (sub === 'exam') return exam(root, host, m);
     if (sub != null && sub !== '' && !isNaN(+sub)) return lesson(root, host, m, +sub);
     return module(root, host, m);
