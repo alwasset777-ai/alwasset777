@@ -16,10 +16,10 @@ for(const [hash,card] of [['#/matching?min=50','#mlist [data-sid]'],['#/appointm
   await p.evaluate(h=>location.hash=h,hash);await p.waitForTimeout(1000);
   if(hash.startsWith('#/requests'))await p.evaluate(()=>{const c=[...document.querySelectorAll('[data-st]')].find(x=>x.dataset.st==='');if(c)c.click();});await p.waitForTimeout(500);
   const n0=await count(card);
-  await p.click(card+' >> nth=0 >> .pc-del');await p.waitForTimeout(300);await ok();
+  await p.click(card+' >> nth=0 >> .pc-more');await p.click(card+' >> nth=0 >> .pc-mi.del');await p.waitForTimeout(300);await ok();
   const n1=await count(card);
   let n2=n1,bar='';
-  if(n1>=2){await p.click(card+' >> nth=0 >> .pc-sel');await p.click(card+' >> nth=1 >> .pc-sel');await p.waitForTimeout(300);bar=await p.textContent('#psel-bar').catch(()=>'');
+  if(n1>=2){await p.click(card+' >> nth=0 >> .pc-more');await p.click(card+' >> nth=0 >> .pc-mi[data-psel]');await p.click(card+' >> nth=1 >> .pc-more');await p.click(card+' >> nth=1 >> .pc-mi[data-psel]');await p.waitForTimeout(300);bar=await p.textContent('#psel-bar').catch(()=>'');
     if(vw.width===390)await p.screenshot({path:O+'/sel_'+hash.split('?')[0].slice(2)+'.png'});
     await p.click('#psel-bar [data-pb=del]');await p.waitForTimeout(300);await ok();n2=await count(card);}
   res[hash]=[n0,n1,n2,/2 محدد/.test(bar)];

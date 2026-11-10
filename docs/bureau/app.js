@@ -1349,21 +1349,42 @@
   // زر النجمة (المفضلة) فوق صورة العقار + الشعار فوق الصور اللي ما فيهاش العلامة المائية
   const favBtn = p => `<button type="button" class="pc-fav${p.fav ? ' on' : ''}" data-pfav="${esc(p.id)}" aria-label="المفضلة" title="${p.fav ? 'حيد من المفضلة' : 'زيد للمفضلة'}">${p.fav ? '★' : '☆'}</button>`;
   const logoMark = () => { const B = brandOf(); return B.logo ? `<span class="logo-mark"><img src="${esc(B.logo)}" alt=""></span>` : `<span class="logo-mark txt">${esc(String(B.mark || '').slice(0, 14))}</span>`; };
-  const selTools = (id, cls = '', pre = '') => `<span class="sel-tools ${cls}">${pre}<button type="button" class="pc-sel" data-psel="${esc(id)}" aria-label="تحديد" title="تحديد">${ic('check', 16)}</button><button type="button" class="pc-del" data-pdel="${esc(id)}" aria-label="مسح" title="مسح">${ic('trash', 16)}</button></span>`;
+  const selTools = (id, cls = '', extra = '') => pmMenu(id, cls, extra);
   const selOn = id => S.psel.has(id) ? ' psel-on' : '';
-  // زر واحد «⋯» فوق صورة العقار: المفضلة + التحديد + المسح فقائمة صغيرة (الشارة كتبين ★ المفضلة و✓ المحدد)
+  // زر واحد «⋯» فوق كل بطاقة: قائمة صغيرة (المفضلة، إعلان فوري، تعديل، تحديد، مسح) — الشارة كتبين ★ المفضلة و✓ المحدد
   const favLbl = on => on ? '★ حيد من المفضلة' : '☆ زيد للمفضلة';
-  const propMenu = p => `<span class="sel-tools on-cover pm-wrap"><button type="button" class="pc-more${p.fav ? ' fav' : ''}" data-pmore="${esc(p.id)}" aria-label="خيارات: المفضلة، التحديد، المسح" aria-haspopup="menu" aria-expanded="false"><i aria-hidden="true">•••</i></button>
-    <span class="pc-menu" role="menu" hidden><button type="button" class="pc-mi fav-mi" role="menuitem" data-pfav="${esc(p.id)}">${favLbl(p.fav)}</button><button type="button" class="pc-mi" role="menuitem" data-psel="${esc(p.id)}">${ic('check', 16)} تحديد</button><button type="button" class="pc-mi del" role="menuitem" data-pdel="${esc(p.id)}">${ic('trash', 16)} مسح</button></span></span>`;
-  const pmClose = () => $$('.pc-menu:not([hidden])').forEach(m => { m.hidden = true; const b = m.parentNode.querySelector('.pc-more'); if (b) b.setAttribute('aria-expanded', 'false'); const c = m.closest('.prop-card'); if (c) c.classList.remove('pm-open'); });
+  const pmItem = (go, icon, t, cls = '') => `<button type="button" class="pc-mi ${cls}" role="menuitem" data-go="${esc(go)}">${icon} ${t}</button>`;
+  const pmMenu = (id, cls, extra, fav) => `<span class="sel-tools ${cls} pm-wrap"><button type="button" class="pc-more${fav ? ' fav' : ''}" data-pmore="${esc(id)}" aria-label="خيارات" aria-haspopup="menu" aria-expanded="false"><i aria-hidden="true">•••</i></button>
+    <span class="pc-menu" role="menu" hidden>${extra || ''}<button type="button" class="pc-mi" role="menuitem" data-psel="${esc(id)}">${ic('check', 16)} تحديد</button><button type="button" class="pc-mi del" role="menuitem" data-pdel="${esc(id)}">${ic('trash', 16)} مسح</button></span></span>`;
+  const propMenu = p => pmMenu(p.id, 'on-cover', `<button type="button" class="pc-mi fav-mi" role="menuitem" data-pfav="${esc(p.id)}">${favLbl(p.fav)}</button>${pmItem(adHref('reels', p.id).replace('m=reels&', ''), '📣', 'إعلان فوري')}${pmItem('#/property/' + p.id + '/edit', ic('edit', 16), 'تعديل')}`, p.fav);
+  const pmClose = () => $$('.pc-menu:not([hidden])').forEach(m => { m.hidden = true; const b = m.parentNode.querySelector('.pc-more'); if (b) b.setAttribute('aria-expanded', 'false'); const c = m.closest('.pm-open'); if (c) c.classList.remove('pm-open'); });
   document.addEventListener('click', e => {
+    const g = e.target.closest && e.target.closest('.pc-menu [data-go]');
+    if (g) { e.preventDefault(); e.stopImmediatePropagation(); pmClose(); location.hash = g.dataset.go; return; }
     const b = e.target.closest && e.target.closest('[data-pmore]');
     if (!b) { if (!(e.target.closest && e.target.closest('.pc-menu'))) pmClose(); return; }
     e.preventDefault(); e.stopImmediatePropagation();
     const m = b.parentNode.querySelector('.pc-menu'), open = m.hidden;
     pmClose();
-    if (open) { m.hidden = false; b.setAttribute('aria-expanded', 'true'); const c = b.closest('.prop-card'); if (c) c.classList.add('pm-open'); }
+    if (open) { m.hidden = false; b.setAttribute('aria-expanded', 'true'); const c = b.closest('[data-sid], .prop-card, .card'); if (c) c.classList.add('pm-open'); }
   }, true);
+  // ضغطة طويلة على البطاقة ← كتحددها مباشرة (ومن بعد الضغط العادي كيحدد الباقيين)
+  let lpT = null, lpXY = null, lpFired = false;
+  const lpCard = e => { const q = SEL_CARDS[selKind()]; return q && e.target.closest && !e.target.closest('button, .btn, input, select, textarea, .pc-menu') ? e.target.closest(q) : null; };
+  document.addEventListener('pointerdown', e => {
+    const c = lpCard(e); clearTimeout(lpT); lpFired = false;
+    if (!c || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    lpXY = [e.clientX, e.clientY];
+    lpT = setTimeout(() => {
+      lpFired = true; pmClose();
+      const id = c.dataset.sid; S.psel.has(id) ? S.psel.delete(id) : S.psel.add(id); selPaint(); pselBar();
+      try { if (navigator.vibrate) navigator.vibrate(25); } catch (er) { /* */ }
+    }, 550);
+  }, true);
+  document.addEventListener('pointermove', e => { if (lpXY && Math.hypot(e.clientX - lpXY[0], e.clientY - lpXY[1]) > 10) clearTimeout(lpT); }, true);
+  ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => { clearTimeout(lpT); lpXY = null; }, true));
+  document.addEventListener('click', e => { if (lpFired) { lpFired = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  document.addEventListener('contextmenu', e => { if (lpCard(e)) e.preventDefault(); }, true);
   window.addEventListener('hashchange', () => pmClose());
   async function delFrom(store, ids, label, one) {
     const items = ids.map(id => (store === 'requests' ? S.reqs : S.appts).find(x => x.id === id)).filter(Boolean);
@@ -2103,7 +2124,7 @@
           ${n ? `<span class="badge green">🎯 ${n} مطابق</span>` : ''}
           ${r.followUp ? `<span class="badge ${r.followUp <= today() && openReq(r) ? 'amber' : ''}">${ic('calendar', 12)} ${esc(r.followUp)}</span>` : ''}</div>
       </div>
-      ${tools === true ? selTools(r.id, 'in-row') : ''}${ic('chevL', 18)}</a>`;
+      ${tools === true ? selTools(r.id, 'in-row', pmItem('#/request/' + r.id + '/edit', ic('edit', 16), 'تعديل')) : ''}${ic('chevL', 18)}</a>`;
   }
   function viewReqs(query) {
     const f = S.reqFilters;
@@ -4583,7 +4604,7 @@
           <a class="btn sm" href="#/appointment/${a.id}">${ic('edit', 15)}</a>
           ${a.reqId ? `<a class="btn sm" href="#/request/${a.reqId}">الطلب</a>` : ''}${p ? `<a class="btn sm" href="#/property/${p.id}">العقار</a>` : ''}
         </div>
-      </div>${tools === true ? selTools(a.id, 'in-row') : ''}</div>`;
+      </div>${tools === true ? selTools(a.id, 'in-row', pmItem('#/appointment/' + a.id, ic('edit', 16), 'تعديل')) : ''}</div>`;
   }
   function apptMsg(a) {
     const p = a.propId && S.props.find(x => x.id === a.propId);
