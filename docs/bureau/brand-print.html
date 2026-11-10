@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>قوالب للطبع | مجموعة الوسيط</title>
+  <meta name="description" content="قوالب جاهزة للطبع بهوية مجموعة الوسيط: بطاقة الزيارة، لافتة للبيع، لافتة للكراء — كتبدل المعلومات وكتطبع ولا كتحفظ PDF.">
+  <meta name="theme-color" content="#111111">
+  <link rel="icon" href="icons/icon-192.png?v=9" type="image/png">
+  <link rel="stylesheet" href="fonts.css">
+  <style>
+    /* قوالب الطبع: بطاقة الزيارة 85×55 مم + لافتات A3 (للبيع / للكراء). الخانات كتتبدل بالكتابة فوقها. */
+    :root { --red: #c8102e; --red-d: #a00d24; --ink: #111; --mut: #777; --line: #e6e6e6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #ececec; color: var(--ink); font-family: 'Tajawal', 'Noto Sans Arabic', system-ui, sans-serif; }
+    img { max-width: 100%; height: auto; }
+    .lat { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+    [contenteditable] { outline: none; border-radius: 3px; }
+    [contenteditable]:hover { box-shadow: 0 0 0 1px rgba(200,16,46,.45); }
+    [contenteditable]:focus { box-shadow: 0 0 0 2px var(--red); }
+
+    .bar { position: sticky; top: 0; z-index: 5; background: #111; color: #fff; border-bottom: 4px solid var(--red); }
+    .bar .in { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .bar img { height: 34px; width: auto; }
+    .bar b { margin-inline-end: auto; font-size: 15px; }
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab, .btn { appearance: none; border: 0; cursor: pointer; font: 800 13.5px Tajawal, sans-serif; padding: 9px 13px; border-radius: 11px; background: #2b2b2b; color: #fff; text-decoration: none; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; }
+    .tab.on { background: #fff; color: #111; }
+    .btn.red { background: var(--red); }
+    .help { max-width: 1100px; margin: 12px auto 0; padding: 0 16px; color: #444; font-size: 14px; }
+    .help b { color: var(--red); }
+
+    .stage { max-width: 1100px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .tpl { display: none; flex-direction: column; align-items: center; gap: 18px; width: 100%; }
+    .tpl.on { display: flex; }
+    .cap { font-size: 13px; color: var(--mut); font-weight: 700; }
+    /* المعاينة كتصغّر الورقة باش تدخل فالشاشة */
+    .fit { width: 100%; display: flex; justify-content: center; }
+    .sheet { background: #fff; position: relative; overflow: hidden; box-shadow: 0 10px 34px rgba(0,0,0,.18); flex: none; transform-origin: top center; }
+
+    /* ── بطاقة الزيارة 85×55 ── */
+    .card { width: 85mm; height: 55mm; }
+    .card.front { background: #111; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2mm; }
+    .card.front img { width: 52mm; }
+    .card.front .ln { width: 30mm; height: .6mm; background: var(--red); }
+    .card.front .tg { font-size: 3.1mm; font-weight: 700; letter-spacing: .02em; color: #ddd; }
+    .card.front .bd { position: absolute; bottom: 0; left: 0; right: 0; height: 1.6mm; background: var(--red); }
+    .card.back { padding: 5mm 5.5mm; display: grid; grid-template-columns: 1fr 19mm; gap: 3mm; }
+    .card.back .nm { font-size: 5.2mm; font-weight: 900; line-height: 1.1; }
+    .card.back .rl { font-size: 3mm; color: var(--red); font-weight: 800; margin-top: .6mm; }
+    .card.back .ct { margin-top: 3.2mm; font-size: 3.1mm; line-height: 1.55; }
+    .card.back .ct div { display: flex; gap: 1.6mm; align-items: center; }
+    .card.back .ct i { font-style: normal; width: 3.4mm; height: 3.4mm; border-radius: 50%; background: var(--red); color: #fff; font-size: 2mm; display: inline-grid; place-items: center; flex: none; }
+    .card.back .side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+    .card.back .side img { width: 17mm; }
+    .card.back .qr { width: 17mm; height: 17mm; }
+    .card.back .qr svg { width: 100%; height: 100%; display: block; }
+    .card.back .ql { font-size: 2.2mm; color: var(--mut); text-align: center; font-weight: 700; }
+    .card.back .bd { position: absolute; bottom: 0; left: 0; right: 0; height: 1.6mm; background: #111; }
+    .card.back .bd::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 26mm; background: var(--red); }
+
+    /* ── لافتة A3 أفقية 420×297 ── */
+    .sign { width: 420mm; height: 297mm; display: grid; grid-template-rows: 112mm 1fr 52mm; }
+    .sign .top { background: var(--red); color: #fff; display: flex; align-items: center; justify-content: center; gap: 16mm; }
+    .sign .top .ar { font-size: 78mm; font-weight: 900; line-height: 1; margin-top: 8mm; }
+    .sign .top .fr { font-size: 25mm; font-weight: 900; letter-spacing: .04em; border-inline-start: 1.6mm solid rgba(255,255,255,.6); padding-inline-start: 12mm; line-height: 1.05; }
+    .sign .mid { display: grid; grid-template-columns: 1fr 74mm; gap: 12mm; align-items: center; padding: 6mm 18mm; }
+    .sign .ph { font-size: 31mm; font-weight: 900; line-height: 1.12; direction: ltr; text-align: center; letter-spacing: .01em; }
+    .sign .ph small { display: block; font-size: 10mm; color: var(--mut); font-weight: 800; direction: rtl; letter-spacing: 0; margin-bottom: 2mm; }
+    .sign .q { text-align: center; }
+    .sign .q .qr { width: 66mm; height: 66mm; margin: 0 auto; }
+    .sign .q .qr svg { width: 100%; height: 100%; display: block; }
+    .sign .q span { display: block; font-size: 7mm; font-weight: 900; margin-top: 2.5mm; }
+    .sign .bot { background: #111; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18mm; }
+    .sign .bot img { height: 36mm; width: auto; }
+    .sign .bot .t { font-size: 11mm; font-weight: 900; }
+    .sign .bot .t small { display: block; font-size: 6.4mm; font-weight: 700; color: #ccc; }
+
+    @media print {
+      body { background: #fff; }
+      .bar, .help, .cap, .tpl:not(.on) { display: none !important; }
+      .stage { padding: 0; gap: 0; max-width: none; display: block; }
+      .tpl.on { display: block; }
+      .fit { display: block; height: auto !important; }
+      .sheet { box-shadow: none; transform: none !important; break-after: page; page-break-after: always; }
+      .sheet:last-child { break-after: auto; page-break-after: auto; }
+      [contenteditable]:hover, [contenteditable]:focus { box-shadow: none; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar"><div class="in">
+    <img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580">
+    <b>قوالب للطبع</b>
+    <div class="tabs" role="tablist">
+      <button class="tab on" type="button" data-t="card">🪪 بطاقة الزيارة</button>
+      <button class="tab" type="button" data-t="sale">🏷️ للبيع</button>
+      <button class="tab" type="button" data-t="rent">🔑 للكراء</button>
+    </div>
+    <button class="btn red" type="button" id="print">🖨️ طبع / PDF</button>
+    <a class="btn" href="brand.html">↩ دليل الهوية</a>
+  </div></div>
+  <p class="help">✏️ <b>ضغط على أي كتابة وبدّلها</b> (السمية، الهاتف…) — كتتحفظ فهاد الجهاز. رمز QR كيتبدل بوحدو مع رقم الواتساب. من بعد «طبع / PDF».</p>
+
+  <main class="stage">
+    <section class="tpl on" data-t="card">
+      <span class="cap">الوجه — 85 × 55 مم</span>
+      <div class="fit"><div class="sheet card front">
+        <img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580">
+        <span class="ln"></span>
+        <span class="tg" contenteditable data-k="tag">للخدمات العقارية — مكناس</span>
+        <span class="bd"></span>
+      </div></div>
+      <span class="cap">الظهر</span>
+      <div class="fit"><div class="sheet card back">
+        <div>
+          <div class="nm" contenteditable data-k="name">منير رادوي</div>
+          <div class="rl" contenteditable data-k="role">المدير — مجموعة الوسيط</div>
+          <div class="ct">
+            <div><i>☎</i><span class="lat" contenteditable data-k="p1">0777 77 79 59</span></div>
+            <div><i>☎</i><span class="lat" contenteditable data-k="p2">0777 77 78 48</span></div>
+            <div><i>⌂</i><span contenteditable data-k="addr">مكناس، المغرب</span></div>
+          </div>
+        </div>
+        <div class="side">
+          <img src="icons/brand/logo-flat.png" alt="" width="996" height="580">
+          <div class="qr" data-qr></div>
+          <div class="ql">واتساب</div>
+        </div>
+        <span class="bd"></span>
+      </div></div>
+    </section>
+
+    <section class="tpl" data-t="sale">
+      <span class="cap">لافتة A3 أفقية — 420 × 297 مم</span>
+      <div class="fit"><div class="sheet sign">
+        <div class="top"><span class="ar">للبيع</span><span class="fr lat">À VENDRE</span></div>
+        <div class="mid">
+          <div class="ph"><small contenteditable data-k="signline">اتصل ولا صيفط واتساب</small><span contenteditable data-k="p1">0777 77 79 59</span><br><span contenteditable data-k="p2">0777 77 78 48</span></div>
+          <div class="q"><div class="qr" data-qr></div><span>سكاني ← واتساب</span></div>
+        </div>
+        <div class="bot"><img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580"><div class="t">مجموعة الوسيط<small contenteditable data-k="tag">للخدمات العقارية — مكناس</small></div></div>
+      </div></div>
+    </section>
+
+    <section class="tpl" data-t="rent">
+      <span class="cap">لافتة A3 أفقية — 420 × 297 مم</span>
+      <div class="fit"><div class="sheet sign">
+        <div class="top" style="background:#111"><span class="ar">للكراء</span><span class="fr lat">À LOUER</span></div>
+        <div class="mid">
+          <div class="ph"><small contenteditable data-k="signline">اتصل ولا صيفط واتساب</small><span contenteditable data-k="p1">0777 77 79 59</span><br><span contenteditable data-k="p2">0777 77 78 48</span></div>
+          <div class="q"><div class="qr" data-qr></div><span>سكاني ← واتساب</span></div>
+        </div>
+        <div class="bot" style="border-top:3mm solid var(--red)"><img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580"><div class="t">مجموعة الوسيط<small contenteditable data-k="tag">للخدمات العقارية — مكناس</small></div></div>
+      </div></div>
+    </section>
+  </main>
+
+  <script src="vendor/qrcode.js"></script>
+  <script>
+    (function () {
+      var KEY = 'w777_brand_kit', S = {};
+      try { S = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { S = {}; }
+      var q = new URLSearchParams(location.search);
+      var PAGES = { card: '85mm 55mm', sale: '420mm 297mm', rent: '420mm 297mm' };
+
+      // الخانات: نفس المفتاح كيتبدل فكل القوالب
+      var fields = document.querySelectorAll('[data-k]');
+      fields.forEach(function (el) { var k = el.dataset.k; if (S[k]) el.textContent = S[k]; });
+      document.addEventListener('input', function (e) {
+        var el = e.target.closest('[data-k]'); if (!el) return;
+        var k = el.dataset.k, v = el.textContent.trim(); S[k] = v;
+        document.querySelectorAll('[data-k="' + k + '"]').forEach(function (o) { if (o !== el) o.textContent = v; });
+        try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (err) {}
+        if (k === 'p1') drawQr();
+      });
+      // Enter ما يزيدش سطر جديد
+      document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest('[contenteditable]')) { e.preventDefault(); e.target.blur(); } });
+
+      // رمز QR ← واتساب على الرقم الأول (0XXXXXXXXX ← 212XXXXXXXXX)
+      function waNum() {
+        var d = (S.p1 || document.querySelector('[data-k="p1"]').textContent).replace(/\D/g, '');
+        if (/^0\d{9}$/.test(d)) d = '212' + d.slice(1);
+        return d;
+      }
+      function drawQr() {
+        var url = 'https://wa.me/' + waNum();
+        var qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
+        var svg = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+        document.querySelectorAll('[data-qr]').forEach(function (b) { b.innerHTML = svg; b.title = url; });
+      }
+      drawQr();
+
+      // القالب النشيط + مقاس الصفحة فالطبع
+      var pageStyle = document.createElement('style'); document.head.appendChild(pageStyle);
+      function show(t) {
+        if (!PAGES[t]) t = 'card';
+        document.querySelectorAll('.tpl').forEach(function (s) { s.classList.toggle('on', s.dataset.t === t); });
+        document.querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); });
+        pageStyle.textContent = '@page { size: ' + PAGES[t] + '; margin: 0; }';
+        fit();
+      }
+      // تصغير المعاينة على قد الشاشة
+      function fit() {
+        document.querySelectorAll('.tpl.on .fit').forEach(function (f) {
+          var sh = f.firstElementChild; sh.style.transform = 'none';
+          var w = sh.offsetWidth, h = sh.offsetHeight, max = f.clientWidth, k = Math.min(1, max / w);
+          if (sh.classList.contains('card')) k = Math.min(max / w, 4.2); // البطاقة صغيرة: كبّرها فالمعاينة
+          sh.style.transform = 'scale(' + k + ')'; f.style.height = (h * k) + 'px';
+        });
+      }
+      document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { show(b.dataset.t); history.replaceState(null, '', '?t=' + b.dataset.t); }; });
+      document.getElementById('print').onclick = function () { window.print(); };
+      window.addEventListener('resize', fit);
+      window.addEventListener('beforeprint', function () { document.querySelectorAll('.sheet').forEach(function (s) { s.style.transform = 'none'; }); });
+      window.addEventListener('afterprint', fit);
+      show(q.get('t') || 'card');
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    })();
+  </script>
+</body>
+</html>
