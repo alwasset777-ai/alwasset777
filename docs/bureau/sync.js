@@ -87,9 +87,9 @@
     const ch = await authReq(url, key, `/auth/v1/factors/${fid}/challenge`, tok, {});
     return authReq(url, key, `/auth/v1/factors/${fid}/verify`, tok, { challenge_id: ch.id, code: String(code || '').replace(/\D/g, '') });
   };
-  async function signIn(url, key, email, password) {
+  async function signIn(url, key, email, password, captcha) {
     url = cleanUrl(url); key = String(key || '').trim(); email = normEmail(email);
-    const d = await authCall(url, key, '/auth/v1/token?grant_type=password', { email, password });
+    const d = await authCall(url, key, '/auth/v1/token?grant_type=password', Object.assign({ email, password }, captcha ? { gotrue_meta_security: { captcha_token: captcha } } : {}));
     const f = ((d.user && d.user.factors) || []).find(x => x.status === 'verified' && x.factor_type === 'totp');
     if (f) { pend = { url, key, d, fid: f.id }; return { mfa: true }; }
     return finishSignIn(url, key, d);
@@ -129,9 +129,10 @@
   }
   // ✉️ الدخول بالإيميل بلا كلمة سر: كود 6 أرقام كيوصل للإيميل (ولا الرابط اللي فنفس الإيميل)
   const mailOf = e => String(e || '').trim().toLowerCase();
-  async function otpSend(email) {
+  const capOf = t => (t ? { gotrue_meta_security: { captcha_token: t } } : {});
+  async function otpSend(email, captcha) {
     const { url, key } = defaults();
-    await authCall(cleanUrl(url), key, '/auth/v1/otp', { email: mailOf(email), create_user: true });
+    await authCall(cleanUrl(url), key, '/auth/v1/otp', Object.assign({ email: mailOf(email), create_user: true }, capOf(captcha)));
   }
   async function otpVerify(email, code) {
     const { url, key } = defaults();
