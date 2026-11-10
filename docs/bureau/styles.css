@@ -1811,3 +1811,15 @@ body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mo
 .lq { grid-template-columns: minmax(0, 1fr); } .lq > * { min-width: 0; } .lq-in input { width: 100%; }
 @media (min-width: 900px) { .lq { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .lq-row > * { min-width: 0; }
+
+/* 🎟️ لوحة المقاعد (المدير) + بانر المحاكاة فالتمويل */
+.seat-board { margin-bottom: 14px; }
+.sb-wrap { overflow-x: auto; margin-top: 10px; }
+.seat-board table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.seat-board th, .seat-board td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
+.seat-board thead th { font-size: 13px; }
+.seat-board td b { font-size: 17px; }
+.sb-bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; margin: 4px 0 2px; min-width: 60px; }
+.sb-bar i { display: block; height: 100%; background: linear-gradient(90deg, #c8102e, #e0a800); }
+.fin-sim { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 14px; border: 2px solid var(--gold); }
+.fin-sim span { flex: 1 1 220px; line-height: 1.7; }

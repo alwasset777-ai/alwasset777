@@ -4386,7 +4386,21 @@
     }
     if (!window.W777_ACADEMY) { main().innerHTML = '<div class="card card-pad">تعذر تحميل الأكاديمية — عاود حل التطبيق.</div>'; return; }
     main().innerHTML = '<div id="ac-root"></div>';
-    window.W777_ACADEMY.mount($('#ac-root'), parts || [], { ask: t => agStart(t), mood: m => agMood(m, null, 4200), name: '' });
+    const Sy = window.W777_SYNC, on = !!(Sy && Sy.isOn() && Sy.uid && Sy.uid());
+    window.W777_ACADEMY.mount($('#ac-root'), parts || [], {
+      ask: t => agStart(t), mood: m => agMood(m, null, 4200), name: S.role === 'agency' && S.agency ? (S.agency.name || '') : '',
+      // ☁️ التقدم فالسحابة (جدول w777_academy: كل واحد ديالو، المدير والمالك كيشوفو الفريق)
+      sync: on ? {
+        pull: async () => (await (await Sy.request('/rest/v1/w777_academy?select=progress&uid=eq.' + Sy.uid())).json())[0] || null,
+        push: body => Sy.request('/rest/v1/w777_academy?on_conflict=uid', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(Object.assign({ uid: Sy.uid(), updated_at: new Date().toISOString() }, body)) }),
+      } : null,
+      team: on && (S.role === 'admin' || S.role === 'agency') ? async () => {
+        const rows = await fetchAll('/rest/v1/w777_academy?select=uid,progress,passed,avg,cert_no,cert_name,updated_at&order=passed.desc,updated_at.desc');
+        const dir = await loadDir().catch(() => []), staff = await fetchAll('/rest/v1/w777_staff?select=uid,name,owner').catch(() => []);
+        const byUid = Object.fromEntries(dir.map(a => [a.uid, a])), st = Object.fromEntries(staff.map(x => [x.uid, x]));
+        return rows.map(r => { const a = byUid[r.uid], s = st[r.uid]; return Object.assign(r, a ? { name: a.name || a.code, sub: (KINDS[kindOf(a)] || {}).one + ' · ' + (a.code || '') + (a.city ? ' · ' + a.city : '') } : s ? { name: s.name, sub: '👤 موظف' + (byUid[s.owner] ? ' عند ' + (byUid[s.owner].name || '') : '') } : { name: r.cert_name || 'متكون', sub: '' }); });
+      } : null,
+    });
     window.scrollTo(0, 0);
   }
 
@@ -5864,7 +5878,7 @@
       `\n🎁 عرض 777: 6 أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? '، ونفس العرض خارج المغرب (7 الأوائل مجاني، 70 -50%، 700 -25% مدى الحياة)' : ''} — الترتيب حسب نهار الموافقة على القانون` +
       `\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` +
       (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
-    main().innerHTML = head + `
+    main().innerHTML = head + seatBoard(ags) + `
       <div class="card card-pad" style="margin-bottom:14px">
         <div class="kv"><div><small>الحسابات</small><b>${ags.length}</b></div><div><small>مفعلة</small><b>${ags.filter(a => a.active).length}</b></div>
           <div><small>كمّلو المعلومات</small><b>${ags.filter(isNamed).length}</b></div>
@@ -6251,6 +6265,18 @@
     const end = freeEnd(a);
     if (end >= now) return { ok: true, trial: true, txt: `🎁 الفترة المجانية حتى ${dAr(end.toISOString())} — من بعد ${price} درهم فالعام${extra}` };
     return { ok: false, txt: `⏳ الاشتراك السنوي (${price} درهم) مستحق — تواصل مع مكتب الوسيط 777${extra}` };
+  }
+  // 🎟️ لوحة المدير: شحال تعمّر وشحال باقي فكل درجة، فالمغرب وخارج المغرب (حسب أكبر رقم مقعد تعطى)
+  function seatBoard(ags) {
+    const top = z => Math.max(0, ...ags.filter(a => a.seat_no && (a.seat_zone || 'ma') === z).map(a => a.seat_no));
+    const Z = [['ma', '🇲🇦 المغرب', top('ma')], ['out', '🌍 خارج المغرب', top('out')]];
+    const T = [['🥇', '7 الأوائل · مجاني مدى الحياة', 0, 7], ['🥈', '70 · تخفيض 50% مدى الحياة', 7, 77], ['🥉', '700 · تخفيض 25% مدى الحياة', 77, 777]];
+    const cell = (n, from, to) => { const took = Math.max(0, Math.min(n, to) - from), size = to - from, left = size - took;
+      return `<td><b>${took}</b><small>/${size}</small><div class="sb-bar"><i style="width:${Math.round(took / size * 100)}%"></i></div><small class="${left ? '' : 'txt-red'}">${left ? 'باقي ' + left : 'تعمّرو'}</small></td>`; };
+    return `<div class="card card-pad seat-board"><b>🎟️ مقاعد عرض 777 فهاد الفئة</b>
+      <div class="sb-wrap"><table><thead><tr><th></th>${Z.map(z => `<th>${z[1]}<small> (${z[2]})</small></th>`).join('')}</tr></thead>
+      <tbody>${T.map(([i, t, f, to]) => `<tr><th>${i} ${t}</th>${Z.map(z => cell(z[2], f, to)).join('')}</tr>`).join('')}
+      <tr><th>🎟️ من بعد · -25% لمدة 4 سنين</th>${Z.map(z => `<td><b>${Math.max(0, z[2] - 777)}</b></td>`).join('')}</tr></tbody></table></div></div>`;
   }
   // رسالة واتساب جاهزة: العرض + شحال باقي من المقاعد المجانية + رابط صفحة الانضمام
   function offerMsg(all, kind) {
@@ -8548,7 +8574,10 @@
     const id = parts[1];
     if (id) return viewTamwilOne(F, F.inst.find(x => x.id === id));
     const st = { cat: query.cat || '', q: query.q || '', mre: query.mre === '1', mk: query.mk === '1' };
-    main().innerHTML = `
+    // جا من «حساب القرض»: نعاودو نوريو المحاكاة فوق الجهات
+    const simB = query.pay ? `<div class="card card-pad fin-sim"><b>🧮 المحاكاة ديالك</b><span>قرض ${fmt(num(query.loan))} د على ${esc(query.y || '')} عام بـ ${esc(query.r || '')}% ← القسط ~<b>${fmt(num(query.pay))} د/الشهر</b> · الدخل اللازم ~${fmt(Math.round(num(query.pay) / 0.4))} د</span>
+      <a class="btn sm" href="#/loan?price=${num(query.price) || ''}&down=${num(query.down) || ''}&y=${num(query.y) || ''}&r=${num(query.r) || ''}">↩ رجع للحساب</a></div>` : '';
+    main().innerHTML = simB + `
       <div class="fin-hero card">
         <div class="fin-hero-t"><h1>🏦 التمويل العقاري</h1><p>البنوك والبنوك التشاركية وشركات التمويل والضمانات العمومية — بالمغرب وللمغاربة المقيمين بالخارج.</p>
           <div class="btn-row"><a class="btn gold" href="#/loan">🧮 احسب القسط الشهري</a></div></div>
@@ -8626,8 +8655,8 @@
   }
   // 🏦 حساب التمويل الساهل: الثمن ← التسبيق (بالدرهم ولا %) ← المدة ← الفائدة ← القسط الشهري مباشرة
   function viewLoan(query) {
-    const st = { price: num(query.price) || '', down: '', years: 20, rate: 4.5, ins: 0.3 };
-    if (st.price) st.down = Math.round(st.price * 0.2);
+    const st = { price: num(query.price) || '', down: num(query.down) || '', years: [10, 15, 20, 25].includes(num(query.y)) ? num(query.y) : 20, rate: num(query.r) || 4.5, ins: 0.3 };
+    if (st.price && !st.down) st.down = Math.round(st.price * 0.2);
     const chips = (k, list, cur, f) => `<div class="lq-chips" data-k="${k}">${list.map(v => `<button type="button" class="${String(v) === String(cur) ? 'on' : ''}" data-v="${v}">${f(v)}</button>`).join('')}</div>`;
     main().innerHTML = `
       <div class="page-head"><div><h1>🏦 حساب القرض</h1><div class="sub">دخل الثمن والتسبيق، والقسط الشهري كيبان مباشرة</div></div></div>
@@ -8674,7 +8703,7 @@
           <div><small>مصاريف التسجيل والموثق (~7%)</small><b>${M(L.price * 0.07)} د</b></div>
           <div><small>الكاش اللازم (التسبيق + المصاريف)</small><b>${M(L.down + L.price * 0.07)} د</b></div>
         </div>
-        <div class="btn-row" style="margin-top:12px"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`🏦 محاكاة قرض — ${offName()}\nثمن العقار: ${fmtRaw(L.price)} د\nالتسبيق: ${fmtRaw(Math.round(L.down))} د (${Math.round(L.downPct)}%)\nالقرض: ${fmtRaw(Math.round(L.principal))} د على ${L.years} عام بـ ${L.rate}%\n👉 القسط الشهري: ${fmtRaw(Math.round(L.monthly))} د\nالدخل اللازم: ${fmtRaw(Math.round(L.income))} د/الشهر\n(حساب تقريبي — العرض النهائي عند البنك)`)}">${ic('wa', 16)} صيفط للزبون</a></div></div>`;
+        <div class="btn-row" style="margin-top:12px"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`🏦 محاكاة قرض — ${offName()}\nثمن العقار: ${fmtRaw(L.price)} د\nالتسبيق: ${fmtRaw(Math.round(L.down))} د (${Math.round(L.downPct)}%)\nالقرض: ${fmtRaw(Math.round(L.principal))} د على ${L.years} عام بـ ${L.rate}%\n👉 القسط الشهري: ${fmtRaw(Math.round(L.monthly))} د\nالدخل اللازم: ${fmtRaw(Math.round(L.income))} د/الشهر\n(حساب تقريبي — العرض النهائي عند البنك)`)}">${ic('wa', 16)} صيفط للزبون</a><a class="btn" href="#/tamwil?pay=${Math.round(L.monthly)}&loan=${Math.round(L.principal)}&y=${L.years}&r=${L.rate}&price=${Math.round(L.price)}&down=${Math.round(L.down)}">🏦 الجهات المموّلة</a></div></div>`;
       $$('.lq-cmp [data-y]').forEach(b => b.onclick = () => { st.years = +b.dataset.y; $$('[data-k="years"] button').forEach(x => x.classList.toggle('on', +x.dataset.v === st.years)); draw(); });
       $('#ltab').innerHTML = `<div class="pair-head"><b>📅 جدول السداد عام بعام</b></div><div class="ln-rows">${L.yearly.map(x => `<div class="list-row"><b style="width:64px">العام ${x.y}</b>
         <div class="grow"><div class="ln-bar"><i style="width:${(x.pp / ((x.pp + x.ip) || 1) * 100).toFixed(1)}%"></i></div><small class="muted">رأس المال ${M(x.pp)} · الفوائد ${M(x.ip)}</small></div><small>الباقي <b>${M(x.bal)}</b></small></div>`).join('')}</div>`;
