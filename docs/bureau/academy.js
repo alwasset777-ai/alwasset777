@@ -397,7 +397,7 @@
 
   // 🎓 لوحة الشهادات: كل مشترك كيشوف شهادات اللي نجحو؛ التحميل غير لصاحبها وللمدير
   let CERTS = null;
-  async function loadCerts(host, force) { if (!CERTS || force) CERTS = await host.certs(); return CERTS; }
+  async function loadCerts(host, force) { if (!CERTS || force) { const r = await host.certs(); CERTS = Array.isArray(r) ? r : []; } return CERTS; }
   async function certs(root, host, no) {
     if (!host.certs) return home(root, host);
     root.innerHTML = '<div class="ac"><div class="ac-card muted">⏳ كيتحملو الشهادات…</div></div>';

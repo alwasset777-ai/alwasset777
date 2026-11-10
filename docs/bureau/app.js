@@ -982,7 +982,7 @@
     if (main().firstChild !== bar) main().prepend(bar);
     const what = e.paid ? 'الاشتراك ديالك' : 'المدة المجانية ديالك', left = e.days <= 0 ? 'كتسالي اليوم' : e.days === 1 ? 'باقي نهار واحد' : `باقي ${e.days} أيام`;
     const msg = `سلام، بغيت نجدد الاشتراك ديالي فتطبيق مجموعة الوسيط — الرمز: ${a.code}${a.email && !/@alwasset777\.ma$/.test(a.email) ? ' — الإيميل: ' + a.email : ''}`;
-    bar.innerHTML = `<span>⏰ <b>${left}</b> فـ${what} (حتى ${dAr(e.end.toISOString())}). من بعد الحساب كيتوقف حتى تجدّد.</span>
+    bar.innerHTML = `<span>⏰ <b>${left}</b> ف${what} (حتى ${dAr(e.end.toISOString())}). من بعد الحساب كيتوقف حتى تجدّد.</span>
       <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} جدّد دابا</a><button class="btn sm ghost" id="sub-bar-x" aria-label="إخفاء">✕</button>`;
     $('#sub-bar-x').onclick = () => { try { localStorage.setItem('w777_subbar_off', today + '|' + e.end.toISOString().slice(0, 10)); } catch (er) { /* */ } bar.remove(); };
   }
@@ -4406,7 +4406,7 @@
         push: body => Sy.request('/rest/v1/w777_academy?on_conflict=uid', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(Object.assign({ uid: Sy.uid(), updated_at: new Date().toISOString() }, body)) }),
       } : null,
       // 🏆 لوحة الشهادات (كل مشترك كيشوف؛ التحميل غير لصاحبها وللمدير؛ المدير يقدر يخبّي شهادة)
-      certs: on ? async () => { const r = await Sy.request('/rest/v1/rpc/w777_certs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); } : null,
+      certs: on ? async () => { const r = await Sy.request('/rest/v1/rpc/w777_certs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (!r.ok) throw new Error('HTTP ' + r.status); const j = await r.json(); return Array.isArray(j) ? j : []; } : null,
       admin: S.role === 'admin',
       hideCert: on && S.role === 'admin' ? async (no, hide) => {
         const r = hide ? await Sy.request('/rest/v1/w777_cert_hidden', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ cert_no: no }) })
@@ -5543,6 +5543,7 @@
           <div class="gd-bar"><span style="width:${pct}%"></span></div>
           <small>${pct}% · ${L.filter(l => done.has(l.n)).length} / ${L.length} درس</small>
           <div class="btn-row" style="margin-top:12px">${next ? `<a class="btn gold" href="#/guide/${next.n}">▶ ${done.size ? 'كمّل' : 'ابدأ'}: ${esc(next.t)}</a>` : '<span class="badge green">🏆 كمّلتي كل الدروس — مبروك!</span>'}
+            <a class="btn" href="files/guide/dalil-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>📘 الدليل الشامل PDF</a>
             <a class="btn" href="tuto/" target="_blank" rel="noopener">🎬 فيديوهات الدليل (19)</a>
             ${done.size ? '<button class="btn" id="gd-reset">↺ إعادة من الأول</button>' : ''}</div>
         </div>
