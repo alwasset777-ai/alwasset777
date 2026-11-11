@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v185';
+const CACHE = 'w777-bureau-v186';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 // الأصوات المحفوظة ديال المساعد (w777-tts) كتبقى حتى هي بين التحديثات
@@ -72,6 +72,9 @@ self.addEventListener('fetch', e => {
     return net.catch(async () => {
       if (appPage) return (await caches.match('./')) || (await caches.match('index.html'));
       if (nav) return new Response(OFF_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      // نفس الملف برقم نسخة آخر (?v=…) محفوظ؟ أحسن من والو بلا إنترنت
+      const any = await caches.match(req, { ignoreSearch: true });
+      if (any) return any;
       // ملف ناقص بلا إنترنت: خطأ واضح (ماشي صفحة HTML فبلاصة صورة ولا سكريبت)
       return new Response('', { status: 504, statusText: 'offline' });
     });
