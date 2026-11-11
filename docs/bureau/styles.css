@@ -1844,3 +1844,8 @@ body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mo
 .btn-row[hidden] { display: none !important; }
 .kv.kv-sm { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
 .kv.kv-sm > div { padding: 8px 10px; }
+/* 📴 علامة «بلا إنترنت» */
+#net-off { position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 88px); left: 50%; transform: translateX(-50%); z-index: 9000; background: #111; color: #fff; border: 1px solid #d71920; border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.25); pointer-events: none; white-space: nowrap; max-width: calc(100vw - 200px); overflow: hidden; text-overflow: ellipsis; }
+#net-off[hidden] { display: none; }
+.net-err p { line-height: 1.8; }
+@media (min-width: 900px) { #net-off { bottom: 18px; } }
