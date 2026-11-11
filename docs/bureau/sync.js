@@ -156,7 +156,38 @@
     if (d.access_token) { takeSession(url, key, d); await firstSyncPrep(); setStatus('idle'); syncNow(); return { confirmed: true }; }
     return { confirmed: false };
   }
-  function signOut() { st = null; save(); setStatus('off'); signed = {}; try { localStorage.removeItem(SIGN_LS); } catch (e) { /* */ } }
+  function signOut() { st = null; save(); setStatus('off'); signed = {}; try { localStorage.removeItem(SIGN_LS); } catch (e) { /* */ } clearApiCache(); }
+  // 📴 آخر قراءة من السحابة (الدليل، الشبكة، الأخبار…) كتبقى فالجهاز ← بلا إنترنت كنعرضوها بدل الخطأ.
+  // غير القراءة (GET + دوال القراءة)، وكتتمسح ملي يخرج الحساب.
+  const API_C = 'w777-api';
+  const READ_RPC = /^\/rest\/v1\/rpc\/(w777_is_admin|w777_cert_uids|w777_certs|w777_staff_brand|w777_my_status|w777_stay_busy|w777_owner_bookings)$/;
+  const isNetErr = e => e instanceof TypeError || /Failed to fetch|NetworkError|Load failed|network/i.test(String(e && e.message));
+  let offAt = 0;
+  function clearApiCache() { try { if (self.caches) caches.delete(API_C).catch(() => {}); } catch (e) { /* */ } }
+  async function request(path, opts = {}) {
+    const m = String(opts.method || 'GET').toUpperCase();
+    const h = opts.headers || {};
+    const key = self.caches && st && path.startsWith('/rest/v1/') && (m === 'GET' || (m === 'POST' && READ_RPC.test(path)))
+      ? 'https://w777.cache/' + st.uid + path + '#' + (h.Range || '') + '|' + (h.Prefer || '') + '|' + (m === 'POST' ? opts.body || '' : '') : null;
+    try {
+      const res = await ok(await api(path, opts));
+      if (key) {
+        // 206 (جزء من اللائحة) ما كيتقبلش فالذاكرة ← كنحفظوه كـ 200 مع Content-Range
+        const body = await res.clone().text();
+        const hd = { 'Content-Type': res.headers.get('Content-Type') || 'application/json' };
+        const cr = res.headers.get('Content-Range'); if (cr) hd['Content-Range'] = cr;
+        caches.open(API_C).then(c => c.put(key, new Response(body, { headers: hd }))).catch(() => {});
+      }
+      offAt = 0;
+      return res;
+    } catch (e) {
+      if (key && isNetErr(e)) {
+        const hit = await caches.open(API_C).then(c => c.match(key)).catch(() => null);
+        if (hit) { offAt = Date.now(); return hit; }
+      }
+      throw e;
+    }
+  }
   async function refreshToken() {
     const d = await authCall(st.url, st.key, '/auth/v1/token?grant_type=refresh_token', { refresh_token: st.refresh });
     takeSession(st.url, st.key, d);
@@ -516,7 +547,7 @@
     onChange: f => changeCbs.push(f),
     // يُنفَّذ بعد كل سحب (مثلا: جلب عقارات الوكالات الشريكة)
     onPulled: f => pullHooks.push(f),
-    request: (path, opts) => api(path, opts).then(ok),
+    request, offlineAt: () => offAt, clearApiCache,
     uid: () => st && st.uid,
     // مول البيانات (المكتب) — الموظف كيخدم على بيانات مولاه
     dataOwner: dOwner,
