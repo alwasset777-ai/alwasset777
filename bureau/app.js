@@ -305,6 +305,9 @@
      واجهة: رسائل، نوافذ، تأكيد
      ============================================================ */
   function toast(msg, ms = 2400) {
+    // 📴 خطأ الشبكة التقني ← جملة مفهومة
+    msg = String(msg);
+    if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) { msg = '📴 ما كاينش الإنترنت — هاد العملية كتحتاج الإنترنت، عاود ملي ترجع'; ms = Math.max(ms, 3500); }
     // الوكيل كيتفاعل: فرحان مع النجاح، حزين شوية مع الخطأ
     try { if (/✓|✅/.test(msg)) agMood('happy', null, 2200); else if (/^تعذر|خطأ|⚠️|❌/.test(msg)) agMood('sad', null, 2400); } catch (e) { /* */ }
     const t = document.createElement('div');
@@ -810,6 +813,24 @@
     if (/signups? not allowed|disabled/i.test(m)) return 'التسجيل موقوف دابا — تواصل مع مكتب الوسيط 777.';
     if (/Failed to fetch|network/i.test(m)) return 'ما كاينش الإنترنت — تأكد من الاتصال وعاود.';
     return 'وقع مشكل: ' + m;
+  }
+  // 📴 خطأ الشبكة بكلام واضح (بدل «Failed to fetch») + زر «عاود»
+  const isOffErr = e => !navigator.onLine || /Failed to fetch|NetworkError|Load failed|network/i.test(String((e && e.message) || e || ''));
+  function netErr(e) {
+    if (isOffErr(e)) return `<div class="card empty net-err"><div class="big">📴</div><h3>ما كاينش الإنترنت</h3>
+      <p>هاد الصفحة كتجيب المعلومات من السحابة، وما تفتحاتش قبل فهاد الجهاز.<br>العقارات والطلبات والمواعيد والكراء ديالك خدامين عادي بلا إنترنت، وكيتزامنو ملي ترجع.</p>
+      <button class="btn gold" data-net-retry>↻ عاود</button></div>`;
+    return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} <button class="btn sm" data-net-retry>↻ عاود</button></div>`;
+  }
+  // علامة صغيرة فوق: «بلا إنترنت» (كتبان وكتختفي بوحدها)
+  function setupNetBadge() {
+    let el = $('#net-off');
+    if (!el) { el = document.createElement('div'); el.id = 'net-off'; el.setAttribute('role', 'status'); el.textContent = '📴 بلا إنترنت'; el.title = 'كتخدم بالمعلومات المحفوظة فالجهاز'; document.body.appendChild(el); }
+    const paint = () => { el.hidden = navigator.onLine; };
+    paint();
+    window.addEventListener('offline', paint);
+    window.addEventListener('online', () => { paint(); toast('🌐 رجعات الإنترنت — كنزامنو…'); if (syOn()) window.W777_SYNC.syncNow(); });
+    document.addEventListener('click', ev => { if (ev.target.closest('[data-net-retry]')) { ev.preventDefault(); route(); } });
   }
   async function afterLogin() {
     const Sy = window.W777_SYNC;
@@ -2722,7 +2743,7 @@
     if (!Sy || !Sy.isOn()) { body.innerHTML = 'فعّل «المزامنة السحابية» أولا باش تستعمل هاد الخاصية.'; return; }
     let list = [];
     try { list = await (await Sy.request('/rest/v1/w777_partners?select=token,name,phone,active,created_at&order=created_at.desc')).json(); }
-    catch (e) { body.innerHTML = 'تعذر التحميل: ' + esc(e.message); return; }
+    catch (e) { body.innerHTML = netErr(e); return; }
     const count = name => S.props.filter(p => p.partner && p.partner.name === name).length;
     body.innerHTML = `
       <form class="form-grid" id="pt-add" style="margin-bottom:12px">
@@ -2820,7 +2841,7 @@
   async function bindMfaCard() {
     const box = $('#mfa-card'), Sy = window.W777_SYNC; if (!box || !Sy || !Sy.isOn()) return;
     let fs = [];
-    try { fs = (await Sy.mfaFactors()).filter(f => f.status === 'verified'); } catch (e) { box.querySelector('.muted').textContent = 'تعذر التحميل — تأكد من الإنترنت'; return; }
+    try { fs = (await Sy.mfaFactors()).filter(f => f.status === 'verified'); } catch (e) { box.querySelector('.muted').textContent = '📴 هاد الخانة كتحتاج الإنترنت'; return; }
     const on = fs.length > 0;
     box.innerHTML = `<h3 class="section-title">🔐 التحقق بخطوتين <span class="badge ${on ? 'green' : 'gray'}">${on ? 'مفعّل' : 'غير مفعّل'}</span></h3>
       <p class="muted" style="margin-top:0">${on ? 'ملي كتدخل لحساب المدير من أي جهاز، التطبيق كيطلب كلمة السر + رمز من تطبيق Google Authenticator. حتى إلا عرف شي حد كلمة السر ما يقدرش يدخل.' : 'حماية زايدة لحساب المدير: من بعد كلمة السر، التطبيق كيطلب رمز من تطبيق Google Authenticator (فابور) فالتيليفون ديالك.'}</p>
@@ -3587,6 +3608,8 @@
           const m = String(e.message || e);
           // ما كاينش مفتاح: نجاوبو بالمساعد المجاني بلا ما نوقفو الخدمة
           if (/no_key/.test(m)) { AG.history.splice(base); AG.busy = false; agLocal(text); return; }
+          // 📴 بلا إنترنت: المساعد المحلي كيجاوب (الحسابات، الشرح، معلومات الجهاز)
+          if (isOffErr(e) && !(AG.live && AG.live.text)) { AG.history.splice(base); AG.busy = false; AG.view.push({ who: 'bot', text: '📴 ما كاينش الإنترنت — غادي نجاوبك بالمساعد المحلي ديال الجهاز.' }); agLocal(text); return; }
           if (!AG.live || !AG.live.text) AG.view.push({ who: 'bot', text: /quota/.test(m) ? t.quota : t.err });
           AG.history.splice(base);
           break;
@@ -5013,7 +5036,7 @@
     if (tab === 'mine') { await viewStaysMine(head); bindLink(); return; }
     let rows;
     try { rows = await rq(`/rest/v1/w777_stays?select=*&status=${tab === 'review' ? 'eq.pending' : 'eq.approved'}&order=created_at.desc&limit=300`); }
-    catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     if (tab === 'review') {
       main().innerHTML = head + `<div class="dir-grid">${rows.map(s => `<div class="st-rev">${stayCard(s)}
         <div class="btn-row" style="margin-top:8px"><button class="btn sm gold" data-ok="${s.id}">✅ نشر</button><button class="btn sm" data-no="${s.id}">✖ رفض</button>
@@ -5198,7 +5221,7 @@
         rq('/rest/v1/rpc/w777_owner_bookings', 'POST', {}).catch(() => []),
         rq(`/rest/v1/w777_bookings?select=id,stay_id,guest_name,guests,check_in,check_out,nights,total,status,w777_stays(title)&created_by=eq.${me}&order=created_at.desc&limit=100`).catch(() => []),
       ]);
-    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     main().innerHTML = head + `
       <h2 class="gd-part">🏠 العقارات ديالي للحجز (${mine.length})</h2>
       <div class="st-grid">${mine.map(s => `<div>${stayCard(s)}${s.admin_note ? `<div class="mod-note">📝 ${esc(s.admin_note)}</div>` : ''}
@@ -5224,7 +5247,7 @@
         rq('/rest/v1/w777_bookings?select=*,w777_stays(title,owner,owner_name,owner_phone,city)&order=check_in.desc&limit=500'),
         rq('/rest/v1/w777_stays?select=id,title,price_night,cleaning_fee,max_guests,status&order=title.asc'),
       ]);
-    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     let dir = []; try { dir = await loadDir(); } catch (e) { /* */ }
     const phoneOf = b => (b.w777_stays || {}).owner_phone || (dir.find(a => a.uid === (b.w777_stays || {}).owner) || {}).phone || '';
     const held = rows.filter(b => ['confirmed', 'checked_in'].includes(b.status)).reduce((x, b) => x + (num(b.paid_amount) || 0), 0);
@@ -5721,7 +5744,7 @@
 
   async function viewNetProps(head, query) {
     let list, dir = [];
-    try { list = await loadNetwork(query.r === '1'); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    try { list = await loadNetwork(query.r === '1'); } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     try { dir = await loadDir(); } catch (e) { /* الفلتر ديال الدولة اختياري */ }
     const country = Object.fromEntries(dir.map(a => [a.uid, a.country || 'المغرب']));
     const f = Object.assign({ q: '', trx: '', cat: '', city: '', ag: '', zone: '' }, S.netFilters || {});
@@ -5766,7 +5789,7 @@
   async function viewDir(kind, head, query) {
     const K = KINDS[kind];
     let all;
-    try { all = (await loadDir(query.r === '1')).filter(a => kindOf(a) === kind); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    try { all = (await loadDir(query.r === '1')).filter(a => kindOf(a) === kind); } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const listed = all.filter(a => a.active && (isNamed(a) || a.phone));
     const cities = [...new Set(listed.map(a => a.city).filter(Boolean))].sort();
     main().innerHTML = head + `
@@ -5894,7 +5917,7 @@
         fetchAll(`/rest/v1/w777_agency_secrets?select=uid,password,w777_agencies!inner(kind)&w777_agencies.kind=eq.${kind}`),
       ]);
       (await loadNetwork()).forEach(x => { counts[x.owner] = (counts[x.owner] || 0) + 1; });
-    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const pw = Object.fromEntries(secrets.map(s => [s.uid, s.password]));
     const appUrl = location.href.split('#')[0];
     const shares = kind === 'agency' || kind === 'broker';
@@ -6135,7 +6158,7 @@
     const me = window.W777_SYNC.uid();
     let rows, dir = [];
     const f = mode === 'inbox' ? `&notary=eq.${me}` : mode === 'sent' ? `&sender=eq.${me}` : '';
-    try { rows = await rq(`/rest/v1/w777_notary_req?select=*&order=created_at.desc&limit=500${f}`); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    try { rows = await rq(`/rest/v1/w777_notary_req?select=*&order=created_at.desc&limit=500${f}`); } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     try { dir = await loadDir(); } catch (e) { /* */ }
     const ag = u => dir.find(a => a.uid === u) || {};
     const cnt = s => rows.filter(r => r.status === s).length;
@@ -6187,7 +6210,7 @@
   // فرص الاستثمار: المستثمر كيحط الميزانية (تمويل، شراكة، شراء، كراء طويل) — كتبان لجميع أعضاء الشبكة
   async function viewInvest(head, query) {
     let rows;
-    try { rows = await rq('/rest/v1/w777_invest?select=*&order=created_at.desc&limit=1000'); } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    try { rows = await rq('/rest/v1/w777_invest?select=*&order=created_at.desc&limit=1000'); } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const me = window.W777_SYNC.uid(), admin = S.role === 'admin';
     const canPost = admin || S.kind === 'investor';
     const open = rows.filter(r => r.status === 'open');
@@ -6935,7 +6958,7 @@
     try {
       const filter = tab === 'mine' ? `owner=eq.${me}` : tab === 'review' ? 'status=in.(pending,rejected)' : 'status=eq.approved';
       rows = await rq(`/rest/v1/w777_projects?select=*&${filter}&order=created_at.desc&limit=300`);
-    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const total = rows.reduce((s, r) => s + (num(r.amount) || 0), 0);
     main().innerHTML = head + (tab === '' && rows.length ? `<div class="card card-pad" style="margin-bottom:14px"><div class="kv"><div><small>مشاريع منشورة</small><b>${rows.length}</b></div><div><small>مجموع التمويل المطلوب</small><b>${esc(millions(total) || fmt(total))} درهم</b></div></div></div>` : '') + `
       <div class="dir-grid">${rows.map(r => {
@@ -7069,7 +7092,7 @@
       rows = await rq(tab === 'past'
         ? `/rest/v1/w777_events?select=*&or=(ends.lt.${t},and(ends.is.null,starts.lt.${t}))&order=starts.desc&limit=200`
         : `/rest/v1/w777_events?select=*&or=(ends.gte.${t},and(ends.is.null,starts.gte.${t}))&order=starts.asc&limit=200`);
-    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const days = d => Math.round((new Date(d + 'T12:00:00') - new Date(t + 'T12:00:00')) / 864e5);
     main().innerHTML = head + (admin ? `<div class="btn-row" style="margin-bottom:12px"><button class="btn gold" id="ev-add">➕ زيد مناسبة</button></div>` : '') + `
       <div class="ev-list">${rows.map(e => {
@@ -7123,7 +7146,7 @@
     const head = secHead('📰', 'الأخبار العقارية', 'آخر وأهم أخبار العقار فالمغرب وفالعالم — كتتجدد أوتوماتيكيا كل نهار من المصادر الإخبارية.', tabs, tab, 'news');
     let rows;
     try { rows = await rq(`/rest/v1/w777_news?select=*&scope=eq.${tab === 'world' ? 'world' : 'ma'}&order=published.desc.nullslast,created_at.desc&limit=150`); }
-    catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const last = rows.reduce((m, r) => r.created_at > m ? r.created_at : m, '');
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
@@ -7169,7 +7192,7 @@
     try {
       const filter = tab === 'mine' ? `owner=eq.${me}` : tab === 'review' ? 'status=in.(pending,rejected)' : 'status=in.(approved,funded)';
       rows = await rq(`/rest/v1/w777_donations?select=*&${filter}&order=created_at.desc&limit=300`);
-    } catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    } catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const raised = rows.reduce((s, r) => s + (num(r.raised) || 0), 0);
     main().innerHTML = head + (tab === '' ? `<div class="card card-pad dn-hero" style="margin-bottom:14px">
         <div class="kv"><div><small>حالات منشورة</small><b>${rows.length}</b></div><div><small>تمّ تمويلها</small><b>${rows.filter(r => r.status === 'funded').length}</b></div><div><small>مجموع المساهمات</small><b>${nm(raised)} درهم</b></div></div>
@@ -7375,7 +7398,7 @@
     }
     let rows;
     try { rows = await rq(`/rest/v1/w777_disputes?select=*${tab === 'mine' ? `&owner=eq.${me}` : ''}&order=updated_at.desc&limit=300`); }
-    catch (e) { main().innerHTML = head + `<div class="card card-pad">تعذر التحميل: ${esc(e.message)}</div>`; return; }
+    catch (e) { main().innerHTML = head + `${netErr(e)}`; return; }
     const cnt = s => rows.filter(r => r.status === s).length;
     main().innerHTML = head + (tab === 'all' ? `<div class="card card-pad" style="margin-bottom:14px"><div class="kv">
         <div><small>جديدة</small><b>${cnt('new')}</b></div><div><small>محوّلة للمكتب</small><b>${cnt('escalated')}</b></div><div><small>فالمعالجة</small><b>${cnt('in_progress')}</b></div><div><small>مغلقة</small><b>${cnt('closed')}</b></div></div></div>` : '') + `
@@ -9863,6 +9886,7 @@
     setupAgent();
     setupSyncUi();
     setupChat();
+    setupNetBadge();
     if (syOn()) loadStaff().catch(() => {});
     window.addEventListener('hashchange', route);
     if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }

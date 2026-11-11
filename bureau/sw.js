@@ -1,25 +1,40 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v184';
+const CACHE = 'w777-bureau-v185';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 // الأصوات المحفوظة ديال المساعد (w777-tts) كتبقى حتى هي بين التحديثات
+// 📴 ذاكرة دائمة للملفات اللي ماشي فـ SHELL (صور اللعبة، الدليل، الخرائط…): ما كتتمسحش مع كل تحديث
+const RT = 'w777-rt-v1', RT_MAX = 900;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
 const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'wasla-levels.js', 'wasla.js', 'games.js', 'academy-data.js', 'academy.js', 'finance-data.js', 'manifest.webmanifest', ...FONTS,
   'vendor/qrcode.js', 'icons/logo.png?v=10', 'icons/icon-192.png?v=9', 'icons/icon-512.png?v=9', 'icons/apple-touch-icon.png?v=9', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
-  ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=7`), 'icons/hub/add-request.webp?v=1', 'icons/hub/add-property.webp?v=1', 'icons/hub/add-appointment.webp?v=3', 'icons/hub/guide.webp?v=3', 'icons/hub/rentals.webp?v=1', 'icons/hub/estimate.webp?v=1', 'icons/hub/news-ico.webp?v=3', 'icons/hub/ad-maker.webp?v=1', 'icons/hub/projects-ico.webp?v=3', 'icons/hub/matching.webp?v=1', 'icons/hub/disputes-ico.webp?v=1', 'icons/hub/donations-ico.webp?v=3', 'icons/hub/map-ico.webp?v=3', 'icons/hub/finance-ico.webp?v=3', 'icons/hub/loan-ico.webp?v=3', 'icons/hub/games.webp?v=1'];
+  ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=7`), 'icons/hub/add-request.webp?v=1', 'icons/hub/add-property.webp?v=1', 'icons/hub/add-appointment.webp?v=3', 'icons/hub/guide.webp?v=3', 'icons/hub/rentals.webp?v=1', 'icons/hub/estimate.webp?v=1', 'icons/hub/news-ico.webp?v=3', 'icons/hub/ad-maker.webp?v=1', 'icons/hub/projects-ico.webp?v=3', 'icons/hub/matching.webp?v=1', 'icons/hub/disputes-ico.webp?v=1', 'icons/hub/donations-ico.webp?v=3', 'icons/hub/map-ico.webp?v=3', 'icons/hub/finance-ico.webp?v=3', 'icons/hub/loan-ico.webp?v=3', 'icons/hub/games.webp?v=1',
+  // إعدادات السحابة (بلاها التطبيق ما كيعرفش الحساب بلا إنترنت) + الخريطة + صانع الفيديو
+  '../app/config.js', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'reels/index.html', 'reels/reels-bridge.js'];
+// الأساس: إلا فشل واحد منهم ما كنثبتوش النسخة الجديدة (القديمة كتبقى خدامة)
+const CORE = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', '../app/config.js', 'manifest.webmanifest'];
+const SHELL_SET = new Set(SHELL.map(u => new URL(u, self.registration.scope).href));
 
 self.addEventListener('install', e => {
   // cache:'reload' — النسخة الجديدة من الخادم، ماشي من ذاكرة المتصفح
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
+  // الباقي واحد بواحد: ملف ناقص ما كيطيحش التثبيت كامل
+  e.waitUntil(caches.open(CACHE).then(async c => {
+    await c.addAll(CORE.map(u => new Request(u, { cache: 'reload' })));
+    await Promise.allSettled(SHELL.filter(u => !CORE.includes(u)).map(u => fetch(new Request(u, { cache: 'reload' })).then(r => r.ok ? c.put(u, r) : 0)));
+  }).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG && k !== 'w777-tts').map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG && k !== RT && k !== 'w777-tts' && k !== 'w777-api').map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 let trimN = 0;
-async function trimImg(c) {
+async function trim(c, max) {
   const keys = await c.keys();
-  for (let i = 0; i < keys.length - IMG_MAX; i++) await c.delete(keys[i]);
+  for (let i = 0; i < keys.length - max; i++) await c.delete(keys[i]);
 }
+const trimImg = c => trim(c, IMG_MAX);
+let rtN = 0;
+// صفحة بسيطة ملي تكون صفحة ما تفتحاتش قبل وما كاينش الإنترنت
+const OFF_HTML = '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>بلا إنترنت</title><body style="font-family:system-ui,sans-serif;background:#0f0f10;color:#fff;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center;padding:16px"><div><div style="font-size:52px">📴</div><h2>ما كاينش الإنترنت</h2><p style="color:#bbb">هاد الصفحة ما تفتحاتش قبل فهاد الجهاز.<br>التطبيق خدام بلا إنترنت بالمعلومات المحفوظة.</p><p><a href="./" style="color:#fff;background:#d71920;padding:10px 18px;border-radius:12px;text-decoration:none">⬅ رجع للتطبيق</a> <button onclick="location.reload()" style="padding:10px 18px;border-radius:12px;border:0">↻ عاود</button></p></div></body></html>';
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -42,13 +57,24 @@ self.addEventListener('fetch', e => {
   // ملفات التطبيق: من الذاكرة فورا (فتح سريع)، والتحديث كيتجاب فالخلفية للمرة الجاية.
   // كل نشر جديد كيبدل CACHE ← كيتثبت Service Worker جديد والصفحة كتتجدد مرة وحدة.
   const nav = req.mode === 'navigate';
-  e.respondWith(caches.match(req, { ignoreSearch: nav }).then(hit => {
+  // ملفات SHELL كتمشي للذاكرة ديال النسخة، والباقي للذاكرة الدائمة RT (ما يغطيش على نسخة جديدة ديال SHELL)
+  const appPage = nav && /\/bureau\/(index\.html)?$/.test(url.pathname);
+  const inShell = appPage || SHELL_SET.has(url.href);
+  e.respondWith(caches.match(req, { ignoreSearch: appPage }).then(hit => {
     const net = fetch(req, { cache: 'no-cache' }).then(res => {
-      if (res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      if (res.ok && res.status === 200 && res.type === 'basic') {
+        const copy = res.clone();
+        e.waitUntil(caches.open(inShell ? CACHE : RT).then(c => c.put(req, copy).then(() => { if (!inShell && ++rtN % 50 === 0) return trim(c, RT_MAX); })).catch(() => {}));
+      }
       return res;
     });
     if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
-    return net.catch(() => caches.match(nav ? './' : 'index.html'));
+    return net.catch(async () => {
+      if (appPage) return (await caches.match('./')) || (await caches.match('index.html'));
+      if (nav) return new Response(OFF_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      // ملف ناقص بلا إنترنت: خطأ واضح (ماشي صفحة HTML فبلاصة صورة ولا سكريبت)
+      return new Response('', { status: 504, statusText: 'offline' });
+    });
   }));
 });
 
@@ -56,8 +82,8 @@ self.addEventListener('fetch', e => {
 /* 🔔 الإشعارات الفورية */
 self.addEventListener('push', e => {
   let d = {};
-  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: 'الوسيط 777', body: e.data ? e.data.text() : '' }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'الوسيط 777', {
+  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: 'مجموعة الوسيط', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'مجموعة الوسيط', {
     body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag, icon: 'icons/icon-192.png?v=9', badge: 'icons/icon-192.png?v=9',
     lang: 'ar', dir: 'rtl', data: { url: d.url || '#/' } }));
 });
