@@ -1849,3 +1849,7 @@ body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mo
 #net-off[hidden] { display: none; }
 .net-err p { line-height: 1.8; }
 @media (min-width: 900px) { #net-off { bottom: 18px; } }
+/* 📥 الحفظ بلا إنترنت + شريط «نسخة محفوظة» */
+.off-prog { height: 10px; border-radius: 999px; background: rgba(0,0,0,.08); overflow: hidden; }
+.off-prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #d71920, #111); transition: width .25s; }
+.off-strip { margin: 0 0 12px; padding: 8px 12px; border-radius: 12px; background: #111; color: #fff; font-size: 13px; border-inline-start: 4px solid #d71920; }

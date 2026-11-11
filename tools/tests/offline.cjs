@@ -29,14 +29,25 @@ const SHOT = process.env.S || '';
   await p.evaluate(() => navigator.serviceWorker.ready);
   // 1) «تحديث»: كنمسحو الذاكرة القديمة ديال التطبيق بحال إلا تثبتات نسخة جديدة (الذاكرة الدائمة كتبقى)
   await p.reload(); await p.waitForTimeout(2500);
-  for (const r of ['#/', '#/properties', '#/game', '#/learn', '#/agencies', '#/news']) { await p.evaluate(h => { location.hash = h; }, r); await p.waitForTimeout(1200); }
+  for (const r of ['#/', '#/properties', '#/game', '#/learn']) { await p.evaluate(h => { location.hash = h; }, r); await p.waitForTimeout(1200); }
   const nProps = await p.evaluate(async () => { const db = await new Promise(r => { const q = indexedDB.open('wasset777_bureau'); q.onsuccess = () => r(q.result); }); return new Promise(r => { const q = db.transaction('properties').objectStore('properties').count(); q.onsuccess = () => r(q.result); }); });
   if (!nProps) bad.push('no seed props');
+  // 📥 زر «حفظ للاستعمال بلا إنترنت» فالإعدادات
+  await p.evaluate(h => { location.hash = h; }, '#/settings'); await p.waitForTimeout(1500);
+  await p.click('#off-save');
+  for (let i = 0; i < 120; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => !!localStorage.getItem('w777_off_at') && !document.querySelector('.off-prog'))) break; }
+  const sv = await p.evaluate(async () => ({ at: localStorage.getItem('w777_off_at'), hash: location.hash, last: (document.querySelector('#off-last') || {}).innerText,
+    img: !!(await caches.match('guide/a01-welcome.webp')), api: (await (await caches.open('w777-api')).keys()).length }));
+  console.log('save', JSON.stringify(sv));
+  if (!sv.at || sv.hash !== '#/settings' || !/آخر حفظ/.test(sv.last || '') || !sv.img || sv.api < 8) bad.push('save ' + JSON.stringify(sv));
   // نسخة جديدة كتوصل (sw.js برقم آخر) ← الذاكرة القديمة كتتمسح، والدائمة كتبقى
   SWVER = 'w777-bureau-vTEST';
   await p.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); });
-  for (let i = 0; i < 40; i++) { if ((await p.evaluate(() => caches.keys())).includes('w777-bureau-vTEST') && !(await p.evaluate(() => caches.keys())).some(k => /w777-bureau-v\d/.test(k))) break; await p.waitForTimeout(500); }
-  const keys = await p.evaluate(() => caches.keys());
+  // (التحديث كيعاود يحل الصفحة بوحدو ← نتسناو بلا ما نطيحو)
+  const ck = async () => { try { return await p.evaluate(() => caches.keys()); } catch (e) { return []; } };
+  for (let i = 0; i < 40; i++) { const k = await ck(); if (k.includes('w777-bureau-vTEST') && !k.some(x => /w777-bureau-v\d/.test(x))) break; await p.waitForTimeout(500); }
+  await p.waitForLoadState('load').catch(() => {}); await p.waitForTimeout(1500);
+  const keys = await ck();
   if (!keys.includes('w777-bureau-vTEST')) bad.push('update not installed ' + keys.join(','));
   await p.waitForTimeout(1500);
   // 2) بلا إنترنت (حتى السحابة المزيفة مقطوعة)
@@ -52,6 +63,7 @@ const SHOT = process.env.S || '';
   for (const r of local) {
     await p.evaluate(h => { location.hash = h; }, r); await p.waitForTimeout(1300);
     const t = await p.evaluate(() => (document.querySelector('#main, main') || document.body).innerText);
+    if (await p.$('.off-strip')) bad.push(r + ' strip on local page');
     if (/Failed to fetch|NetworkError|تعذر التحميل|غير متوفر/.test(t.replace(/📴 هاد الخانة كتحتاج الإنترنت/g, '')) || t.trim().length < 40) bad.push(r + ' :: ' + t.replace(/\s+/g, ' ').slice(0, 80));
   }
   // صفحة عقار
@@ -65,12 +77,19 @@ const SHOT = process.env.S || '';
     const t = await p.evaluate(() => (document.querySelector('#main, main') || document.body).innerText);
     if (/Failed to fetch|تعذر التحميل|ما كاينش الإنترنت/.test(t)) bad.push(r + ' cached :: ' + t.replace(/\s+/g, ' ').slice(0, 90));
   }
-  // اللي ما تفتحاتش قبل: رسالة واضحة + زر «عاود»
-  for (const r of ['#/events', '#/projects']) {
+  // اللي تحفظ بالزر: كيبان من الذاكرة مع شريط «آخر تحديث»
+  for (const r of ['#/events', '#/projects', '#/news/world', '#/brokers', '#/agencies', '#/news']) {
     await p.evaluate(h => { location.hash = h; }, r); await p.waitForTimeout(2500);
     const t = await p.evaluate(() => (document.querySelector('#main, main') || document.body).innerText);
-    if (!/ما كاينش الإنترنت/.test(t) || /Failed to fetch/.test(t) || !(await p.$('[data-net-retry]'))) bad.push(r + ' msg :: ' + t.replace(/\s+/g, ' ').slice(0, 90));
+    if (/Failed to fetch|تعذر التحميل|ما كاينش الإنترنت/.test(t) || !/نسخة محفوظة فالجهاز — آخر تحديث: اليوم/.test(t)) bad.push(r + ' saved :: ' + t.replace(/\s+/g, ' ').slice(0, 120));
   }
+  if (SHOT) await p.screenshot({ path: SHOT + '/off-strip.png' });
+  // نسخة ما محفوظاش (كنمسحو المشاريع من الذاكرة) ← رسالة واضحة + زر «عاود»
+  await p.evaluate(async () => { const c = await caches.open('w777-api'); for (const k of await c.keys()) if (/w777_projects/.test(k.url)) await c.delete(k); });
+  await p.evaluate(h => { location.hash = h; }, '#/'); await p.waitForTimeout(500);
+  await p.evaluate(h => { location.hash = h; }, '#/projects'); await p.waitForTimeout(2500);
+  { const t = await p.evaluate(() => (document.querySelector('#main, main') || document.body).innerText);
+    if (!/ما كاينش الإنترنت/.test(t) || /Failed to fetch/.test(t) || !(await p.$('[data-net-retry]'))) bad.push('#/projects msg :: ' + t.replace(/\s+/g, ' ').slice(0, 200)); }
   // صفحة عمومية ما تفتحاتش قبل ← صفحة «بلا إنترنت» ديالنا (ماشي ديال المتصفح)
   const p2 = await c.newPage(); await p2.goto(BASE + 'verify.html').catch(() => {}); await p2.waitForTimeout(800);
   if (!/ما كاينش الإنترنت/.test(await p2.evaluate(() => document.body.innerText).catch(() => ''))) bad.push('offline page'); await p2.close();
