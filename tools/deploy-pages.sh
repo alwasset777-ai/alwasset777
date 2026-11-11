@@ -9,6 +9,7 @@ cd "$ROOT" && git fetch -q origin main gh-pages
 if [ ! -e $GHP/.git ]; then git -C "$ROOT" worktree prune; git -C "$ROOT" worktree add -q -f $GHP origin/gh-pages; fi
 cd $GHP && git checkout -q -B gh-pages origin/gh-pages && rm -rf bureau
 git -C "$ROOT" archive origin/main docs/bureau | tar -x --strip-components=1
+python3 "$ROOT/tools/offline_files.py" bureau  # لائحة الصور ديال «حفظ بلا إنترنت» محينة
 git add -A bureau && git status --short | head -20
 git commit -q -m "$msg
 

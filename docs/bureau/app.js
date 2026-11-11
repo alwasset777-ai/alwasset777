@@ -822,6 +822,67 @@
       <button class="btn gold" data-net-retry>↻ عاود</button></div>`;
     return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} <button class="btn sm" data-net-retry>↻ عاود</button></div>`;
   }
+  // 🕒 تاريخ قصير: «اليوم 10:30» / «البارح 18:05» / «12/11 09:00»
+  function whenText(t) {
+    const d = new Date(t), n = new Date(), hm = d.toTimeString().slice(0, 5);
+    const day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diff = Math.round((day(n) - day(d)) / 864e5);
+    return (diff === 0 ? 'اليوم' : diff === 1 ? 'البارح' : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`) + ' ' + hm;
+  }
+  function offLastText() {
+    let t = 0; try { t = +localStorage.getItem('w777_off_at') || 0; } catch (e) { /* */ }
+    return t ? `✅ آخر حفظ: <b>${whenText(t)}</b>` : 'ما زال ما تحفظ والو.';
+  }
+  // 📥 كندوزو على صفحات الشبكة (المعلومات كتتحفظ فالذاكرة) + الصور (offline-files.json)
+  const OFF_ROUTES = ['#/agencies', '#/agencies/dir', '#/brokers', '#/contractors', '#/finishing', '#/investors', '#/notaries', '#/associations', '#/projects', '#/events', '#/news', '#/news/world', '#/donations', '#/disputes', '#/stays', '#/learn/certs'];
+  async function saveOffline(btn) {
+    if (!navigator.onLine) return toast('📴 خاصك الإنترنت باش تحفظ');
+    const Sy = window.W777_SYNC;
+    if (syOn()) await refreshRole().catch(() => {});
+    const routes = syOn() && inNetwork() ? OFF_ROUTES : [];
+    let files = [];
+    try { const r = await fetch('offline-files.json', { cache: 'no-cache' }); if (r.ok) files = await r.json(); } catch (e) { /* */ }
+    const total = routes.length + files.length;
+    let done = 0, bad = 0, stop = false;
+    btn.disabled = true;
+    const closeM = modal(`<h3 style="margin-top:0">📥 كنحفظ للاستعمال بلا إنترنت…</h3>
+      <div class="off-prog"><i id="off-bar"></i></div><p class="muted" id="off-n" dir="ltr" style="text-align:right">0 / ${total}</p>
+      <div class="btn-row"><button class="btn" type="button" id="off-stop">إيقاف</button></div>`, m => { m.querySelector('#off-stop').onclick = () => { stop = true; }; });
+    const tick = () => { const b = $('#off-bar'), n = $('#off-n'); if (b) b.style.width = Math.round(done * 100 / (total || 1)) + '%'; if (n) n.textContent = `${done} / ${total}`; };
+    const back = location.hash || '#/';
+    try {
+      // الصفحات: كنحلوها وحدة بوحدة (اللوحة فوقها) ← المعلومات والصور ديالها كيتحفظو
+      for (const r of routes) {
+        if (stop || !navigator.onLine) break;
+        history.replaceState(history.state, '', r);
+        try { await route(); await new Promise(z => setTimeout(z, 500)); } catch (e) { bad++; }
+        done++; tick();
+      }
+      // الصور: 6 فنفس الوقت
+      for (let i = 0; i < files.length && !stop && navigator.onLine; i += 6) {
+        await Promise.all(files.slice(i, i + 6).map(f => fetch(f).then(r => { if (!r.ok) bad++; }).catch(() => { bad++; })));
+        done = routes.length + Math.min(i + 6, files.length); tick();
+      }
+    } finally {
+      history.replaceState(history.state, '', back);
+      try { closeM(); } catch (e) { /* */ }
+      btn.disabled = false;
+    }
+    if (done >= total && !stop) { try { localStorage.setItem('w777_off_at', String(Date.now())); } catch (e) { /* */ } }
+    await route();
+    toast(stop ? '⏸ توقف الحفظ' : bad ? `📥 تحفظ ${done - bad} من ${total} (${bad} ما تحفظوش)` : `✅ تحفظ كلشي (${total}) — التطبيق واجد بلا إنترنت`, 4000);
+  }
+  // 📴 شريط فوق صفحات الشبكة ملي المعلومات جاية من الذاكرة
+  function offStrip() {
+    const Sy = window.W777_SYNC;
+    const at = S.netPage && Sy && Sy.staleAt ? Sy.staleAt() : 0;
+    const m = main(); if (!at || !m || m.querySelector('.off-strip')) return;
+    const el = document.createElement('div');
+    el.className = 'off-strip'; el.setAttribute('role', 'status');
+    el.innerHTML = `📴 نسخة محفوظة فالجهاز — آخر تحديث: <b>${whenText(at)}</b>`;
+    const h = m.querySelector('.page-head');
+    if (h) h.after(el); else m.prepend(el);
+  }
   // علامة صغيرة فوق: «بلا إنترنت» (كتبان وكتختفي بوحدها)
   function setupNetBadge() {
     let el = $('#net-off');
@@ -1026,6 +1087,7 @@
     if (/access_token=|error_description=/.test(location.hash)) await authFromLink();
     navTrack();
     const { parts, query } = parseHash();
+    S.netPage = false;
     if (await authGate(parts)) return;
     document.body.classList.toggle('in-studio', parts[0] === 'ad-maker' && (query.m === 'post' || query.m === 'reels' || query.m === 'project' || !!query.p));
     document.body.classList.toggle('in-game', parts[0] === 'game'); // اللعبة: الأزرار العائمة كيغطيو الحروف
@@ -1084,6 +1146,7 @@
     agPageMood(a);
     fx3dPage();
     subBar();
+    offStrip();
   }
   /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
   // بلا كود داخل HTML (onclick/onerror): كلشي هنا — باش سياسة الأمان (CSP) تمنع أي سكريبت مدسوس
@@ -2557,6 +2620,13 @@
           <div class="btn-row"><button class="btn gold" id="upd-full">🔄 تحديث كامل للتطبيق</button></div>
         </div>`}
 
+        <div class="card card-pad off-card">
+          <h3 class="section-title">📥 الاستعمال بلا إنترنت</h3>
+          <p class="muted" style="margin-top:0">العقارات والطلبات والمواعيد ديالك خدامين ديما بلا إنترنت. هاد الزر كيحفظ فالتيليفون حتى صفحات الشبكة (الدليل، الأخبار، المشاريع…) وصور اللعبة والدروس، باش يبانو ملي تكون بلا إنترنت (مثلا فالسفر).</p>
+          <div class="btn-row"><button class="btn gold" type="button" id="off-save">📥 حفظ للاستعمال بلا إنترنت</button></div>
+          <p class="muted small" id="off-last" style="margin-bottom:0">${offLastText()}</p>
+        </div>
+
         <div class="card card-pad brand-card">
           <h3 class="section-title">🎨 دليل الهوية (الشعار والألوان)</h3>
           <p class="muted" style="margin-top:0">نسخ الشعار (المدوّر، وبلا دائرة داكن وأبيض) للتحميل، الألوان بالرموز، الخط، وشنو يتدار وشنو ما يتدارش — صيفطو لأي مصمم ولا مطبعة.</p>
@@ -2665,6 +2735,7 @@
     $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
     appVersion().then(v => { const e = $('#upd-ver'); if (e) e.textContent = v; });
     const uf = $('#upd-full'); if (uf) uf.onclick = fullUpdate;
+    const os = $('#off-save'); if (os) os.onclick = () => saveOffline(os);
     const bs = $('#brand-share'); if (bs) bs.onclick = async () => { // رابط دليل الهوية للمصممين
       const url = appBase() + 'brand.html', text = '🎨 دليل الهوية ديال مجموعة الوسيط (الشعار، الألوان، الخط):';
       try { if (navigator.share) { await navigator.share({ title: 'دليل الهوية — مجموعة الوسيط', text, url }); return; } } catch (e) { if (e.name === 'AbortError') return; }
@@ -5709,6 +5780,7 @@
     }
     if (S.role === 'agency' && S.agency && !S.agency.terms_at) { termsGate(); return false; }
     if (S.role === 'agency' && idRequired(S.agency)) { idGate(); return false; }
+    S.netPage = true;
     return true;
   }
   function secHead(icon, title, sub, tabs, cur, base) {
