@@ -94,7 +94,7 @@ module.exports = [
     intro: 'تابع الكراء الشهري والوصولات، المداخيل والمصاريف والربح، واطبع تقرير الشهر بضغطة.',
     async film(E) {
       await E.cap('تدبير الكراء: الأداءات والوصولات', async () => { await E.go('#/rentals', 1300); await E.hold(1500); });
-      await E.cap('المحفظة المالية: الدخل، المصاريف والربح', async () => { await E.go('#/finance', 1300); await E.hold(1200); await E.scroll(600, 2000); });
+      await E.cap('المداخيل والمصاريف: الدخل، المصاريف والربح', async () => { await E.go('#/finance', 1300); await E.hold(1200); await E.scroll(600, 2000); });
       await E.cap('التقرير الشهري جاهز للطباعة PDF', async () => { await E.go('#/report', 1300); await E.hold(1200); await E.scroll(600, 2000); });
     },
   },

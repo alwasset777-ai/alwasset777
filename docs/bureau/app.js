@@ -898,6 +898,22 @@
     const h = m.querySelector('.page-head');
     if (h) h.after(el); else m.prepend(el);
   }
+  // ☰ «المزيد» فالتيليفون: لوحة فيها كل القائمة الجانبية (نفس الروابط، مرتبة بالأقسام)
+  function setupMoreNav() {
+    const bt = $('#bn-more'); if (!bt) return;
+    bt.onclick = () => {
+      const side = $('.sidenav'); if (!side) return;
+      let html = '', grid = [];
+      const flush = () => { if (grid.length) html += `<div class="ms-grid">${grid.join('')}</div>`; grid = []; };
+      [...side.children].forEach(el => {
+        if (el.classList.contains('sep')) return;
+        if (el.classList.contains('nav-group')) { flush(); html += `<div class="nav-group">${el.innerHTML}</div>`; return; }
+        if (el.tagName === 'A') { const c = el.cloneNode(true); c.setAttribute('data-close', ''); grid.push(c.outerHTML); }
+      });
+      flush();
+      modal(`<div class="more-sheet"><h3 style="margin:0">☰ كل الخدمات</h3>${html}</div>`);
+    };
+  }
   // علامة صغيرة فوق: «بلا إنترنت» (كتبان وكتختفي بوحدها)
   function setupNetBadge() {
     let el = $('#net-off');
@@ -1128,7 +1144,7 @@
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
-    else if (a === 'tamwil') { nav = 'loan'; await viewTamwil(parts, query); }
+    else if (a === 'tamwil') { nav = 'tamwil'; await viewTamwil(parts, query); }
     else if (a === 'game') { nav = 'game'; await viewGame(b); }
     else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(query); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
@@ -1156,6 +1172,7 @@
     else if (a === 'settings') { nav = 'settings'; await viewSettings(); }
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
+    { const bm = $('#bn-more'); if (bm) bm.classList.toggle('active', !document.querySelector('.bottomnav a.active')); }
     if (a !== 'properties') $('#q').value = '';
     placeLang();
     lvPage();
@@ -1260,7 +1277,7 @@
     ['contractors', '🏗️', 'شركات المقاولات', 'عرض 777 للأوائل'], ['finishing', '🎨', 'شركات التشطيب', 'عرض 777 للأوائل'],
     ['projects', '🚀', 'عرض المشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات العقارية', 'معارض وصالونات'],
     ['stays', '🏖️', 'الحجز الفوري', 'مفروش وعطل'], ['news', '📰', 'الأخبار العقارية', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
-    ['disputes', '⚖️', 'نزاعات و حلول', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
+    ['disputes', '⚖️', 'نزاعات وحلول', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
     ['associations', '🏘️', 'الجمعيات السكنية', 'عرض 777 للأوائل'],
     ['terms', '📜', 'قانون التطبيق', 'شروط الاشتراك'],
   ];
@@ -1284,9 +1301,9 @@
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
-        hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
+        hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
         hubPic('#/game', 'games', 'الوسيط GAMES', '7 ألعاب عقارية: تلعب وتتعلم', '#c8102e'), finHub(),
-        hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
+        hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري')]],
       net: ['✦ مجموعة الوسيط', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
     if (!M) return;
@@ -2060,7 +2077,7 @@
           <a class="btn" href="#/ad-maker?m=reels&p=${encodeURIComponent(p.id)}">🎬 فيديو Reels</a>
           <a class="btn" href="#/ad-maker?m=project&p=${encodeURIComponent(p.id)}">📄 عرض PDF</a>
           ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
-          ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب التمويل</a>` : ''}
+          ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب القرض</a>` : ''}
           ${EMBED ? '' : `<button class="btn" data-act="print">${ic('print', 18)} طباعة / PDF</button>`}
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
         </div>
@@ -4414,7 +4431,7 @@
   }
 
   /* ============================================================
-     طباعة العقود 📄 + تعلم مهنة الوكيل العقاري 🎓 (ملفات PDF)
+     طباعة العقود 📄 + أكاديمية الوسيط 🎓 (ملفات PDF)
      ============================================================ */
   const CONTRACTS = [
     { f: '01-bail-habitation', ar: 'عقد كراء عقار سكني', fr: "Contrat de bail à usage d'habitation", law: 'القانون 67.12', ic: '🏠' },
@@ -7438,12 +7455,12 @@
     agSend(text);
   };
   async function viewDisputes(parts) {
-    if (!await netGate('نزاعات و حلول', '⚖️')) return;
+    if (!await netGate('نزاعات وحلول', '⚖️')) return;
     const admin = S.role === 'admin', me = window.W777_SYNC.uid();
     const tabs = [['', '⚖️ مشكل جديد'], ['mine', '📁 ملفاتي'], ['guide', '📚 الدليل القانوني']];
     if (admin) tabs.push(['all', '🛡️ كل الملفات']);
     const tab = pickTab(tabs, parts[1] || '', '');
-    const head = secHead('⚖️', 'نزاعات و حلول', 'كتب المشكل العقاري ديالك وخود توجيه قانوني أولي فالحين. والنزاعات المستعصية كيحوّلها مكتب الوسيط 777 للمختص: محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري.', tabs, tab, 'disputes');
+    const head = secHead('⚖️', 'نزاعات وحلول', 'كتب المشكل العقاري ديالك وخود توجيه قانوني أولي فالحين. والنزاعات المستعصية كيحوّلها مكتب الوسيط 777 للمختص: محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري.', tabs, tab, 'disputes');
     if (tab === 'guide') {
       main().innerHTML = head + `<div class="law-grid">${LAW.filter(L => L.id !== 'other').map(lawCard).join('')}</div>`;
       return;
@@ -8834,7 +8851,7 @@
     };
     const clr = $('#fin-clr'); if (clr) clr.onclick = async () => { if (await confirmBox('نمسح المعلومات اللي عمرتي على هاد الجهة؟', 'مسح', true)) saveFin(null); };
   }
-  // 🏦 حساب التمويل الساهل: الثمن ← التسبيق (بالدرهم ولا %) ← المدة ← الفائدة ← القسط الشهري مباشرة
+  // 🏦 حساب القرض الساهل: الثمن ← التسبيق (بالدرهم ولا %) ← المدة ← الفائدة ← القسط الشهري مباشرة
   function viewLoan(query) {
     const st = { price: num(query.price) || '', down: num(query.down) || '', years: [10, 15, 20, 25].includes(num(query.y)) ? num(query.y) : 20, rate: num(query.r) || 4.5, ins: 0.3 };
     if (st.price && !st.down) st.down = Math.round(st.price * 0.2);
@@ -9433,7 +9450,7 @@
     const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
     const logged = new Set(all.map(x => x.propId).filter(Boolean));
     const pend = S.props.filter(p => ['sold', 'rented'].includes(p.status) && p.commission && !logged.has(p.id)).slice(0, 10);
-    main().innerHTML = `<div class="page-head"><div><h1>💹 المحفظة المالية</h1><div class="sub">الدخل، المصاريف والربح ديال المكتب</div></div>
+    main().innerHTML = `<div class="page-head"><div><h1>💹 المداخيل والمصاريف</h1><div class="sub">الدخل، المصاريف والربح ديال المكتب</div></div>
       <div class="btn-row"><a class="btn sm" href="#/finance?m=${addMonths(k, -1)}">→</a><b style="align-self:center">${ymAr(k)}</b><a class="btn sm" href="#/finance?m=${addMonths(k, 1)}">←</a>
       <button class="btn gold" id="fn-in">${ic('plus', 16)} دخل</button><button class="btn" id="fn-out">${ic('plus', 16)} مصروف</button><a class="btn" href="#/report?m=${k}">📄 التقرير الشهري</a></div></div>
       <div class="stats"><div class="card stat"><div class="ic">💰</div><div class="v" style="font-size:20px">${M0(cur.inn)}</div><div class="l">دخل ${ymAr(k)}</div></div>
@@ -9478,7 +9495,7 @@
   function reportBody(k, R) {
     return `<div class="kv"><div><small>عقارات جديدة</small><b>${R.added.length}</b></div><div><small>تباعو / تكراو</small><b>${R.closed.length}</b></div><div><small>طلبات جديدة</small><b>${R.reqs.length}</b></div>
       <div><small>المواعيد</small><b>${R.appts.length} (${R.appts.filter(a => a.status === 'done').length} تمّت)</b></div><div><small>الزيارات المسجلة</small><b>${R.visits.length}</b></div><div><small>العقارات المعروضة دابا</small><b>${S.props.filter(p => p.status === 'available').length}</b></div></div>
-      <h2>💹 المحفظة المالية</h2><div class="kv"><div><small>الدخل</small><b>${M0(R.fin.inn)} د</b></div><div><small>المصاريف</small><b>${M0(R.fin.out)} د</b></div><div><small>الربح الصافي</small><b>${M0(R.fin.net)} د</b></div></div>
+      <h2>💹 المداخيل والمصاريف</h2><div class="kv"><div><small>الدخل</small><b>${M0(R.fin.inn)} د</b></div><div><small>المصاريف</small><b>${M0(R.fin.out)} د</b></div><div><small>الربح الصافي</small><b>${M0(R.fin.net)} د</b></div></div>
       <h2>🔑 الكراء</h2><div class="kv"><div><small>عقود جارية</small><b>${R.ls.length}</b></div><div><small>تخلص هاد الشهر</small><b>${M0(R.rentGot)} د</b></div><div><small>متأخرين</small><b>${R.rentLate.length}</b></div></div>
       ${R.closed.length ? `<h2>✅ العمليات المنجزة</h2><table><tr><th>المرجع</th><th>العقار</th><th>الحالة</th><th>الثمن</th></tr>${R.closed.map(p => `<tr><td>${esc(p.ref)}</td><td>${esc(p.title || typeAr(p.type))}</td><td>${esc((PSTATUS[p.status] || {}).ar || '')}</td><td>${esc(priceText(p))}</td></tr>`).join('')}</table>` : ''}
       ${R.added.length ? `<h2>🏠 العقارات الجديدة (${R.added.length})</h2><table><tr><th>المرجع</th><th>العقار</th><th>المكان</th><th>الثمن</th></tr>${R.added.slice(0, 40).map(p => `<tr><td>${esc(p.ref)}</td><td>${esc(p.title || typeAr(p.type))}</td><td>${esc([p.district, p.city].filter(Boolean).join('، '))}</td><td>${esc(priceText(p))}</td></tr>`).join('')}</table>` : ''}
@@ -9974,6 +9991,7 @@
     setupSyncUi();
     setupChat();
     setupNetBadge();
+    setupMoreNav();
     if (syOn()) loadStaff().catch(() => {});
     window.addEventListener('hashchange', route);
     if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }
