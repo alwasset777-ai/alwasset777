@@ -3,7 +3,8 @@
 الاستعمال: python3 tools/offline_files.py [docs/bureau]  — كتعاود تتولد مع كل نشر (deploy-pages.sh)."""
 import json, os, sys
 root = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'docs', 'bureau')
-DIRS = ['game/img', 'guide', 'icons', 'vendor/leaflet/images']
+# icons/hub والأيقونات الأساسية راهم فـ SHELL ديال sw.js (بـ ?v=) ← ما كنعاودوش نحملوهم
+DIRS = ['game/img', 'guide', 'icons/fin', 'icons/games', 'icons/brand', 'vendor/leaflet/images']
 EXT = ('.webp', '.png', '.jpg', '.jpeg', '.svg')
 out = []
 for d in DIRS:

@@ -35,10 +35,15 @@ const SHOT = process.env.S || '';
   // 📥 زر «حفظ للاستعمال بلا إنترنت» فالإعدادات
   await p.evaluate(h => { location.hash = h; }, '#/settings'); await p.waitForTimeout(1500);
   await p.click('#off-save');
-  for (let i = 0; i < 120; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => !!localStorage.getItem('w777_off_at') && !document.querySelector('.off-prog'))) break; }
+  for (let i = 0; i < 120; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => !!localStorage.getItem('w777_off_at') && !document.querySelector('.off-prog') && /آخر حفظ/.test((document.querySelector('#off-last') || {}).textContent || ''))) break; }
   const sv = await p.evaluate(async () => ({ at: localStorage.getItem('w777_off_at'), hash: location.hash, last: (document.querySelector('#off-last') || {}).innerText,
     img: !!(await caches.match('guide/a01-welcome.webp')), api: (await (await caches.open('w777-api')).keys()).length }));
+  // الذاكرة: بلا معلومات حساسة، وكل جزء من اللائحة بمفتاح ديالو
+  const ak = await p.evaluate(async () => (await (await caches.open('w777-api')).keys()).map(k => k.url));
+  const sens = ak.filter(u => /secret|password|token|partner|msgs|agent_/i.test(u));
+  if (sens.length || ak.some(u => u.includes('#'))) bad.push('api keys ' + JSON.stringify(sens.concat(ak.filter(u => u.includes('#'))).slice(0, 3)));
   console.log('save', JSON.stringify(sv));
+  const stk = await p.evaluate(() => document.querySelector('#btn-back') && 1);
   if (!sv.at || sv.hash !== '#/settings' || !/آخر حفظ/.test(sv.last || '') || !sv.img || sv.api < 8) bad.push('save ' + JSON.stringify(sv));
   // نسخة جديدة كتوصل (sw.js برقم آخر) ← الذاكرة القديمة كتتمسح، والدائمة كتبقى
   SWVER = 'w777-bureau-vTEST';
@@ -89,7 +94,7 @@ const SHOT = process.env.S || '';
   await p.evaluate(h => { location.hash = h; }, '#/'); await p.waitForTimeout(500);
   await p.evaluate(h => { location.hash = h; }, '#/projects'); await p.waitForTimeout(2500);
   { const t = await p.evaluate(() => (document.querySelector('#main, main') || document.body).innerText);
-    if (!/ما كاينش الإنترنت/.test(t) || /Failed to fetch/.test(t) || !(await p.$('[data-net-retry]'))) bad.push('#/projects msg :: ' + t.replace(/\s+/g, ' ').slice(0, 200)); }
+    if (!/ما كاينش الإنترنت/.test(t) || /Failed to fetch/.test(t) || !(await p.$('[data-net-retry]')) || (await p.$('.off-strip'))) bad.push('#/projects msg :: ' + t.replace(/\s+/g, ' ').slice(0, 200)); }
   // صفحة عمومية ما تفتحاتش قبل ← صفحة «بلا إنترنت» ديالنا (ماشي ديال المتصفح)
   const p2 = await c.newPage(); await p2.goto(BASE + 'verify.html').catch(() => {}); await p2.waitForTimeout(800);
   if (!/ما كاينش الإنترنت/.test(await p2.evaluate(() => document.body.innerText).catch(() => ''))) bad.push('offline page'); await p2.close();

@@ -304,10 +304,12 @@
   /* ============================================================
      واجهة: رسائل، نوافذ، تأكيد
      ============================================================ */
+  // 📴 خطأ الشبكة (نفس الفحص ديال sync.js)
+  const netErrRe = /Failed to fetch|NetworkError|Load failed|Network request failed|ERR_INTERNET/i;
   function toast(msg, ms = 2400) {
     // 📴 خطأ الشبكة التقني ← جملة مفهومة
     msg = String(msg);
-    if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) { msg = '📴 ما كاينش الإنترنت — هاد العملية كتحتاج الإنترنت، عاود ملي ترجع'; ms = Math.max(ms, 3500); }
+    if (netErrRe.test(msg)) { msg = '📴 ما كاينش الإنترنت — هاد العملية كتحتاج الإنترنت، عاود ملي ترجع'; ms = Math.max(ms, 3500); }
     // الوكيل كيتفاعل: فرحان مع النجاح، حزين شوية مع الخطأ
     try { if (/✓|✅/.test(msg)) agMood('happy', null, 2200); else if (/^تعذر|خطأ|⚠️|❌/.test(msg)) agMood('sad', null, 2400); } catch (e) { /* */ }
     const t = document.createElement('div');
@@ -315,12 +317,13 @@
     document.body.appendChild(t);
     setTimeout(() => t.remove(), ms);
   }
-  function modal(html, onMount) {
+  // sticky: ما كتسدش بالضغط برا اللوحة
+  function modal(html, onMount, sticky) {
     const bg = document.createElement('div');
     bg.className = 'modal-bg';
     bg.innerHTML = `<div class="modal" role="dialog">${html}</div>`;
     const close = () => bg.remove();
-    bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-close]')) close(); });
+    bg.addEventListener('click', e => { if ((e.target === bg && !sticky) || e.target.closest('[data-close]')) close(); });
     document.body.appendChild(bg);
     if (onMount) onMount(bg.firstElementChild, close);
     return close;
@@ -811,16 +814,18 @@
     if (/rate limit|security purposes|too many|429/i.test(m)) return 'بزاف ديال الطلبات — تسنى شوية (دقيقة ولا أكثر) وعاود.';
     if (/expired|invalid|otp|token/i.test(m)) return 'الكود غالط ولا سالا الوقت ديالو — طلب كود جديد.';
     if (/signups? not allowed|disabled/i.test(m)) return 'التسجيل موقوف دابا — تواصل مع مكتب الوسيط 777.';
-    if (/Failed to fetch|network/i.test(m)) return 'ما كاينش الإنترنت — تأكد من الاتصال وعاود.';
+    if (netErrRe.test(m)) return 'ما كاينش الإنترنت — تأكد من الاتصال وعاود.';
     return 'وقع مشكل: ' + m;
   }
   // 📴 خطأ الشبكة بكلام واضح (بدل «Failed to fetch») + زر «عاود»
-  const isOffErr = e => !navigator.onLine || /Failed to fetch|NetworkError|Load failed|network/i.test(String((e && e.message) || e || ''));
-  function netErr(e) {
+  const isOffErr = e => !navigator.onLine || netErrRe.test(String((e && e.message) || e || ''));
+  // retry=false: بلا زر «عاود» (مثلا وسط صفحة فيها خانات ما تحفظاتش)
+  function netErr(e, retry = true) {
+    const rb = cls => retry ? `<button class="btn ${cls}" data-net-retry>↻ عاود</button>` : '';
     if (isOffErr(e)) return `<div class="card empty net-err"><div class="big">📴</div><h3>ما كاينش الإنترنت</h3>
-      <p>هاد الصفحة كتجيب المعلومات من السحابة، وما تفتحاتش قبل فهاد الجهاز.<br>العقارات والطلبات والمواعيد والكراء ديالك خدامين عادي بلا إنترنت، وكيتزامنو ملي ترجع.</p>
-      <button class="btn gold" data-net-retry>↻ عاود</button></div>`;
-    return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} <button class="btn sm" data-net-retry>↻ عاود</button></div>`;
+      <p>هاد الخانة كتجيب المعلومات من السحابة، وما تحفظاتش قبل فهاد الجهاز.<br>العقارات والطلبات والمواعيد والكراء ديالك خدامين عادي بلا إنترنت، وكيتزامنو ملي ترجع.</p>
+      ${rb('gold')}</div>`;
+    return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} ${rb('sm')}</div>`;
   }
   // 🕒 تاريخ قصير: «اليوم 10:30» / «البارح 18:05» / «12/11 09:00»
   function whenText(t) {
@@ -837,25 +842,31 @@
   const OFF_ROUTES = ['#/agencies', '#/agencies/dir', '#/brokers', '#/contractors', '#/finishing', '#/investors', '#/notaries', '#/associations', '#/projects', '#/events', '#/news', '#/news/world', '#/donations', '#/disputes', '#/stays', '#/learn/certs'];
   async function saveOffline(btn) {
     if (!navigator.onLine) return toast('📴 خاصك الإنترنت باش تحفظ');
-    const Sy = window.W777_SYNC;
     if (syOn()) await refreshRole().catch(() => {});
     const routes = syOn() && inNetwork() ? OFF_ROUTES : [];
     let files = [];
     try { const r = await fetch('offline-files.json', { cache: 'no-cache' }); if (r.ok) files = await r.json(); } catch (e) { /* */ }
     const total = routes.length + files.length;
+    if (!total) return toast('📴 ما قدرتش نجيب لائحة الملفات — عاود من بعد');
     let done = 0, bad = 0, stop = false;
     btn.disabled = true;
+    // اللوحة ما كتسدش بالضغط برا (باش يبقى زر «إيقاف» ديما باين)
     const closeM = modal(`<h3 style="margin-top:0">📥 كنحفظ للاستعمال بلا إنترنت…</h3>
       <div class="off-prog"><i id="off-bar"></i></div><p class="muted" id="off-n" dir="ltr" style="text-align:right">0 / ${total}</p>
-      <div class="btn-row"><button class="btn" type="button" id="off-stop">إيقاف</button></div>`, m => { m.querySelector('#off-stop').onclick = () => { stop = true; }; });
-    const tick = () => { const b = $('#off-bar'), n = $('#off-n'); if (b) b.style.width = Math.round(done * 100 / (total || 1)) + '%'; if (n) n.textContent = `${done} / ${total}`; };
+      <div class="btn-row"><button class="btn" type="button" id="off-stop">إيقاف</button></div>`, m => { m.querySelector('#off-stop').onclick = () => { stop = true; }; }, true);
+    const tick = () => { const b = $('#off-bar'), n = $('#off-n'); if (b) b.style.width = Math.round(done * 100 / total) + '%'; if (n) n.textContent = `${done} / ${total}`; };
     const back = location.hash || '#/';
+    const navKeep = NAV.stack.slice(); // الصفحات اللي دزنا عليها ما كتدخلش لزر «رجوع»
     try {
       // الصفحات: كنحلوها وحدة بوحدة (اللوحة فوقها) ← المعلومات والصور ديالها كيتحفظو
       for (const r of routes) {
         if (stop || !navigator.onLine) break;
         history.replaceState(history.state, '', r);
-        try { await route(); await new Promise(z => setTimeout(z, 500)); } catch (e) { bad++; }
+        try {
+          await route(); await new Promise(z => setTimeout(z, 500));
+          // الصفحة ما تحملاتش (خطأ من الخادم ولا الشبكة) ← ما تحفظاتش
+          const m = main(); if (m && (m.querySelector('.net-err') || /تعذر التحميل/.test(m.textContent))) bad++;
+        } catch (e) { bad++; }
         done++; tick();
       }
       // الصور: 6 فنفس الوقت
@@ -865,21 +876,25 @@
       }
     } finally {
       history.replaceState(history.state, '', back);
+      NAV.stack = navKeep;
       try { closeM(); } catch (e) { /* */ }
       btn.disabled = false;
     }
-    if (done >= total && !stop) { try { localStorage.setItem('w777_off_at', String(Date.now())); } catch (e) { /* */ } }
+    const all = done >= total && !bad && !stop;
+    if (all) { try { localStorage.setItem('w777_off_at', String(Date.now())); } catch (e) { /* */ } }
     await route();
-    toast(stop ? '⏸ توقف الحفظ' : bad ? `📥 تحفظ ${done - bad} من ${total} (${bad} ما تحفظوش)` : `✅ تحفظ كلشي (${total}) — التطبيق واجد بلا إنترنت`, 4000);
+    toast(stop ? `⏸ توقف الحفظ (${done} من ${total})` : done < total ? `📴 تقطع الإنترنت — تحفظ ${done} من ${total}، عاود ملي يرجع` : bad ? `📥 تحفظ ${total - bad} من ${total} (${bad} ما تحفظوش) — عاود من بعد` : `✅ تحفظ كلشي (${total}) — التطبيق واجد بلا إنترنت`, 4500);
   }
   // 📴 شريط فوق صفحات الشبكة ملي المعلومات جاية من الذاكرة
   function offStrip() {
     const Sy = window.W777_SYNC;
-    const at = S.netPage && Sy && Sy.staleAt ? Sy.staleAt() : 0;
-    const m = main(); if (!at || !m || m.querySelector('.off-strip')) return;
+    // من الذاكرة ديال السحابة، ولا (بلا إنترنت) من الذاكرة ديال الصفحة ← ماشي أجدد من آخر اتصال ناجح
+    const at = !S.netPage || !Sy || !Sy.staleAt ? 0 : Sy.staleAt() || (!navigator.onLine && Sy.okAt ? Sy.okAt() : 0);
+    const m = main(); if (!at || !m || m.querySelector('.off-strip, .net-err')) return;
     const el = document.createElement('div');
     el.className = 'off-strip'; el.setAttribute('role', 'status');
-    el.innerHTML = `📴 نسخة محفوظة فالجهاز — آخر تحديث: <b>${whenText(at)}</b>`;
+    // at = 1: نسخة قديمة بلا تاريخ (تحفظات قبل v186)
+    el.innerHTML = at > 1 ? `📴 نسخة محفوظة فالجهاز — آخر تحديث: <b>${whenText(at)}</b>` : '📴 نسخة محفوظة فالجهاز (تاريخها ما معروفش)';
     const h = m.querySelector('.page-head');
     if (h) h.after(el); else m.prepend(el);
   }
@@ -890,7 +905,8 @@
     const paint = () => { el.hidden = navigator.onLine; };
     paint();
     window.addEventListener('offline', paint);
-    window.addEventListener('online', () => { paint(); toast('🌐 رجعات الإنترنت — كنزامنو…'); if (syOn()) window.W777_SYNC.syncNow(); });
+    // المزامنة ملي يرجع الإنترنت كتبدا من sync.js (ماشي هنا باش ما تعاودش جوج مرات)
+    window.addEventListener('online', () => { paint(); toast(syOn() ? '🌐 رجعات الإنترنت — كنزامنو…' : '🌐 رجعات الإنترنت'); });
     document.addEventListener('click', ev => { if (ev.target.closest('[data-net-retry]')) { ev.preventDefault(); route(); } });
   }
   async function afterLogin() {
@@ -2814,7 +2830,7 @@
     if (!Sy || !Sy.isOn()) { body.innerHTML = 'فعّل «المزامنة السحابية» أولا باش تستعمل هاد الخاصية.'; return; }
     let list = [];
     try { list = await (await Sy.request('/rest/v1/w777_partners?select=token,name,phone,active,created_at&order=created_at.desc')).json(); }
-    catch (e) { body.innerHTML = netErr(e); return; }
+    catch (e) { body.innerHTML = netErr(e, false); return; }
     const count = name => S.props.filter(p => p.partner && p.partner.name === name).length;
     body.innerHTML = `
       <form class="form-grid" id="pt-add" style="margin-bottom:12px">
@@ -5781,6 +5797,7 @@
     if (S.role === 'agency' && S.agency && !S.agency.terms_at) { termsGate(); return false; }
     if (S.role === 'agency' && idRequired(S.agency)) { idGate(); return false; }
     S.netPage = true;
+    if (Sy.staleReset) Sy.staleReset(); // التاريخ ديال المعلومات ديال هاد الصفحة بوحدها
     return true;
   }
   function secHead(icon, title, sub, tabs, cur, base) {
