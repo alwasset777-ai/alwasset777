@@ -6,9 +6,11 @@ const IMG = 'w777-img-v1', IMG_MAX = 1500;
 // 📴 ذاكرة دائمة للملفات اللي ماشي فـ SHELL (صور اللعبة، الدليل، الخرائط…): ما كتتمسحش مع كل تحديث
 const RT = 'w777-rt-v1', RT_MAX = 900;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
+const HUB_ICONS = ['academy', 'ad-maker', 'add-appointment', 'add-property', 'add-request', 'agencies', 'associations', 'bell', 'brokers', 'chart', 'chat', 'contractors', 'disputes', 'disputes-ico', 'donations', 'donations-ico', 'estimate', 'events', 'finance-ico', 'finishing', 'games', 'globe', 'groups', 'guide', 'investors', 'loan-ico', 'map-ico', 'matching', 'news', 'news-ico', 'notaries', 'opp', 'projects', 'projects-ico', 'rentals', 'stays', 'terms', 'toolbox'];
 const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'wasla-levels.js', 'wasla.js', 'games.js', 'academy-data.js', 'academy.js', 'finance-data.js', 'manifest.webmanifest', ...FONTS,
   'vendor/qrcode.js', 'icons/logo.png?v=10', 'icons/icon-192.png?v=9', 'icons/icon-512.png?v=9', 'icons/apple-touch-icon.png?v=9', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
-  ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=7`), 'icons/hub/add-request.webp?v=1', 'icons/hub/add-property.webp?v=1', 'icons/hub/add-appointment.webp?v=3', 'icons/hub/guide.webp?v=3', 'icons/hub/rentals.webp?v=1', 'icons/hub/estimate.webp?v=1', 'icons/hub/news-ico.webp?v=3', 'icons/hub/ad-maker.webp?v=1', 'icons/hub/projects-ico.webp?v=3', 'icons/hub/matching.webp?v=1', 'icons/hub/disputes-ico.webp?v=1', 'icons/hub/donations-ico.webp?v=3', 'icons/hub/map-ico.webp?v=3', 'icons/hub/finance-ico.webp?v=3', 'icons/hub/loan-ico.webp?v=3', 'icons/hub/games.webp?v=1',
+  // كل أيقونات الخانات (نفس رقم النسخة ?v=8 فكل التطبيق)
+  ...HUB_ICONS.map(n => `icons/hub/${n}.webp?v=8`),
   // إعدادات السحابة (بلاها التطبيق ما كيعرفش الحساب بلا إنترنت) + الخريطة + صانع الفيديو
   '../app/config.js', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'reels/index.html', 'reels/reels-bridge.js'];
 // الأساس: إلا فشل واحد منهم ما كنثبتوش النسخة الجديدة (القديمة كتبقى خدامة)

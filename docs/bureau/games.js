@@ -164,7 +164,7 @@
 
   function top(g, chip, back) {
     return `<div class="gm-top"><a class="gm-ib" href="${back || '#/game'}" aria-label="رجوع" title="رجوع">→</a>
-      ${g ? `<span class="gm-mi" aria-hidden="true">${g.icon}</span><h2>${esc(g.name)}<small>${esc(g.style)}</small></h2>` : `<img class="gm-hl" src="icons/hub/games.webp?v=1" alt=""><h2>الوسيط GAMES<small>7 ألعاب عقارية: تلعب وتتعلم</small></h2>`}
+      ${g ? `<span class="gm-mi" aria-hidden="true">${g.icon}</span><h2>${esc(g.name)}<small>${esc(g.style)}</small></h2>` : `<img class="gm-hl" src="icons/hub/games.webp?v=8" alt=""><h2>الوسيط GAMES<small>7 ألعاب عقارية: تلعب وتتعلم</small></h2>`}
       ${chip ? `<span class="gm-chip">${chip}</span>` : ''}</div>`;
   }
   function toast(t) { const d = document.createElement('div'); d.className = 'gm-toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2200); }

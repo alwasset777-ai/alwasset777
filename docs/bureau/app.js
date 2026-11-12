@@ -1191,7 +1191,7 @@
   const ICO_RE = new RegExp('^(\\s*)(' + Object.keys(EMO_ICO).join('|') + ')\\uFE0F?\\s*', 'u');
   const ICO_SEL = 'h1, h2, h3, .section-title, .nav-group, .em, .hst-ic, .opp-ic, .stat .ic, .chip, .seg > *, .btn, b, .big, .gd-k, .fl-title, .badge, .fab-menu a, .fab-menu button';
   const ICO_SOLO = '.em, .hst-ic, .opp-ic, .stat .ic';
-  const icoImg = f => `<img class="xi${ICO_PH.has(f) ? ' ph' : ''}" src="${f === '@logo' ? 'icons/logo.png' : `icons/hub/${f}.webp?v=1`}" alt="" decoding="async">`;
+  const icoImg = f => `<img class="xi${ICO_PH.has(f) ? ' ph' : ''}" src="${f === '@logo' ? 'icons/logo.png' : `icons/hub/${f}.webp?v=8`}" alt="" decoding="async">`;
   function iconize(root) {
     if (!root || root.nodeType !== 1) return;
     const over = ICO_OVER[(location.hash.split('/')[1] || '').split('?')[0]] || {};
@@ -1270,18 +1270,17 @@
   // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
   const HUB_NET = ['agencies', 'brokers', 'associations', 'investors', 'contractors', 'finishing', 'notaries'];
   const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
-  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=7" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
-  const hubEmo = (href, e, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo">${e}</i>`, l, s);
+  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=8" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
   // أيقونة صورة (بلاصة الإيموجي) داخل الدائرة: icons/hub/<f>.webp
   // صورة كاملة كتعمّر الدائرة: icons/hub/<f>.webp
-  const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=1" alt="" decoding="async">`, l, s);
-  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=3" alt="" decoding="async"></i>`, l, s);
+  const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=8" alt="" decoding="async">`, l, s);
+  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=8" alt="" decoding="async"></i>`, l, s);
   // زر «التمويل العقاري»: شعارات الجهات كتدوز داخل الدائرة (CSS فقط)
   const FIN_HUB = ['awb', 'bcp', 'boa', 'cih', 'bmci', 'cdm', 'saham', 'cam', 'abb', 'cfg', 'assafa', 'yousr'];
   const finHub = () => hubTile('#/tamwil', '#c8102e', `<i class="emo fin-rot" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}<b class="fin-777">٪</b></i>`, 'التمويل العقاري', 'البنوك وجهات التمويل');
   function homeMenu(kind, nAppts) {
     const M = {
-      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=3" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
+      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
@@ -4861,7 +4860,6 @@
      كل وكالة كتدخل بحسابها، كتزيد وتعدّل غير العقارات ديالها،
      وكتشوف عقارات الشبكة كاملة بلا اسم ولا هاتف المالك.
      ============================================================ */
-  const AG_DOMAIN = '@alwasset777.ma';
   function loadRoleCache() {
     try {
       const c = JSON.parse(localStorage.getItem('w777_role') || 'null');
@@ -6881,7 +6879,7 @@
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=1" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -8717,7 +8715,7 @@
     const Sy = window.W777_SYNC, on = !!(Sy && Sy.isOn());
     const rpc = async (fn, body) => (await Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })).json();
     window.W777_CW.mount($('#cw-root'), {
-      logo: 'icons/hub/games.webp?v=1',
+      logo: 'icons/hub/games.webp?v=8',
       shareUrl: location.href.split('#')[0].replace(/index\.html$/, '') + 'game.html',
       onFinish: on ? r => rpc('w777_game_submit', { p: r.points, n: r.words }) : null,
       loadBoard: on ? () => rpc('w777_game_top') : null,

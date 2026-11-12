@@ -257,7 +257,7 @@
     }
     function top(sub, backBtn) {
       return `<div class="wl-top">${backBtn ? `<button class="wl-ib w" data-back aria-label="${esc(L().back)}">${S.lang === 'ar' ? '➜' : '←'}</button>` : ''}
-        <img class="lg" src="${esc(host.logo || 'icons/hub/games.webp?v=1')}" alt="">
+        <img class="lg" src="${esc(host.logo || 'icons/hub/games.webp?v=8')}" alt="">
         <h2>${esc(L().title)}<small>${esc(sub || '')}</small></h2>
         <span class="wl-chip" title="${esc(L().stars)}">⭐ ${totalStars()}</span>
         <span class="wl-chip" title="${esc(L().helps)}">💡 ${S.helps}</span>
