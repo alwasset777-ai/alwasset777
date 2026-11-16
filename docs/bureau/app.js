@@ -934,6 +934,27 @@
       setTimeout(() => { if (ac.state === 'running') play(); else ac.close().catch(() => {}); }, 250);
     } catch (e) { /* */ }
   }
+  // 📤 مشاركة ملفات الدليل: الملف نيت (واتساب، إيميل…) ← ولا الرابط ← ولا واتساب بالرابط
+  const SHARE_PDF = {
+    malaf: ['files/guide/malaf-taqdimi-majmouat-alwasset.pdf', 'الملف التقديمي — تطبيق مجموعة الوسيط', '💼 تعرّف على تطبيق مجموعة الوسيط: فريق عمل كامل فجيبك (المميزات والحلول لكل مهنة، بالصور).'],
+    dalil: ['files/guide/dalil-majmouat-alwasset.pdf', 'الدليل الشامل — تطبيق مجموعة الوسيط', '📘 الدليل الشامل ديال تطبيق مجموعة الوسيط: كل خدمة خطوة بخطوة بالصور.'],
+  };
+  async function sharePdf(k, btn) {
+    const d = SHARE_PDF[k]; if (!d) return;
+    const [rel, title, msg] = d, url = appBase() + rel, text = msg + '\n📲 التطبيق: ' + appBase();
+    if (btn) btn.disabled = true;
+    try {
+      if (navigator.share && navigator.canShare) {
+        try {
+          const r = await fetch(rel); if (!r.ok) throw new Error('fetch');
+          const f = new File([await r.blob()], rel.split('/').pop(), { type: 'application/pdf' });
+          if (navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title, text }); return; }
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      if (navigator.share) { try { await navigator.share({ title, text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+      window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n📄 ' + url), '_blank', 'noopener');
+    } finally { if (btn) btn.disabled = false; }
+  }
   // 🏷️ أيقونة العنوان: نفس المربع ونفس الحجم فكل الصفحات (صورة، رسمة ولا إيموجي)
   const EMO_LEAD = /^\s*(\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}]*)\s*/u;
   function titleIcon() {
@@ -5788,7 +5809,9 @@
           <small>${pct}% · ${L.filter(l => done.has(l.n)).length} / ${L.length} درس</small>
           <div class="btn-row" style="margin-top:12px">${next ? `<a class="btn gold" href="#/guide/${next.n}">▶ ${done.size ? 'كمّل' : 'ابدأ'}: ${esc(next.t)}</a>` : '<span class="badge green">🏆 كمّلتي كل الدروس — مبروك!</span>'}
             <a class="btn" href="files/guide/dalil-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>📘 الدليل الشامل PDF</a>
+            <button class="btn" type="button" data-share-pdf="dalil">📤 شارك الدليل</button>
             <a class="btn" href="files/guide/malaf-taqdimi-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>💼 الملف التقديمي PDF</a>
+            <button class="btn gold" type="button" data-share-pdf="malaf">📤 شارك الملف التقديمي</button>
             <a class="btn" href="tuto/" target="_blank" rel="noopener">🎬 فيديوهات الدليل (19)</a>
             ${done.size ? '<button class="btn" id="gd-reset">↺ إعادة من الأول</button>' : ''}</div>
         </div>
@@ -5804,6 +5827,7 @@
             <div class="gd-body"><span class="gd-n">${done.has(l.n) ? '✓' : String(l.n).padStart(2, '0')}</span><b>${esc(l.t)}</b><small>${esc(l.tag)}</small></div></a>`).join('')}</div>`;
       }).join('')}`;
     bindAgCard(main(), { guide: 'سلام منير! علمني كيفاش نستعمل تطبيق مجموعة الوسيط من الأول، خطوة بخطوة.' });
+    $$('[data-share-pdf]').forEach(b => b.onclick = () => sharePdf(b.dataset.sharePdf, b));
     const r = $('#gd-reset'); if (r) r.onclick = async () => { if (await confirmBox('إعادة الدليل من الأول؟', 'إعادة', false)) { gdSave(new Set()); viewGuide(); } };
   }
   function viewGuideLesson(l, L, done) {
@@ -6152,7 +6176,7 @@
           : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.';
     const groupsTxt = () => (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
     const offerTxt = `🎁 عرض 777: ${FREE_MONTHS} أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? ' (ونفس العرض خارج المغرب)' : ''} — الترتيب حسب نهار التسجيل`;
-    const inviteMsg = a => `السلام عليكم${a && isNamed(a) ? ' ' + a.name : ''}،\nمرحبا بكم فشبكة ${K.ar} ديال مجموعة الوسيط ${K.ic}\n\n📲 التسجيل ساهل (بلا كلمة سر):\n1️⃣ حلّو التطبيق: ${appUrl}\n2️⃣ كتبو الإيميل ديالكم ← «صيفط ليا الكود»\n3️⃣ كتبو الكود (6 أرقام) اللي وصلكم فالإيميل\n4️⃣ ختارو «${K.one}» وعمّرو البطاقة (الاسم، الهاتف، المدينة) ووافقو على القانون ✅\n\n${nextStep}\n${offerTxt}\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` + groupsTxt();
+    const inviteMsg = a => `السلام عليكم${a && isNamed(a) ? ' ' + a.name : ''}،\nمرحبا بكم فشبكة ${K.ar} ديال مجموعة الوسيط ${K.ic}\n\n📲 التسجيل ساهل (بلا كلمة سر):\n1️⃣ حلّو التطبيق: ${appUrl}\n2️⃣ كتبو الإيميل ديالكم ← «صيفط ليا الكود»\n3️⃣ كتبو الكود (6 أرقام) اللي وصلكم فالإيميل\n4️⃣ ختارو «${K.one}» وعمّرو البطاقة (الاسم، الهاتف، المدينة) ووافقو على القانون ✅\n\n${nextStep}\n${offerTxt}\n💼 تعرّفو على التطبيق (PDF): ${appBase()}files/guide/malaf-taqdimi-majmouat-alwasset.pdf\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` + groupsTxt();
     const welcomeMsg = a => { const tr = seatTier(a), si = subInfo(a), e = subEnd(a);
       return `السلام عليكم ${a.name}،\nمرحبا بكم فمجموعة الوسيط ${K.ic} — الحساب ديالكم مفعّل ✅\n🆔 الرمز: ${loginOf(a)}${a.email ? `\n✉️ الدخول بالإيميل: ${a.email} (كيوصلكم كود من 6 أرقام، بلا كلمة السر)` : ''}` +
         (tr ? `\n🎟️ رقم المقعد ديالكم فعرض 777: ${a.seat_no} — ${tr.s}` : '') +
