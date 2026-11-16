@@ -1818,7 +1818,7 @@
             ${fInput('address', 'العنوان / الزنقة / الرقم', p.address)}
             ${fInput('landmark', 'بالقرب من (معلم)', p.landmark, { ph: 'مثال: قرب مسجد...، مرجان...' })}
             <div class="field full"><label>الموقع على الخريطة (رابط Google Maps أو إحداثيات)</label>
-              <div class="range"><input name="gps" value="${esc(p.gps || '')}" placeholder="https://maps.google.com/... أو 33.89,-5.55">
+              <div class="range"><input name="gps" dir="ltr" value="${esc(p.gps || '')}" placeholder="https://maps.google.com/…  ·  33.89, -5.55">
               <button type="button" class="btn sm" id="btn-gps">${ic('gps', 16)} موقعي الآن</button></div></div>
           </div>
           <datalist id="dl-districts"></datalist>
