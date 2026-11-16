@@ -898,6 +898,41 @@
     const h = m.querySelector('.page-head');
     if (h) h.after(el); else m.prepend(el);
   }
+  // 🔊 صوت الفتح: جرس صغير (جوج نغمات) + «ووش» خفيف — كيتصاوب فالمتصفح بلا ملف
+  const openSoundOn = () => { try { return localStorage.getItem('w777_open_sound') !== '0'; } catch (e) { return true; } };
+  function openSound(force) {
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      if (!force && (!openSoundOn() || localStorage.getItem('w777_snd_day') === day)) return;
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      const ac = new AC();
+      const play = () => {
+        const t0 = ac.currentTime + 0.05, out = ac.createGain();
+        out.gain.value = 0.22; out.connect(ac.destination);
+        // «ووش»: شوية ديال الضجيج كيدوز من الخفيف للحاد
+        const len = Math.floor(ac.sampleRate * 0.5), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / len);
+        const ns = ac.createBufferSource(), bp = ac.createBiquadFilter(), ng = ac.createGain();
+        ns.buffer = buf; bp.type = 'bandpass'; bp.Q.value = 1.2;
+        bp.frequency.setValueAtTime(400, t0); bp.frequency.exponentialRampToValueAtTime(2600, t0 + 0.45);
+        ng.gain.value = 0.35; ns.connect(bp).connect(ng).connect(out); ns.start(t0); ns.stop(t0 + 0.5);
+        // الجرس: Sol ← Ré (نغمتين رقاق)
+        [[784, 0.30], [1175, 0.52]].forEach(([f, at]) => {
+          const o = ac.createOscillator(), g = ac.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(0.5, t0 + at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + 0.9);
+          o.connect(g).connect(out); o.start(t0 + at); o.stop(t0 + at + 0.95);
+        });
+        if (!force) try { localStorage.setItem('w777_snd_day', day); } catch (e) { /* */ }
+        window.__w777_snd = (window.__w777_snd || 0) + 1;
+        setTimeout(() => ac.close().catch(() => {}), 1800);
+      };
+      if (ac.state === 'running') return play();
+      // التيليفون منع الصوت (ما لمستيش الشاشة): ما نسجلوش النهار ← كنعاودو فالفتحة الجاية
+      ac.resume().catch(() => {});
+      setTimeout(() => { if (ac.state === 'running') play(); else ac.close().catch(() => {}); }, 250);
+    } catch (e) { /* */ }
+  }
   // 🏷️ أيقونة العنوان: نفس المربع ونفس الحجم فكل الصفحات (صورة، رسمة ولا إيموجي)
   const EMO_LEAD = /^\s*(\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}]*)\s*/u;
   function titleIcon() {
@@ -2669,7 +2704,7 @@
     const t = ((card.querySelector('.section-title') || card).textContent || '');
     if (/المزامنة|النسخ الاحتياطي|استيراد|التخزين|بلا إنترنت/.test(t)) return 'data';
     if (/الأمان|التحقق بخطوتين|البصمة|الإشعارات|القفل/.test(t)) return 'security';
-    if (/تحديث التطبيق|تثبيت التطبيق|نسخة التجربة/.test(t)) return 'app';
+    if (/تحديث التطبيق|تثبيت التطبيق|نسخة التجربة|صوت الفتح/.test(t)) return 'app';
     return 'office';
   };
   function settingsTabs(want) {
@@ -2721,6 +2756,12 @@
           <h3 class="section-title">🔄 تحديث التطبيق</h3>
           <p class="muted" style="margin-top:0">النسخة ديالك: <b id="upd-ver" dir="ltr">…</b>. التطبيق كيتحدث بوحدو، وهاد الزر كيجيب آخر نسخة فالحين ويحيد الملفات القديمة — البيانات ديالك (العقارات، الزبناء، الصور) ما كتمسّش.</p>
           <div class="btn-row"><button class="btn gold" id="upd-full">🔄 تحديث كامل للتطبيق</button></div>
+        </div>`}
+
+        ${EMBED ? '' : `<div class="card card-pad snd-card">
+          <h3 class="section-title">🔊 صوت الفتح</h3>
+          <p class="muted" style="margin-top:0">صوت خفيف مع دوران الشعار، مرة وحدة فالنهار (فأول فتحة). التيليفون يقدر يمنعو إلا ما لمستيش الشاشة — عادي.</p>
+          <div class="btn-row"><label class="chk"><input type="checkbox" id="snd-on" ${openSoundOn() ? 'checked' : ''}> مشعول</label><button class="btn" type="button" id="snd-try">▶️ جرّب</button></div>
         </div>`}
 
         <div class="card card-pad off-card">
@@ -2838,6 +2879,8 @@
     $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
     appVersion().then(v => { const e = $('#upd-ver'); if (e) e.textContent = v; });
     const uf = $('#upd-full'); if (uf) uf.onclick = fullUpdate;
+    const so = $('#snd-on'); if (so) so.onchange = () => { try { localStorage.setItem('w777_open_sound', so.checked ? '1' : '0'); } catch (e) { /* */ } toast(so.checked ? '🔊 صوت الفتح مشعول' : '🔇 صوت الفتح مطفي'); };
+    const st0 = $('#snd-try'); if (st0) st0.onclick = () => openSound(true);
     const os = $('#off-save'); if (os) os.onclick = () => saveOffline(os);
     const bs = $('#brand-share'); if (bs) bs.onclick = async () => { // رابط دليل الهوية للمصممين
       const url = appBase() + 'brand.html', text = '🎨 دليل الهوية ديال مجموعة الوسيط (الشعار، الألوان، الخط):';
@@ -10059,6 +10102,7 @@
       setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, Math.max(0, SPLASH_MIN - performance.now()));
     };
     if (EMBED) { const sp = document.getElementById('splash'); if (sp) sp.remove(); }
+    else if (document.getElementById('splash')) openSound();
     // القفل بالرمز (PIN) خاصو يبان مباشرة
     try { if (localStorage.getItem('w777_pin')) hideSplash(); } catch (e) { /* */ }
     await lockScreen();
