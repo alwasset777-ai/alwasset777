@@ -304,10 +304,12 @@
   /* ============================================================
      واجهة: رسائل، نوافذ، تأكيد
      ============================================================ */
+  // 📴 خطأ الشبكة (نفس الفحص ديال sync.js)
+  const netErrRe = /Failed to fetch|NetworkError|Load failed|Network request failed|ERR_INTERNET/i;
   function toast(msg, ms = 2400) {
     // 📴 خطأ الشبكة التقني ← جملة مفهومة
     msg = String(msg);
-    if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) { msg = '📴 ما كاينش الإنترنت — هاد العملية كتحتاج الإنترنت، عاود ملي ترجع'; ms = Math.max(ms, 3500); }
+    if (netErrRe.test(msg)) { msg = '📴 ما كاينش الإنترنت — هاد العملية كتحتاج الإنترنت، عاود ملي ترجع'; ms = Math.max(ms, 3500); }
     // الوكيل كيتفاعل: فرحان مع النجاح، حزين شوية مع الخطأ
     try { if (/✓|✅/.test(msg)) agMood('happy', null, 2200); else if (/^تعذر|خطأ|⚠️|❌/.test(msg)) agMood('sad', null, 2400); } catch (e) { /* */ }
     const t = document.createElement('div');
@@ -315,12 +317,13 @@
     document.body.appendChild(t);
     setTimeout(() => t.remove(), ms);
   }
-  function modal(html, onMount) {
+  // sticky: ما كتسدش بالضغط برا اللوحة
+  function modal(html, onMount, sticky) {
     const bg = document.createElement('div');
     bg.className = 'modal-bg';
     bg.innerHTML = `<div class="modal" role="dialog">${html}</div>`;
     const close = () => bg.remove();
-    bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-close]')) close(); });
+    bg.addEventListener('click', e => { if ((e.target === bg && !sticky) || e.target.closest('[data-close]')) close(); });
     document.body.appendChild(bg);
     if (onMount) onMount(bg.firstElementChild, close);
     return close;
@@ -811,16 +814,18 @@
     if (/rate limit|security purposes|too many|429/i.test(m)) return 'بزاف ديال الطلبات — تسنى شوية (دقيقة ولا أكثر) وعاود.';
     if (/expired|invalid|otp|token/i.test(m)) return 'الكود غالط ولا سالا الوقت ديالو — طلب كود جديد.';
     if (/signups? not allowed|disabled/i.test(m)) return 'التسجيل موقوف دابا — تواصل مع مكتب الوسيط 777.';
-    if (/Failed to fetch|network/i.test(m)) return 'ما كاينش الإنترنت — تأكد من الاتصال وعاود.';
+    if (netErrRe.test(m)) return 'ما كاينش الإنترنت — تأكد من الاتصال وعاود.';
     return 'وقع مشكل: ' + m;
   }
   // 📴 خطأ الشبكة بكلام واضح (بدل «Failed to fetch») + زر «عاود»
-  const isOffErr = e => !navigator.onLine || /Failed to fetch|NetworkError|Load failed|network/i.test(String((e && e.message) || e || ''));
-  function netErr(e) {
+  const isOffErr = e => !navigator.onLine || netErrRe.test(String((e && e.message) || e || ''));
+  // retry=false: بلا زر «عاود» (مثلا وسط صفحة فيها خانات ما تحفظاتش)
+  function netErr(e, retry = true) {
+    const rb = cls => retry ? `<button class="btn ${cls}" data-net-retry>↻ عاود</button>` : '';
     if (isOffErr(e)) return `<div class="card empty net-err"><div class="big">📴</div><h3>ما كاينش الإنترنت</h3>
-      <p>هاد الصفحة كتجيب المعلومات من السحابة، وما تفتحاتش قبل فهاد الجهاز.<br>العقارات والطلبات والمواعيد والكراء ديالك خدامين عادي بلا إنترنت، وكيتزامنو ملي ترجع.</p>
-      <button class="btn gold" data-net-retry>↻ عاود</button></div>`;
-    return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} <button class="btn sm" data-net-retry>↻ عاود</button></div>`;
+      <p>هاد الخانة كتجيب المعلومات من السحابة، وما تحفظاتش قبل فهاد الجهاز.<br>العقارات والطلبات والمواعيد والكراء ديالك خدامين عادي بلا إنترنت، وكيتزامنو ملي ترجع.</p>
+      ${rb('gold')}</div>`;
+    return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} ${rb('sm')}</div>`;
   }
   // 🕒 تاريخ قصير: «اليوم 10:30» / «البارح 18:05» / «12/11 09:00»
   function whenText(t) {
@@ -837,25 +842,31 @@
   const OFF_ROUTES = ['#/agencies', '#/agencies/dir', '#/brokers', '#/contractors', '#/finishing', '#/investors', '#/notaries', '#/associations', '#/projects', '#/events', '#/news', '#/news/world', '#/donations', '#/disputes', '#/stays', '#/learn/certs'];
   async function saveOffline(btn) {
     if (!navigator.onLine) return toast('📴 خاصك الإنترنت باش تحفظ');
-    const Sy = window.W777_SYNC;
     if (syOn()) await refreshRole().catch(() => {});
     const routes = syOn() && inNetwork() ? OFF_ROUTES : [];
     let files = [];
     try { const r = await fetch('offline-files.json', { cache: 'no-cache' }); if (r.ok) files = await r.json(); } catch (e) { /* */ }
     const total = routes.length + files.length;
+    if (!total) return toast('📴 ما قدرتش نجيب لائحة الملفات — عاود من بعد');
     let done = 0, bad = 0, stop = false;
     btn.disabled = true;
+    // اللوحة ما كتسدش بالضغط برا (باش يبقى زر «إيقاف» ديما باين)
     const closeM = modal(`<h3 style="margin-top:0">📥 كنحفظ للاستعمال بلا إنترنت…</h3>
       <div class="off-prog"><i id="off-bar"></i></div><p class="muted" id="off-n" dir="ltr" style="text-align:right">0 / ${total}</p>
-      <div class="btn-row"><button class="btn" type="button" id="off-stop">إيقاف</button></div>`, m => { m.querySelector('#off-stop').onclick = () => { stop = true; }; });
-    const tick = () => { const b = $('#off-bar'), n = $('#off-n'); if (b) b.style.width = Math.round(done * 100 / (total || 1)) + '%'; if (n) n.textContent = `${done} / ${total}`; };
+      <div class="btn-row"><button class="btn" type="button" id="off-stop">إيقاف</button></div>`, m => { m.querySelector('#off-stop').onclick = () => { stop = true; }; }, true);
+    const tick = () => { const b = $('#off-bar'), n = $('#off-n'); if (b) b.style.width = Math.round(done * 100 / total) + '%'; if (n) n.textContent = `${done} / ${total}`; };
     const back = location.hash || '#/';
+    const navKeep = NAV.stack.slice(); // الصفحات اللي دزنا عليها ما كتدخلش لزر «رجوع»
     try {
       // الصفحات: كنحلوها وحدة بوحدة (اللوحة فوقها) ← المعلومات والصور ديالها كيتحفظو
       for (const r of routes) {
         if (stop || !navigator.onLine) break;
         history.replaceState(history.state, '', r);
-        try { await route(); await new Promise(z => setTimeout(z, 500)); } catch (e) { bad++; }
+        try {
+          await route(); await new Promise(z => setTimeout(z, 500));
+          // الصفحة ما تحملاتش (خطأ من الخادم ولا الشبكة) ← ما تحفظاتش
+          const m = main(); if (m && (m.querySelector('.net-err') || /تعذر التحميل/.test(m.textContent))) bad++;
+        } catch (e) { bad++; }
         done++; tick();
       }
       // الصور: 6 فنفس الوقت
@@ -865,23 +876,78 @@
       }
     } finally {
       history.replaceState(history.state, '', back);
+      NAV.stack = navKeep;
       try { closeM(); } catch (e) { /* */ }
       btn.disabled = false;
     }
-    if (done >= total && !stop) { try { localStorage.setItem('w777_off_at', String(Date.now())); } catch (e) { /* */ } }
+    const all = done >= total && !bad && !stop;
+    if (all) { try { localStorage.setItem('w777_off_at', String(Date.now())); } catch (e) { /* */ } }
     await route();
-    toast(stop ? '⏸ توقف الحفظ' : bad ? `📥 تحفظ ${done - bad} من ${total} (${bad} ما تحفظوش)` : `✅ تحفظ كلشي (${total}) — التطبيق واجد بلا إنترنت`, 4000);
+    toast(stop ? `⏸ توقف الحفظ (${done} من ${total})` : done < total ? `📴 تقطع الإنترنت — تحفظ ${done} من ${total}، عاود ملي يرجع` : bad ? `📥 تحفظ ${total - bad} من ${total} (${bad} ما تحفظوش) — عاود من بعد` : `✅ تحفظ كلشي (${total}) — التطبيق واجد بلا إنترنت`, 4500);
   }
   // 📴 شريط فوق صفحات الشبكة ملي المعلومات جاية من الذاكرة
   function offStrip() {
     const Sy = window.W777_SYNC;
-    const at = S.netPage && Sy && Sy.staleAt ? Sy.staleAt() : 0;
-    const m = main(); if (!at || !m || m.querySelector('.off-strip')) return;
+    // من الذاكرة ديال السحابة، ولا (بلا إنترنت) من الذاكرة ديال الصفحة ← ماشي أجدد من آخر اتصال ناجح
+    const at = !S.netPage || !Sy || !Sy.staleAt ? 0 : Sy.staleAt() || (!navigator.onLine && Sy.okAt ? Sy.okAt() : 0);
+    const m = main(); if (!at || !m || m.querySelector('.off-strip, .net-err')) return;
     const el = document.createElement('div');
     el.className = 'off-strip'; el.setAttribute('role', 'status');
-    el.innerHTML = `📴 نسخة محفوظة فالجهاز — آخر تحديث: <b>${whenText(at)}</b>`;
+    // at = 1: نسخة قديمة بلا تاريخ (تحفظات قبل v186)
+    el.innerHTML = at > 1 ? `📴 نسخة محفوظة فالجهاز — آخر تحديث: <b>${whenText(at)}</b>` : '📴 نسخة محفوظة فالجهاز (تاريخها ما معروفش)';
     const h = m.querySelector('.page-head');
     if (h) h.after(el); else m.prepend(el);
+  }
+  // 🏷️ أيقونة العنوان: نفس المربع ونفس الحجم فكل الصفحات (صورة، رسمة ولا إيموجي)
+  const EMO_LEAD = /^\s*(\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}]*)\s*/u;
+  function titleIcon() {
+    const h = main() && main().querySelector('.page-head h1');
+    if (!h || h.querySelector('.h1-ic')) return;
+    iconize(h); // الإيموجي اللي عندو صورة كيتبدل بالصورة ديالو
+    let ic0 = null;
+    const f = h.firstChild, el = h.firstElementChild;
+    if (el && f === el && el.matches('img, svg, .emo')) ic0 = el;
+    else if (f && f.nodeType === 3 && !f.nodeValue.trim() && el && el.matches('img, svg, .emo') && f.nextSibling === el) ic0 = el;
+    else if (f && f.nodeType === 3) {
+      const m = f.nodeValue.match(EMO_LEAD);
+      if (m) { f.nodeValue = f.nodeValue.slice(m[0].length); ic0 = document.createElement('span'); ic0.className = 'h1-emo'; ic0.textContent = m[1]; }
+    }
+    // صفحة رئيسية بلا أيقونة: كناخدو نفس الأيقونة ديال القائمة
+    if (!ic0 && (location.hash.split('?')[0].split('/').length <= 2)) {
+      const src = document.querySelector('.sidenav a.active img.xi, .sidenav a.active svg');
+      if (src) ic0 = src.cloneNode(true);
+    }
+    if (!ic0) return;
+    const w = document.createElement('span'); w.className = 'h1-ic'; w.setAttribute('aria-hidden', 'true');
+    h.insertBefore(w, h.firstChild); w.appendChild(ic0);
+    if (w.nextSibling && w.nextSibling.nodeType === 3) w.nextSibling.nodeValue = w.nextSibling.nodeValue.replace(/^\s+/, '');
+  }
+  // ↔️ الفلاتر: ملي ما كيكفيوش، علامة خفيفة فالطرف اللي فيه المزيد
+  function chipFade(c) {
+    const max = c.scrollWidth - c.clientWidth;
+    if (max <= 2) { c.classList.remove('fl', 'fr'); return; }
+    const sl = c.scrollLeft, rtl = getComputedStyle(c).direction === 'rtl';
+    const left = rtl ? max + sl : sl, right = rtl ? -sl : max - sl;
+    c.classList.toggle('fl', left > 4); c.classList.toggle('fr', right > 4);
+  }
+  const chipsFadeAll = () => $$('.chips:not(.wrap)').forEach(chipFade);
+  document.addEventListener('scroll', e => { const t = e.target; if (t && t.classList && t.classList.contains('chips')) chipFade(t); }, true);
+  window.addEventListener('resize', () => chipsFadeAll());
+  // ☰ «المزيد» فالتيليفون: لوحة فيها كل القائمة الجانبية (نفس الروابط، مرتبة بالأقسام)
+  function setupMoreNav() {
+    const bt = $('#bn-more'); if (!bt) return;
+    bt.onclick = () => {
+      const side = $('.sidenav'); if (!side) return;
+      let html = '', grid = [];
+      const flush = () => { if (grid.length) html += `<div class="ms-grid">${grid.join('')}</div>`; grid = []; };
+      [...side.children].forEach(el => {
+        if (el.classList.contains('sep')) return;
+        if (el.classList.contains('nav-group')) { flush(); html += `<div class="nav-group">${el.innerHTML}</div>`; return; }
+        if (el.tagName === 'A') { const c = el.cloneNode(true); c.setAttribute('data-close', ''); grid.push(c.outerHTML); }
+      });
+      flush();
+      modal(`<div class="more-sheet"><h3 style="margin:0">☰ كل الخدمات</h3>${html}</div>`);
+    };
   }
   // علامة صغيرة فوق: «بلا إنترنت» (كتبان وكتختفي بوحدها)
   function setupNetBadge() {
@@ -890,7 +956,8 @@
     const paint = () => { el.hidden = navigator.onLine; };
     paint();
     window.addEventListener('offline', paint);
-    window.addEventListener('online', () => { paint(); toast('🌐 رجعات الإنترنت — كنزامنو…'); if (syOn()) window.W777_SYNC.syncNow(); });
+    // المزامنة ملي يرجع الإنترنت كتبدا من sync.js (ماشي هنا باش ما تعاودش جوج مرات)
+    window.addEventListener('online', () => { paint(); toast(syOn() ? '🌐 رجعات الإنترنت — كنزامنو…' : '🌐 رجعات الإنترنت'); });
     document.addEventListener('click', ev => { if (ev.target.closest('[data-net-retry]')) { ev.preventDefault(); route(); } });
   }
   async function afterLogin() {
@@ -1112,7 +1179,7 @@
     else if (a === 'stays') { nav = 'stays'; await viewStays(parts, query); }
     else if (a === 'estimate') { nav = 'properties'; viewEstimate(query); }
     else if (a === 'loan') { nav = 'loan'; viewLoan(query); }
-    else if (a === 'tamwil') { nav = 'loan'; await viewTamwil(parts, query); }
+    else if (a === 'tamwil') { nav = 'tamwil'; await viewTamwil(parts, query); }
     else if (a === 'game') { nav = 'game'; await viewGame(b); }
     else if (a === 'ad-maker') { nav = 'ad-maker'; viewAdMaker(query); }
     else if (a === 'map') { nav = 'map'; await viewMap(query); }
@@ -1140,6 +1207,7 @@
     else if (a === 'settings') { nav = 'settings'; await viewSettings(); }
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
+    { const bm = $('#bn-more'); if (bm) bm.classList.toggle('active', !document.querySelector('.bottomnav a.active')); }
     if (a !== 'properties') $('#q').value = '';
     placeLang();
     lvPage();
@@ -1147,6 +1215,8 @@
     fx3dPage();
     subBar();
     offStrip();
+    titleIcon(); chipsFadeAll(); setTimeout(chipsFadeAll, 700);
+    document.body.classList.toggle('on-home', !a);
   }
   /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
   // بلا كود داخل HTML (onclick/onerror): كلشي هنا — باش سياسة الأمان (CSP) تمنع أي سكريبت مدسوس
@@ -1175,7 +1245,7 @@
   const ICO_RE = new RegExp('^(\\s*)(' + Object.keys(EMO_ICO).join('|') + ')\\uFE0F?\\s*', 'u');
   const ICO_SEL = 'h1, h2, h3, .section-title, .nav-group, .em, .hst-ic, .opp-ic, .stat .ic, .chip, .seg > *, .btn, b, .big, .gd-k, .fl-title, .badge, .fab-menu a, .fab-menu button';
   const ICO_SOLO = '.em, .hst-ic, .opp-ic, .stat .ic';
-  const icoImg = f => `<img class="xi${ICO_PH.has(f) ? ' ph' : ''}" src="${f === '@logo' ? 'icons/logo.png' : `icons/hub/${f}.webp?v=1`}" alt="" decoding="async">`;
+  const icoImg = f => `<img class="xi${ICO_PH.has(f) ? ' ph' : ''}" src="${f === '@logo' ? 'icons/logo.png' : `icons/hub/${f}.webp?v=8`}" alt="" decoding="async">`;
   function iconize(root) {
     if (!root || root.nodeType !== 1) return;
     const over = ICO_OVER[(location.hash.split('/')[1] || '').split('?')[0]] || {};
@@ -1244,7 +1314,7 @@
     ['contractors', '🏗️', 'شركات المقاولات', 'عرض 777 للأوائل'], ['finishing', '🎨', 'شركات التشطيب', 'عرض 777 للأوائل'],
     ['projects', '🚀', 'عرض المشاريع', 'البحث عن تمويل'], ['events', '🎪', 'المناسبات العقارية', 'معارض وصالونات'],
     ['stays', '🏖️', 'الحجز الفوري', 'مفروش وعطل'], ['news', '📰', 'الأخبار العقارية', 'المغرب والعالم'], ['donations', '🤲', 'الهبة', 'سقف لكل عائلة'],
-    ['disputes', '⚖️', 'نزاعات و حلول', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
+    ['disputes', '⚖️', 'نزاعات وحلول', 'الحل القانوني'], ['investors', '💼', 'المستثمرون', 'تمويل وشراكة'], ['notaries', '🖋️', 'الموثقون', 'استشارة وتوثيق'],
     ['associations', '🏘️', 'الجمعيات السكنية', 'عرض 777 للأوائل'],
     ['terms', '📜', 'قانون التطبيق', 'شروط الاشتراك'],
   ];
@@ -1254,24 +1324,23 @@
   // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
   const HUB_NET = ['agencies', 'brokers', 'associations', 'investors', 'contractors', 'finishing', 'notaries'];
   const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
-  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=7" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
-  const hubEmo = (href, e, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo">${e}</i>`, l, s);
+  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=8" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
   // أيقونة صورة (بلاصة الإيموجي) داخل الدائرة: icons/hub/<f>.webp
   // صورة كاملة كتعمّر الدائرة: icons/hub/<f>.webp
-  const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=1" alt="" decoding="async">`, l, s);
-  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=3" alt="" decoding="async"></i>`, l, s);
+  const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=8" alt="" decoding="async">`, l, s);
+  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=8" alt="" decoding="async"></i>`, l, s);
   // زر «التمويل العقاري»: شعارات الجهات كتدوز داخل الدائرة (CSS فقط)
   const FIN_HUB = ['awb', 'bcp', 'boa', 'cih', 'bmci', 'cdm', 'saham', 'cam', 'abb', 'cfg', 'assafa', 'yousr'];
   const finHub = () => hubTile('#/tamwil', '#c8102e', `<i class="emo fin-rot" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}<b class="fin-777">٪</b></i>`, 'التمويل العقاري', 'البنوك وجهات التمويل');
   function homeMenu(kind, nAppts) {
     const M = {
-      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=1" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=1" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=3" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
+      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
-        hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المحفظة المالية', 'المداخيل والمصاريف'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
+        hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
         hubPic('#/game', 'games', 'الوسيط GAMES', '7 ألعاب عقارية: تلعب وتتعلم', '#c8102e'), finHub(),
-        hubPic('#/disputes', 'disputes-ico', 'نزاعات و حلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب التمويل', 'القسط الشهري')]],
+        hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري')]],
       net: ['✦ مجموعة الوسيط', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
     if (!M) return;
@@ -2036,18 +2105,26 @@
     main().innerHTML = `
       <div class="page-head no-print">
         <a class="btn" href="#/properties">${ic('back', 18)} العقارات</a>
-        <div class="btn-row">
-          <button class="btn" id="p-fav">${ic('star', 18)} ${p.fav ? 'في المفضلة' : 'مفضلة'}</button>
-          <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
+        <button class="btn" id="p-fav">${ic('star', 18)} ${p.fav ? 'في المفضلة' : 'مفضلة'}</button>
+      </div>
+      <div class="pd-actions no-print">
+        <div class="pd-main">
           <button class="btn gold" id="p-pres">📺 عرض للزبون</button>
-          <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
-          <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
-          <a class="btn" href="#/ad-maker?m=reels&p=${encodeURIComponent(p.id)}">🎬 فيديو Reels</a>
-          <a class="btn" href="#/ad-maker?m=project&p=${encodeURIComponent(p.id)}">📄 عرض PDF</a>
-          ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
-          ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب التمويل</a>` : ''}
-          ${EMBED ? '' : `<button class="btn" data-act="print">${ic('print', 18)} طباعة / PDF</button>`}
+          <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
+        </div>
+        <div class="pd-groups">
+          <div class="pd-g"><div class="pd-gt">📢 النشر والإعلان</div><div class="btn-row">
+            <button class="btn sm" id="p-poster">🖼️ ملصق إعلاني</button>
+            <a class="btn sm" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
+            <a class="btn sm" href="#/ad-maker?m=reels&p=${encodeURIComponent(p.id)}">🎬 فيديو Reels</a>
+            ${p.status === 'available' && !p.partner ? `<button class="btn sm${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
+          </div></div>
+          <div class="pd-g"><div class="pd-gt">📄 الوثائق والحسابات</div><div class="btn-row">
+            <a class="btn sm" href="#/ad-maker?m=project&p=${encodeURIComponent(p.id)}">📄 عرض PDF</a>
+            ${EMBED ? '' : `<button class="btn sm" data-act="print">${ic('print', 16)} طباعة</button>`}
+            ${!isRent(p.transaction) && pr ? `<a class="btn sm" href="#/loan?price=${pr}">🏦 حساب القرض</a>` : ''}
+          </div></div>
         </div>
       </div>
       ${gal.length ? `<div class="gallery ${galCls}">${gal.map((m, i) => `<div data-lb="${i}">
@@ -2586,6 +2663,31 @@
   /* ============================================================
      الإعدادات، النسخ الاحتياطي، القفل
      ============================================================ */
+  // ⚙️ الإعدادات مقسمة: كل خانة كتبان غير فالقسم ديالها (العنوان كيقرر القسم)
+  const ST_TABS = [['office', '🏢 المكتب'], ['data', '☁️ البيانات'], ['security', '🛡️ الأمان'], ['app', '📲 التطبيق']];
+  const stGroup = card => {
+    const t = ((card.querySelector('.section-title') || card).textContent || '');
+    if (/المزامنة|النسخ الاحتياطي|استيراد|التخزين|بلا إنترنت/.test(t)) return 'data';
+    if (/الأمان|التحقق بخطوتين|البصمة|الإشعارات|القفل/.test(t)) return 'security';
+    if (/تحديث التطبيق|تثبيت التطبيق|نسخة التجربة/.test(t)) return 'app';
+    return 'office';
+  };
+  function settingsTabs(want) {
+    const form = $('.st-form'); if (!form) return;
+    let cur = ST_TABS.some(x => x[0] === want) ? want : (() => { try { return localStorage.getItem('w777_st_tab') || 'office'; } catch (e) { return 'office'; } })();
+    if (!ST_TABS.some(x => x[0] === cur)) cur = 'office';
+    let mo = null;
+    const paint = () => {
+      if (!form.isConnected || !form.parentElement) { if (mo) mo.disconnect(); return; } // تبدلات الصفحة
+      // الخانات كاينين داخل .st-form ولا حداه مباشرة (فنفس الصفحة)
+      [...form.children, ...form.parentElement.children].forEach(c => { if (c.classList.contains('card')) c.hidden = stGroup(c) !== cur; });
+      $$('.st-tabs [data-st]').forEach(b => { b.classList.toggle('on', b.dataset.st === cur); b.setAttribute('aria-selected', b.dataset.st === cur); });
+    };
+    $$('.st-tabs [data-st]').forEach(b => b.onclick = () => { cur = b.dataset.st; try { localStorage.setItem('w777_st_tab', cur); } catch (e) { /* */ } paint(); window.scrollTo(0, 0); });
+    // الخانات اللي كتزاد ولا كتبدل من بعد (المزامنة، الإشعارات…) كتتصنف حتى هي
+    mo = new MutationObserver(paint); mo.observe(form, { childList: true }); mo.observe(form.parentElement, { childList: true });
+    paint();
+  }
   async function viewSettings() {
     const est = await DB.estimate();
     const persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : false;
@@ -2596,7 +2698,8 @@
     const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     main().innerHTML = `
       <div class="page-head"><h1>الإعدادات</h1></div>
-      <div class="form">
+      <div class="st-tabs" role="tablist">${ST_TABS.map(([k, l]) => `<button type="button" class="st-tab" role="tab" data-st="${k}">${l}</button>`).join('')}</div>
+      <div class="form st-form">
         <div class="card card-pad">
           <h3 class="section-title">${ic('building')} معلومات المكتب</h3>
           <form id="sform" class="form-grid">
@@ -2667,7 +2770,7 @@
         </div>`}
 
         <div class="card card-pad">
-          <h3 class="section-title">${ic('users')} استيراد الطلبات من جهات الاتصال (dde)</h3>
+          <h3 class="section-title">${ic('users')} استيراد الطلبات من جهات الاتصال</h3>
           <p class="muted" style="margin-top:0">كل جهة اتصال فاسمها <b>dde</b> (demande) كتولي طلب جديد بالاسم والهاتف.<br>
           <b>فالآيفون:</b> تطبيق «Contacts» ← «Listes» (فوق على اليسار) ← ضغطة طويلة على «Tous les contacts» ← «Exporter» ← «Enregistrer dans Fichiers». من بعد ورك هنا واختار الملف <b>.vcf</b>.</p>
           <div class="btn-row">
@@ -2748,6 +2851,7 @@
     $('#csv-reqs').onclick = exportReqsCsv;
     const po = $('#pin-on'); if (po) po.onclick = () => setupPin();
     bindBioCard(); bindCatalogCard(); bindStaffCard(); bindPushCard();
+    settingsTabs(parseHash().query.s);
     const pc = $('#pin-change'); if (pc) pc.onclick = () => setupPin();
     const pf = $('#pin-off'); if (pf) pf.onclick = async () => { if (await confirmBox('إلغاء القفل بالرمز السري؟', 'إلغاء القفل')) { localStorage.removeItem('w777_pin'); toast('تم إلغاء القفل'); viewSettings(); } };
     const ps = $('#persist'); if (ps) ps.onclick = async () => { const ok = await DB.persist(); toast(ok ? 'تم تفعيل الحماية ✓' : 'المتصفح رفض الطلب — ثبّت التطبيق على الشاشة الرئيسية ثم أعد المحاولة'); viewSettings(); };
@@ -2775,7 +2879,7 @@
       const last = await Sy.lastSync();
       const pending = await Sy.pending();
       return `<div class="card card-pad" id="cloud-card">
-        <h3 class="section-title">${ic('share')} المزامنة السحابية (الهاتف ↔ الماك) <span class="badge ${SYNC_COLOR[st.state]}">${esc(SYNC_LABEL[st.state])}</span></h3>
+        <h3 class="section-title">${ic('share')} المزامنة السحابية (كل أجهزتك) <span class="badge ${SYNC_COLOR[st.state]}">${esc(SYNC_LABEL[st.state])}</span></h3>
         <div class="kv">
           <div><small>الحساب</small><b>${esc(acc.email)}</b></div>
           <div><small>آخر مزامنة</small><b>${last ? esc(last.slice(0, 16).replace('T', ' ')) : '—'}</b></div>
@@ -2791,7 +2895,7 @@
     }
     const d = Sy.defaults();
     return `<div class="card card-pad" id="cloud-card">
-      <h3 class="section-title">${ic('share')} المزامنة السحابية (الهاتف ↔ الماك) <span class="badge gray">غير مفعلة</span></h3>
+      <h3 class="section-title">${ic('share')} المزامنة السحابية (كل أجهزتك) <span class="badge gray">غير مفعلة</span></h3>
       <p class="muted" style="margin-top:0">اربط التطبيق بحساب Supabase (مجاني) لتظهر نفس العقارات والطلبات والصور على كل أجهزتك تلقائيا. التطبيق يبقى يعمل بدون إنترنت.</p>
       <form id="cl-form" class="form-grid">
         ${fInput('url', 'Supabase Project URL', d.url, { ph: 'https://xxxx.supabase.co', attrs: 'dir="ltr" autocapitalize="off"' })}
@@ -2814,7 +2918,7 @@
     if (!Sy || !Sy.isOn()) { body.innerHTML = 'فعّل «المزامنة السحابية» أولا باش تستعمل هاد الخاصية.'; return; }
     let list = [];
     try { list = await (await Sy.request('/rest/v1/w777_partners?select=token,name,phone,active,created_at&order=created_at.desc')).json(); }
-    catch (e) { body.innerHTML = netErr(e); return; }
+    catch (e) { body.innerHTML = netErr(e, false); return; }
     const count = name => S.props.filter(p => p.partner && p.partner.name === name).length;
     body.innerHTML = `
       <form class="form-grid" id="pt-add" style="margin-bottom:12px">
@@ -4399,7 +4503,7 @@
   }
 
   /* ============================================================
-     طباعة العقود 📄 + تعلم مهنة الوكيل العقاري 🎓 (ملفات PDF)
+     طباعة العقود 📄 + أكاديمية الوسيط 🎓 (ملفات PDF)
      ============================================================ */
   const CONTRACTS = [
     { f: '01-bail-habitation', ar: 'عقد كراء عقار سكني', fr: "Contrat de bail à usage d'habitation", law: 'القانون 67.12', ic: '🏠' },
@@ -4845,7 +4949,6 @@
      كل وكالة كتدخل بحسابها، كتزيد وتعدّل غير العقارات ديالها،
      وكتشوف عقارات الشبكة كاملة بلا اسم ولا هاتف المالك.
      ============================================================ */
-  const AG_DOMAIN = '@alwasset777.ma';
   function loadRoleCache() {
     try {
       const c = JSON.parse(localStorage.getItem('w777_role') || 'null');
@@ -5768,7 +5871,7 @@
       main().innerHTML = `<div class="page-head"><h1>${icon} ${esc(title)}</h1></div>
         <div class="card empty"><div class="big">${icon}</div><h3>دخل بالحساب ديالك أولا</h3>
         <p>كل مشترك كيدخل من «الإعدادات» ← «المزامنة السحابية» بالرمز ديالو<br>(وكالة <b dir="ltr">agence001</b> · وسيط <b dir="ltr">W001</b> · مقاولة <b dir="ltr">B001</b> · تشطيب <b dir="ltr">F001</b> · مستثمر <b dir="ltr">I001</b> · موثق <b dir="ltr">N001</b>) وكلمة السر.</p>
-        <a class="btn gold" href="#/settings">${ic('lock', 18)} الدخول</a></div>`;
+        <a class="btn gold" href="#/settings?s=data">${ic('lock', 18)} الدخول</a></div>`;
       return false;
     }
     main().innerHTML = `<div class="card empty">جاري التحميل…</div>`;
@@ -5781,6 +5884,7 @@
     if (S.role === 'agency' && S.agency && !S.agency.terms_at) { termsGate(); return false; }
     if (S.role === 'agency' && idRequired(S.agency)) { idGate(); return false; }
     S.netPage = true;
+    if (Sy.staleReset) Sy.staleReset(); // التاريخ ديال المعلومات ديال هاد الصفحة بوحدها
     return true;
   }
   function secHead(icon, title, sub, tabs, cur, base) {
@@ -6648,7 +6752,7 @@
     const myKind = S.kind && KINDS[S.kind];
     const plus = myKind && !(S.agency || {}).logo ? `<a class="pr-item pr-add" href="#/${myKind.route}/me" title="زيد الشعار ديالك">＋<small>شعارك</small></a>` : '';
     const moving = tiles.length > 6;
-    rail.innerHTML = `<div class="pr-title">الشركاء</div><button class="pr-item pr-story-add" type="button" title="ستوري جديد" aria-label="ستوري جديد">＋<small>ستوري</small></button><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? tiles.join('') : ''}</div></div>${plus}`;
+    rail.innerHTML = `<div class="pr-title">الشركاء</div><button class="pr-item pr-story-add" type="button" title="ستوري جديد" aria-label="ستوري جديد">＋<small>ستوري</small></button><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? `<span class="pr-dup">${tiles.join('')}</span>` : ''}</div></div>${plus}`;
     rail.classList.remove('hidden');
     rail.onclick = e => {
       if (e.target.closest('.pr-story-add')) { e.preventDefault(); storyComposer(); return; }
@@ -6864,7 +6968,7 @@
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=1" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -7423,12 +7527,12 @@
     agSend(text);
   };
   async function viewDisputes(parts) {
-    if (!await netGate('نزاعات و حلول', '⚖️')) return;
+    if (!await netGate('نزاعات وحلول', '⚖️')) return;
     const admin = S.role === 'admin', me = window.W777_SYNC.uid();
     const tabs = [['', '⚖️ مشكل جديد'], ['mine', '📁 ملفاتي'], ['guide', '📚 الدليل القانوني']];
     if (admin) tabs.push(['all', '🛡️ كل الملفات']);
     const tab = pickTab(tabs, parts[1] || '', '');
-    const head = secHead('⚖️', 'نزاعات و حلول', 'كتب المشكل العقاري ديالك وخود توجيه قانوني أولي فالحين. والنزاعات المستعصية كيحوّلها مكتب الوسيط 777 للمختص: محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري.', tabs, tab, 'disputes');
+    const head = secHead('⚖️', 'نزاعات وحلول', 'كتب المشكل العقاري ديالك وخود توجيه قانوني أولي فالحين. والنزاعات المستعصية كيحوّلها مكتب الوسيط 777 للمختص: محامي، موثق، عدول، محاسب، مستشار قانوني ولا عقاري.', tabs, tab, 'disputes');
     if (tab === 'guide') {
       main().innerHTML = head + `<div class="law-grid">${LAW.filter(L => L.id !== 'other').map(lawCard).join('')}</div>`;
       return;
@@ -8700,7 +8804,7 @@
     const Sy = window.W777_SYNC, on = !!(Sy && Sy.isOn());
     const rpc = async (fn, body) => (await Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })).json();
     window.W777_CW.mount($('#cw-root'), {
-      logo: 'icons/hub/games.webp?v=1',
+      logo: 'icons/hub/games.webp?v=8',
       shareUrl: location.href.split('#')[0].replace(/index\.html$/, '') + 'game.html',
       onFinish: on ? r => rpc('w777_game_submit', { p: r.points, n: r.words }) : null,
       loadBoard: on ? () => rpc('w777_game_top') : null,
@@ -8819,7 +8923,7 @@
     };
     const clr = $('#fin-clr'); if (clr) clr.onclick = async () => { if (await confirmBox('نمسح المعلومات اللي عمرتي على هاد الجهة؟', 'مسح', true)) saveFin(null); };
   }
-  // 🏦 حساب التمويل الساهل: الثمن ← التسبيق (بالدرهم ولا %) ← المدة ← الفائدة ← القسط الشهري مباشرة
+  // 🏦 حساب القرض الساهل: الثمن ← التسبيق (بالدرهم ولا %) ← المدة ← الفائدة ← القسط الشهري مباشرة
   function viewLoan(query) {
     const st = { price: num(query.price) || '', down: num(query.down) || '', years: [10, 15, 20, 25].includes(num(query.y)) ? num(query.y) : 20, rate: num(query.r) || 4.5, ins: 0.3 };
     if (st.price && !st.down) st.down = Math.round(st.price * 0.2);
@@ -9418,7 +9522,7 @@
     const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
     const logged = new Set(all.map(x => x.propId).filter(Boolean));
     const pend = S.props.filter(p => ['sold', 'rented'].includes(p.status) && p.commission && !logged.has(p.id)).slice(0, 10);
-    main().innerHTML = `<div class="page-head"><div><h1>💹 المحفظة المالية</h1><div class="sub">الدخل، المصاريف والربح ديال المكتب</div></div>
+    main().innerHTML = `<div class="page-head"><div><h1>💹 المداخيل والمصاريف</h1><div class="sub">الدخل، المصاريف والربح ديال المكتب</div></div>
       <div class="btn-row"><a class="btn sm" href="#/finance?m=${addMonths(k, -1)}">→</a><b style="align-self:center">${ymAr(k)}</b><a class="btn sm" href="#/finance?m=${addMonths(k, 1)}">←</a>
       <button class="btn gold" id="fn-in">${ic('plus', 16)} دخل</button><button class="btn" id="fn-out">${ic('plus', 16)} مصروف</button><a class="btn" href="#/report?m=${k}">📄 التقرير الشهري</a></div></div>
       <div class="stats"><div class="card stat"><div class="ic">💰</div><div class="v" style="font-size:20px">${M0(cur.inn)}</div><div class="l">دخل ${ymAr(k)}</div></div>
@@ -9463,7 +9567,7 @@
   function reportBody(k, R) {
     return `<div class="kv"><div><small>عقارات جديدة</small><b>${R.added.length}</b></div><div><small>تباعو / تكراو</small><b>${R.closed.length}</b></div><div><small>طلبات جديدة</small><b>${R.reqs.length}</b></div>
       <div><small>المواعيد</small><b>${R.appts.length} (${R.appts.filter(a => a.status === 'done').length} تمّت)</b></div><div><small>الزيارات المسجلة</small><b>${R.visits.length}</b></div><div><small>العقارات المعروضة دابا</small><b>${S.props.filter(p => p.status === 'available').length}</b></div></div>
-      <h2>💹 المحفظة المالية</h2><div class="kv"><div><small>الدخل</small><b>${M0(R.fin.inn)} د</b></div><div><small>المصاريف</small><b>${M0(R.fin.out)} د</b></div><div><small>الربح الصافي</small><b>${M0(R.fin.net)} د</b></div></div>
+      <h2>💹 المداخيل والمصاريف</h2><div class="kv"><div><small>الدخل</small><b>${M0(R.fin.inn)} د</b></div><div><small>المصاريف</small><b>${M0(R.fin.out)} د</b></div><div><small>الربح الصافي</small><b>${M0(R.fin.net)} د</b></div></div>
       <h2>🔑 الكراء</h2><div class="kv"><div><small>عقود جارية</small><b>${R.ls.length}</b></div><div><small>تخلص هاد الشهر</small><b>${M0(R.rentGot)} د</b></div><div><small>متأخرين</small><b>${R.rentLate.length}</b></div></div>
       ${R.closed.length ? `<h2>✅ العمليات المنجزة</h2><table><tr><th>المرجع</th><th>العقار</th><th>الحالة</th><th>الثمن</th></tr>${R.closed.map(p => `<tr><td>${esc(p.ref)}</td><td>${esc(p.title || typeAr(p.type))}</td><td>${esc((PSTATUS[p.status] || {}).ar || '')}</td><td>${esc(priceText(p))}</td></tr>`).join('')}</table>` : ''}
       ${R.added.length ? `<h2>🏠 العقارات الجديدة (${R.added.length})</h2><table><tr><th>المرجع</th><th>العقار</th><th>المكان</th><th>الثمن</th></tr>${R.added.slice(0, 40).map(p => `<tr><td>${esc(p.ref)}</td><td>${esc(p.title || typeAr(p.type))}</td><td>${esc([p.district, p.city].filter(Boolean).join('، '))}</td><td>${esc(priceText(p))}</td></tr>`).join('')}</table>` : ''}
@@ -9959,6 +10063,7 @@
     setupSyncUi();
     setupChat();
     setupNetBadge();
+    setupMoreNav();
     if (syOn()) loadStaff().catch(() => {});
     window.addEventListener('hashchange', route);
     if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }
@@ -9991,7 +10096,7 @@
       await Promise.all((await caches.keys()).filter(k => !keep.includes(k)).map(k => caches.delete(k)));
     } catch (e) { /* */ }
     try { sessionStorage.setItem('w777_updated', '1'); } catch (e) { /* */ }
-    location.replace(location.pathname + '?u=' + Date.now() + '#/settings');
+    location.replace(location.pathname + '?u=' + Date.now() + '#/settings?s=app');
   }
   // الفحص التلقائي: ملي كترجع للتطبيق (التيليفون كيخلي التطبيق محلول أيام)، ومرة كل 30 دقيقة
   let updAt = 0;

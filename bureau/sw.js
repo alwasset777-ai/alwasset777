@@ -1,14 +1,16 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v186';
+const CACHE = 'w777-bureau-v187';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 // الأصوات المحفوظة ديال المساعد (w777-tts) كتبقى حتى هي بين التحديثات
 // 📴 ذاكرة دائمة للملفات اللي ماشي فـ SHELL (صور اللعبة، الدليل، الخرائط…): ما كتتمسحش مع كل تحديث
 const RT = 'w777-rt-v1', RT_MAX = 900;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
+const HUB_ICONS = ['academy', 'ad-maker', 'add-appointment', 'add-property', 'add-request', 'agencies', 'associations', 'bell', 'brokers', 'chart', 'chat', 'contractors', 'disputes', 'disputes-ico', 'donations', 'donations-ico', 'estimate', 'events', 'finance-ico', 'finishing', 'games', 'globe', 'groups', 'guide', 'investors', 'loan-ico', 'map-ico', 'matching', 'news', 'news-ico', 'notaries', 'opp', 'projects', 'projects-ico', 'rentals', 'stays', 'terms', 'toolbox'];
 const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'wasla-levels.js', 'wasla.js', 'games.js', 'academy-data.js', 'academy.js', 'finance-data.js', 'manifest.webmanifest', ...FONTS,
   'vendor/qrcode.js', 'icons/logo.png?v=10', 'icons/icon-192.png?v=9', 'icons/icon-512.png?v=9', 'icons/apple-touch-icon.png?v=9', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
-  ...['agencies', 'brokers', 'contractors', 'finishing', 'projects', 'events', 'stays', 'news', 'donations', 'disputes', 'investors', 'notaries', 'associations', 'terms'].map(n => `icons/hub/${n}.webp?v=7`), 'icons/hub/add-request.webp?v=1', 'icons/hub/add-property.webp?v=1', 'icons/hub/add-appointment.webp?v=3', 'icons/hub/guide.webp?v=3', 'icons/hub/rentals.webp?v=1', 'icons/hub/estimate.webp?v=1', 'icons/hub/news-ico.webp?v=3', 'icons/hub/ad-maker.webp?v=1', 'icons/hub/projects-ico.webp?v=3', 'icons/hub/matching.webp?v=1', 'icons/hub/disputes-ico.webp?v=1', 'icons/hub/donations-ico.webp?v=3', 'icons/hub/map-ico.webp?v=3', 'icons/hub/finance-ico.webp?v=3', 'icons/hub/loan-ico.webp?v=3', 'icons/hub/games.webp?v=1',
+  // كل أيقونات الخانات (نفس رقم النسخة ?v=8 فكل التطبيق)
+  ...HUB_ICONS.map(n => `icons/hub/${n}.webp?v=8`),
   // إعدادات السحابة (بلاها التطبيق ما كيعرفش الحساب بلا إنترنت) + الخريطة + صانع الفيديو
   '../app/config.js', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'reels/index.html', 'reels/reels-bridge.js'];
 // الأساس: إلا فشل واحد منهم ما كنثبتوش النسخة الجديدة (القديمة كتبقى خدامة)
@@ -24,7 +26,8 @@ self.addEventListener('install', e => {
   }).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG && k !== RT && k !== 'w777-tts' && k !== 'w777-api').map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG && k !== RT && k !== 'w777-tts' && k !== 'w777-api').map(k => caches.delete(k))))
+    .then(() => caches.open(RT).then(c => trim(c, RT_MAX))).then(() => caches.open(IMG).then(trimImg)).catch(() => {}).then(() => self.clients.claim()));
 });
 let trimN = 0;
 async function trim(c, max) {
@@ -57,27 +60,34 @@ self.addEventListener('fetch', e => {
   // ملفات التطبيق: من الذاكرة فورا (فتح سريع)، والتحديث كيتجاب فالخلفية للمرة الجاية.
   // كل نشر جديد كيبدل CACHE ← كيتثبت Service Worker جديد والصفحة كتتجدد مرة وحدة.
   const nav = req.mode === 'navigate';
-  // ملفات SHELL كتمشي للذاكرة ديال النسخة، والباقي للذاكرة الدائمة RT (ما يغطيش على نسخة جديدة ديال SHELL)
   const appPage = nav && /\/bureau\/(index\.html)?$/.test(url.pathname);
   const inShell = appPage || SHELL_SET.has(url.href);
+  // التحميلات الثقيلة (PDF، ZIP، فيديو، files/) ما كتدخلش للذاكرة الدائمة
+  const big = /\/files\/|\.(pdf|zip|mp4|webm|mov)$/i.test(url.pathname);
+  // الصفحات (HTML) والمعطيات (JSON) خارج SHELL: من الشبكة أولا (باش ما تبقاش صفحة قديمة مع سكريبت جديد)
+  const fresh = !inShell && (nav || /\.(html|json)$/i.test(url.pathname));
+  const save = res => {
+    if (big || !(res.ok && res.status === 200 && res.type === 'basic')) return;
+    const copy = res.clone();
+    e.waitUntil(caches.open(inShell ? CACHE : RT).then(c => c.put(req, copy).then(() => { if (!inShell && ++rtN % 10 === 0) return trim(c, RT_MAX); })).catch(() => {}));
+  };
+  // بلا إنترنت: نفس الملف (حتى برقم ?v آخر) ← الصفحة الرئيسية ← صفحة «بلا إنترنت» ← 504
+  const offline = async () => {
+    if (appPage) return (await caches.match('./')) || (await caches.match('index.html'));
+    const any = await caches.match(req, { ignoreSearch: true });
+    if (any) return any;
+    if (nav) return new Response(OFF_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response('', { status: 504, statusText: 'offline' });
+  };
+  if (fresh) {
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => { save(res); return res; }).catch(offline));
+    return;
+  }
+  // ملفات التطبيق والصور: من الذاكرة فورا (فتح سريع)، والتحديث كيتجاب فالخلفية للمرة الجاية.
   e.respondWith(caches.match(req, { ignoreSearch: appPage }).then(hit => {
-    const net = fetch(req, { cache: 'no-cache' }).then(res => {
-      if (res.ok && res.status === 200 && res.type === 'basic') {
-        const copy = res.clone();
-        e.waitUntil(caches.open(inShell ? CACHE : RT).then(c => c.put(req, copy).then(() => { if (!inShell && ++rtN % 50 === 0) return trim(c, RT_MAX); })).catch(() => {}));
-      }
-      return res;
-    });
+    const net = fetch(req, { cache: 'no-cache' }).then(res => { save(res); return res; });
     if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
-    return net.catch(async () => {
-      if (appPage) return (await caches.match('./')) || (await caches.match('index.html'));
-      if (nav) return new Response(OFF_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
-      // نفس الملف برقم نسخة آخر (?v=…) محفوظ؟ أحسن من والو بلا إنترنت
-      const any = await caches.match(req, { ignoreSearch: true });
-      if (any) return any;
-      // ملف ناقص بلا إنترنت: خطأ واضح (ماشي صفحة HTML فبلاصة صورة ولا سكريبت)
-      return new Response('', { status: 504, statusText: 'offline' });
-    });
+    return net.catch(offline);
   }));
 });
 
