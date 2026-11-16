@@ -468,6 +468,7 @@
   /* ============================================================
      المطابقة الذكية بين الطلب والعقار
      ============================================================ */
+  const mezzOf = p => num(p.mezzanine) || num(p.specs && p.specs.mezzanine) || null; // الميزانين (كان قبل غير فخصائص المحل)
   const areaOf = p => num(p.areaTotal) || num(p.areaBuilt) || num(p.areaUseful) || (p.specs && num(p.specs.hectares) ? p.specs.hectares * 10000 : null);
   // نتيجة المطابقة محفوظة حسب (العقار، الطلب، آخر تعديل) — كتتحسب مرة وحدة بدل فكل صفحة
   const MATCH_CACHE = new Map();
@@ -1832,6 +1833,7 @@
             ${fSelect('priceUnit', 'الوحدة', D.PRICE_UNITS[p.transaction] || ['درهم'], p.priceUnit, { noEmpty: true })}
             ${fInput('commission', 'عمولة المكتب', p.commission, { ph: 'مثال: 2.5% أو 10 000 درهم' })}
             ${fInput('areaTotal', 'المساحة الإجمالية (م²)', p.areaTotal, { type: 'number' })}
+            ${fInput('mezzanine', 'الميزانين / Mezzanine (م²)', mezzOf(p), { type: 'number', ph: 'إلا كان' })}
             ${fInput('areaBuilt', 'المساحة المبنية (م²)', p.areaBuilt, { type: 'number' })}
             ${fInput('areaUseful', 'المساحة الصافية / المسكونة (م²)', p.areaUseful, { type: 'number' })}
             <div class="field"><label>ثمن المتر المربع</label><input id="ppm" disabled value=""></div>
@@ -2086,6 +2088,7 @@
     const specs = [];
     if (a) specs.push(`المساحة ${fmt(a)} م²`);
     if (p.areaBuilt && p.areaBuilt !== a) specs.push(`المبنية ${fmt(p.areaBuilt)} م²`);
+    if (mezzOf(p)) specs.push(`ميزانين ${fmt(mezzOf(p))} م²`);
     if (s.landArea) specs.push(`مساحة الأرض ${fmt(s.landArea)} م²`);
     if (s.hectares) specs.push(`${s.hectares} هكتار`);
     if (s.floor) specs.push(`الطابق ${s.floor}`);
@@ -2179,6 +2182,7 @@
             <div class="kv" style="margin-top:16px">
               <div><small>نوع العقار</small><b>${esc(typeAr(p.type))}</b></div>
               ${p.areaTotal ? `<div><small>المساحة الإجمالية</small><b>${fmt(p.areaTotal)} م²</b></div>` : ''}
+              ${mezzOf(p) ? `<div><small>الميزانين</small><b>${fmt(mezzOf(p))} م²</b></div>` : ''}
               ${p.areaBuilt ? `<div><small>المساحة المبنية</small><b>${fmt(p.areaBuilt)} م²</b></div>` : ''}
               ${p.areaUseful ? `<div><small>المساحة الصافية</small><b>${fmt(p.areaUseful)} م²</b></div>` : ''}
               ${specRows.join('')}
@@ -5053,7 +5057,7 @@
       const data = {
         ref: p.ref, title: p.title, transaction: p.transaction, type: p.type, city: p.city, district: p.district,
         priceMin: p.priceMin, priceMax: p.priceMax, priceUnit: p.priceUnit, negotiable: p.negotiable,
-        areaTotal: p.areaTotal, areaBuilt: p.areaBuilt, areaUseful: p.areaUseful, specs: p.specs || {}, features: p.features || [],
+        areaTotal: p.areaTotal, areaBuilt: p.areaBuilt, areaUseful: p.areaUseful, mezzanine: mezzOf(p), specs: p.specs || {}, features: p.features || [],
         description: hideDigits(p.description), createdAt: p.createdAt,
       };
       const row = { owner: me, id: p.id, agency, phone, city: p.city || null, type: p.type || null, trx: p.transaction || null,
@@ -5784,6 +5788,7 @@
           <small>${pct}% · ${L.filter(l => done.has(l.n)).length} / ${L.length} درس</small>
           <div class="btn-row" style="margin-top:12px">${next ? `<a class="btn gold" href="#/guide/${next.n}">▶ ${done.size ? 'كمّل' : 'ابدأ'}: ${esc(next.t)}</a>` : '<span class="badge green">🏆 كمّلتي كل الدروس — مبروك!</span>'}
             <a class="btn" href="files/guide/dalil-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>📘 الدليل الشامل PDF</a>
+            <a class="btn" href="files/guide/malaf-taqdimi-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>💼 الملف التقديمي PDF</a>
             <a class="btn" href="tuto/" target="_blank" rel="noopener">🎬 فيديوهات الدليل (19)</a>
             ${done.size ? '<button class="btn" id="gd-reset">↺ إعادة من الأول</button>' : ''}</div>
         </div>
@@ -8154,7 +8159,7 @@
       mk(2, { transaction: 'sale', type: 'villa', city: 'مكناس', district: 'الرياض', priceMin: 2600000, priceMax: 2900000, areaTotal: 300, areaBuilt: 420, specs: { landArea: 300, levels: 'R+1', bedrooms: 5, salons: 2, bathrooms: 4, condition: 'جيد', facades: '2' }, features: ['حديقة', 'مسبح', 'مرآب', 'سطح'], titleStatus: 'محفظ (رسم عقاري)', owner: { name: 'فاطمة الزهراء بناني', phone: '0662000002', relation: 'المالك' }, broker: { has: true, name: 'رشيد', phone: '0670000009', share: '50%' } }),
       mk(3, { transaction: 'rent', type: 'apartment', city: 'مكناس', district: 'حمرية (المدينة الجديدة)', priceMax: 3500, priceUnit: 'درهم / الشهر', areaTotal: 85, specs: { floor: '3', bedrooms: 2, salons: 1, bathrooms: 1, furnished: 'غير مفروش' }, features: ['مصعد', 'بالكون'], owner: { name: 'عبد الله التازي', phone: '0663000003' } }),
       mk(4, { transaction: 'sale', type: 'plot_house', city: 'مكناس', district: 'ويسلان', priceMin: 380000, priceMax: 420000, areaTotal: 120, specs: { zoning: 'سكن فردي', heightAllowed: 'R+2', facades: '1', streetWidth: 12 }, features: ['محفظة', 'مجهزة (ماء، كهرباء، تطهير)'], titleStatus: 'محفظ (رسم عقاري)', owner: { name: 'الحسين أمزيان', phone: '0664000004' } }),
-      mk(5, { transaction: 'sale', type: 'shop', city: 'مكناس', district: 'البساتين', priceMin: 750000, priceMax: 800000, areaTotal: 45, specs: { floor: 'سفلي (RDC)', frontage: 5, streetType: 'شارع رئيسي', mezzanine: 15 }, features: ['واجهة زجاجية', 'مرحاض'], owner: { name: 'سعيد الإدريسي', phone: '0665000005' } }),
+      mk(5, { transaction: 'sale', type: 'shop', city: 'مكناس', district: 'البساتين', priceMin: 750000, priceMax: 800000, areaTotal: 45, specs: { floor: 'سفلي (RDC)', frontage: 5, streetType: 'شارع رئيسي' }, mezzanine: 15, features: ['واجهة زجاجية', 'مرحاض'], owner: { name: 'سعيد الإدريسي', phone: '0665000005' } }),
       mk(6, { transaction: 'sale', type: 'farm', city: 'الحاجب', district: 'وسط المدينة', priceMin: 1800000, priceMax: 2000000, areaTotal: 50000, specs: { hectares: 5, water: 'ثقب مائي (سونداج)', irrigation: 'تنقيط (قطرة قطرة)', trees: 'زيتون وتفاح', treesCount: 900 }, features: ['ثقب مائي', 'كهرباء', 'منزل', 'زيتون', 'على الطريق'], titleStatus: 'محفظ (رسم عقاري)', owner: { name: 'إدريس الحاجبي', phone: '0666000006' } }),
     ];
     for (const p of props) { p.ref = await DB.nextRef('W777'); p.title = autoTitle(p); p.description = buildDescription(p); await DB.saveRec('properties', p); }
@@ -9682,7 +9687,7 @@
           await DB.setMeta('catalog_up', up);
         }
         const data = { ref: p.ref, title: p.title, transaction: p.transaction, type: p.type, city: p.city, district: p.district,
-          priceMin: p.priceMin, priceMax: p.priceMax, priceUnit: p.priceUnit, negotiable: p.negotiable, areaTotal: p.areaTotal, areaBuilt: p.areaBuilt, areaUseful: p.areaUseful,
+          priceMin: p.priceMin, priceMax: p.priceMax, priceUnit: p.priceUnit, negotiable: p.negotiable, areaTotal: p.areaTotal, areaBuilt: p.areaBuilt, areaUseful: p.areaUseful, mezzanine: mezzOf(p),
           specs: p.specs || {}, features: p.features || [], description: hideDigits(p.description || buildDescription(p)), createdAt: p.createdAt };
         const row = { owner: me, id: p.id, data, photos: paths, deleted: false };
         const h = h32(JSON.stringify(row)); next[p.id] = h;
