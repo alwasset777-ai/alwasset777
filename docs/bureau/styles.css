@@ -1861,3 +1861,7 @@ body:not(.on-home) .city-ticker { display: none; }
 @media (max-width: 899px) { .p-rail .pr-dup { display: none; } }
 /* شريط «الإعلانات الفورية» كيتخبى ملي ما كاين حتى عقار مختار (كان كيبان خاوي) */
 .ad-selbar[hidden] { display: none; }
+/* 🔢 الأرقام كتبان فالترتيب الصحيح (1 100 000 ماشي 000 100 1): خانات الأرقام والهاتف من اليسار لليمين،
+   والخانات الأخرى كتاخد الاتجاه من أول حرف (عربي ← يمين، رابط ولا أرقام ← يسار) */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea { unicode-bidi: plaintext; }
+input[data-num], input[data-money], input[inputmode="numeric"], input[inputmode="decimal"], input[type="number"], input[type="tel"] { direction: ltr; text-align: right; }
