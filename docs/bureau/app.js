@@ -898,6 +898,41 @@
     const h = m.querySelector('.page-head');
     if (h) h.after(el); else m.prepend(el);
   }
+  // 🏷️ أيقونة العنوان: نفس المربع ونفس الحجم فكل الصفحات (صورة، رسمة ولا إيموجي)
+  const EMO_LEAD = /^\s*(\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}]*)\s*/u;
+  function titleIcon() {
+    const h = main() && main().querySelector('.page-head h1');
+    if (!h || h.querySelector('.h1-ic')) return;
+    iconize(h); // الإيموجي اللي عندو صورة كيتبدل بالصورة ديالو
+    let ic0 = null;
+    const f = h.firstChild, el = h.firstElementChild;
+    if (el && f === el && el.matches('img, svg, .emo')) ic0 = el;
+    else if (f && f.nodeType === 3 && !f.nodeValue.trim() && el && el.matches('img, svg, .emo') && f.nextSibling === el) ic0 = el;
+    else if (f && f.nodeType === 3) {
+      const m = f.nodeValue.match(EMO_LEAD);
+      if (m) { f.nodeValue = f.nodeValue.slice(m[0].length); ic0 = document.createElement('span'); ic0.className = 'h1-emo'; ic0.textContent = m[1]; }
+    }
+    // صفحة رئيسية بلا أيقونة: كناخدو نفس الأيقونة ديال القائمة
+    if (!ic0 && (location.hash.split('?')[0].split('/').length <= 2)) {
+      const src = document.querySelector('.sidenav a.active img.xi, .sidenav a.active svg');
+      if (src) ic0 = src.cloneNode(true);
+    }
+    if (!ic0) return;
+    const w = document.createElement('span'); w.className = 'h1-ic'; w.setAttribute('aria-hidden', 'true');
+    h.insertBefore(w, h.firstChild); w.appendChild(ic0);
+    if (w.nextSibling && w.nextSibling.nodeType === 3) w.nextSibling.nodeValue = w.nextSibling.nodeValue.replace(/^\s+/, '');
+  }
+  // ↔️ الفلاتر: ملي ما كيكفيوش، علامة خفيفة فالطرف اللي فيه المزيد
+  function chipFade(c) {
+    const max = c.scrollWidth - c.clientWidth;
+    if (max <= 2) { c.classList.remove('fl', 'fr'); return; }
+    const sl = c.scrollLeft, rtl = getComputedStyle(c).direction === 'rtl';
+    const left = rtl ? max + sl : sl, right = rtl ? -sl : max - sl;
+    c.classList.toggle('fl', left > 4); c.classList.toggle('fr', right > 4);
+  }
+  const chipsFadeAll = () => $$('.chips:not(.wrap)').forEach(chipFade);
+  document.addEventListener('scroll', e => { const t = e.target; if (t && t.classList && t.classList.contains('chips')) chipFade(t); }, true);
+  window.addEventListener('resize', () => chipsFadeAll());
   // ☰ «المزيد» فالتيليفون: لوحة فيها كل القائمة الجانبية (نفس الروابط، مرتبة بالأقسام)
   function setupMoreNav() {
     const bt = $('#bn-more'); if (!bt) return;
@@ -1180,6 +1215,8 @@
     fx3dPage();
     subBar();
     offStrip();
+    titleIcon(); chipsFadeAll(); setTimeout(chipsFadeAll, 700);
+    document.body.classList.toggle('on-home', !a);
   }
   /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
   // بلا كود داخل HTML (onclick/onerror): كلشي هنا — باش سياسة الأمان (CSP) تمنع أي سكريبت مدسوس
@@ -2068,18 +2105,26 @@
     main().innerHTML = `
       <div class="page-head no-print">
         <a class="btn" href="#/properties">${ic('back', 18)} العقارات</a>
-        <div class="btn-row">
-          <button class="btn" id="p-fav">${ic('star', 18)} ${p.fav ? 'في المفضلة' : 'مفضلة'}</button>
-          <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
+        <button class="btn" id="p-fav">${ic('star', 18)} ${p.fav ? 'في المفضلة' : 'مفضلة'}</button>
+      </div>
+      <div class="pd-actions no-print">
+        <div class="pd-main">
           <button class="btn gold" id="p-pres">📺 عرض للزبون</button>
-          <button class="btn" id="p-poster">🖼️ ملصق إعلاني</button>
-          <a class="btn" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
-          <a class="btn" href="#/ad-maker?m=reels&p=${encodeURIComponent(p.id)}">🎬 فيديو Reels</a>
-          <a class="btn" href="#/ad-maker?m=project&p=${encodeURIComponent(p.id)}">📄 عرض PDF</a>
-          ${p.status === 'available' && !p.partner ? `<button class="btn${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
-          ${!isRent(p.transaction) && pr ? `<a class="btn" href="#/loan?price=${pr}">🏦 حساب القرض</a>` : ''}
-          ${EMBED ? '' : `<button class="btn" data-act="print">${ic('print', 18)} طباعة / PDF</button>`}
+          <button class="btn" id="p-share">${ic('share', 18)} مشاركة</button>
           <a class="btn primary" href="#/property/${p.id}/edit">${ic('edit', 18)} تعديل</a>
+        </div>
+        <div class="pd-groups">
+          <div class="pd-g"><div class="pd-gt">📢 النشر والإعلان</div><div class="btn-row">
+            <button class="btn sm" id="p-poster">🖼️ ملصق إعلاني</button>
+            <a class="btn sm" href="#/ad-maker?p=${encodeURIComponent(p.id)}">✨ إعلانات فورية</a>
+            <a class="btn sm" href="#/ad-maker?m=reels&p=${encodeURIComponent(p.id)}">🎬 فيديو Reels</a>
+            ${p.status === 'available' && !p.partner ? `<button class="btn sm${p.catalog ? ' gold' : ''}" id="p-cat">🌐 ${p.catalog ? 'فالكتالوج ✓' : 'نشر فالكتالوج'}</button>` : ''}
+          </div></div>
+          <div class="pd-g"><div class="pd-gt">📄 الوثائق والحسابات</div><div class="btn-row">
+            <a class="btn sm" href="#/ad-maker?m=project&p=${encodeURIComponent(p.id)}">📄 عرض PDF</a>
+            ${EMBED ? '' : `<button class="btn sm" data-act="print">${ic('print', 16)} طباعة</button>`}
+            ${!isRent(p.transaction) && pr ? `<a class="btn sm" href="#/loan?price=${pr}">🏦 حساب القرض</a>` : ''}
+          </div></div>
         </div>
       </div>
       ${gal.length ? `<div class="gallery ${galCls}">${gal.map((m, i) => `<div data-lb="${i}">
@@ -6707,7 +6752,7 @@
     const myKind = S.kind && KINDS[S.kind];
     const plus = myKind && !(S.agency || {}).logo ? `<a class="pr-item pr-add" href="#/${myKind.route}/me" title="زيد الشعار ديالك">＋<small>شعارك</small></a>` : '';
     const moving = tiles.length > 6;
-    rail.innerHTML = `<div class="pr-title">الشركاء</div><button class="pr-item pr-story-add" type="button" title="ستوري جديد" aria-label="ستوري جديد">＋<small>ستوري</small></button><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? tiles.join('') : ''}</div></div>${plus}`;
+    rail.innerHTML = `<div class="pr-title">الشركاء</div><button class="pr-item pr-story-add" type="button" title="ستوري جديد" aria-label="ستوري جديد">＋<small>ستوري</small></button><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? `<span class="pr-dup">${tiles.join('')}</span>` : ''}</div></div>${plus}`;
     rail.classList.remove('hidden');
     rail.onclick = e => {
       if (e.target.closest('.pr-story-add')) { e.preventDefault(); storyComposer(); return; }

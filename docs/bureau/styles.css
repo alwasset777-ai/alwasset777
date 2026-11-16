@@ -1808,7 +1808,54 @@ body.psel-mode #plist .prop-card, body.psel-mode #rlist [data-sid], body.psel-mo
 .off-prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #d71920, #111); transition: width .25s; }
 .off-strip { margin: 0 0 12px; padding: 8px 12px; border-radius: 12px; background: #111; color: #fff; font-size: 13px; border-inline-start: 4px solid #d71920; }
 /* ⚙️ أقسام الإعدادات: 4 أزرار متساويين (كيبانو كاملين حتى فالتيليفون) */
-.st-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; position: sticky; top: calc(var(--safe-t) + 74px); z-index: 5; padding: 6px; border-radius: 16px; background: color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+.st-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; position: sticky; top: calc(var(--safe-t) + 66px); z-index: 5; padding: 6px; border-radius: 16px; background: var(--surface); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
 .st-tab { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 9px 4px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .st-tab.on { background: #111; color: #fff; border-color: #111; box-shadow: inset 0 -3px 0 #d71920; }
 @media (max-width: 380px) { .st-tab { font-size: 12px; } }
+
+/* ============ v187: لمسة احترافية ============ */
+/* 🏷️ أيقونة العنوان: مربع واحد، حجم واحد */
+.page-head h1 { display: flex; align-items: center; gap: 10px; }
+.h1-ic { flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(145deg, #fff, #fbeef0); border: 1px solid rgba(215, 25, 32, .18); box-shadow: 0 3px 10px rgba(215, 25, 32, .10); color: #d71920; overflow: hidden; }
+.h1-ic img, .h1-ic .xi { width: 26px !important; height: 26px !important; object-fit: contain; vertical-align: 0 !important; margin: 0 !important; }
+.h1-ic svg { width: 22px; height: 22px; }
+.h1-ic .h1-emo, .h1-ic .emo { font-size: 20px; line-height: 1; }
+:root[data-theme="dark"] .h1-ic { background: linear-gradient(145deg, #2a2a2e, #1d1d21); border-color: rgba(255, 77, 94, .25); }
+/* ↔️ الفلاتر: حجم واحد + علامة فالطرف ملي كاين المزيد */
+.chips .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; font-size: 13.5px; }
+.chips.fl:not(.fr) { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px); mask-image: linear-gradient(to right, transparent, #000 40px); }
+.chips.fr:not(.fl) { -webkit-mask-image: linear-gradient(to left, transparent, #000 40px); mask-image: linear-gradient(to left, transparent, #000 40px); }
+.chips.fl.fr { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+/* ✍️ النصوص الرمادية أوضح */
+:root { --muted: #666a70; }
+:root[data-theme="dark"] { --muted: #a3acc0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --muted: #a3acc0; } }
+.page-head .sub, .sec-sub { font-size: 14px; line-height: 1.7; }
+/* 🎩 الرأس أنحف: الشعار داخل الشريط، وسطر المدن غير فالرئيسية */
+.topbar .logo-pill.logo-coin { height: 56px; margin: -2px 0 -6px; }
+@media (max-width: 640px) { .topbar .logo-pill.logo-coin { height: 50px; margin: -2px 0 -4px; } .city-ticker { --lg: 58px; } }
+.city-ticker { --lg: 66px; }
+body:not(.on-home) .city-ticker { display: none; }
+/* 🏠 صفحة العقار: 3 أزرار كبار + مجموعتين */
+.pd-actions { display: grid; gap: 10px; margin: 0 0 14px; }
+.pd-main { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pd-main .btn { justify-content: center; min-height: 48px; font-size: 15px; }
+.pd-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pd-g { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; }
+.pd-gt { font-size: 13px; font-weight: 800; color: var(--muted); margin-bottom: 8px; }
+.pd-g .btn-row { gap: 6px; }
+@media (max-width: 400px) { .pd-main .btn { font-size: 13.5px; padding-inline: 6px; } }
+/* 📱 الستوريات والشركاء: سطر أفقي فوق الرئيسية فالتيليفون (بحال إنستغرام) */
+@media (max-width: 899px) {
+  .home-wrap { flex-direction: column; gap: 10px; }
+  .home-wrap > .p-rail { position: static; order: -1; flex: none; width: 100%; flex-direction: row; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 20px; }
+  .p-rail .pr-title { writing-mode: horizontal-tb; font-size: 12px; flex: none; }
+  .p-rail .pr-view { max-height: none; overflow-x: auto; overflow-y: hidden; flex: 1; min-width: 0; scrollbar-width: none; -webkit-mask-image: linear-gradient(to left, #000 85%, transparent); mask-image: linear-gradient(to left, #000 85%, transparent); }
+  .p-rail .pr-view::-webkit-scrollbar { display: none; }
+  .p-rail .pr-track, .p-rail .pr-track.moving { flex-direction: row; animation: none; padding: 2px 0; }
+  .p-rail .pr-item { width: 54px; height: 54px; }
+  .home-wrap .home-main { width: 100%; }
+}
+/* النسخة الثانية ديال الشعارات (للحركة فالعمود) */
+.pr-dup { display: contents; }
+@media (max-width: 899px) { .p-rail .pr-dup { display: none; } }
