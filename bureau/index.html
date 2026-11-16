@@ -19,10 +19,54 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png?v=9" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=9">
+  <style>
+    /* 🌀 شاشة الفتح */
+    #splash { position: fixed; inset: 0; z-index: 99999; display: grid; place-items: center; overflow: hidden; background: #0b0b0c; pointer-events: none; transition: opacity .45s ease, transform .45s ease; animation: sp-auto .5s ease 12s forwards; }
+    #splash.out { opacity: 0; transform: scale(1.04); }
+    #splash .sp-bg { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,10,12,.55) 0%, rgba(10,10,12,.72) 55%, rgba(60,6,12,.92) 100%), url("icons/hero-bg2.webp?v=2") center / cover no-repeat; filter: saturate(1.05); animation: sp-zoom 6s ease-out forwards; }
+    #splash .sp-city { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 22vh; min-height: 110px; opacity: .9; }
+    #splash .sp-center { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: #fff; font-family: 'Tajawal', system-ui, sans-serif; }
+    #splash .sp-coin { width: 132px; height: 132px; perspective: 700px; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)); }
+    /* قطعة نقدية بجوج وجوه: الشعار كيتقرا مزيان من الجهتين */
+    #splash .sp-c3 { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: sp-spin 1.6s cubic-bezier(.45,.05,.55,.95) infinite; }
+    #splash .sp-c3 img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 0 0 7px #d71920; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+    #splash .sp-c3 .sp-b { transform: rotateY(180deg); }
+    #splash .sp-name { margin-top: 14px; font-size: 26px; font-weight: 800; letter-spacing: .2px; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+    #splash .sp-tag { font-size: 14px; opacity: .85; }
+    #splash .sp-dots { display: flex; gap: 6px; margin-top: 8px; }
+    #splash .sp-dots i { width: 8px; height: 8px; border-radius: 50%; background: #fff; opacity: .35; animation: sp-dot 1.2s ease-in-out infinite; }
+    #splash .sp-dots i:nth-child(2) { animation-delay: .2s; } #splash .sp-dots i:nth-child(3) { animation-delay: .4s; background: #d71920; }
+    @keyframes sp-spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+    @keyframes sp-zoom { from { transform: scale(1.12); } to { transform: scale(1); } }
+    @keyframes sp-dot { 0%, 100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-4px); } }
+    @keyframes sp-auto { to { opacity: 0; visibility: hidden; } }
+    @media (prefers-reduced-motion: reduce) { #splash .sp-c3 { animation-duration: 3.2s; } #splash .sp-bg { animation: none; } }
+  </style>
   <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- 🌀 شاشة الفتح: الشعار كيدور حتى يتحل التطبيق (كتختفي بوحدها من app.js، ولا من بعد 12 ثانية على الأكثر) -->
+  <div id="splash" aria-hidden="true">
+    <div class="sp-bg"></div>
+    <svg class="sp-city" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M0 120V92h22V70h16v22h10V58l14-10 14 10v62"/>
+        <path d="M76 120V40h30v80M82 50h6M94 50h6M82 62h6M94 62h6M82 74h6M94 74h6M82 86h6M94 86h6"/>
+        <path d="M106 120V76h24v44M130 120V30l20-14 20 14v90M140 40h6M154 40h6M140 54h6M154 54h6M140 68h6M154 68h6M140 82h6M154 82h6"/>
+        <path d="M170 120V64h26v56M196 120V48h34v72M204 58h6M216 58h6M204 72h6M216 72h6M204 86h6M216 86h6"/>
+        <path d="M244 120V8M244 12h86M244 12l18 16M262 28v-16M318 12v30M312 42h12v10h-12z" stroke="rgba(215,25,32,.85)"/>
+        <path d="M230 120V86h28V66h22v54M280 120V54h30v66M288 64h6M300 64h6M288 78h6M300 78h6M288 92h6M300 92h6"/>
+        <path d="M310 120V80l22-18 22 18v40M326 120v-20h12v20M354 120V70h24v50M378 120V90h22v30"/>
+      </g>
+    </svg>
+    <div class="sp-center">
+      <div class="sp-coin"><div class="sp-c3"><img class="sp-f" src="icons/logo.png?v=10" alt="" width="132" height="132" decoding="async"><img class="sp-b" src="icons/logo.png?v=10" alt="" width="132" height="132" decoding="async"></div></div>
+      <div class="sp-name">مجموعة الوسيط</div>
+      <div class="sp-tag">مكتبك العقاري الرقمي</div>
+      <div class="sp-dots"><i></i><i></i><i></i></div>
+    </div>
+  </div>
   <header class="topbar">
     <div class="topbar-inner">
       <button class="icon-btn back-btn hidden" id="btn-back" aria-label="رجوع" title="رجوع للصفحة السابقة">
@@ -96,10 +140,6 @@
       <div class="sep"></div>
       <div class="nav-group"><img class="xi ph" src="icons/hub/terms.webp?v=8" alt=""> القانون والمجتمع</div>
       <a href="#/terms" data-nav="terms"><span class="em"><img class="xi ph" src="icons/hub/terms.webp?v=8" alt="" decoding="async"></span> قانون التطبيق وشروط الاشتراك</a>
-      <a href="#/terms/groups" data-nav="groups"><span class="em"><img class="xi" src="icons/hub/groups.webp?v=8" alt="" decoding="async"></span> مجموعات المشتركين</a>
-      <div class="sep"></div>
-      <a class="btn gold" href="#/property/new">+ إضافة عقار</a>
-      <a class="btn" href="#/request/new">+ إضافة طلب</a>
     </nav>
     <main id="main"></main>
   </div>
