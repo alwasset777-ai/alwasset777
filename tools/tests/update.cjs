@@ -5,7 +5,7 @@ const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route(/googleapi
 await p.goto('http://localhost:8777/bureau/');await p.waitForTimeout(1500);await p.click('#seed');await p.waitForTimeout(1200);
 await p.evaluate(()=>navigator.serviceWorker.ready);await p.waitForTimeout(2500);
 const n0=await p.evaluate(async()=>(await window.W777_DB.all('properties')).length);
-await p.evaluate(()=>location.hash='#/settings');await p.waitForTimeout(1500);
+await p.evaluate(()=>location.hash='#/settings?s=app');await p.waitForTimeout(1500);
 const ver=await p.textContent('#upd-ver');
 await p.evaluate(()=>caches.open('w777-tts').then(c=>c.put('https://tts.w777.local/x',new Response('a'))));
 await p.click('#upd-full');await p.waitForTimeout(4500);

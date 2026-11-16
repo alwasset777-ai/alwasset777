@@ -33,7 +33,7 @@ const SHOT = process.env.S || '';
   const nProps = await p.evaluate(async () => { const db = await new Promise(r => { const q = indexedDB.open('wasset777_bureau'); q.onsuccess = () => r(q.result); }); return new Promise(r => { const q = db.transaction('properties').objectStore('properties').count(); q.onsuccess = () => r(q.result); }); });
   if (!nProps) bad.push('no seed props');
   // 📥 زر «حفظ للاستعمال بلا إنترنت» فالإعدادات
-  await p.evaluate(h => { location.hash = h; }, '#/settings'); await p.waitForTimeout(1500);
+  await p.evaluate(h => { location.hash = h; }, '#/settings?s=data'); await p.waitForTimeout(1500);
   await p.click('#off-save');
   for (let i = 0; i < 120; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => !!localStorage.getItem('w777_off_at') && !document.querySelector('.off-prog') && /آخر حفظ/.test((document.querySelector('#off-last') || {}).textContent || ''))) break; }
   const sv = await p.evaluate(async () => ({ at: localStorage.getItem('w777_off_at'), hash: location.hash, last: (document.querySelector('#off-last') || {}).innerText,
@@ -44,7 +44,7 @@ const SHOT = process.env.S || '';
   if (sens.length || ak.some(u => u.includes('#'))) bad.push('api keys ' + JSON.stringify(sens.concat(ak.filter(u => u.includes('#'))).slice(0, 3)));
   console.log('save', JSON.stringify(sv));
   const stk = await p.evaluate(() => document.querySelector('#btn-back') && 1);
-  if (!sv.at || sv.hash !== '#/settings' || !/آخر حفظ/.test(sv.last || '') || !sv.img || sv.api < 8) bad.push('save ' + JSON.stringify(sv));
+  if (!sv.at || sv.hash !== '#/settings?s=data' || !/آخر حفظ/.test(sv.last || '') || !sv.img || sv.api < 8) bad.push('save ' + JSON.stringify(sv));
   // نسخة جديدة كتوصل (sw.js برقم آخر) ← الذاكرة القديمة كتتمسح، والدائمة كتبقى
   SWVER = 'w777-bureau-vTEST';
   await p.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); });

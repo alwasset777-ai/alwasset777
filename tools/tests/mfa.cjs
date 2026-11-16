@@ -16,7 +16,7 @@ await p.route(/\/auth\/v1\/factors$/,r=>r.fulfill({json:{id:'f2',type:'totp',tot
 await p.route(/\/auth\/v1\/factors\/f2\/challenge/,r=>r.fulfill({json:{id:'c2'}}));
 await p.route(/\/auth\/v1\/factors\/f2\/verify/,r=>{enrolled=1;r.fulfill({json:sess('aal2')});});
 await p.route(/\/rest\/v1\/rpc\/w777_is_admin/,r=>r.fulfill({json:true}));
-await p.goto('http://127.0.0.1:8777/bureau/#/settings');await p.waitForTimeout(1500);
+await p.goto('http://127.0.0.1:8777/bureau/#/settings?s=data');await p.waitForTimeout(1500);
 await p.fill('#cl-form [name=url]','https://demo.supabase.co').catch(()=>{});
 await p.fill('#cl-form [name=key]','anon').catch(()=>{});
 await p.fill('#cl-form [name=email]','t@x.ma');await p.fill('#cl-form [name=password]','12345678');
@@ -28,7 +28,7 @@ await p.waitForSelector('#mf-code',{timeout:5000});
 await p.fill('#mf-code','123456');await p.click('#mf-ok');await p.waitForTimeout(1500);
 const on=await p.evaluate(()=>window.W777_SYNC.isOn());
 // المدير: البطاقة كتبان، التفعيل كيورّي QR وكيقبل الرمز
-await p.goto('http://127.0.0.1:8777/bureau/#/terms');await p.waitForTimeout(1500);await p.goto('http://127.0.0.1:8777/bureau/#/settings');
+await p.goto('http://127.0.0.1:8777/bureau/#/terms');await p.waitForTimeout(1500);await p.goto('http://127.0.0.1:8777/bureau/#/settings?s=security');
 await p.waitForSelector('#mfa-on',{timeout:8000});await p.click('#mfa-on');await p.waitForSelector('#mfa-code');
 const qrOk=await p.$eval('.modal img[alt=QR]',i=>i.complete&&i.naturalWidth>0);
 await p.fill('#mfa-code','654321');await p.click('#mfa-ok');await p.waitForSelector('#mfa-off',{timeout:5000});

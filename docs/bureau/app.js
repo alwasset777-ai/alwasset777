@@ -2618,6 +2618,31 @@
   /* ============================================================
      الإعدادات، النسخ الاحتياطي، القفل
      ============================================================ */
+  // ⚙️ الإعدادات مقسمة: كل خانة كتبان غير فالقسم ديالها (العنوان كيقرر القسم)
+  const ST_TABS = [['office', '🏢 المكتب'], ['data', '☁️ البيانات'], ['security', '🛡️ الأمان'], ['app', '📲 التطبيق']];
+  const stGroup = card => {
+    const t = ((card.querySelector('.section-title') || card).textContent || '');
+    if (/المزامنة|النسخ الاحتياطي|استيراد|التخزين|بلا إنترنت/.test(t)) return 'data';
+    if (/الأمان|التحقق بخطوتين|البصمة|الإشعارات|القفل/.test(t)) return 'security';
+    if (/تحديث التطبيق|تثبيت التطبيق|نسخة التجربة/.test(t)) return 'app';
+    return 'office';
+  };
+  function settingsTabs(want) {
+    const form = $('.st-form'); if (!form) return;
+    let cur = ST_TABS.some(x => x[0] === want) ? want : (() => { try { return localStorage.getItem('w777_st_tab') || 'office'; } catch (e) { return 'office'; } })();
+    if (!ST_TABS.some(x => x[0] === cur)) cur = 'office';
+    let mo = null;
+    const paint = () => {
+      if (!form.isConnected || !form.parentElement) { if (mo) mo.disconnect(); return; } // تبدلات الصفحة
+      // الخانات كاينين داخل .st-form ولا حداه مباشرة (فنفس الصفحة)
+      [...form.children, ...form.parentElement.children].forEach(c => { if (c.classList.contains('card')) c.hidden = stGroup(c) !== cur; });
+      $$('.st-tabs [data-st]').forEach(b => { b.classList.toggle('on', b.dataset.st === cur); b.setAttribute('aria-selected', b.dataset.st === cur); });
+    };
+    $$('.st-tabs [data-st]').forEach(b => b.onclick = () => { cur = b.dataset.st; try { localStorage.setItem('w777_st_tab', cur); } catch (e) { /* */ } paint(); window.scrollTo(0, 0); });
+    // الخانات اللي كتزاد ولا كتبدل من بعد (المزامنة، الإشعارات…) كتتصنف حتى هي
+    mo = new MutationObserver(paint); mo.observe(form, { childList: true }); mo.observe(form.parentElement, { childList: true });
+    paint();
+  }
   async function viewSettings() {
     const est = await DB.estimate();
     const persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : false;
@@ -2628,7 +2653,8 @@
     const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     main().innerHTML = `
       <div class="page-head"><h1>الإعدادات</h1></div>
-      <div class="form">
+      <div class="st-tabs" role="tablist">${ST_TABS.map(([k, l]) => `<button type="button" class="st-tab" role="tab" data-st="${k}">${l}</button>`).join('')}</div>
+      <div class="form st-form">
         <div class="card card-pad">
           <h3 class="section-title">${ic('building')} معلومات المكتب</h3>
           <form id="sform" class="form-grid">
@@ -2699,7 +2725,7 @@
         </div>`}
 
         <div class="card card-pad">
-          <h3 class="section-title">${ic('users')} استيراد الطلبات من جهات الاتصال (dde)</h3>
+          <h3 class="section-title">${ic('users')} استيراد الطلبات من جهات الاتصال</h3>
           <p class="muted" style="margin-top:0">كل جهة اتصال فاسمها <b>dde</b> (demande) كتولي طلب جديد بالاسم والهاتف.<br>
           <b>فالآيفون:</b> تطبيق «Contacts» ← «Listes» (فوق على اليسار) ← ضغطة طويلة على «Tous les contacts» ← «Exporter» ← «Enregistrer dans Fichiers». من بعد ورك هنا واختار الملف <b>.vcf</b>.</p>
           <div class="btn-row">
@@ -2780,6 +2806,7 @@
     $('#csv-reqs').onclick = exportReqsCsv;
     const po = $('#pin-on'); if (po) po.onclick = () => setupPin();
     bindBioCard(); bindCatalogCard(); bindStaffCard(); bindPushCard();
+    settingsTabs(parseHash().query.s);
     const pc = $('#pin-change'); if (pc) pc.onclick = () => setupPin();
     const pf = $('#pin-off'); if (pf) pf.onclick = async () => { if (await confirmBox('إلغاء القفل بالرمز السري؟', 'إلغاء القفل')) { localStorage.removeItem('w777_pin'); toast('تم إلغاء القفل'); viewSettings(); } };
     const ps = $('#persist'); if (ps) ps.onclick = async () => { const ok = await DB.persist(); toast(ok ? 'تم تفعيل الحماية ✓' : 'المتصفح رفض الطلب — ثبّت التطبيق على الشاشة الرئيسية ثم أعد المحاولة'); viewSettings(); };
@@ -2807,7 +2834,7 @@
       const last = await Sy.lastSync();
       const pending = await Sy.pending();
       return `<div class="card card-pad" id="cloud-card">
-        <h3 class="section-title">${ic('share')} المزامنة السحابية (الهاتف ↔ الماك) <span class="badge ${SYNC_COLOR[st.state]}">${esc(SYNC_LABEL[st.state])}</span></h3>
+        <h3 class="section-title">${ic('share')} المزامنة السحابية (كل أجهزتك) <span class="badge ${SYNC_COLOR[st.state]}">${esc(SYNC_LABEL[st.state])}</span></h3>
         <div class="kv">
           <div><small>الحساب</small><b>${esc(acc.email)}</b></div>
           <div><small>آخر مزامنة</small><b>${last ? esc(last.slice(0, 16).replace('T', ' ')) : '—'}</b></div>
@@ -2823,7 +2850,7 @@
     }
     const d = Sy.defaults();
     return `<div class="card card-pad" id="cloud-card">
-      <h3 class="section-title">${ic('share')} المزامنة السحابية (الهاتف ↔ الماك) <span class="badge gray">غير مفعلة</span></h3>
+      <h3 class="section-title">${ic('share')} المزامنة السحابية (كل أجهزتك) <span class="badge gray">غير مفعلة</span></h3>
       <p class="muted" style="margin-top:0">اربط التطبيق بحساب Supabase (مجاني) لتظهر نفس العقارات والطلبات والصور على كل أجهزتك تلقائيا. التطبيق يبقى يعمل بدون إنترنت.</p>
       <form id="cl-form" class="form-grid">
         ${fInput('url', 'Supabase Project URL', d.url, { ph: 'https://xxxx.supabase.co', attrs: 'dir="ltr" autocapitalize="off"' })}
@@ -5799,7 +5826,7 @@
       main().innerHTML = `<div class="page-head"><h1>${icon} ${esc(title)}</h1></div>
         <div class="card empty"><div class="big">${icon}</div><h3>دخل بالحساب ديالك أولا</h3>
         <p>كل مشترك كيدخل من «الإعدادات» ← «المزامنة السحابية» بالرمز ديالو<br>(وكالة <b dir="ltr">agence001</b> · وسيط <b dir="ltr">W001</b> · مقاولة <b dir="ltr">B001</b> · تشطيب <b dir="ltr">F001</b> · مستثمر <b dir="ltr">I001</b> · موثق <b dir="ltr">N001</b>) وكلمة السر.</p>
-        <a class="btn gold" href="#/settings">${ic('lock', 18)} الدخول</a></div>`;
+        <a class="btn gold" href="#/settings?s=data">${ic('lock', 18)} الدخول</a></div>`;
       return false;
     }
     main().innerHTML = `<div class="card empty">جاري التحميل…</div>`;
@@ -10024,7 +10051,7 @@
       await Promise.all((await caches.keys()).filter(k => !keep.includes(k)).map(k => caches.delete(k)));
     } catch (e) { /* */ }
     try { sessionStorage.setItem('w777_updated', '1'); } catch (e) { /* */ }
-    location.replace(location.pathname + '?u=' + Date.now() + '#/settings');
+    location.replace(location.pathname + '?u=' + Date.now() + '#/settings?s=app');
   }
   // الفحص التلقائي: ملي كترجع للتطبيق (التيليفون كيخلي التطبيق محلول أيام)، ومرة كل 30 دقيقة
   let updAt = 0;
