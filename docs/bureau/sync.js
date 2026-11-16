@@ -161,15 +161,21 @@
   // غير القراءة (GET + دوال القراءة)، وكتتمسح ملي يخرج الحساب.
   const API_C = 'w777-api';
   const READ_RPC = /^\/rest\/v1\/rpc\/(w777_is_admin|w777_cert_uids|w777_certs|w777_staff_brand|w777_my_status|w777_stay_busy|w777_owner_bookings)$/;
-  const isNetErr = e => e instanceof TypeError || /Failed to fetch|NetworkError|Load failed|network/i.test(String(e && e.message));
+  // غير الجداول العمومية ديال الشبكة كتتحفظ — ماشي كلمات السر، الرموز، الرسائل ولا إعدادات الوكيل
+  const SAFE_TBL = /^\/rest\/v1\/(w777_agencies|w777_shared_props|w777_news|w777_events|w777_projects|w777_stays|w777_donations|w777_disputes|w777_invest|w777_stories|w777_story_likes|w777_story_comments|w777_academy)\?/;
+  const NO_CACHE = /secret|password|token|staff|partner|msgs|agent_/i;
+  // خطأ ديال الشبكة (ماشي خطأ فالكود ولا من الخادم) — نفس الفحص فكل التطبيق
+  const isNetErr = e => /Failed to fetch|NetworkError|Load failed|Network request failed|ERR_INTERNET/i.test(String((e && e.message) || e || ''));
   // staleAt: أقدم تاريخ ديال نسخة محفوظة تعرضات (0 = المعلومات جديدة من السحابة)
-  let offAt = 0, staleAt = 0;
+  let offAt = 0, staleAt = 0, okAt = 0;
   function clearApiCache() { try { if (self.caches) caches.delete(API_C).catch(() => {}); } catch (e) { /* */ } }
   async function request(path, opts = {}) {
     const m = String(opts.method || 'GET').toUpperCase();
     const h = opts.headers || {};
-    const key = self.caches && st && path.startsWith('/rest/v1/') && (m === 'GET' || (m === 'POST' && READ_RPC.test(path)))
-      ? 'https://w777.cache/' + st.uid + path + '#' + (h.Range || '') + '|' + (h.Prefer || '') + '|' + (m === 'POST' ? opts.body || '' : '') : null;
+    const ok2c = self.caches && st && !NO_CACHE.test(path) && ((m === 'GET' && SAFE_TBL.test(path)) || (m === 'POST' && READ_RPC.test(path)));
+    // المفتاح: Range وPrefer والطلب كيتزادو فـ query (الذاكرة كتحيد أي حاجة من بعد #)
+    const uid = st && st.uid;
+    const key = ok2c ? 'https://w777.cache/' + uid + path + (path.includes('?') ? '&' : '?') + '__k=' + encodeURIComponent((h.Range || '') + '|' + (h.Prefer || '') + '|' + (m === 'POST' ? opts.body || '' : '')) : null;
     try {
       const res = await ok(await api(path, opts));
       if (key) {
@@ -177,14 +183,15 @@
         const body = await res.clone().text();
         const hd = { 'Content-Type': res.headers.get('Content-Type') || 'application/json', 'X-W777-At': String(Date.now()) };
         const cr = res.headers.get('Content-Range'); if (cr) hd['Content-Range'] = cr;
-        caches.open(API_C).then(c => c.put(key, new Response(body, { headers: hd }))).catch(() => {});
+        // ما نكتبوش إلا خرج الحساب ولا تبدل فهاد الوقت
+        if (st && st.uid === uid) caches.open(API_C).then(c => (st && st.uid === uid ? c.put(key, new Response(body, { headers: hd })) : 0)).catch(() => {});
       }
-      offAt = 0; staleAt = 0;
+      offAt = 0; staleAt = 0; okAt = Date.now();
       return res;
     } catch (e) {
-      if (key && isNetErr(e)) {
+      if (key && (isNetErr(e) || !navigator.onLine)) {
         const hit = await caches.open(API_C).then(c => c.match(key)).catch(() => null);
-        if (hit) { offAt = Date.now(); const at = +hit.headers.get('X-W777-At') || 0; if (at) staleAt = staleAt ? Math.min(staleAt, at) : at; return hit; }
+        if (hit) { offAt = Date.now(); const at = +hit.headers.get('X-W777-At') || 1; staleAt = staleAt ? Math.min(staleAt, at) : at; return hit; }
       }
       throw e;
     }
@@ -548,7 +555,7 @@
     onChange: f => changeCbs.push(f),
     // يُنفَّذ بعد كل سحب (مثلا: جلب عقارات الوكالات الشريكة)
     onPulled: f => pullHooks.push(f),
-    request, offlineAt: () => offAt, staleAt: () => staleAt, clearApiCache,
+    request, offlineAt: () => offAt, staleAt: () => staleAt, staleReset: () => { staleAt = 0; }, okAt: () => okAt, clearApiCache, isNetErr,
     uid: () => st && st.uid,
     // مول البيانات (المكتب) — الموظف كيخدم على بيانات مولاه
     dataOwner: dOwner,

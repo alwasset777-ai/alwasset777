@@ -161,7 +161,7 @@ async function install(page) {
 
 // الدخول بالحساب التجريبي (كيمر من نفس الفورم ديال التطبيق)
 async function login(page, base) {
-  await page.goto(base + '#/settings'); await page.waitForTimeout(1200);
+  await page.goto(base + '#/settings?s=data'); await page.waitForTimeout(1200);
   await page.fill('#cl-form [name=url]', 'https://demo.supabase.co').catch(() => {});
   await page.fill('#cl-form [name=key]', 'anon').catch(() => {});
   await page.fill('#cl-form [name=email]', 'demo@alwasset777.ma');

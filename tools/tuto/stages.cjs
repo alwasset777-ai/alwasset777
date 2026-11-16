@@ -7,13 +7,13 @@ module.exports = [
     async film(E) {
       await E.cap('افتح رابط التطبيق ← «إضافة إلى الشاشة الرئيسية»', async () => { await E.hold(1600); await E.scroll(380, 1500); await E.hold(500); });
       await E.cap('من «الإعدادات» أدخل رمزك (agence001…) وكلمة السر', async () => {
-        await E.go('#/settings', 900);
+        await E.go('#/settings?s=data', 900);
         await E.eval(() => ['url', 'key'].forEach(n => { const i = document.querySelector(`#cl-form [name=${n}]`); if (i) (i.closest('.field, label, div') || i).style.display = 'none'; }));
         await E.scrollTo('#cl-form [name=email]', 1200);
         await E.type('#cl-form [name=email]', 'agence001'); await E.type('#cl-form [name=password]', '••••••••');
       });
       await E.cap('اضغط «دخول» — حسابك محمي ومنفصل عن الجميع', async () => { await E.tap('#cl-in', 1800); await E.hold(900); });
-      await E.cap('«تحديث كامل للتطبيق»: آخر نسخة فضغطة', async () => { await E.go('#/settings', 1000); await E.eval(() => { const v = document.getElementById('upd-ver'); if (v) v.textContent = 'v153'; }); await E.scrollTo('#upd-full', 1300); await E.hold(1500); });
+      await E.cap('«تحديث كامل للتطبيق»: آخر نسخة فضغطة', async () => { await E.go('#/settings?s=app', 1000); await E.eval(() => { const v = document.getElementById('upd-ver'); if (v) v.textContent = 'v153'; }); await E.scrollTo('#upd-full', 1300); await E.hold(1500); });
     },
   },
   {
@@ -94,7 +94,7 @@ module.exports = [
     intro: 'تابع الكراء الشهري والوصولات، المداخيل والمصاريف والربح، واطبع تقرير الشهر بضغطة.',
     async film(E) {
       await E.cap('تدبير الكراء: الأداءات والوصولات', async () => { await E.go('#/rentals', 1300); await E.hold(1500); });
-      await E.cap('المحفظة المالية: الدخل، المصاريف والربح', async () => { await E.go('#/finance', 1300); await E.hold(1200); await E.scroll(600, 2000); });
+      await E.cap('المداخيل والمصاريف: الدخل، المصاريف والربح', async () => { await E.go('#/finance', 1300); await E.hold(1200); await E.scroll(600, 2000); });
       await E.cap('التقرير الشهري جاهز للطباعة PDF', async () => { await E.go('#/report', 1300); await E.hold(1200); await E.scroll(600, 2000); });
     },
   },
