@@ -216,7 +216,6 @@
       { k: 'floor', l: 'الطابق', t: 'select', o: ['تحت أرضي', 'سفلي (RDC)', 'ميزانين', '1', '2', '3', '4+'] },
       { k: 'frontage', l: 'طول الواجهة (م)', t: 'number' },
       { k: 'height', l: 'العلو (م)', t: 'number' },
-      { k: 'mezzanine', l: 'ميزانين (م²)', t: 'number' },
       { k: 'activity', l: 'النشاط الحالي / المسموح', t: 'text' },
       { k: 'rooms', l: 'عدد المكاتب / القاعات', t: 'number' },
       { k: 'bathrooms', l: 'المراحيض', t: 'number' },
