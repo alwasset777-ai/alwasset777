@@ -10052,6 +10052,15 @@
     setupPress3D(); setupMotion();
     setupLang();
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+    // 🌀 شاشة الفتح: كتبقى حتى يتحل التطبيق (على الأقل 0.9 ثانية باش يبان الشعار كيدور)
+    const SPLASH_MIN = 900;
+    const hideSplash = () => {
+      const sp = document.getElementById('splash'); if (!sp || sp.classList.contains('out')) return;
+      setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, Math.max(0, SPLASH_MIN - performance.now()));
+    };
+    if (EMBED) { const sp = document.getElementById('splash'); if (sp) sp.remove(); }
+    // القفل بالرمز (PIN) خاصو يبان مباشرة
+    try { if (localStorage.getItem('w777_pin')) hideSplash(); } catch (e) { /* */ }
     await lockScreen();
     await loadAll();
     loadRoleCache();
@@ -10070,6 +10079,7 @@
     window.addEventListener('popstate', () => { if (AG.open && !(history.state && history.state.ag)) agHide(); });
     const bb = $('#btn-back'); if (bb) bb.onclick = goBack;
     await route();
+    hideSplash();
     DB.persist();
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     checkAlarms(); setInterval(checkAlarms, 30000);

@@ -1859,3 +1859,5 @@ body:not(.on-home) .city-ticker { display: none; }
 /* النسخة الثانية ديال الشعارات (للحركة فالعمود) */
 .pr-dup { display: contents; }
 @media (max-width: 899px) { .p-rail .pr-dup { display: none; } }
+/* شريط «الإعلانات الفورية» كيتخبى ملي ما كاين حتى عقار مختار (كان كيبان خاوي) */
+.ad-selbar[hidden] { display: none; }
