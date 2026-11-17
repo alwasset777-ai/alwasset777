@@ -171,15 +171,19 @@ const js = `
     document.querySelectorAll('.lgs button').forEach(function (b) { b.classList.toggle('on', b.dataset.lg === lg); b.setAttribute('aria-pressed', b.dataset.lg === lg); });
     try { localStorage.setItem('w777_page_lang', lg); } catch (e) {} }
   // 📊 العدّاد: النوع واللغة والطريقة فقط (بلا اسم ولا حساب)
+  // 🔗 الرابط الخاص ديال المشترك (?ref=CODE): كيتحفظ فالجلسة
+  var REF = (function () { var r = Q.get('ref') || ''; if (!/^[A-Za-z0-9_-]{1,24}$/.test(r)) { try { r = sessionStorage.getItem('w777_ref') || ''; } catch (e) { r = ''; } } else { try { sessionStorage.setItem('w777_ref', r); } catch (e) {} }
+    return /^[A-Za-z0-9_-]{1,24}$/.test(r) ? r : ''; })();
   function log(kind, via, lang) { try { var C = window.__ALWASSET_SUPABASE__ || {}, u = String(C.url || '').replace(/\\/+$/, ''), k = C.anonKey || ''; if (!u || !k) return;
-    fetch(u + '/rest/v1/rpc/w777_share_log', { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: k, Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_kind: kind, p_via: via, p_lang: lang }) }).catch(function () {}); } catch (e) {} }
+    fetch(u + '/rest/v1/rpc/w777_share_log', { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: k, Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_kind: kind, p_via: via, p_lang: lang, p_ref: REF || null }) }).catch(function () {}); } catch (e) {} }
   window.__w777_log = log;
   set(pick());
   document.querySelectorAll('.lgs button').forEach(function (b) { b.onclick = function () { set(b.dataset.lg); window.scrollTo(0, 0); }; });
   try { if (!sessionStorage.getItem('w777_page_seen')) { sessionStorage.setItem('w777_page_seen', '1'); log('page', 'view', cur); } } catch (e) { log('page', 'view', cur); }
+  document.querySelectorAll('[data-go="join"]').forEach(function (a) { if (REF) a.href = './?gate=1&ref=' + REF; a.addEventListener('click', function () { log('page', 'join', cur); }); });
   document.querySelectorAll('[data-go="pdf"]').forEach(function (a) { a.addEventListener('click', function () { log(cur === 'fr' ? 'malaf_fr' : 'malaf', 'file', cur); }); });
   document.querySelectorAll('[data-share]').forEach(function (b) { b.onclick = function () {
-    var url = location.href.split('#')[0].split('?')[0] + '?lang=' + cur, text = W[cur].msg;
+    var url = location.href.split('#')[0].split('?')[0] + '?lang=' + cur + (REF ? '&ref=' + REF : ''), text = W[cur].msg;
     if (navigator.share) { navigator.share({ title: W[cur].title, text: text, url: url }).then(function () { log('page', 'link', cur); }).catch(function () {}); return; }
     window.open('https://wa.me/?text=' + encodeURIComponent(text + '\\n' + url), '_blank', 'noopener'); log('page', 'wa', cur); }; });
   var f = document.querySelector('.fab'); if (f) f.onclick = function () { window.scrollTo(0, 0); };
