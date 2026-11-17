@@ -1613,3 +1613,60 @@ begin
 end $$;
 revoke all on function public.w777_share_refs() from public, anon;
 grant execute on function public.w777_share_refs() to authenticated;
+
+-- ============ v195: ربط التسجيل بالرابط الخاص + أرقام الشهر (شهادة الشكر) ============
+alter table public.w777_agencies add column if not exists referred_by text;
+alter table public.w777_agencies add column if not exists ref_at timestamptz;
+create index if not exists w777_agencies_ref on public.w777_agencies (referred_by) where referred_by is not null;
+
+-- الحماية: «شكون جابو» ما كيتبدلش من بعد (غير عبر w777_set_referrer مرة وحدة، ولا المدير)
+create or replace function public.w777_ag_ref_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(current_setting('w777.ref_ok', true), '') = '1' or w777_is_admin() then return new; end if;
+  if tg_op = 'INSERT' then new.referred_by := null; new.ref_at := null;
+  else new.referred_by := old.referred_by; new.ref_at := old.ref_at; end if;
+  return new;
+end $$;
+revoke all on function public.w777_ag_ref_guard() from public, anon, authenticated;
+drop trigger if exists w777_ag_ref_guard on public.w777_agencies;
+create trigger w777_ag_ref_guard before insert or update of referred_by, ref_at on public.w777_agencies
+  for each row execute function public.w777_ag_ref_guard();
+
+-- المسجّل الجديد (خلال يومين من التسجيل) كيسجل شكون جابو — مرة وحدة، والكود خاصو يكون ديال مشترك آخر
+create or replace function public.w777_set_referrer(p_ref text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); mine text;
+begin
+  if me is null or p_ref is null or p_ref !~ '^[A-Za-z0-9_-]{1,24}$' then return false; end if;
+  select code into mine from w777_agencies where uid = me and referred_by is null and created_at > now() - interval '2 days';
+  if mine is null or mine = p_ref then return false; end if;
+  if not exists (select 1 from w777_agencies where code = p_ref and uid <> me) then return false; end if;
+  perform set_config('w777.ref_ok', '1', true);
+  update w777_agencies set referred_by = p_ref, ref_at = now() where uid = me;
+  perform set_config('w777.ref_ok', '', true);
+  return true;
+end $$;
+revoke all on function public.w777_set_referrer(text) from public, anon;
+grant execute on function public.w777_set_referrer(text) to authenticated;
+
+-- الروابط الخاصة: الزيارات، ضغطات «سجّل» والتسجيلات الحقيقية — كاملين ولا لشهر معيّن (للمدير فقط)
+drop function if exists public.w777_share_refs();
+create or replace function public.w777_share_refs(p_month date default null)
+returns table (ref text, name text, kind text, views bigint, joins bigint, signups bigint)
+language plpgsql stable security definer set search_path = public as $$
+declare m0 timestamptz := case when p_month is null then null else date_trunc('month', p_month::timestamp) end;
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  return query
+  with s as (select x.ref r, count(*) filter (where x.via = 'view') v, count(*) filter (where x.via = 'join') j from w777_shares x
+             where x.ref is not null and (m0 is null or (x.at >= m0 and x.at < m0 + interval '1 month')) group by x.ref),
+       g as (select a.referred_by r, count(*) n from w777_agencies a
+             where a.referred_by is not null and (m0 is null or (a.ref_at >= m0 and a.ref_at < m0 + interval '1 month')) group by a.referred_by),
+       k as (select s.r from s union select g.r from g)
+  select k.r, ag.name, ag.kind, coalesce(s.v, 0)::bigint, coalesce(s.j, 0)::bigint, coalesce(g.n, 0)::bigint
+  from k left join s on s.r = k.r left join g on g.r = k.r left join w777_agencies ag on ag.code = k.r
+  order by coalesce(g.n, 0) desc, coalesce(s.j, 0) desc, coalesce(s.v, 0) desc limit 50;
+end $$;
+revoke all on function public.w777_share_refs(date) from public, anon;
+grant execute on function public.w777_share_refs(date) to authenticated;

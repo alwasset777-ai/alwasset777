@@ -1874,3 +1874,8 @@ input[data-num], input[data-money], input[inputmode="numeric"], input[inputmode=
 
 /* 🔗 v194: الرابط الخاص */
 .ref-card .ref-url { font-family: ui-monospace, monospace; font-size: 13px; background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 10px 12px; word-break: break-all; text-align: left; }
+
+/* 🏅 v195: الروابط الخاصة شهر بشهر */
+.ref-months { margin: 4px 0 8px; }
+.ref-months .chip { min-height: 32px; font-size: 12.5px; }
+.share-stats .ss-row .ref-cert { grid-column: 1 / -1; justify-self: start; margin-top: 4px; }

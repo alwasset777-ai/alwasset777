@@ -11,12 +11,13 @@ await p.route(/translate|fonts\.googleapis|gstatic/,r=>r.abort());
 await p.route(/\/(rest|storage|functions)\/v1\//,r=>r.fulfill({json:[]}));
 await p.route(/\/rest\/v1\/rpc\/w777_is_admin/,r=>r.fulfill({json:false}));
 await p.route(/\/rest\/v1\/rpc\/w777_my_status/,r=>r.fulfill({json:{admin:false,staff:false,member:st.registered,ok:st.ok,email:'new@x.ma'}}));
+st.refs=[];await p.route(/\/rest\/v1\/rpc\/w777_set_referrer/,r=>{st.refs.push(JSON.parse(r.request().postData()));r.fulfill({json:true});});
 await p.route(/\/rest\/v1\/rpc\/w777_register/,r=>{st.reg=JSON.parse(r.request().postData());st.registered=true;r.fulfill({json:{code:'778',seat_no:12,seat_zone:'ma',terms_at:today}});});
 await p.route(/\/rest\/v1\/w777_agencies\?uid=eq/,r=>r.fulfill({json:st.registered?[{code:'778',name:'وكالة الاختبار',kind:'agency',active:true,terms_at:st.ok?today:'2025-01-01T00:00:00Z',sub_until:null,trial_until:null,seat_no:12,seat_zone:'ma'}]:[]}));
 await p.route(/\/auth\/v1\/otp/,r=>{st.otp=JSON.parse(r.request().postData());r.fulfill({json:{}});});
 await p.route(/\/auth\/v1\/verify/,r=>{st.verify++;const t=JSON.parse(r.request().postData()).token;if(t==='123456')r.fulfill({json:sess});else r.fulfill({status:403,json:{msg:'Token has expired or is invalid'}});});
 await p.route(/\/auth\/v1\/user/,r=>r.fulfill({json:user}));
-await p.goto('http://localhost:8777/bureau/?gate=1#/');await p.waitForTimeout(1500);
+await p.goto('http://localhost:8777/bureau/?gate=1&ref=AG042#/');await p.waitForTimeout(1500);
 const gate=await p.evaluate(()=>({gated:document.body.classList.contains('gated'),mail:!!document.getElementById('au-mail'),nav:[...document.querySelectorAll('.bottomnav,.sidenav')].map(n=>getComputedStyle(n).display).find(d=>d!=='none')||'none',scroll:document.documentElement.scrollWidth<=innerWidth+1}));
 await p.screenshot({path:S+`/otp-1-${vw.width}.png`});
 // الإيميل الغالط ← رسالة؛ الصحيح ← الكود
@@ -34,6 +35,7 @@ await p.screenshot({path:S+`/otp-3-${vw.width}.png`,fullPage:true});
 await p.fill('#rg [name=name]','وكالة الاختبار');await p.fill('#rg [name=phone]','0612345678');await p.fill('#rg [name=city]','مكناس');
 await p.click('#rg-go');await p.waitForTimeout(400);const noTerms=st.reg===null;
 await p.check('#rg-ok');await p.click('#rg-go');await p.waitForTimeout(2200);
+const refOk=await p.evaluate(()=>!localStorage.getItem('w777_ref_in'))&&st.refs.length===1&&st.refs[0].p_ref==='AG042';
 const home=await p.evaluate(()=>({gated:document.body.classList.contains('gated'),nav:[...document.querySelectorAll('.bottomnav,.sidenav')].map(n=>getComputedStyle(n).display).find(d=>d!=='none')||'none',hash:location.hash,main:document.getElementById('main').textContent.length}));
 // الحساب موقوف (المدة سالات)
 st.ok=false;await p.evaluate(()=>{localStorage.removeItem('w777_my');});await p.reload();await p.waitForTimeout(2200);
@@ -53,8 +55,8 @@ await p.evaluate(()=>{sessionStorage.removeItem('w777_gate');});await p.evaluate
 const dev=await p.evaluate(()=>!document.body.classList.contains('gated')&&!document.getElementById('au-mail'));
 const ok=gate.gated&&gate.mail&&gate.nav==='none'&&gate.scroll&&stillMail&&st.otp&&st.otp.email==='new@x.ma'&&st.otp.create_user===true&&codeStep.code&&codeStep.again&&wrong&&reg.form&&reg.on&&reg.gated&&reg.kinds>=7&&noTerms
  &&st.reg&&st.reg.p_kind==='agency'&&st.reg.p_name==='وكالة الاختبار'&&st.reg.p_country==='المغرب'&&!home.gated&&home.nav!=='none'
- &&stop.st&&/212777777959/.test(stop.wa)&&stop.txt&&stop.gated&&!back.gated&&!back.st&&out.mail&&!out.on&&link.on&&link.hash==='#/'&&dev&&!errs.length;
+ &&stop.st&&/212777777959/.test(stop.wa)&&stop.txt&&stop.gated&&!back.gated&&!back.st&&out.mail&&!out.on&&link.on&&link.hash==='#/'&&dev&&refOk&&!errs.length;
 if(!ok)bad++;
-console.log(ok?'OK ':'BAD',vw.width,'gate',JSON.stringify(gate),'otp',JSON.stringify(st.otp),'code',JSON.stringify(codeStep),'wrong',wrong,'reg',JSON.stringify(reg),'noTerms',noTerms,'regBody',JSON.stringify(st.reg),'home',JSON.stringify(home),'stop',JSON.stringify(stop),'back',JSON.stringify(back),'out',JSON.stringify(out),'link',JSON.stringify(link),'dev',dev,errs.join('|'));
+console.log(ok?'OK ':'BAD',vw.width,'gate',JSON.stringify(gate),'otp',JSON.stringify(st.otp),'code',JSON.stringify(codeStep),'wrong',wrong,'reg',JSON.stringify(reg),'noTerms',noTerms,'regBody',JSON.stringify(st.reg),'ref',refOk,JSON.stringify(st.refs),'home',JSON.stringify(home),'stop',JSON.stringify(stop),'back',JSON.stringify(back),'out',JSON.stringify(out),'link',JSON.stringify(link),'dev',dev,errs.join('|'));
 await p.close();}
 await b.close();process.exit(bad?1:0);})();
