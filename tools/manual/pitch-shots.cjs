@@ -1,18 +1,20 @@
 // صور إضافية لـ«الملف التقديمي» (فوق صور shots.cjs): صفحة كل فئة من المشتركين + الحاسوب + صفحات أخرى — معلومات خيالية
 // الاستعمال: cd docs && python3 -m http.server 8777 &  ثم  NODE_PATH=$(npm root -g) node tools/manual/pitch-shots.cjs OUTDIR
 const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs');
+// UI=fr: الواجهة بالفرنسية (الترجمة ديال التطبيق، كتحتاج الإنترنت) — للملف التقديمي بالفرنسية
+const UI = process.env.UI || ''; const XW = UI ? 1800 : 0;
 const BASE = 'http://localhost:8777/bureau/'; const OUT = process.argv[2];
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const mk = async (vp, mobile) => { const c = await b.newContext({ viewport: vp, deviceScaleFactor: 2, serviceWorkers: 'block', isMobile: mobile, hasTouch: mobile });
     const p = await c.newPage(); p.on('pageerror', e => console.log('ERR', e.message));
-    await p.addInitScript(() => { localStorage.w777_agent_voice = '0'; localStorage.w777_guide_seen = '1'; localStorage.w777_open_sound = '0'; });
-    await p.route(/googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/, r => r.abort()); await F.install(p);
+    await p.addInitScript(ui => { localStorage.w777_agent_voice = '0'; localStorage.w777_guide_seen = '1'; localStorage.w777_open_sound = '0'; if (ui) localStorage.w777_lang = ui; }, UI);
+    await p.route(UI ? /fonts\.googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/ : /googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/, r => r.abort()); await F.install(p);
     await p.goto(BASE); await p.waitForTimeout(1500);
     const sd = await p.$('#seed'); if (sd) { await sd.click(); await p.waitForTimeout(1500); }
     await F.addPhotos(p, BASE); await F.login(p, BASE); return p; };
   const clean = p => p.evaluate(() => { document.querySelectorAll('.wl-mod,.gd-tip,.toast,#splash').forEach(m => m.remove()); window.scrollTo(0, 0); });
-  const shot = async (p, name, wait = 1500) => { await p.waitForTimeout(wait); await clean(p); await p.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 76 }); console.log('✓', name); };
+  const shot = async (p, name, wait = 1500) => { await p.waitForTimeout(wait + XW); await clean(p); await p.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 76 }); console.log('✓', name); };
   const go = async (p, h, name, wait) => { await p.evaluate(h => { location.hash = h; }, h); await shot(p, name, wait); };
   // 📱 الهاتف
   const p = await mk({ width: 390, height: 780 }, true);

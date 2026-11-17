@@ -938,21 +938,32 @@
   const SHARE_PDF = {
     malaf: ['files/guide/malaf-taqdimi-majmouat-alwasset.pdf', 'الملف التقديمي — تطبيق مجموعة الوسيط', '💼 تعرّف على تطبيق مجموعة الوسيط: فريق عمل كامل فجيبك (المميزات والحلول لكل مهنة، بالصور).'],
     dalil: ['files/guide/dalil-majmouat-alwasset.pdf', 'الدليل الشامل — تطبيق مجموعة الوسيط', '📘 الدليل الشامل ديال تطبيق مجموعة الوسيط: كل خدمة خطوة بخطوة بالصور.'],
+    malaf_fr: ['files/guide/dossier-presentation-groupe-alwasset-fr.pdf', 'Dossier de présentation — Groupe Al Wasset', '💼 Découvrez l’application Groupe Al Wasset : une équipe complète dans votre poche (services et solutions par métier, en images).', 'fr'],
   };
+  // 📊 عدّاد المشاركات (بلا اسم ولا حساب: النوع، الطريقة واللغة فقط) — كيتسجل حتى بلا دخول
+  function logShare(kind, via, lang) {
+    try {
+      const C = window.__ALWASSET_SUPABASE__ || {}; const url = String(C.url || '').replace(/\/+$/, ''), key = C.anonKey || '';
+      if (!url || !key || !navigator.onLine) return;
+      fetch(url + '/rest/v1/rpc/w777_share_log', { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_kind: kind, p_via: via, p_lang: lang || null }) }).catch(() => {});
+    } catch (e) { /* */ }
+  }
   async function sharePdf(k, btn) {
     const d = SHARE_PDF[k]; if (!d) return;
-    const [rel, title, msg] = d, url = appBase() + rel, text = msg + '\n📲 التطبيق: ' + appBase();
+    const [rel, title, msg, lg] = d, url = appBase() + rel, text = msg + (lg === 'fr' ? '\n📲 Application : ' : '\n📲 التطبيق: ') + appBase();
+    const done = via => logShare(k, via, lg || 'ar');
     if (btn) btn.disabled = true;
     try {
       if (navigator.share && navigator.canShare) {
         try {
           const r = await fetch(rel); if (!r.ok) throw new Error('fetch');
           const f = new File([await r.blob()], rel.split('/').pop(), { type: 'application/pdf' });
-          if (navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title, text }); return; }
+          if (navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title, text }); done('file'); return; }
         } catch (e) { if (e && e.name === 'AbortError') return; }
       }
-      if (navigator.share) { try { await navigator.share({ title, text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-      window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n📄 ' + url), '_blank', 'noopener');
+      if (navigator.share) { try { await navigator.share({ title, text, url }); done('link'); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+      window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n📄 ' + url), '_blank', 'noopener'); done('wa');
     } finally { if (btn) btn.disabled = false; }
   }
   // 🏷️ أيقونة العنوان: نفس المربع ونفس الحجم فكل الصفحات (صورة، رسمة ولا إيموجي)
@@ -5812,6 +5823,9 @@
             <button class="btn" type="button" data-share-pdf="dalil">📤 شارك الدليل</button>
             <a class="btn" href="files/guide/malaf-taqdimi-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>💼 الملف التقديمي PDF</a>
             <button class="btn gold" type="button" data-share-pdf="malaf">📤 شارك الملف التقديمي</button>
+            <a class="btn" href="files/guide/dossier-presentation-groupe-alwasset-fr.pdf" target="_blank" rel="noopener" download>🇫🇷 Dossier de présentation</a>
+            <button class="btn" type="button" data-share-pdf="malaf_fr">📤 Partager (FR)</button>
+            <a class="btn" href="decouvrir.html" target="_blank" rel="noopener">🌐 صفحة «تعرّف على التطبيق»</a>
             <a class="btn" href="tuto/" target="_blank" rel="noopener">🎬 فيديوهات الدليل (19)</a>
             ${done.size ? '<button class="btn" id="gd-reset">↺ إعادة من الأول</button>' : ''}</div>
         </div>
@@ -6186,7 +6200,8 @@
     const isReg = a => !!(a.self_signup || a.terms_at);
     const regAt = a => a.terms_at || a.created_at || null;
     const isNew = a => isReg(a) && regAt(a) && Date.now() - new Date(regAt(a)) < 7 * 864e5;
-    main().innerHTML = head + seatBoard(ags) + `
+    setTimeout(shareStats, 0);
+    main().innerHTML = head + seatBoard(ags) + '<div id="share-stats"></div>' + `
       <div class="card card-pad" style="margin-bottom:14px">
         <div class="kv kv-sm"><div><small>👥 المسجلين</small><b>${ags.filter(isReg).length}</b></div><div><small>🆕 هاد السيمانة</small><b>${ags.filter(isNew).length}</b></div>
           <div><small>🎁 فالمدة المجانية</small><b>${ags.filter(a => isReg(a) && subInfo(a).trial).length}</b></div><div><small>💳 خالصين</small><b>${ags.filter(a => isReg(a) && subInfo(a).ok && !subInfo(a).trial && !subInfo(a).free).length}</b></div>
@@ -6609,6 +6624,24 @@
     return { ok: false, txt: `⏳ الاشتراك السنوي (${price} درهم) مستحق — تواصل مع مكتب الوسيط 777${extra}` };
   }
   // 🎟️ لوحة المدير: شحال تعمّر وشحال باقي فكل درجة، فالمغرب وخارج المغرب (حسب أكبر رقم مقعد تعطى)
+  // 📊 المشاركات وزيارات «تعرّف على التطبيق» (للمدير فقط — الأرقام من w777_share_stats)
+  async function shareStats() {
+    const box = $('#share-stats'); if (!box) return;
+    let rows = [];
+    const Sy = window.W777_SYNC; if (!Sy || !Sy.request) return;
+    try { const r = await Sy.request('/rest/v1/rpc/w777_share_stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (!r.ok) return; rows = await r.json(); } catch (e) { return; }
+    if (!Array.isArray(rows)) return;
+    if (!$('#share-stats')) return;
+    const K = [['malaf', '💼 الملف التقديمي'], ['malaf_fr', '🇫🇷 الملف بالفرنسية'], ['dalil', '📘 الدليل الشامل'], ['page', '🌐 صفحة «تعرّف على التطبيق»']];
+    const V = { file: 'ملف', link: 'رابط', wa: 'واتساب', view: 'زيارة', other: 'آخر' };
+    const sum = (k, f) => rows.filter(r => r.kind === k).reduce((n, r) => n + (+r[f] || 0), 0);
+    const tot = f => rows.reduce((n, r) => n + (+r[f] || 0), 0);
+    box.innerHTML = `<div class="card card-pad share-stats" style="margin-bottom:14px">
+      <h3 class="section-title" style="margin-top:0">📊 المشاركات والزيارات</h3>
+      <div class="kv kv-sm"><div><small>7 أيام</small><b>${fmt(tot('d7'))}</b></div><div><small>30 يوم</small><b>${fmt(tot('d30'))}</b></div><div><small>المجموع</small><b>${fmt(tot('total'))}</b></div></div>
+      <div class="ss-rows">${K.map(([k, l]) => `<div class="ss-row"><b>${l}</b><span>المجموع: ${fmt(sum(k, 'total'))}</span><small class="muted">7 أيام: ${fmt(sum(k, 'd7'))} · 30 يوم: ${fmt(sum(k, 'd30'))}</small><small class="muted">${rows.filter(r => r.kind === k && +r.total).map(r => `${esc(V[r.via] || r.via)}: ${fmt(+r.total)}`).join(' · ') || '—'}</small></div>`).join('')}</div>
+      <p class="muted" style="margin:8px 0 0;font-size:12.5px">بلا أسماء: غير شحال من مرة تشارك الملف ولا تحلّات الصفحة.</p></div>`;
+  }
   function seatBoard(ags) {
     const top = z => Math.max(0, ...ags.filter(a => a.seat_no && (a.seat_zone || 'ma') === z).map(a => a.seat_no));
     const Z = [['ma', '🇲🇦 المغرب', top('ma')], ['out', '🌍 خارج المغرب', top('out')]];
