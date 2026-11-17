@@ -1534,3 +1534,44 @@ create trigger w777_cert_news_ac after insert or update of cert_no, cert_name, p
 drop trigger if exists w777_cert_news_hd on public.w777_cert_hidden;
 create trigger w777_cert_news_hd after insert or delete on public.w777_cert_hidden
   for each row execute function public.w777_cert_news();
+
+-- ============ v193: عدّاد مشاركات الملفات والصفحة العمومية «تعرّف على التطبيق» ============
+-- غير النوع والطريقة واللغة والتاريخ: بلا اسم، بلا IP، بلا حساب
+create table if not exists public.w777_shares (
+  id bigint generated always as identity primary key,
+  kind text not null check (kind in ('malaf', 'malaf_fr', 'dalil', 'page')),
+  via text not null default 'other' check (via in ('file', 'link', 'wa', 'view', 'other')),
+  lang text check (lang is null or lang in ('ar', 'fr')),
+  at timestamptz not null default now()
+);
+create index if not exists w777_shares_at on public.w777_shares (at);
+alter table public.w777_shares enable row level security;
+revoke all on public.w777_shares from public, anon, authenticated;
+
+-- زيادة عدّة (للجميع، حتى الزوار) — بسقف باش ما يتعمرش بالكذب
+create or replace function public.w777_share_log(p_kind text, p_via text default 'other', p_lang text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_kind not in ('malaf', 'malaf_fr', 'dalil', 'page') then return; end if;
+  if p_via is null or p_via not in ('file', 'link', 'wa', 'view', 'other') then p_via := 'other'; end if;
+  if p_lang is not null and p_lang not in ('ar', 'fr') then p_lang := null; end if;
+  if (select count(*) from w777_shares where at > now() - interval '1 minute') >= 120 then return; end if;
+  insert into w777_shares (kind, via, lang) values (p_kind, p_via, p_lang);
+end $$;
+revoke all on function public.w777_share_log(text, text, text) from public;
+grant execute on function public.w777_share_log(text, text, text) to anon, authenticated;
+
+-- الأرقام: غير للمدير
+create or replace function public.w777_share_stats()
+returns table (kind text, via text, d7 bigint, d30 bigint, total bigint)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  return query select s.kind, s.via,
+    count(*) filter (where s.at > now() - interval '7 days'),
+    count(*) filter (where s.at > now() - interval '30 days'),
+    count(*)
+  from w777_shares s group by s.kind, s.via order by s.kind, s.via;
+end $$;
+revoke all on function public.w777_share_stats() from public, anon;
+grant execute on function public.w777_share_stats() to authenticated;

@@ -17,7 +17,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     await p.goto(BASE); await F.login(p, BASE);
     await p.evaluate(() => { location.hash = '#/guide'; }); await p.waitForTimeout(1500);
     const n = await p.$$eval('[data-share-pdf]', a => a.map(x => x.dataset.sharePdf).join(','));
-    if (n !== 'dalil,malaf') bad.push(mode + ' btns ' + n);
+    if (n !== 'dalil,malaf,malaf_fr') bad.push(mode + ' btns ' + n);
     await p.click('[data-share-pdf="malaf"]'); await p.waitForTimeout(1500);
     const r = await p.evaluate(() => ({ sh: window.__sh, open: window.__open }));
     if (mode === 'files') { const f = r.sh[0] && r.sh[0].files[0]; if (!f || f[0] !== 'malaf-taqdimi-majmouat-alwasset.pdf' || f[1] !== 'application/pdf' || f[2] < 100000) bad.push('files ' + JSON.stringify(r)); }

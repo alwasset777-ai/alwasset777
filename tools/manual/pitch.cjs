@@ -2,7 +2,9 @@
 // الاستعمال: 1) NODE_PATH=$(npm root -g) node tools/manual/shots.cjs SHOTS && node tools/manual/pitch-shots.cjs SHOTS
 //            2) NODE_PATH=$(npm root -g) node tools/manual/pitch.cjs SHOTS OUT.pdf
 const { chromium } = require('playwright'); const fs = require('fs'); const path = require('path');
-const C = require('./pitch-content.cjs'); const M = require('./content.cjs');
+// اللغة: PITCH_LANG=fr ← المحتوى بالفرنسية (pitch-content-fr.cjs) والصفحات من اليسار لليمين
+const LANG = process.env.PITCH_LANG === 'fr' ? 'fr' : 'ar';
+const C = require(LANG === 'fr' ? './pitch-content-fr.cjs' : './pitch-content.cjs');
 const APP = path.join(__dirname, '..', '..', 'docs', 'bureau'); const SH = path.resolve(process.argv[2]); const OUT = path.resolve(process.argv[3]);
 const VER = (fs.readFileSync(path.join(APP, 'sw.js'), 'utf8').match(/w777-bureau-v(\d+)/) || [])[1] || '';
 const APP_URL = 'https://alwasset777-ai.github.io/alwasset777/bureau/';
@@ -64,14 +66,15 @@ h1,h2,h3,h4,p{margin:0}
 .prob .pt i{font-style:normal;font-size:15pt}
 .prob .pp{padding:0 3.6mm 2.6mm;color:#555;font-size:9.2pt;line-height:1.6}
 .prob .pf{margin-top:auto;background:#111;color:#fff;padding:2.6mm 3.6mm;font-size:9.3pt;font-weight:700;line-height:1.55}
-.prob .pf::before{content:'✓ الحل: ';color:#ff8a99;font-weight:900}
+.prob .pf::before{content:var(--sol);color:#ff8a99;font-weight:900}
+:root{--sol:'✓ الحل: '}
 /* الفريق */
 .team{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;margin-top:6mm}
 .tm{border:1px solid #e3e3e3;border-radius:4mm;padding:3mm 3.2mm;display:flex;gap:2.6mm;align-items:center;background:#fff}
 .tm .n{font-size:8pt;font-weight:900;color:#fff;background:#c8102e;border-radius:2mm;min-width:7mm;height:7mm;display:grid;place-items:center}
 .tm i{font-style:normal;font-size:16pt}
 .tm:last-child:nth-child(3n+1){grid-column:2}
-.tm b{display:block;font-size:9.6pt;line-height:1.35}.tm small{display:block;font-size:7.6pt;color:#888;direction:ltr;text-align:right}
+.tm b{display:block;font-size:9.6pt;line-height:1.35}.tm small{display:block;font-size:7.6pt;color:#888;unicode-bidi:plaintext;text-align:start}
 .note{margin-top:6mm;background:#111;color:#fff;border-radius:4mm;padding:4mm 5mm;font-size:10.4pt;line-height:1.75;display:flex;gap:3mm}
 .note b{color:#ffcfd6;white-space:nowrap}
 .hub{display:flex;align-items:center;gap:6mm;margin-top:6mm;padding:4mm 5mm;border-radius:5mm;background:linear-gradient(135deg,#fff,#fbeef0);border:1px solid #f1d3d8}
@@ -82,7 +85,7 @@ h1,h2,h3,h4,p{margin:0}
 .rl .head{display:flex;align-items:flex-start;gap:4mm;padding-bottom:3mm;border-bottom:1.4px solid #111}
 .rl .num{font-size:28pt;font-weight:900;line-height:.95;color:#c8102e;min-width:15mm}
 .rl .head h2{font-size:18.5pt;font-weight:900;line-height:1.25}
-.rl .head small{display:block;font-size:9.4pt;color:#777;font-weight:700;margin-top:.4mm;direction:ltr;text-align:right}
+.rl .head small{display:block;font-size:9.4pt;color:#777;font-weight:700;margin-top:.4mm;unicode-bidi:plaintext;text-align:start}
 .rl .tag{margin-inline-start:auto;font-size:8pt;font-weight:800;color:#fff;background:#111;border-radius:99px;padding:.8mm 3.4mm;white-space:nowrap;align-self:flex-start}
 .rl .job{margin-top:3.6mm;background:#f6f6f6;border-inline-start:1.4mm solid #9a9a9a;border-radius:0 3mm 3mm 0;padding:2.6mm 4mm;font-size:10.2pt;color:#333}
 .rl .job b{color:#111}
@@ -164,88 +167,91 @@ table.tt{width:100%;border-collapse:separate;border-spacing:0;margin-top:6mm;fon
 .end .band{position:absolute;bottom:0;left:0;right:0;height:7mm;background:#c8102e}
 `;
 
-const pages = []; const foot = label => `<div class="foot"><span>تطبيق <b>مجموعة الوسيط</b> — الملف التقديمي</span><span>${e(label || '')}</span><span class="lat">${pages.length + 1}</span></div>`;
-const R = C.roles.length;
+const U = C.ui;
+const pages = []; const foot = label => `<div class="foot"><span>${U.footL}</span><span>${e(label || '')}</span><span class="lat">${pages.length + 1}</span></div>`;
+const R = C.roles.length; const T = s => String(s).replace(/\{R\}/g, R);
 // 1) الغلاف
 pages.push(`<section class="pg cover"><div class="grid"></div><div class="band"></div>
-  <div class="top"><img class="lg" src="${LOGO_W}" alt="مجموعة الوسيط">
-    <div class="kk">DOSSIER DE PRÉSENTATION · الملف التقديمي</div>
-    <h1>تطبيق <span>مجموعة الوسيط</span><br>فريق عمل كامل… فجيبك</h1>
-    <p class="sub">التطبيق اللي كيقوم بخدمة ${R} موظف فمكتب عقاري، وكيحل المشاكل اليومية ديال الوكالات والوسطاء والمقاولات والمستثمرين والموثقين والوداديات — بالصور من داخل التطبيق.</p></div>
+  <div class="top"><img class="lg" src="${LOGO_W}" alt="${e(U.brand)}">
+    <div class="kk">${U.coverKick}</div>
+    <h1>${U.coverH1}</h1>
+    <p class="sub">${e(T(U.coverSub))}</p></div>
   <div class="stage">${laptop('desk-home')}${phone('home2')}</div>
-  <div class="bot"><span>مكناس · المملكة المغربية · <b class="lat">2026</b></span><span>النسخة <b class="lat">v${e(VER)}</b></span></div></section>`);
+  <div class="bot"><span>${U.coverPlace} · <b class="lat">2026</b></span><span>${U.version} <b class="lat">v${e(VER)}</b></span></div></section>`);
 // 2) المشكل والحل
-pages.push(`<section class="pg"><div class="kick">LE CONSTAT · المشكل والحل</div>
-  <h2 class="big">المهني العقاري كيخدم بزاف… <span>والتطبيق كيخدم معاه</span></h2>
-  <p class="lead">فالمغرب، أغلب المكاتب العقارية كتخدم بالدفاتر والواتساب والذاكرة. النتيجة: زبناء كيضيعو، عمولات كتضيع، ومصاريف كبيرة على الموظفين والتسويق. «مجموعة الوسيط» كتجمع كل هاد الخدمات فتطبيق واحد، فالهاتف والحاسوب.</p>
-  <div class="kpis">${[[String(R), 'مهمة كيقوم بها التطبيق'], ['+40', 'خدمة وأداة'], ['7', 'فئات مهنية'], ['6', 'أشهر مجانية']].map(([n, t]) => `<div class="kpi"><b class="lat">${n}</b><small>${t}</small></div>`).join('')}</div>
+pages.push(`<section class="pg"><div class="kick">${U.k1}</div>
+  <h2 class="big">${U.h1}</h2>
+  <p class="lead">${e(U.lead1)}</p>
+  <div class="kpis">${[[String(R), U.kpi[0]], ['+40', U.kpi[1]], ['7', U.kpi[2]], ['6', U.kpi[3]]].map(([n, t]) => `<div class="kpi"><b class="lat">${n}</b><small>${e(t)}</small></div>`).join('')}</div>
   <div class="probs">${C.problems.map(([i, t, p, f]) => `<div class="prob"><div class="pt"><i>${i}</i>${e(t)}</div><p class="pp">${e(p)}</p><div class="pf">${e(f)}</div></div>`).join('')}</div>
-  ${foot('المشكل والحل')}</section>`);
+  ${foot(U.f1)}</section>`);
 // 3) الفريق
-pages.push(`<section class="pg"><div class="kick">VOTRE ÉQUIPE · الفريق ديالك</div>
-  <h2 class="big">${R} موظف… <span>فتطبيق واحد</span></h2>
-  <div class="hub"><img src="${LOGO_D}" alt="مجموعة الوسيط"><p>كل خانة هنا هي خدمة كانت كتحتاج موظف ولا خدمة مخلصة. فـ<b>مجموعة الوسيط</b> كتلقاها كاملة، منظمة ومربوطة ببعضها: العقار اللي كتزيدو كيبان فالمطابقة، فالإعلان، فالفيديو، فالتقرير وفالشبكة — بلا ما تعاود تكتبو.</p></div>
+pages.push(`<section class="pg"><div class="kick">${U.k2}</div>
+  <h2 class="big">${T(U.h2)}</h2>
+  <div class="hub"><img src="${LOGO_D}" alt="${e(U.brand)}"><p>${U.hub}</p></div>
   <div class="team">${C.roles.map((r, i) => `<div class="tm"><span class="n lat">${two(i + 1)}</span><i>${r.ic}</i><span><b>${e(r.t)}</b><small>${e(r.en)}</small></span></div>`).join('')}</div>
-  <div class="note"><b>💡 للتوضيح:</b><span>التطبيق ما كيعوضش العلاقة الإنسانية مع الزبون ولا الخبرة ديالك. هو كيقوم بالخدمة المتكررة والتقنية، باش نتا والفريق ديالك (ولا نتا بوحدك) تخدمو بقوة مكتب كبير، وتربحو الوقت للزيارات والتفاوض والصفقات.</span></div>
-  ${foot('الفريق')}</section>`);
+  <div class="note"><b>${U.noteT}</b><span>${e(U.note)}</span></div>
+  ${foot(U.f2)}</section>`);
 // 4) فاصل: الموظفين
-pages.push(`<section class="pg sec-open"><div class="grid"></div><div class="in"><div class="nn lat">01</div><h2>الخدمات اللي كيقوم بها التطبيق<br>بلاصة الموظفين</h2>
-  <p>لكل موظف: شنو كان كيدير، شنو كيدير التطبيق بلاصتو، الفرق قبل وبعد، وصور حقيقية من داخل التطبيق (المعلومات فالصور خيالية).</p>
+pages.push(`<section class="pg sec-open"><div class="grid"></div><div class="in"><div class="nn lat">01</div><h2>${U.s1h}</h2>
+  <p>${e(U.s1p)}</p>
   <div class="chips">${C.roles.map(r => `<span>${r.ic} ${e(r.t)}</span>`).join('')}</div></div><div class="band"></div></section>`);
 // 5) صفحة لكل موظف
 C.roles.forEach((r, i) => {
-  pages.push(`<section class="pg rl"><div class="head"><div class="num lat">${two(i + 1)}</div><div><h2>${r.ic} ${e(r.t)}</h2><small>${e(r.en)}</small></div><span class="tag">الموظف ${i + 1} من ${R}</span></div>
-    <p class="job"><b>شنو كان كيدير:</b> ${e(r.job)}</p>
-    <div class="mid"><div><h4><i>✓</i>شنو كيدير التطبيق بلاصتو</h4><ul>${r.does.map(d => `<li>${e(d)}</li>`).join('')}</ul></div>
-      <div class="ba"><div class="b4"><small>✕ قبل</small>${e(r.before)}</div><div class="af"><small>✓ مع التطبيق</small>${e(r.after)}</div></div></div>
+  pages.push(`<section class="pg rl"><div class="head"><div class="num lat">${two(i + 1)}</div><div><h2>${r.ic} ${e(r.t)}</h2><small>${e(r.en)}</small></div><span class="tag">${e(U.tag(i + 1, R))}</span></div>
+    <p class="job"><b>${U.jobT}</b> ${e(r.job)}</p>
+    <div class="mid"><div><h4><i>✓</i>${U.doesT}</h4><ul>${r.does.map(d => `<li>${e(d)}</li>`).join('')}</ul></div>
+      <div class="ba"><div class="b4"><small>✕ ${U.before}</small>${e(r.before)}</div><div class="af"><small>✓ ${U.after}</small>${e(r.after)}</div></div></div>
     <div class="phones n${r.shots.length}">${r.shots.map(s => phone(s)).join('')}</div>
     ${foot(r.t)}</section>`);
 });
 // 6) الوقت
-pages.push(`<section class="pg"><div class="kick">GAIN DE TEMPS · الوقت اللي كتربح</div>
-  <h2 class="big">قبل… <span>ومع التطبيق</span></h2>
-  <p class="lead">هاد الأمثلة كتبين الفرق فالخدمة اليومية. الوقت اللي كتربح كتستثمرو فالزيارات، التفاوض، والبحث على عقارات وزبناء جداد.</p>
-  <table class="tt"><thead><tr><th>المهمة</th><th>✕ بلا التطبيق</th><th>✓ مع التطبيق</th></tr></thead><tbody>${C.times.map(([a, b, c]) => `<tr><td>${e(a)}</td><td>${e(b)}</td><td>${e(c)}</td></tr>`).join('')}</tbody></table>
-  <p class="disc">* الأوقات تقديرية وكتختلف حسب المكتب وطريقة الخدمة.</p>
-  <div class="note" style="margin-top:6mm"><b>📌 الخلاصة:</b><span>مكتب صغير بموظف ولا جوج + «مجموعة الوسيط» = نفس الإنتاجية ديال مكتب كبير، بمصاريف أقل، وبصورة احترافية قدام الزبون.</span></div>
+pages.push(`<section class="pg"><div class="kick">${U.k3}</div>
+  <h2 class="big">${U.h3}</h2>
+  <p class="lead">${e(U.lead3)}</p>
+  <table class="tt"><thead><tr>${U.th.map(x => `<th>${e(x)}</th>`).join('')}</tr></thead><tbody>${C.times.map(([a, b, c]) => `<tr><td>${e(a)}</td><td>${e(b)}</td><td>${e(c)}</td></tr>`).join('')}</tbody></table>
+  <p class="disc">${e(U.disc)}</p>
+  <div class="note" style="margin-top:6mm"><b>${U.sumT}</b><span>${e(U.sum)}</span></div>
   <div style="margin:6mm auto 0;width:112mm">${laptop('desk-properties')}</div>
-  ${foot('الوقت')}</section>`);
+  ${foot(U.f3)}</section>`);
 // 7) فاصل: المشتركين
-pages.push(`<section class="pg sec-open"><div class="grid"></div><div class="in"><div class="nn lat">02</div><h2>حل لكل مشترك<br>حسب المهنة ديالو</h2>
-  <p>«مجموعة الوسيط» شبكة ديال 7 فئات مهنية. لكل فئة: المشاكل اليومية ديالها، وكيفاش التطبيق كيحلها خطوة بخطوة.</p>
+pages.push(`<section class="pg sec-open"><div class="grid"></div><div class="in"><div class="nn lat">02</div><h2>${U.s2h}</h2>
+  <p>${e(U.s2p)}</p>
   <div class="chips">${C.subs.map(s => `<span>${s.ic} ${e(s.t)}</span>`).join('')}</div></div><div class="band"></div></section>`);
 // 8) صفحة لكل فئة
 C.subs.forEach(s => {
-  pages.push(`<section class="pg sb"><div class="head" style="background:${s.c}"><i>${s.ic}</i><div><small>حلول لـ</small><h2>${e(s.t)}</h2></div></div>
-    <div class="cols"><div class="col pain"><h4>المشاكل اليومية</h4><ul>${s.pains.map(x => `<li>${e(x)}</li>`).join('')}</ul></div>
-      <div class="col fix"><h4>الحل فالتطبيق</h4><ul>${s.fix.map(x => `<li>${e(x)}</li>`).join('')}</ul></div></div>
+  pages.push(`<section class="pg sb"><div class="head" style="background:${s.c}"><i>${s.ic}</i><div><small>${U.forT}</small><h2>${e(s.t)}</h2></div></div>
+    <div class="cols"><div class="col pain"><h4>${U.painT}</h4><ul>${s.pains.map(x => `<li>${e(x)}</li>`).join('')}</ul></div>
+      <div class="col fix"><h4>${U.fixT}</h4><ul>${s.fix.map(x => `<li>${e(x)}</li>`).join('')}</ul></div></div>
     <div class="phones">${s.shots.map(x => phone(x)).join('')}</div>
     ${foot(s.t)}</section>`);
 });
 // 9) مميزات مشتركة + البداية
-pages.push(`<section class="pg"><div class="kick">POUR TOUS · لجميع المشتركين</div>
-  <h2 class="big">مميزات <span>كتجمع الكل</span></h2>
+pages.push(`<section class="pg"><div class="kick">${U.k4}</div>
+  <h2 class="big">${U.h4}</h2>
   <div class="feats">${C.common.map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
-  <h2 class="big" style="margin-top:8mm;font-size:19pt">كيفاش تبدا <span>فـ 3 خطوات</span></h2>
-  <div class="steps3">${[['login', 'حل الرابط وكتب الإيميل', 'كود من 6 أرقام كيوصلك فالحين، بلا كلمة سر.'], ['register', 'ختار الفئة ديالك', 'الاسم، الهاتف والمدينة — والحساب كيتفعّل مباشرة.'], ['home2', 'بدا الخدمة', 'زيد أول عقار وأول زبون، والتطبيق كيكمل معاك.']].map(([n, t, d], i) => `<div class="st">${phone(n)}<b><span class="lat">${i + 1}</span>${e(t)}</b><small>${e(d)}</small></div>`).join('')}</div>
-  ${foot('البداية')}</section>`);
+  <h2 class="big" style="margin-top:8mm;font-size:19pt">${U.h5}</h2>
+  <div class="steps3">${U.steps.map(([n, t, d], i) => `<div class="st">${phone(n)}<b><span class="lat">${i + 1}</span>${e(t)}</b><small>${e(d)}</small></div>`).join('')}</div>
+  ${foot(U.f4)}</section>`);
 // 10) العرض
-pages.push(`<section class="pg"><div class="kick">OFFRE 777 · العرض</div>
-  <h2 class="big">عرض 777 <span>للأوائل</span></h2>
-  <p class="lead">كل واحد كيتسجل كياخد رقم مقعد فالفئة ديالو، والامتياز كيتحدد بالترتيب. الرقم والامتياز كيبانو فالرئيسية وفـ«حسابي». عدد الأعضاء بلا حد.</p>
-  <div class="offer">${M.offer.map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
-  <h2 class="big" style="margin-top:9mm;font-size:19pt">الأمان <span>والخصوصية</span></h2>
-  <div class="feats">${M.security.slice(0, 6).map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
-  ${foot('العرض والأمان')}</section>`);
+pages.push(`<section class="pg"><div class="kick">${U.k5}</div>
+  <h2 class="big">${U.h6}</h2>
+  <p class="lead">${e(U.lead6)}</p>
+  <div class="offer">${C.offer.map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
+  <h2 class="big" style="margin-top:9mm;font-size:19pt">${U.h7}</h2>
+  <div class="feats">${C.security.slice(0, 6).map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
+  ${foot(U.f5)}</section>`);
 // 11) الختام
 pages.push(`<section class="pg end"><div class="grid"></div><div class="in">
-  <img class="lg" src="${LOGO_W}" alt="مجموعة الوسيط">
-  <h2>فريقك الرقمي <span>واجد</span><br>غير بدا</h2><p class="slog">مع الوسيط… حلك بسيط</p>
+  <img class="lg" src="${LOGO_W}" alt="${e(U.brand)}">
+  <h2>${U.endH}</h2><p class="slog">${e(U.slogan)}</p>
   <div class="qr" id="qr"></div>
-  <p class="ct">سكاني الرمز ولا حل: <b class="lat">${APP_URL}</b><br>التسجيل بالإيميل · 6 أشهر مجانية<br>📞 <b class="lat">0777 77 79 59</b> · <b class="lat">0777 77 78 48</b> — مكناس</p></div><div class="band"></div></section>`);
+  <p class="ct">${U.scan} <b class="lat">${APP_URL}</b><br>${U.endL2}<br>📞 <b class="lat">0777 77 79 59</b> · <b class="lat">0777 77 78 48</b> — ${U.city}</p></div><div class="band"></div></section>`);
 
-const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>${css}</style></head><body>${pages.join('')}
+let html = `<!doctype html><html lang="${U.lang}" dir="${U.dir}"><head><meta charset="utf-8"><style>${css}${U.css || ''}</style></head><body>${pages.join('')}
 <script src="${u(path.join(APP, 'vendor/qrcode.js'))}"></script><script>const q=qrcode(0,'M');q.addData(${JSON.stringify(APP_URL)});q.make();document.getElementById('qr').innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true});</script></body></html>`;
+// الفاصلة ’ كتبان معوجة فخط Tajawal ← كنستعملو ' العادية
+if (LANG === 'fr') html = html.replace(/’/g, "'");
 (async () => {
   const tmp = path.join(path.dirname(OUT), '_pitch.html'); fs.writeFileSync(tmp, html);
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }); const p = await b.newPage();

@@ -1,6 +1,8 @@
 // صور الدليل الشامل: كل صفحة بالحساب التجريبي (معلومات خيالية)
 // الاستعمال: cd docs && python3 -m http.server 8777 &  ثم  NODE_PATH=$(npm root -g) node tools/manual/shots.cjs OUTDIR
 const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs');
+// UI=fr: الواجهة بالفرنسية (الترجمة ديال التطبيق، كتحتاج الإنترنت) — للملف التقديمي بالفرنسية
+const UI = process.env.UI || ''; const XW = UI ? 1800 : 0;
 const BASE = 'http://localhost:8777/bureau/'; const OUT = process.argv[2];
 const CERTS = [
   { cert_no: 'W777-AC-2026-K7Q2PA', cert_name: 'يوسف العلوي', cert_date: Date.now() - 3 * 864e5, avg: 0.92, mine: false, hidden: false },
@@ -10,19 +12,20 @@ const CERTS = [
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const mk = async () => { const c = await b.newContext({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 2, serviceWorkers: 'block', isMobile: true, hasTouch: true });
     const p = await c.newPage(); p.on('pageerror', e => console.log('ERR', e.message));
-    await p.addInitScript(() => { localStorage.w777_agent_voice = '0'; localStorage.w777_guide_seen = '1'; });
-    await p.route(/googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/, r => r.abort()); await F.install(p);
+    await p.addInitScript(ui => { localStorage.w777_agent_voice = '0'; localStorage.w777_guide_seen = '1'; if (ui) localStorage.w777_lang = ui; }, UI);
+    await p.route(UI ? /fonts\.googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/ : /googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/, r => r.abort()); await F.install(p);
     await p.route(/\/rest\/v1\/rpc\/w777_certs/, r => r.fulfill({ json: CERTS }));
     await p.route(/\/rest\/v1\/rpc\/w777_cert_uids/, r => r.fulfill({ json: [] }));
     await p.route(/\/rest\/v1\/rpc\/w777_cert_check/, r => r.fulfill({ json: [CERTS[0]] }));
     return p; };
   const clean = p => p.evaluate(() => { document.querySelectorAll('.wl-mod,.gd-tip,.toast').forEach(m => m.remove()); window.scrollTo(0, 0); });
-  const shot = async (p, name, wait = 1400) => { await p.waitForTimeout(wait); await clean(p); await p.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 74 }); console.log('✓', name); };
+  const shot = async (p, name, wait = 1400) => { await p.waitForTimeout(wait + XW); await clean(p); await p.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 74 }); console.log('✓', name); };
   const go = async (p, h, name, wait) => { await p.evaluate(h => { location.hash = h; }, h); await shot(p, name, wait); };
   // 1) الدخول بالإيميل (بلا حساب): البوابة ← الكود ← البطاقة (خادم مزيف بحال tools/tests/otp.cjs)
   { const c = await b.newContext({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 2, serviceWorkers: 'block', isMobile: true, hasTouch: true }); const a = await c.newPage();
     const user = { id: '22222222-2222-2222-2222-222222222222', email: 'nouveau@exemple.ma', factors: [] };
-    await a.route(/translate|fonts\.googleapis|gstatic/, r => r.abort());
+    await a.addInitScript(ui => { if (ui) localStorage.w777_lang = ui; }, UI);
+    await a.route(UI ? /fonts\.googleapis|gstatic/ : /translate|fonts\.googleapis|gstatic/, r => r.abort());
     await a.route(/\/(rest|storage|functions)\/v1\//, r => r.fulfill({ json: [] }));
     await a.route(/\/rest\/v1\/rpc\/w777_is_admin/, r => r.fulfill({ json: false }));
     await a.route(/\/rest\/v1\/rpc\/w777_my_status/, r => r.fulfill({ json: { admin: false, staff: false, member: false, ok: true, email: user.email } }));

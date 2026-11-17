@@ -1865,3 +1865,9 @@ body:not(.on-home) .city-ticker { display: none; }
    والخانات الأخرى كتاخد الاتجاه من أول حرف (عربي ← يمين، رابط ولا أرقام ← يسار) */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea { unicode-bidi: plaintext; }
 input[data-num], input[data-money], input[inputmode="numeric"], input[inputmode="decimal"], input[type="number"], input[type="tel"] { direction: ltr; text-align: right; }
+
+/* 📊 v193: المشاركات للمدير */
+.share-stats .ss-rows { display: grid; gap: 6px; margin-top: 10px; }
+.share-stats .ss-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.share-stats .ss-row span { font-weight: 800; white-space: nowrap; }
+.share-stats .ss-row small { grid-column: 1 / -1; }
