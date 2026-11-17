@@ -1575,3 +1575,41 @@ begin
 end $$;
 revoke all on function public.w777_share_stats() from public, anon;
 grant execute on function public.w777_share_stats() to authenticated;
+
+-- ============ v194: رابط خاص لكل مشترك (decouvrir.html?ref=CODE) + ضغطات «سجّل» ============
+alter table public.w777_shares add column if not exists ref text;
+alter table public.w777_shares drop constraint if exists w777_shares_ref_check;
+alter table public.w777_shares add constraint w777_shares_ref_check check (ref is null or ref ~ '^[A-Za-z0-9_-]{1,24}$');
+alter table public.w777_shares drop constraint if exists w777_shares_via_check;
+alter table public.w777_shares add constraint w777_shares_via_check check (via in ('file', 'link', 'wa', 'view', 'join', 'other'));
+create index if not exists w777_shares_ref on public.w777_shares (ref) where ref is not null;
+
+drop function if exists public.w777_share_log(text, text, text);
+create or replace function public.w777_share_log(p_kind text, p_via text default 'other', p_lang text default null, p_ref text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_kind not in ('malaf', 'malaf_fr', 'dalil', 'page') then return; end if;
+  if p_via is null or p_via not in ('file', 'link', 'wa', 'view', 'join', 'other') then p_via := 'other'; end if;
+  if p_lang is not null and p_lang not in ('ar', 'fr') then p_lang := null; end if;
+  if p_ref is not null and p_ref !~ '^[A-Za-z0-9_-]{1,24}$' then p_ref := null; end if;
+  if (select count(*) from w777_shares where at > now() - interval '1 minute') >= 120 then return; end if;
+  insert into w777_shares (kind, via, lang, ref) values (p_kind, p_via, p_lang, p_ref);
+end $$;
+revoke all on function public.w777_share_log(text, text, text, text) from public;
+grant execute on function public.w777_share_log(text, text, text, text) to anon, authenticated;
+
+-- أكثر المشتركين جلباً للزيارات (للمدير فقط): الكود ← الاسم من w777_agencies
+create or replace function public.w777_share_refs()
+returns table (ref text, name text, kind text, views bigint, joins bigint, d30 bigint)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  return query select s.ref, max(a.name), max(a.kind),
+    count(*) filter (where s.via = 'view'), count(*) filter (where s.via = 'join'),
+    count(*) filter (where s.at > now() - interval '30 days')
+  from w777_shares s left join w777_agencies a on a.code = s.ref
+  where s.ref is not null group by s.ref
+  order by count(*) filter (where s.via = 'join') desc, count(*) filter (where s.via = 'view') desc limit 50;
+end $$;
+revoke all on function public.w777_share_refs() from public, anon;
+grant execute on function public.w777_share_refs() to authenticated;

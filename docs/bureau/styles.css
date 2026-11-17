@@ -1871,3 +1871,6 @@ input[data-num], input[data-money], input[inputmode="numeric"], input[inputmode=
 .share-stats .ss-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .share-stats .ss-row span { font-weight: 800; white-space: nowrap; }
 .share-stats .ss-row small { grid-column: 1 / -1; }
+
+/* 🔗 v194: الرابط الخاص */
+.ref-card .ref-url { font-family: ui-monospace, monospace; font-size: 13px; background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 10px 12px; word-break: break-all; text-align: left; }

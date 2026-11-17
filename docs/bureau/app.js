@@ -940,6 +940,31 @@
     dalil: ['files/guide/dalil-majmouat-alwasset.pdf', 'الدليل الشامل — تطبيق مجموعة الوسيط', '📘 الدليل الشامل ديال تطبيق مجموعة الوسيط: كل خدمة خطوة بخطوة بالصور.'],
     malaf_fr: ['files/guide/dossier-presentation-groupe-alwasset-fr.pdf', 'Dossier de présentation — Groupe Al Wasset', '💼 Découvrez l’application Groupe Al Wasset : une équipe complète dans votre poche (services et solutions par métier, en images).', 'fr'],
   };
+  // 🔗 v194: الرابط الخاص ديال المشترك ← decouvrir.html?ref=CODE (الكود ديال الوكالة) — الزيارات وضغطات «سجّل» كيتحسبو ليه
+  const REF_OK = /^[A-Za-z0-9_-]{1,24}$/;
+  const myRef = () => { const c = S.role === 'agency' && S.agency && String(S.agency.code || ''); return c && REF_OK.test(c) ? c : ''; };
+  const refUrl = () => appBase() + 'decouvrir.html' + (myRef() ? '?ref=' + encodeURIComponent(myRef()) : '');
+  function refCard() {
+    if (EMBED) return '';
+    const r = myRef();
+    return `<div class="card card-pad ref-card" style="margin:0 0 16px">
+      <h3 class="section-title" style="margin-top:0">🔗 ${r ? 'رابطك الخاص' : 'رابط صفحة «تعرّف على التطبيق»'}</h3>
+      <p class="muted" style="margin-top:0">${r ? 'صيفط هاد الرابط لزملائك: كل زيارة وكل ضغطة على «سجّل» كتتحسب ليك، والمدير كيشوف الترتيب.' : 'صفحة بالعربية والفرنسية كتعرّف بالتطبيق، صيفطها لأي واحد.'}</p>
+      <div class="ref-url" dir="ltr">${esc(refUrl())}</div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn" type="button" id="ref-copy">📋 نسخ</button>
+        <button class="btn gold" type="button" id="ref-share">📤 شارك</button>
+        <a class="btn" href="brand-print.html?t=card&qr=page${r ? '&ref=' + encodeURIComponent(r) : ''}" target="_blank" rel="noopener">🪪 بطاقة زيارة بـ QR</a>
+      </div></div>`;
+  }
+  function bindRefCard() {
+    const c = $('#ref-copy'); if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(refUrl()); toast('✅ تنسخ الرابط'); } catch (e) { toast(refUrl()); } };
+    const sh = $('#ref-share'); if (sh) sh.onclick = async () => {
+      const url = refUrl(), text = '💼 تعرّف على تطبيق مجموعة الوسيط: فريق عمل كامل فجيبك';
+      try { if (navigator.share) { await navigator.share({ title: 'مجموعة الوسيط', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
+    };
+  }
   // 📊 عدّاد المشاركات (بلا اسم ولا حساب: النوع، الطريقة واللغة فقط) — كيتسجل حتى بلا دخول
   function logShare(kind, via, lang) {
     try {
@@ -5831,6 +5856,7 @@
         </div>
         <img class="gd-phone" src="guide/b01b-hub.webp" alt="" loading="lazy">
       </div>
+      ${refCard()}
       ${agCard('🎓 تعلم التطبيق مع منير', 'سولو على أي زر ولا صفحة، ولا خليه يعلمك التطبيق من الأول بحال أستاذ.', '▶ علمني التطبيق', 'guide')}
       ${G.parts.map((P, pi) => {
         const ls = L.filter(l => l.p === pi);
@@ -5842,6 +5868,7 @@
       }).join('')}`;
     bindAgCard(main(), { guide: 'سلام منير! علمني كيفاش نستعمل تطبيق مجموعة الوسيط من الأول، خطوة بخطوة.' });
     $$('[data-share-pdf]').forEach(b => b.onclick = () => sharePdf(b.dataset.sharePdf, b));
+    bindRefCard();
     const r = $('#gd-reset'); if (r) r.onclick = async () => { if (await confirmBox('إعادة الدليل من الأول؟', 'إعادة', false)) { gdSave(new Set()); viewGuide(); } };
   }
   function viewGuideLesson(l, L, done) {
@@ -6640,7 +6667,13 @@
       <h3 class="section-title" style="margin-top:0">📊 المشاركات والزيارات</h3>
       <div class="kv kv-sm"><div><small>7 أيام</small><b>${fmt(tot('d7'))}</b></div><div><small>30 يوم</small><b>${fmt(tot('d30'))}</b></div><div><small>المجموع</small><b>${fmt(tot('total'))}</b></div></div>
       <div class="ss-rows">${K.map(([k, l]) => `<div class="ss-row"><b>${l}</b><span>المجموع: ${fmt(sum(k, 'total'))}</span><small class="muted">7 أيام: ${fmt(sum(k, 'd7'))} · 30 يوم: ${fmt(sum(k, 'd30'))}</small><small class="muted">${rows.filter(r => r.kind === k && +r.total).map(r => `${esc(V[r.via] || r.via)}: ${fmt(+r.total)}`).join(' · ') || '—'}</small></div>`).join('')}</div>
-      <p class="muted" style="margin:8px 0 0;font-size:12.5px">بلا أسماء: غير شحال من مرة تشارك الملف ولا تحلّات الصفحة.</p></div>`;
+      <p class="muted" style="margin:8px 0 0;font-size:12.5px">بلا أسماء: غير شحال من مرة تشارك الملف ولا تحلّات الصفحة.</p>
+      <div id="share-refs"></div></div>`;
+    // 🏅 الروابط الخاصة: شكون جاب أكثر زيارات وضغطات «سجّل»
+    let refs = [];
+    try { const r = await Sy.request('/rest/v1/rpc/w777_share_refs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) refs = await r.json(); } catch (e) { /* */ }
+    const rb = $('#share-refs'); if (!rb || !Array.isArray(refs) || !refs.length) return;
+    rb.innerHTML = `<h4 style="margin:14px 0 6px">🏅 الروابط الخاصة (أكثر المشتركين جلباً)</h4><div class="ss-rows">${refs.slice(0, 10).map((x, i) => `<div class="ss-row"><b>${i + 1}. ${esc(x.name || x.ref)}</b><span>✅ ${fmt(+x.joins || 0)}</span><small class="muted">الكود: ${esc(x.ref)} · زيارات: ${fmt(+x.views || 0)} · ضغطات «سجّل»: ${fmt(+x.joins || 0)} · 30 يوم: ${fmt(+x.d30 || 0)}</small></div>`).join('')}</div>`;
   }
   function seatBoard(ags) {
     const top = z => Math.max(0, ...ags.filter(a => a.seat_no && (a.seat_zone || 'ma') === z).map(a => a.seat_no));
@@ -8363,6 +8396,9 @@
     TR_FIX = new Map();
     const D = window.W777_DATA; if (!D || !D.REGIONS) return;
     D.REGIONS.forEach(R => (R.cities || []).forEach(c => { if (c.n && c.f) TR_FIX.set(c.n, TR_ARAB_SCRIPT.includes(code) ? c.n : c.f); }));
+    if (TR_ARAB_SCRIPT.includes(code)) return;
+    Object.entries(TR_NAMES).forEach(([k, v]) => TR_FIX.set(k, v));
+    const FIN = window.W777_FIN; if (FIN && FIN.inst) FIN.inst.forEach(x => { if (x.ar && x.name) TR_FIX.set(x.ar, x.name); });
   }
   // كلمات قصيرة ديال الواجهة: الترجمة الآلية كتغلط فيهم بلا سياق («التكوين» ← Genèse) — [إنجليزي، فرنسي]
   const TR_GLOSS = {
@@ -8376,6 +8412,76 @@
     'الحجز الفوري': ['Instant booking', 'Réservation instantanée'], 'المناسبات العقارية': ['Real-estate events', 'Événements immobiliers'], 'الزبناء': ['Clients', 'Clients'], 'الملاك': ['Owners', 'Propriétaires'],
     'حفظ': ['Save', 'Enregistrer'], 'إلغاء': ['Cancel', 'Annuler'], 'تعديل': ['Edit', 'Modifier'], 'حذف': ['Delete', 'Supprimer'], 'مسح': ['Delete', 'Supprimer'], 'زيد': ['Add', 'Ajouter'], 'إضافة': ['Add', 'Ajouter'],
     'للبيع': ['For sale', 'À vendre'], 'للكراء': ['For rent', 'À louer'], 'شقة غير مفروشة': ['Unfurnished apartment', 'Appartement non meublé'], 'شقة مفروشة': ['Furnished apartment', 'Appartement meublé'],
+  };
+  // 🇫🇷 v194: كلمات مهنية كانت الترجمة الآلية كتغلط فيها (Le cadeau، Portefeuille، Premier médicament…) — [إنجليزي، فرنسي]
+  Object.assign(TR_GLOSS, {
+    'الهبة': ['Donations', 'Dons solidaires'], 'مراحل تملك العقار': ['Steps to ownership', 'Étapes de l’acquisition'], 'حساب القرض': ['Loan calculator', 'Simulateur de crédit'],
+    'دليل التطبيق': ['App guide', 'Guide de l’application'], 'الوسيط GAMES': ['Al Wasset GAMES', 'Al Wasset GAMES'], 'أكاديمية الوسيط': ['Al Wasset Academy', 'Académie Al Wasset'],
+    'الطلبات والزبناء': ['Requests & clients', 'Demandes et clients'], 'الإعدادات والنسخ': ['Settings & backup', 'Paramètres et sauvegarde'], 'شركات المقاولات': ['Construction companies', 'Entreprises de construction'],
+    'الجمعيات السكنية': ['Housing associations', 'Associations d’habitat'], 'الوداديات': ['Housing cooperatives', 'Amicales d’habitat'], 'عرض المشاريع': ['Projects', 'Projets'],
+    'طباعة العقود': ['Contract templates', 'Modèles de contrats'], 'تدبير الكراء': ['Rental management', 'Gestion locative'], 'الخريطة العقارية': ['Property map', 'Carte des biens'],
+    'التعلم': ['Learning', 'Formation'], 'القانون والمجتمع': ['Law & community', 'Droit et solidarité'], 'فلترة متقدمة': ['Advanced filters', 'Filtres avancés'],
+    'المدينة الافتراضية': ['Default city', 'Ville par défaut'], 'اختيار دوسي (ماك)': ['Choose a folder (Mac)', 'Choisir un dossier (Mac)'], 'الدارجة': ['Darija', 'Darija'],
+    'فاتح': ['Light', 'Clair'], 'داكن': ['Dark', 'Sombre'], 'تلقائي': ['Auto', 'Automatique'], 'كاملة': ['Full', 'Complètes'], 'خفيفة': ['Light', 'Légères'],
+    'دخول': ['Sign in', 'Connexion'], 'مشعول': ['On', 'Activé'], 'الوكيل ديالي': ['My assistant', 'Mon assistant'], 'صيفط': ['Send', 'Envoyer'], 'الوسيط': ['Al Wasset', 'Al Wasset'],
+    'منير': ['Mounir', 'Mounir'], 'عمّرو مع منير': ['Fill in with Mounir', 'Remplir avec Mounir'], 'الحساب': ['Account', 'Compte'], 'المكتب': ['Office', 'Agence'], 'التطبيق': ['App', 'Application'],
+    'مزامنة': ['Sync', 'Synchronisation'], 'متزامن': ['Synced', 'Synchronisé'], 'الإدارة': ['Admin', 'Administration'], 'المدير': ['Manager', 'Directeur'], 'الدليل': ['Directory', 'Annuaire'],
+    'المراجعة': ['Review', 'Validation'], 'رفض': ['Reject', 'Refuser'], 'تحديث': ['Refresh', 'Actualiser'], 'العملية': ['Transaction', 'Opération'], 'الصنف': ['Category', 'Catégorie'],
+    'سنتيم': ['centimes', 'centimes'], 'مليون سنتيم': ['million centimes', 'millions de centimes'], 'أول عقار': ['First property', 'Premier bien'], 'بيانات تجريبية': ['Demo data', 'Données de démonstration'],
+    'ستوري': ['Story', 'Story'], 'ستوري جديد': ['New story', 'Nouvelle story'], 'عقار جديد': ['New property', 'Nouveau bien'], 'إضافة عقار': ['Add property', 'Ajouter un bien'],
+    'إضافة عقار جديد': ['Add a new property', 'Ajouter un nouveau bien'], 'حفظ العقار': ['Save property', 'Enregistrer le bien'], 'عقار متاح': ['Available property', 'Bien disponible'],
+    'عقارات منشورة': ['Published properties', 'Biens publiés'], 'نوع العقار': ['Property type', 'Type de bien'], 'صاحب العقار': ['Property owner', 'Propriétaire du bien'],
+    'مواصفات العقار': ['Property features', 'Caractéristiques du bien'], 'عقارات الشبكة': ['Network properties', 'Biens du réseau'], 'ما كاين حتى عقار': ['No properties yet', 'Aucun bien pour le moment'],
+    'زيد عقار': ['Add a property', 'Ajouter un bien'], 'كل العقارات': ['All properties', 'Tous les biens'], 'العقارات المعروضة': ['Listed properties', 'Biens proposés'], 'الكل': ['All', 'Tous'],
+    'المعروضة': ['Listed', 'Proposés'], 'تم الكراء': ['Rented', 'Loué'], 'مسحوب': ['Withdrawn', 'Retiré'], 'محجوز / عربون': ['Reserved / deposit', 'Réservé / acompte'],
+    'بيع': ['Sale', 'Vente'], 'كراء': ['Rent', 'Location'], 'الكراء': ['Rentals', 'Location'], 'رهن': ['Rahn (refundable deposit lease)', 'Rahn (location contre avance)'],
+    'بيع على التصميم (VEFA)': ['Off-plan sale (VEFA)', 'Vente sur plan (VEFA)'], 'مبادلة': ['Swap', 'Échange'], 'كراء موسمي / يومي': ['Seasonal / daily rental', 'Location saisonnière / à la journée'],
+    'طابق في منزل (طبقة)': ['Floor of a house', 'Étage de maison'], 'منزل (دار)': ['House (dar)', 'Maison (dar)'], 'منزل طابقين (R+1)': ['Two-storey house (R+1)', 'Maison R+1'],
+    'منزل ثلاث طوابق (R+2)': ['Three-storey house (R+2)', 'Maison R+2'], 'رياض': ['Riad', 'Riad'], 'قصبة': ['Kasbah', 'Kasbah'], 'قصر': ['Palace', 'Palais'], 'منزل قروي': ['Country house', 'Maison rurale'],
+    'فيلا راقية': ['Luxury villa', 'Villa haut standing'], 'فيلا توأم (جومليه)': ['Semi-detached villa', 'Villa jumelée'], 'فيلا متلاصقة (en bande)': ['Terraced villa', 'Villa en bande'],
+    'بقعة أرضية للفيلات': ['Villa plot', 'Lot pour villa'], 'بقعة أرضية للعمارات': ['Building plot', 'Lot pour immeuble'], 'مستودع / مخزن': ['Warehouse / storage', 'Entrepôt / dépôt'],
+    'معمل / مصنع': ['Factory', 'Usine'], 'هنكار': ['Hangar', 'Hangar'], 'بقعة في حي صناعي': ['Plot in an industrial zone', 'Lot en zone industrielle'], 'سطح / منشر': ['Rooftop', 'Terrasse / buanderie'],
+    'عمارة': ['Building', 'Immeuble'], 'الطابق': ['Floor', 'Étage'], 'تحت أرضي': ['Basement', 'Sous-sol'], 'سفلي (RDC)': ['Ground floor (RDC)', 'Rez-de-chaussée (RDC)'],
+    'بقعة سكن اقتصادي': ['Affordable housing plot', 'Lot logement économique'], 'أرض لمشروع تجزئة': ['Land for subdivision', 'Terrain pour lotissement'], 'أرض بورية': ['Rain-fed land', 'Terrain bour'],
+    'ضيعة فلاحية': ['Farm', 'Ferme agricole'], 'أرض جماعية / سلالية': ['Collective (soulaliyate) land', 'Terre collective (soulaliyate)'], 'أرض سلالية': ['Soulaliyate land', 'Terre soulaliyate'],
+    'محل تجاري': ['Shop', 'Local commercial'], 'محل في زاوية (كوان)': ['Corner shop', 'Local en angle'], 'بلاطو مكاتب': ['Office floor (plateau)', 'Plateau de bureaux'],
+    'معرض (شوروم)': ['Showroom', 'Showroom'], 'مصحة / مركز صحي': ['Clinic / health centre', 'Clinique / centre de santé'], 'إقامة سكنية كاملة': ['Whole residence', 'Résidence entière'],
+    'الحمامات / المراحيض': ['Bathrooms / toilets', 'Salles de bain / WC'], 'مطبخ عادي': ['Standard kitchen', 'Cuisine simple'], 'المطبخ': ['Kitchen', 'Cuisine'], 'عدد الواجهات': ['Number of façades', 'Nombre de façades'],
+    'متوسط': ['Average', 'Moyen'], 'مدفأة (شوميني)': ['Fireplace', 'Cheminée'], 'تكييف': ['Air conditioning', 'Climatisation'], 'زليج': ['Zellige', 'Zellige'], 'باركي': ['Parquet', 'Parquet'],
+    'الأرضية': ['Flooring', 'Revêtement de sol'], 'بالكون': ['Balcony', 'Balcon'], 'سطح خاص': ['Private rooftop', 'Terrasse privée'], 'سطح': ['Rooftop', 'Terrasse'], 'قبو / كاف': ['Cellar', 'Cave'],
+    'واد الحار (التطهير)': ['Sewerage', 'Assainissement'], 'إطلالة': ['View', 'Vue dégagée'], 'وضعية الملك': ['Title status', 'Situation foncière'], 'محفظ (رسم عقاري)': ['Registered (land title)', 'Titré (titre foncier)'],
+    'في طور التحفيظ': ['Registration in progress', 'En cours d’immatriculation'], 'ملكية مشتركة (شياع)': ['Joint ownership (chiyaa)', 'Indivision (chiyaa)'], 'عقد عدلي': ['Adoul deed', 'Acte adoulaire'],
+    'عقد عرفي': ['Private deed', 'Acte sous seing privé'], 'ملك غير محفظ': ['Unregistered property', 'Bien non titré'], 'أحباس': ['Habous', 'Habous'], 'رقم الرسم العقاري': ['Land title number', 'Numéro du titre foncier'],
+    'ملاحظات قانونية': ['Legal notes', 'Notes juridiques'], 'الاسم الكامل': ['Full name', 'Nom complet'], 'الصفة': ['Capacity', 'Qualité'], 'منعش عقاري': ['Property developer', 'Promoteur immobilier'],
+    'المنعش': ['Developer', 'Promoteur'], 'مكتري (للساروت)': ['Tenant (key money)', 'Locataire (pas-de-porte)'], 'وكيل (بوكالة)': ['Agent (power of attorney)', 'Mandataire (procuration)'],
+    'ملاحظات': ['Notes', 'Notes'], 'الوصف والملاحظات': ['Description & notes', 'Description et notes'], 'وصف الإعلان': ['Listing description', 'Description de l’annonce'],
+    'طلب جديد': ['New request', 'Nouvelle demande'], 'حالة الطلب': ['Request status', 'Statut de la demande'], 'تفاصيل الطلب': ['Request details', 'Détails de la demande'], 'حفظ الطلب': ['Save request', 'Enregistrer la demande'],
+    'المفتوحة': ['Open', 'Ouvertes'], 'قيد البحث': ['Searching', 'En recherche'], 'آخر أجل للزبون': ['Client deadline', 'Échéance du client'], 'إحالة من زبون': ['Client referral', 'Recommandation d’un client'],
+    'الإقامة': ['Residence', 'Résidence'], 'شقق وسكن جماعي': ['Apartments & multi-family', 'Appartements et habitat collectif'], 'أراضي وبقع': ['Land & plots', 'Terrains et lots'], 'فلاحي وقروي': ['Farm & rural', 'Agricole et rural'],
+    'الموقع': ['Location', 'Emplacement'], 'بالقرب من (معلم)': ['Near (landmark)', 'À proximité de (repère)'], 'العنوان / الزنقة / الرقم': ['Address / street / number', 'Adresse / rue / numéro'],
+    'السعر والمساحة': ['Price & area', 'Prix et surface'], 'المساحة': ['Area', 'Surface'], 'عمولة المكتب': ['Agency commission', 'Commission de l’agence'], 'الحالة': ['Condition', 'État'],
+    'عدد الغرف (المجموع)': ['Rooms (total)', 'Nombre de pièces (total)'], 'إلا كان': ['If any', 'Si applicable'], 'التحفيظ': ['Land registration', 'Immatriculation foncière'],
+    'الميزانية (درهم)': ['Budget (MAD)', 'Budget (DH)'], 'الثمن المطلوب (درهم)': ['Asking price (MAD)', 'Prix demandé (DH)'], 'ثمن الشراء (درهم)': ['Purchase price (MAD)', 'Prix d’achat (DH)'],
+    'طريقة الأداء': ['Payment method', 'Mode de paiement'], 'ما كاين حتى عملية': ['No transactions yet', 'Aucune opération pour le moment'], 'ما كاين حتى موعد': ['No appointments yet', 'Aucun rendez-vous pour le moment'],
+    'الجهة': ['Body', 'Organisme'], 'الوقت': ['When', 'Moment'], 'عند التقييد': ['At registration', 'À l’inscription'], 'الجماعة': ['Municipality', 'Commune'], 'الجماعة / الضرائب': ['Municipality / tax office', 'Commune / impôts'],
+    'تصريح سنوي': ['Annual declaration', 'Déclaration annuelle'], 'تصريح داخل 30 يوم': ['Declaration within 30 days', 'Déclaration sous 30 jours'], 'الموثق': ['Notary', 'Notaire'],
+    'الوصول': ['Check-in', 'Arrivée'], 'استوديو': ['Studio', 'Studio'], 'دار': ['House', 'Maison'], 'الليلة': ['night', 'nuit'], 'الديور': ['Houses', 'Maisons'], 'الأراضي': ['Land', 'Terrains'],
+    'المحلات التجارية': ['Shops', 'Locaux commerciaux'], 'حتى المباعة والمكرية': ['Including sold and rented', 'Y compris vendus et loués'], 'مميزات ضرورية': ['Must-have features', 'Équipements indispensables'],
+    'محفظة': ['Titled', 'Titré'], 'في تجزئة مرخصة': ['In an approved subdivision', 'Dans un lotissement autorisé'], 'رخصة البناء جاهزة': ['Building permit ready', 'Permis de construire prêt'], 'رخصة': ['Permit', 'Autorisation'],
+    'زاوية': ['Corner', 'Angle'], 'عرض': ['View', 'Voir'], 'تحميل': ['Download', 'Télécharger'], 'طباعة': ['Print', 'Imprimer'], 'فيديو Reels': ['Reels video', 'Vidéo Reels'],
+    'شركات التشطيب': ['Finishing companies', 'Entreprises de finition'], 'الوكالات العقارية': ['Real-estate agencies', 'Agences immobilières'],
+  });
+  // أسماء الأماكن والمؤسسات: كتبقى أسماء (ماشي «Monsieur Saeed» ولا «Corail») — نفس الكتابة بالحروف اللاتينية
+  const TR_NAMES = {
+    'حمرية': 'Hamria', 'حمرية (المدينة الجديدة)': 'Hamria (Ville nouvelle)', 'المدينة القديمة': 'Médina', 'البساتين': 'Bassatine', 'سيدي بوزكري': 'Sidi Bouzekri', 'مرجان': 'Marjane',
+    'الرياض': 'Riad', 'رياض الإسماعيلية': 'Riad Ismaïlia', 'الإسماعيلية': 'Ismaïlia', 'برج مولاي عمر': 'Borj Moulay Omar', 'الزيتون': 'Zitoune', 'ويسلان': 'Ouislane', 'تولال': 'Toulal',
+    'الملاح': 'Mellah', 'بني امحمد': 'Bni M’hamed', 'سيدي سعيد': 'Sidi Saïd', 'سيدي بابا': 'Sidi Baba', 'الدخيسة': 'Dakhissa', 'عين السلوكي': 'Aïn Slougui', 'عين معروف': 'Aïn Marrouf',
+    'بلاصانص': 'Plaisance', 'بلاصانص (Plaisance)': 'Plaisance', 'روامزين': 'Rouamzine', 'باب منصور': 'Bab Mansour', 'باب البرادعيين': 'Bab Berdaïne', 'حي السلام': 'Hay Salam', 'حي النصر': 'Hay Nasr',
+    'حي النهضة': 'Hay Nahda', 'حي تافيلالت': 'Hay Tafilalet', 'حي المنصور': 'Hay Al Mansour', 'الزرهونية': 'Zerhounia', 'المنزه': 'Al Menzeh', 'حي الوحدة': 'Hay Al Wahda', 'حي القدس': 'Hay Al Qods',
+    'حي الفتح': 'Hay Al Fath', 'سيدي عمرو': 'Sidi Amrou', 'القصبة الإسماعيلية': 'Kasbah Ismaïlia', 'القصبة': 'Kasbah', 'بريستيجيا': 'Prestigia', 'حي الأمل': 'Hay Al Amal', 'حي الانبعاث': 'Hay Al Inbiaât',
+    'واد فلفل': 'Oued Felfel', 'مجاط': 'Mejjat', 'المهاية': 'Mhaya', 'عين الجمعة': 'Aïn Jemaa', 'عين كرمة': 'Aïn Karma', 'عين معزة': 'Aïn Maaza', 'الطريق إلى فاس': 'Route de Fès',
+    'الطريق إلى أزرو': 'Route d’Azrou', 'الطريق إلى الحاجب': 'Route d’El Hajeb', 'الطريق إلى سيدي قاسم': 'Route de Sidi Kacem', 'المدينة الإمبراطورية': 'Ville impériale',
+    'منير': 'Mounir', 'سارة': 'Sara',
   };
   // الاسم ديال المجموعة كيتبقى اسم (ماشي «مجموعة وسطاء»): كنبدلوه قبل ما نصيفطو النص
   const TR_BRAND = [['تطبيق مجموعة الوسيط', 'Al Wasset Group app'], ['مجموعة الوسيط', 'Al Wasset Group'], ['مكتب الوسيط 777', 'Al Wasset 777'], ['الوسيط 777', 'Al Wasset 777']];
@@ -8942,7 +9048,7 @@
   const finPair = (x, big) => `<span class="fin-pair${big ? ' big' : ''}"><img src="${LOGO}" alt=""><i>×</i><span class="fp-i">${x.logo ? finLogo(x.logo) : x.glogo ? finLogo(x.glogo) : `<b>${esc((x.ar || '؟').trim()[0])}</b>`}</span></span>`;
   async function viewTamwil(parts, query) {
     main().innerHTML = '<div class="card card-pad muted">⏳</div>';
-    if (!window.W777_FIN) { try { await loadScript('finance-data.js'); } catch (e) { /* */ } }
+    if (!window.W777_FIN) { try { await loadScript('finance-data.js'); if (TR.lang !== 'ar') { trFixed(TR.lang); trRepaint(); } } catch (e) { /* */ } }
     if (!/^#\/tamwil/.test(location.hash)) return;
     const F = window.W777_FIN;
     if (!F) { main().innerHTML = '<div class="card card-pad">تعذر التحميل — تأكد من الإنترنت.</div>'; return; }
