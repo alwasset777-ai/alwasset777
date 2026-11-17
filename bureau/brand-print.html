@@ -87,6 +87,10 @@
       [contenteditable]:hover, [contenteditable]:focus { box-shadow: none; }
       * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
+    /* v194: QR ← واتساب ولا صفحة «تعرّف على التطبيق» */
+    .qsel { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #fff; }
+    .qsel select { font: inherit; font-weight: 700; border-radius: 10px; border: 1px solid rgba(255,255,255,.3); background: #1b1b1b; color: #fff; padding: 6px 8px; }
+    @media print { .qsel { display: none; } }
   </style>
 </head>
 <body>
@@ -98,10 +102,12 @@
       <button class="tab" type="button" data-t="sale">🏷️ للبيع</button>
       <button class="tab" type="button" data-t="rent">🔑 للكراء</button>
     </div>
+    <label class="qsel">QR ←
+      <select id="qr-to"><option value="wa">واتساب</option><option value="page">صفحة «تعرّف على التطبيق»</option></select></label>
     <button class="btn red" type="button" id="print">🖨️ طبع / PDF</button>
     <a class="btn" href="brand.html">↩ دليل الهوية</a>
   </div></div>
-  <p class="help">✏️ <b>ضغط على أي كتابة وبدّلها</b> (السمية، الهاتف…) — كتتحفظ فهاد الجهاز. رمز QR كيتبدل بوحدو مع رقم الواتساب. من بعد «طبع / PDF».</p>
+  <p class="help">✏️ <b>ضغط على أي كتابة وبدّلها</b> (السمية، الهاتف…) — كتتحفظ فهاد الجهاز. رمز QR: ختار «واتساب» (كيتبدل بوحدو مع الرقم) ولا «صفحة تعرّف على التطبيق». من بعد «طبع / PDF».</p>
 
   <main class="stage">
     <section class="tpl on" data-t="card">
@@ -126,7 +132,7 @@
         <div class="side">
           <img src="icons/brand/logo-flat.png" alt="" width="996" height="580">
           <div class="qr" data-qr></div>
-          <div class="ql">واتساب</div>
+          <div class="ql" data-ql="card">واتساب</div>
         </div>
         <span class="bd"></span>
       </div></div>
@@ -138,7 +144,7 @@
         <div class="top"><span class="ar">للبيع</span><span class="fr lat">À VENDRE</span></div>
         <div class="mid">
           <div class="ph"><small contenteditable data-k="signline">اتصل ولا صيفط واتساب</small><span contenteditable data-k="p1">0777 77 79 59</span><br><span contenteditable data-k="p2">0777 77 78 48</span></div>
-          <div class="q"><div class="qr" data-qr></div><span>سكاني ← واتساب</span></div>
+          <div class="q"><div class="qr" data-qr></div><span data-ql="sign">سكاني ← واتساب</span></div>
         </div>
         <div class="bot"><img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580"><div class="t">مجموعة الوسيط<small contenteditable data-k="tag">للخدمات العقارية — مكناس</small></div></div>
       </div></div>
@@ -150,7 +156,7 @@
         <div class="top" style="background:#111"><span class="ar">للكراء</span><span class="fr lat">À LOUER</span></div>
         <div class="mid">
           <div class="ph"><small contenteditable data-k="signline">اتصل ولا صيفط واتساب</small><span contenteditable data-k="p1">0777 77 79 59</span><br><span contenteditable data-k="p2">0777 77 78 48</span></div>
-          <div class="q"><div class="qr" data-qr></div><span>سكاني ← واتساب</span></div>
+          <div class="q"><div class="qr" data-qr></div><span data-ql="sign">سكاني ← واتساب</span></div>
         </div>
         <div class="bot" style="border-top:3mm solid var(--red)"><img src="icons/brand/logo-flat-white.png" alt="مجموعة الوسيط" width="996" height="580"><div class="t">مجموعة الوسيط<small contenteditable data-k="tag">للخدمات العقارية — مكناس</small></div></div>
       </div></div>
@@ -184,8 +190,21 @@
         if (/^0\d{9}$/.test(d)) d = '212' + d.slice(1);
         return d;
       }
+      // v194: QR ← واتساب (الافتراضي) ولا صفحة «تعرّف على التطبيق» (مع الرابط الخاص ?ref= ديال المشترك)
+      var REF_OK = /^[A-Za-z0-9_-]{1,24}$/;
+      if (q.get('qr') === 'page' || q.get('qr') === 'wa') S.qr = q.get('qr');
+      if (REF_OK.test(q.get('ref') || '')) S.ref = q.get('ref');
+      var sel = document.getElementById('qr-to');
+      if (sel) { sel.value = S.qr === 'page' ? 'page' : 'wa'; sel.onchange = function () { S.qr = sel.value; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (err) {} drawQr(); }; }
+      function qrUrl() {
+        if (S.qr !== 'page') return 'https://wa.me/' + waNum();
+        var base = location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '');
+        return base + 'decouvrir.html' + (REF_OK.test(S.ref || '') ? '?ref=' + S.ref : '');
+      }
       function drawQr() {
-        var url = 'https://wa.me/' + waNum();
+        var url = qrUrl(), pg = S.qr === 'page';
+        document.querySelectorAll('[data-ql="card"]').forEach(function (e) { e.textContent = pg ? 'تعرّف علينا' : 'واتساب'; });
+        document.querySelectorAll('[data-ql="sign"]').forEach(function (e) { e.textContent = pg ? 'سكاني ← تعرّف على التطبيق' : 'سكاني ← واتساب'; });
         var qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
         var svg = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
         document.querySelectorAll('[data-qr]').forEach(function (b) { b.innerHTML = svg; b.title = url; });
