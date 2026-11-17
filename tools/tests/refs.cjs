@@ -36,14 +36,24 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     p.on('pageerror', e => errs.push('app: ' + e.message));
     await p.route(/googleapis|gstatic/, r => r.abort()); await F.install(p);
     await p.route(/rest\/v1\/rpc\/w777_share_stats/, r => r.fulfill({ json: [{ kind: 'page', via: 'view', d7: 4, d30: 10, total: 20 }] }));
-    await p.route(/rest\/v1\/rpc\/w777_share_refs/, r => r.fulfill({ json: [{ ref: 'AG042', name: 'وكالة <b>تجريبية</b>', kind: 'agency', views: 12, joins: 3, d30: 15 }, { ref: 'BR7', name: null, kind: null, views: 2, joins: 0, d30: 2 }] }));
+    const months = [];
+    await p.route(/rest\/v1\/rpc\/w777_share_refs/, r => { const m = (JSON.parse(r.request().postData() || '{}') || {}).p_month || null; months.push(m);
+      r.fulfill({ json: m ? [{ ref: 'AG042', name: 'وكالة الأطلس', kind: 'agency', views: 7, joins: 2, signups: 2 }] : [{ ref: 'AG042', name: 'وكالة <b>تجريبية</b>', kind: 'agency', views: 12, joins: 3, signups: 4 }, { ref: 'BR7', name: null, kind: null, views: 2, joins: 0, signups: 0 }] }); });
     await p.goto(BASE); await F.login(p, BASE);
     await p.evaluate(() => { location.hash = '#/guide'; }); await p.waitForTimeout(1500);
     const rc = await p.evaluate(() => { const c = document.querySelector('.ref-card'); return c ? { url: c.querySelector('.ref-url').textContent, qr: c.querySelector('a[href*="brand-print"]').getAttribute('href') } : null; });
     if (!rc || !/decouvrir\.html$/.test(rc.url) || !/qr=page/.test(rc.qr)) bad.push('ref card ' + JSON.stringify(rc));
     await p.evaluate(() => { location.hash = '#/agencies/manage'; }); await p.waitForTimeout(2600);
     const rr = await p.evaluate(() => { const b = document.querySelector('#share-refs'); return b ? { t: b.innerText, html: b.innerHTML } : null; });
-    if (!rr || !/الروابط الخاصة/.test(rr.t) || !/AG042/.test(rr.t) || !/BR7/.test(rr.t) || /<b>تجريبية<\/b>/.test(rr.html)) bad.push('refs list ' + JSON.stringify(rr && rr.t));
+    if (!rr || !/الروابط الخاصة/.test(rr.t) || !/AG042/.test(rr.t) || !/BR7/.test(rr.t) || !/تسجيلات: ⁦?4/.test(rr.t) || /<b>تجريبية<\/b>/.test(rr.html) || /ref-cert/.test(rr.html)) bad.push('refs list ' + JSON.stringify(rr && rr.t));
+    // شهر معيّن ← شهادة الشكر
+    await p.click('#share-refs [data-rm]:not([data-rm=""])'); await p.waitForTimeout(800);
+    const mo = months[months.length - 1];
+    if (!/^\d{4}-\d{2}-01$/.test(mo || '')) bad.push('month param ' + mo);
+    const [pop] = await Promise.all([c.waitForEvent('page'), p.click('#share-refs .ref-cert')]);
+    await pop.waitForLoadState(); await pop.waitForTimeout(600);
+    const ct = await pop.evaluate(() => ({ t: document.body.innerText, logo: (document.querySelector('img.lg') || {}).src || '', title: document.title }));
+    if (!/شهادة/.test(ct.t) || !/شكر وتقدير/.test(ct.t) || !/وكالة الأطلس/.test(ct.t) || !/المرتبة الأولى/.test(ct.t) || !/مشترك جديد/.test(ct.t) || !/^data:image\/png;base64,/.test(ct.logo) || /777/.test(ct.t)) bad.push('cert ' + JSON.stringify(ct).slice(0, 300));
     await c.close();
   }
   // 3) قوالب الطبع: QR ← الصفحة مع الكود، ورجوع لواتساب

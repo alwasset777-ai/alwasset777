@@ -940,6 +940,16 @@
     dalil: ['files/guide/dalil-majmouat-alwasset.pdf', 'الدليل الشامل — تطبيق مجموعة الوسيط', '📘 الدليل الشامل ديال تطبيق مجموعة الوسيط: كل خدمة خطوة بخطوة بالصور.'],
     malaf_fr: ['files/guide/dossier-presentation-groupe-alwasset-fr.pdf', 'Dossier de présentation — Groupe Al Wasset', '💼 Découvrez l’application Groupe Al Wasset : une équipe complète dans votre poche (services et solutions par métier, en images).', 'fr'],
   };
+  // 🔗 v195: جاي من رابط مشترك (./?gate=1&ref=CODE): كنحفظو الكود حتى يكمل التسجيل، ومن بعد كيتسجل مرة وحدة (w777_set_referrer)
+  try { const r0 = new URLSearchParams(location.search).get('ref'); if (r0 && /^[A-Za-z0-9_-]{1,24}$/.test(r0)) localStorage.setItem('w777_ref_in', JSON.stringify({ r: r0, t: Date.now() })); } catch (e) { /* */ }
+  async function claimRef() {
+    try {
+      const x = JSON.parse(localStorage.getItem('w777_ref_in') || 'null');
+      if (!x || !/^[A-Za-z0-9_-]{1,24}$/.test(x.r || '') || Date.now() - (+x.t || 0) > 30 * 864e5) { localStorage.removeItem('w777_ref_in'); return; }
+      const r = await window.W777_SYNC.request('/rest/v1/rpc/w777_set_referrer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_ref: x.r }) });
+      if (r.ok) localStorage.removeItem('w777_ref_in');
+    } catch (e) { /* ماشي ضروري: التسجيل كمل */ }
+  }
   // 🔗 v194: الرابط الخاص ديال المشترك ← decouvrir.html?ref=CODE (الكود ديال الوكالة) — الزيارات وضغطات «سجّل» كيتحسبو ليه
   const REF_OK = /^[A-Za-z0-9_-]{1,24}$/;
   const myRef = () => { const c = S.role === 'agency' && S.agency && String(S.agency.code || ''); return c && REF_OK.test(c) ? c : ''; };
@@ -1192,7 +1202,7 @@
           const e = String(d.message || d.error || r.status);
           throw new Error(/phone/.test(e) ? 'رقم الهاتف غير صحيح' : /name/.test(e) ? 'الاسم قصير بزاف' : /exists/.test(e) ? 'هاد الحساب ديجا مسجّل' : /email/.test(e) ? 'الإيميل مازال ما تأكدش' : e);
         }
-        myReset(); await refreshRole(true);
+        myReset(); await refreshRole(true); await claimRef();
         toast(`مرحبا بيك فمجموعة الوسيط ✓ الرمز ديالك: ${d.code || ''}`, 5000);
         if (location.hash !== '#/') location.hash = '#/'; else route();
       } catch (e) { b.disabled = false; b.textContent = '✅ دخول للتطبيق'; toast('تعذر: ' + e.message, 4500); }
@@ -6669,11 +6679,68 @@
       <div class="ss-rows">${K.map(([k, l]) => `<div class="ss-row"><b>${l}</b><span>المجموع: ${fmt(sum(k, 'total'))}</span><small class="muted">7 أيام: ${fmt(sum(k, 'd7'))} · 30 يوم: ${fmt(sum(k, 'd30'))}</small><small class="muted">${rows.filter(r => r.kind === k && +r.total).map(r => `${esc(V[r.via] || r.via)}: ${fmt(+r.total)}`).join(' · ') || '—'}</small></div>`).join('')}</div>
       <p class="muted" style="margin:8px 0 0;font-size:12.5px">بلا أسماء: غير شحال من مرة تشارك الملف ولا تحلّات الصفحة.</p>
       <div id="share-refs"></div></div>`;
-    // 🏅 الروابط الخاصة: شكون جاب أكثر زيارات وضغطات «سجّل»
+    // 🏅 الروابط الخاصة: شكون جاب أكثر تسجيلات (حقيقية) وزيارات — كاملين ولا شهر بشهر
+    const rb = $('#share-refs'); if (rb) drawRefs(rb, '');
+  }
+  const monthAr = d => new Date(d + 'T00:00:00').toLocaleDateString('ar-MA', { month: 'long', year: 'numeric' });
+  function refMonths() { const out = [], d = new Date(); d.setDate(1); for (let i = 0; i < 6; i++) { out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'); d.setMonth(d.getMonth() - 1); } return out; }
+  async function drawRefs(rb, month) {
+    const Sy = window.W777_SYNC; if (!Sy || !Sy.request) return;
     let refs = [];
-    try { const r = await Sy.request('/rest/v1/rpc/w777_share_refs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) refs = await r.json(); } catch (e) { /* */ }
-    const rb = $('#share-refs'); if (!rb || !Array.isArray(refs) || !refs.length) return;
-    rb.innerHTML = `<h4 style="margin:14px 0 6px">🏅 الروابط الخاصة (أكثر المشتركين جلباً)</h4><div class="ss-rows">${refs.slice(0, 10).map((x, i) => `<div class="ss-row"><b>${i + 1}. ${esc(x.name || x.ref)}</b><span>✅ ${fmt(+x.joins || 0)}</span><small class="muted">الكود: ${esc(x.ref)} · زيارات: ${fmt(+x.views || 0)} · ضغطات «سجّل»: ${fmt(+x.joins || 0)} · 30 يوم: ${fmt(+x.d30 || 0)}</small></div>`).join('')}</div>`;
+    try { const r = await Sy.request('/rest/v1/rpc/w777_share_refs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_month: month || null }) }); if (r.ok) refs = await r.json(); } catch (e) { /* */ }
+    if (!rb.isConnected) return;
+    if (!Array.isArray(refs)) refs = [];
+    if (!refs.length && !month) { rb.innerHTML = ''; return; }
+    const label = month ? monthAr(month) : 'كل المدة';
+    rb.innerHTML = `<h4 style="margin:14px 0 6px">🏅 الروابط الخاصة (أكثر المشتركين جلباً)</h4>
+      <div class="chips wrap ref-months">${[['', 'كل المدة'], ...refMonths().map(m => [m, monthAr(m)])].map(([m, l]) => `<button type="button" class="chip${m === month ? ' on' : ''}" data-rm="${m}">${esc(l)}</button>`).join('')}</div>
+      ${refs.length ? `<div class="ss-rows">${refs.slice(0, 10).map((x, i) => `<div class="ss-row"><b>${i + 1}. ${esc(x.name || x.ref)}</b><span>🎉 ${fmt(+x.signups || 0)}</span><small class="muted">الكود: ${esc(x.ref)} · تسجيلات: ${fmt(+x.signups || 0)} · ضغطات «سجّل»: ${fmt(+x.joins || 0)} · زيارات: ${fmt(+x.views || 0)}</small>${month && i < 3 && (+x.signups || +x.joins || +x.views) ? `<button type="button" class="btn sm gold ref-cert" data-i="${i}">🏆 شهادة شكر</button>` : ''}</div>`).join('')}</div>`
+        : `<p class="muted">ما كاين حتى نشاط فـ${esc(label)}.</p>`}
+      ${month ? '' : '<p class="muted" style="font-size:12.5px;margin:6px 0 0">🏆 ختار شهر باش تصاوب «شهادة شكر» للأوائل.</p>'}`;
+    rb.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => drawRefs(rb, b.dataset.rm));
+    rb.querySelectorAll('.ref-cert').forEach(b => b.onclick = () => thanksCert(refs[+b.dataset.i], month, +b.dataset.i + 1));
+  }
+  // 🏆 شهادة شكر وتقدير (A4 بالعرض، طبع / PDF) — الشعار و«مجموعة الوسيط» بلا رقم حداه
+  async function thanksCert(x, month, rank) {
+    if (!x) return;
+    const w = window.open('', '_blank'); if (!w) { toast('السماح بالنوافذ المنبثقة باش يطبع'); return; }
+    w.document.write('<p style="font:16px sans-serif;text-align:center;margin-top:40px">⏳ …</p>');
+    // الشعار داخل الشهادة (data URL): ما كيتسناش التحميل ديال النافذة الجديدة، وكيبان حتى فالـ PDF
+    let logo = appBase() + 'icons/brand/logo-flat.png';
+    try { const bl = await (await fetch('icons/brand/logo-flat.png')).blob(); logo = await new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = ko; fr.readAsDataURL(bl); }); } catch (e) { /* كيبقى الرابط */ }
+    if (w.closed) return;
+    w.document.open();
+    const base = appBase(), m = monthAr(month), today = new Date().toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' });
+    const nm = x.name || x.ref, place = ['', 'المرتبة الأولى', 'المرتبة الثانية', 'المرتبة الثالثة'][rank] || '';
+    const stat = [+x.signups ? `<b>${fmt(+x.signups)}</b> مشترك جديد` : '', +x.views ? `<b>${fmt(+x.views)}</b> زيارة` : ''].filter(Boolean).join(' و');
+    w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>شهادة شكر — ${esc(nm)}</title>
+      <link rel="stylesheet" href="${base}fonts.css"><style>
+      @page{size:A4 landscape;margin:0}*{box-sizing:border-box}html,body{margin:0}
+      body{font-family:'Tajawal',sans-serif;background:#eee;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .pg{width:297mm;height:210mm;margin:0 auto;background:#fff;position:relative;overflow:hidden;padding:14mm}
+      .fr{position:absolute;inset:7mm;border:2.2mm solid #111;border-radius:4mm}.fr::after{content:'';position:absolute;inset:2.4mm;border:.6mm solid #c8102e;border-radius:2mm}
+      .in{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4mm;padding:0 22mm}
+      .lg{height:30mm;width:auto}.k{font-size:11pt;letter-spacing:.3em;color:#888;font-weight:800}
+      h1{margin:0;font-size:34pt;font-weight:900;color:#111}h1 span{color:#c8102e}
+      .to{font-size:14pt;color:#444}.nm{font-size:30pt;font-weight:900;color:#c8102e;border-bottom:.6mm solid #111;padding:0 10mm 2mm}
+      .tx{font-size:13.5pt;line-height:1.9;color:#222;max-width:210mm}.tx b{color:#c8102e}
+      .rk{display:inline-block;background:#111;color:#fff;border-radius:99px;padding:1.5mm 7mm;font-weight:800;font-size:12pt}
+      .ft{width:100%;display:flex;justify-content:space-between;align-items:flex-end;margin-top:6mm;font-size:11pt;color:#444}
+      .sg{text-align:center;min-width:60mm}.sg i{display:block;border-top:.4mm solid #111;margin-top:12mm;padding-top:1.5mm;font-style:normal;font-weight:800;color:#111}
+      .bar{position:fixed;top:10px;left:10px;z-index:9;display:flex;gap:8px}.bar button{font:inherit;font-weight:800;border:0;border-radius:10px;padding:10px 16px;background:#c8102e;color:#fff;cursor:pointer}
+      @media print{body{background:#fff}.bar{display:none}.pg{margin:0}}</style></head><body>
+      <div class="bar"><button onclick="print()">🖨️ طبع / PDF</button></div>
+      <div class="pg"><div class="fr"></div><div class="in">
+        <img class="lg" src="${logo}" alt="مجموعة الوسيط">
+        <div class="k">CERTIFICAT DE REMERCIEMENT</div>
+        <h1>شهادة <span>شكر وتقدير</span></h1>
+        ${place ? `<span class="rk">🏆 ${place} · ${esc(m)}</span>` : ''}
+        <div class="to">تتقدم مجموعة الوسيط بالشكر والتقدير إلى</div>
+        <div class="nm">${esc(nm)}</div>
+        <div class="tx">تقديراً لمساهمته المتميزة في التعريف بتطبيق مجموعة الوسيط ونشره بين المهنيين خلال شهر <b>${esc(m)}</b>${stat ? `، حيث جلب ${stat}` : ''}. نتمنى له دوام التوفيق والنجاح.</div>
+        <div class="ft"><div style="text-align:start">التاريخ: <b>${esc(today)}</b><br>الكود: <b dir="ltr">${esc(x.ref)}</b></div><div class="sg"><i>إدارة مجموعة الوسيط</i></div></div>
+      </div></div></body></html>`);
+    w.document.close();
   }
   function seatBoard(ags) {
     const top = z => Math.max(0, ...ags.filter(a => a.seat_no && (a.seat_zone || 'ma') === z).map(a => a.seat_no));
@@ -8482,6 +8549,31 @@
     'واد فلفل': 'Oued Felfel', 'مجاط': 'Mejjat', 'المهاية': 'Mhaya', 'عين الجمعة': 'Aïn Jemaa', 'عين كرمة': 'Aïn Karma', 'عين معزة': 'Aïn Maaza', 'الطريق إلى فاس': 'Route de Fès',
     'الطريق إلى أزرو': 'Route d’Azrou', 'الطريق إلى الحاجب': 'Route d’El Hajeb', 'الطريق إلى سيدي قاسم': 'Route de Sidi Kacem', 'المدينة الإمبراطورية': 'Ville impériale',
     'منير': 'Mounir', 'سارة': 'Sara',
+    // v195: المدن الكبرى (الدار البيضاء، الرباط، فاس، مراكش، طنجة) — غير الأسماء المعروفة
+    'وسط المدينة': 'Centre-ville', 'أكدال': 'Agdal', 'حي الرياض': 'Hay Riad', 'المسيرة': 'Massira',
+    'المعاريف': 'Maârif', 'المعاريف الموسع': 'Maârif Extension', 'راسين (Racine)': 'Racine', 'غوتييه (Gauthier)': 'Gauthier', 'بوركون': 'Bourgogne', 'عين الذئاب': 'Aïn Diab',
+    'أنفا': 'Anfa', 'كاليفورنيا': 'Californie', 'الوازيس (Oasis)': 'Oasis', 'سيدي معروف': 'Sidi Maârouf', 'الحي الحسني': 'Hay Hassani', 'ليساسفة': 'Lissasfa', 'الألفة': 'Al Oulfa',
+    'الولفة': 'Al Oulfa', 'عين الشق': 'Aïn Chock', 'سباتة': 'Sbata', 'بن امسيك': 'Ben M’Sick', 'مولاي رشيد': 'Moulay Rachid', 'سيدي عثمان': 'Sidi Othmane', 'الحي المحمدي': 'Hay Mohammadi',
+    'البرنوصي': 'Bernoussi', 'سيدي البرنوصي': 'Sidi Bernoussi', 'سيدي مومن': 'Sidi Moumen', 'عين السبع': 'Aïn Sebaâ', 'الصخور السوداء': 'Roches Noires', 'درب السلطان': 'Derb Sultan',
+    'الفداء': 'Al Fida', 'مرس السلطان': 'Mers Sultan', 'بلفدير': 'Belvédère', 'بوسيجور': 'Beauséjour', 'النخيل (Palmier)': 'Palmier', 'لاجيروند': 'La Gironde', 'الأمل (Lissasfa)': 'Al Amal (Lissasfa)',
+    'تشارلي (2 مارس)': '2 Mars', 'الأزهر': 'Al Azhar', 'حي الرحمة': 'Hay Errahma', 'الهناء': 'Al Hana', 'بورنازيل': 'Bournazel', 'حي الفرح': 'Hay Al Farah', 'المستشفيات': 'Les Hôpitaux',
+    'بوسكورة': 'Bouskoura', 'دار بوعزة': 'Dar Bouazza', 'سيدي رحال': 'Sidi Rahal', 'مدينة الخضراء': 'Ville Verte', 'كازا نيرشور': 'Casa Nearshore', 'السالمية': 'Salmia',
+    'المدينة الجديدة الرحمة': 'Ville nouvelle Errahma',
+    'السويسي': 'Souissi', 'حسان': 'Hassan', 'المحيط': 'L’Océan', 'اليوسفية': 'Youssoufia', 'التقدم': 'Takaddoum', 'يعقوب المنصور': 'Yacoub El Mansour', 'العكاري': 'Akkari',
+    'الأوداية': 'Oudayas', 'ديور الجامع': 'Diour Jamaâ', 'بطانة': 'Bettana', 'بلاطو': 'Plateau', 'مبروكة': 'Mabrouka', 'دوار الحاجة': 'Douar El Hajja', 'حي المنار': 'Hay Al Manar',
+    'فاس المدينة (فاس البالي)': 'Fès Médina (Fès el-Bali)', 'فاس الجديد': 'Fès Jdid', 'المدينة الجديدة (Ville Nouvelle)': 'Ville Nouvelle', 'النرجس': 'Narjiss', 'سايس': 'Saïss',
+    'زواغة': 'Zouagha', 'بنسودة': 'Bensouda', 'بنسودة الجديدة': 'Nouvelle Bensouda', 'عين الشقف': 'Aïn Chkef', 'المرينيين': 'Mérinides', 'جنان الورد': 'Jnan El Ouard', 'باب الفتوح': 'Bab Ftouh',
+    'عوينات الحجاج': 'Aouinat Hajjaj', 'واد فاس': 'Oued Fès', 'طريق عين الشقف': 'Route d’Aïn Chkef', 'طريق إيموزار': 'Route d’Immouzer', 'طريق صفرو': 'Route de Sefrou', 'الأدارسة': 'Adarissa',
+    'حي الوفاق': 'Hay Al Wifaq', 'حي مونفلوري (Montfleuri)': 'Montfleuri', 'الزهور': 'Zohour', 'ظهر المهراز': 'Dhar El Mehraz', 'الأطلس': 'Atlas', 'باب الخوخة': 'Bab Khoukha',
+    'سيدي ابراهيم': 'Sidi Brahim', 'حي النجاح': 'Hay Najah', 'طريق مكناس': 'Route de Meknès', 'الأمل': 'Al Amal', 'واد الجواهر': 'Oued Jawahir', 'عين قادوس': 'Aïn Kadous', 'السعادة': 'Saâda',
+    'جليز': 'Guéliz', 'الحي الشتوي (Hivernage)': 'Hivernage', 'النخيل (Palmeraie)': 'Palmeraie', 'تاركة': 'Targa', 'المحاميد': 'Mhamid', 'أزلي': 'Azli', 'سيدي يوسف بن علي': 'Sidi Youssef Ben Ali',
+    'الداوديات': 'Daoudiate', 'أسيف': 'Assif', 'باب دكالة': 'Bab Doukkala', 'رياض السلام': 'Riad Salam', 'الإزدهار': 'Izdihar', 'سعادة': 'Saâda', 'طريق أوريكا': 'Route de l’Ourika',
+    'طريق أمزميز': 'Route d’Amizmiz', 'طريق فاس': 'Route de Fès', 'طريق الصويرة': 'Route d’Essaouira', 'طريق الدار البيضاء': 'Route de Casablanca', 'حي الحسني': 'Hay Hassani',
+    'تامنصورت': 'Tamansourt', 'المنارة': 'Ménara', 'الرويضات': 'Rouidate', 'سيدي غانم': 'Sidi Ghanem', 'الشريفية': 'Chrifia', 'آيت أورير': 'Aït Ourir',
+    'مالاباطا': 'Malabata', 'مرشان': 'Marshan', 'الجبل الكبير': 'Jbel Kebir', 'بني مكادة': 'Beni Makada', 'مسنانة': 'Mesnana', 'البرانص': 'Branes', 'إيبيريا': 'Iberia', 'كاسطيا': 'Castilla',
+    'بوخالف': 'Boukhalef', 'الزياتن': 'Ziaten', 'مغوغة': 'Mghogha', 'حومة الشوك': 'Houmat Chouk', 'بنديبان': 'Bendibane', 'العوامة': 'Laaouama', 'السواني': 'Souani', 'المصلى': 'Msalla',
+    'الرهراه': 'Rahrah', 'أشقار': 'Achakar', 'طنجة البالية': 'Tanja Balia', 'كزناية': 'Gzenaya', 'بئر الشفا': 'Bir Chifa', 'المنار': 'Al Manar', 'طريق الرباط': 'Route de Rabat',
+    'طريق تطوان': 'Route de Tétouan', 'أحلان': 'Ahlane',
   };
   // الاسم ديال المجموعة كيتبقى اسم (ماشي «مجموعة وسطاء»): كنبدلوه قبل ما نصيفطو النص
   const TR_BRAND = [['تطبيق مجموعة الوسيط', 'Al Wasset Group app'], ['مجموعة الوسيط', 'Al Wasset Group'], ['مكتب الوسيط 777', 'Al Wasset 777'], ['الوسيط 777', 'Al Wasset 777']];

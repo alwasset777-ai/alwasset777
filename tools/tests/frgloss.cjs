@@ -9,9 +9,13 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
   const out = {};
   for (const h of ['#/property/new', '#/request/new', '#/tamwil', '#/']) { await p.evaluate(h => { location.hash = h; }, h); await p.waitForTimeout(3000);
     out[h] = await p.evaluate(() => document.body.innerText + (document.querySelector('.sidenav') || {}).textContent); }
+  // المدن الكبرى: أحياء الدار البيضاء فاستمارة طلب الزبون
+  await p.evaluate(() => { location.hash = '#/request/new'; }); await p.waitForTimeout(1500);
+  await p.selectOption('[name="city"]', 'الدار البيضاء'); await p.waitForTimeout(3000);
+  out.casa = await p.evaluate(() => document.body.innerText + [...document.querySelectorAll('option, datalist option')].map(o => o.textContent + ' ' + (o.value || '')).join(' '));
   const all = Object.values(out).join('\n');
-  const want = ['Rahn', 'Vente sur plan (VEFA)', 'Titré (titre foncier)', 'Rez-de-chaussée (RDC)', 'Local commercial', 'Marjane', 'Sidi Saïd', 'Bassatine', 'Saham', 'Al Barid Bank', 'Dons solidaires', 'Simulateur de crédit', 'Guide de l’application'];
-  const bad = ['Le cadeau', 'Portefeuille', 'Premier médicament', 'Corail', 'Monsieur Saeed', 'Actions bancaires', 'hypothèque', 'Candidature'];
+  const want = ['Maârif', 'Aïn Diab', 'Rahn', 'Vente sur plan (VEFA)', 'Titré (titre foncier)', 'Rez-de-chaussée (RDC)', 'Local commercial', 'Marjane', 'Sidi Saïd', 'Bassatine', 'Saham', 'Al Barid Bank', 'Dons solidaires', 'Simulateur de crédit', 'Guide de l’application'];
+  const bad = ['La porte d', 'Le cadeau', 'Portefeuille', 'Premier médicament', 'Corail', 'Monsieur Saeed', 'Actions bancaires', 'hypothèque', 'Candidature'];
   const miss = want.filter(w => !all.includes(w)), still = bad.filter(w => all.includes(w));
   const ok = !miss.length && !still.length && !errs.length;
   console.log(ok ? 'OK' : 'BAD', 'missing:', miss.join(' | '), 'still bad:', still.join(' | '), errs.join('|'));
