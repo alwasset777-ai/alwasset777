@@ -1901,3 +1901,10 @@ input[data-num], input[data-money], input[inputmode="numeric"], input[inputmode=
 .dz-c:active .dz-o { transform: scale(.95); }
 .dz-c b { margin: 0; font-size: 13.5px; }
 .dz-c small { font-size: 11px; line-height: 1.3; text-align: center; }
+
+/* 🎁 v197: مكافأة الروابط */
+.ref-prog:not(:empty) { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.ref-prog .rp-top { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.ref-prog .rp-bar { height: 8px; border-radius: 99px; background: var(--line); margin: 8px 0 6px; overflow: hidden; }
+.ref-prog .rp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #c9a24a, var(--gold)); border-radius: 99px; }
+.rw-row .btn-row { grid-column: 1 / -1; margin-top: 4px; }
