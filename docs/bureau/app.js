@@ -2979,7 +2979,7 @@
           <div class="btn-row">
             <button class="btn gold" id="bk-full">${ic('download', 18)} نسخة كاملة (مع الصور والفيديو)</button>
             <button class="btn" id="bk-light">${ic('download', 18)} نسخة خفيفة (بدون فيديو)</button>
-            <label class="btn">${ic('upload', 18)} استيراد نسخة<input type="file" id="bk-import" accept=".json,application/json" hidden></label>
+            <label class="btn">${ic('upload', 18)} استيراد نسخة<input type="file" id="bk-import" accept=".json,.w777,application/json,application/octet-stream" hidden></label>
           </div>
           <div class="btn-row" style="margin-top:10px">
             <button class="btn sm" id="csv-props">${ic('file', 16)} تصدير العقارات Excel (CSV)</button>
@@ -8318,7 +8318,41 @@
     document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
   }
+  // 🔐 v204: تشفير النسخة الاحتياطية بكلمة سر (AES-256-GCM، المفتاح من كلمة السر بـ PBKDF2-SHA256 · 310 000 دورة)
+  // شكل الملف: «W777ENC1» + salt (16) + iv (12) + النص المشفر — بلا كلمة السر ما يتقراش
+  const ENC_MAGIC = 'W777ENC1', ENC_ITER = 310000;
+  async function encKey(pw, salt) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: ENC_ITER, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function encBlob(blob, pw) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await encKey(pw, salt), await blob.arrayBuffer());
+    return new Blob([new TextEncoder().encode(ENC_MAGIC), salt, iv, ct], { type: 'application/octet-stream' });
+  }
+  async function decBlob(buf, pw) {
+    const u = new Uint8Array(buf), salt = u.slice(8, 24), iv = u.slice(24, 36);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, await encKey(pw, salt), u.slice(36));
+    return new TextDecoder().decode(pt);
+  }
+  const isEnc = buf => new TextDecoder().decode(new Uint8Array(buf.slice(0, 8))) === ENC_MAGIC;
+  // كلمة السر: مرتين للتصدير (8 حروف على الأقل)، مرة وحدة للاستيراد
+  const askPass = (twice) => new Promise(res => modal(`<h3>🔐 ${twice ? 'تشفير النسخة الاحتياطية' : 'النسخة مشفّرة'}</h3>
+    <p class="muted" style="margin-top:0">${twice ? 'اختار كلمة سر (8 حروف على الأقل). بلا بيها حتى واحد ما يقدر يقرا النسخة — <b>ما تنساهاش</b>، حيت ما كاينش طريقة نرجعوها.' : 'دخّل كلمة السر ديال هاد النسخة.'}</p>
+    <form id="bkpw" class="form-grid">${fInput('p1', 'كلمة السر', '', { type: 'password', cls: 'full' })}${twice ? fInput('p2', 'عاود كلمة السر', '', { type: 'password', cls: 'full' }) : ''}</form>
+    <div class="btn-row" style="justify-content:flex-end;margin-top:10px">${twice ? '<button class="btn sm" id="bk-plain">بلا تشفير (ماشي مستحسن)</button>' : ''}<button class="btn" data-close>إلغاء</button><button class="btn gold" id="bk-ok">🔐 ${twice ? 'شفّر وصدّر' : 'افتح'}</button></div>`, (m, close) => {
+    let done = false; const fin = v => { if (done) return; done = true; close(); res(v); };
+    m.parentElement.addEventListener('click', e => { if (e.target === m.parentElement || e.target.closest('[data-close]')) fin(null); });
+    const pl = $('#bk-plain', m); if (pl) pl.onclick = () => fin('');
+    $('#bk-ok', m).onclick = () => { const v = collect($('#bkpw', m)); const p1 = String(v.p1 || '');
+      if (twice && p1.length < 8) { toast('كلمة السر خاصها 8 حروف على الأقل'); return; }
+      if (twice && p1 !== v.p2) { toast('الكلمتين ماشي بحال بحال'); return; }
+      if (!p1) return; fin(p1); };
+    setTimeout(() => { const i = $('[name=p1]', m); if (i) i.focus(); }, 50);
+  }));
   async function exportBackup(withVideos) {
+    const pw = (EMBED || !(window.crypto && crypto.subtle)) ? '' : await askPass(true);
+    if (pw === null) return;
     const prog = $('#bk-prog'); prog.classList.remove('hidden');
     const bar = prog.firstElementChild;
     const meta = (await DB.all('meta')).filter(m => !m.key.startsWith('sync_'));
@@ -8337,9 +8371,10 @@
       bar.style.width = ((i + 1) / ids.length * 100) + '%';
     }
     parts.push(']}');
-    const blob = new Blob(parts, { type: 'application/json' });
-    const name = `wasset777-backup-${today()}${withVideos ? '' : '-light'}.json`;
-    const file = new File([blob], name, { type: 'application/json' });
+    const plain = new Blob(parts, { type: 'application/json' });
+    const blob = pw ? await encBlob(plain, pw) : plain;
+    const name = `wasset777-backup-${today()}${withVideos ? '' : '-light'}${pw ? '.w777' : '.json'}`;
+    const file = new File([blob], name, { type: pw ? 'application/octet-stream' : 'application/json' });
     await DB.setMeta('lastBackup', new Date().toISOString());
     prog.classList.add('hidden');
     try {
@@ -8355,7 +8390,13 @@
   }
   async function importBackup(file) {
     let data;
-    try { data = JSON.parse(await file.text()); } catch (e) { toast('ملف غير صالح'); return; }
+    try {
+      const buf = await file.arrayBuffer();
+      if (isEnc(buf)) {
+        const pw = await askPass(false); if (!pw) return;
+        try { data = JSON.parse(await decBlob(buf, pw)); } catch (e) { toast('🔐 كلمة السر غالطة (ولا الملف تخسر)', 4500); return; }
+      } else data = JSON.parse(new TextDecoder().decode(buf));
+    } catch (e) { toast('ملف غير صالح'); return; }
     if (!data || data.app !== 'wasset777-bureau') { toast('هذا الملف ليس نسخة احتياطية لتطبيق مجموعة الوسيط'); return; }
     const choice = await new Promise(res => modal(`<h3>استيراد ${data.properties.length} عقار و ${data.requests.length} طلب${(data.appointments || []).length ? ' و ' + data.appointments.length + ' موعد' : ''}</h3>
       <p class="muted">تاريخ النسخة: ${esc((data.exportedAt || '').slice(0, 16).replace('T', ' '))}</p>
