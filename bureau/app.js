@@ -1648,10 +1648,10 @@
       </div>
       <div id="home-flags" class="flag-band hidden"></div>
       <div class="hstats">
-        <div class="hst" style="${gauge(avail.length, 200)}">${odo(avail.length)}<b>عقار متاح</b></div>
-        <div class="hst" style="${gauge(open.length, 60)}">${odo(open.length)}<b>طلب مفتوح</b></div>
-        <div class="hst" style="${gauge(cold ? 0 : strong, 60)}">${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
-        <div class="hst" style="${gauge(saleValue / 1e7, 300)}">${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
+        <div class="hst" style="${gauge(avail.length, 200)}"><i class="hneedle" aria-hidden="true"></i>${odo(avail.length)}<b>عقار متاح</b></div>
+        <div class="hst" style="${gauge(open.length, 60)}"><i class="hneedle" aria-hidden="true"></i>${odo(open.length)}<b>طلب مفتوح</b></div>
+        <div class="hst" style="${gauge(cold ? 0 : strong, 60)}"><i class="hneedle" aria-hidden="true"></i>${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
+        <div class="hst" style="${gauge(saleValue / 1e7, 300)}"><i class="hneedle" aria-hidden="true"></i>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
       </div>
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
@@ -1664,10 +1664,10 @@
           </div>
         </div>` : `
       <div class="hboxes hstats">
-        <a class="hst hbx" href="#/matching" style="${gauge(cold ? 0 : strong, 60)}">${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>أفضل الفرص</b><small>${cold ? '⏳ جاري الحساب…' : strong ? 'طلب ↔ عقار' : 'ما كاين حتى فرصة قوية'}</small></a>
-        <button type="button" class="hst hbx" data-hbox="appts" style="${gauge(todayAppts.length, 10)}">${odo(todayAppts.length)}<b>مواعيد اليوم</b><small>${todayAppts.length ? 'ضغط باش تشوفها' : 'ما كاين حتى موعد'}</small></button>
-        <button type="button" class="hst hbx" data-hbox="follow" style="${gauge(follow.length, 20)}">${odo(follow.length)}<b>متابعات اليوم</b><small>${follow.length ? 'زبناء خاصك تتاصل بيهم' : 'كلشي متابَع ✓'}</small></button>
-        <button type="button" class="hst hbx" data-hbox="dist" style="${gauge(avail.length, 200)}">${odo(avail.length)}<b>توزيع العقارات</b><small>${esc(Object.entries(byType).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => k.split(' ')[0] + ' ' + v).join(' · ') || '—')}</small></button>
+        <a class="hst hbx" href="#/matching" style="${gauge(cold ? 0 : strong, 60)}"><i class="hneedle" aria-hidden="true"></i>${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>أفضل الفرص</b><small>${cold ? '⏳ جاري الحساب…' : strong ? 'طلب ↔ عقار' : 'ما كاين حتى فرصة قوية'}</small></a>
+        <button type="button" class="hst hbx" data-hbox="appts" style="${gauge(todayAppts.length, 10)}"><i class="hneedle" aria-hidden="true"></i>${odo(todayAppts.length)}<b>مواعيد اليوم</b><small>${todayAppts.length ? 'ضغط باش تشوفها' : 'ما كاين حتى موعد'}</small></button>
+        <button type="button" class="hst hbx" data-hbox="follow" style="${gauge(follow.length, 20)}"><i class="hneedle" aria-hidden="true"></i>${odo(follow.length)}<b>متابعات اليوم</b><small>${follow.length ? 'زبناء خاصك تتاصل بيهم' : 'كلشي متابَع ✓'}</small></button>
+        <button type="button" class="hst hbx" data-hbox="dist" style="${gauge(avail.length, 200)}"><i class="hneedle" aria-hidden="true"></i>${odo(avail.length)}<b>توزيع العقارات</b><small>${esc(Object.entries(byType).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => k.split(' ')[0] + ' ' + v).join(' · ') || '—')}</small></button>
       </div>
       <h3 style="margin:22px 0 12px">آخر العقارات المضافة</h3>
       <div class="prop-grid">${S.props.slice(0, 6).map(propCard).join('')}</div>`}
