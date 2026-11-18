@@ -46,6 +46,7 @@ const CERTS = [
   if (pid) await go(p, '#/property/' + pid, 'property');
   await go(p, '#/property/new', 'property-new');
   await go(p, '#/requests', 'requests');
+  await go(p, '#/request/new', 'request-new');
   await go(p, '#/matching', 'matching');
   await go(p, '#/appointment/new', 'appointment-new');
   await go(p, '#/rentals', 'rentals');
