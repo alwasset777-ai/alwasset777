@@ -1497,7 +1497,16 @@
     return `<div class="gd-banner"><span class="big">🎓</span><div class="grow"><b>جديد فالتطبيق؟</b><small>تعلّم استعمالو فـ ${L.length} درس قصير بالصور، خطوة بخطوة.</small></div>
       <a class="btn gold sm" href="#/guide">ابدأ الدليل</a><button class="btn sm" data-act="hide-guide">✕</button></div>`;
   }
+  // 🎁 v198: تنبيه فالرئيسية ملي كاينة مكافأة كتسنى موافقة المدير
+  async function homeRewards() {
+    const box = $('#home-rw'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
+    let n = 0;
+    try { const r = await Sy.request('/rest/v1/rpc/w777_rewards_list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) { const j = await r.json(); n = Array.isArray(j) ? j.filter(x => x.status === 'pending').length : 0; } } catch (e) { /* */ }
+    if (!box.isConnected || !n) return;
+    box.innerHTML = `<a class="home-rw" href="#/agencies/manage"><span class="hr-ic">🎁</span><span class="hr-tx"><b>${n === 1 ? 'مكافأة وحدة كتسنى موافقتك' : `${fmt(n)} مكافآت كتسنى موافقتك`}</b><small>مشترك جاب 5 تسجيلات بالرابط ديالو — زيد ليه شهر مجاني ولا رفض</small></span><span class="hr-go">←</span></a>`;
+  }
   async function viewHome() {
+    setTimeout(homeRewards, 0);
     const avail = S.props.filter(p => p.status === 'available');
     const open = S.reqs.filter(openReq);
     // أول فتح: الصفحة كتبان فورا، والفرص كتتحسب فالخلفية ومن بعد كتتعرض
@@ -1515,7 +1524,7 @@
     const saleValue = avail.filter(p => p.transaction === 'sale').reduce((s, p) => s + (num(p.priceMax) || num(p.priceMin) || 0), 0);
     const todayAppts = S.appts.filter(a => a.status === 'planned' && a.date === today()).sort((x, y) => (x.time || '').localeCompare(y.time || ''));
 
-    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
+    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + (S.role === 'admin' ? '<div id="home-rw"></div>' : '') + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
       <div class="hero">
         <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
         <div class="hero-big3">
@@ -2443,6 +2452,60 @@
     $$('[data-trx]').forEach(el => el.onclick = () => { f.trx = el.dataset.trx; viewReqs(query); });
   }
 
+  // 📋 v198: كنقراو رسالة الزبون (دارجة / عربية / فرنسية) ونستخرجو المعلومات — كلشي فالهاتف، بلا إنترنت
+  function parseClientMsg(raw) {
+    const t0 = String(raw || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+    const t = ' ' + t0.toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ة\b/g, 'ه') + ' ';
+    const o = {};
+    // الهاتف
+    const ph = t0.match(/(?:\+|00)?212[\s.\-]?[5-7](?:[\s.\-]?\d){8}|\b0[5-7](?:[\s.\-]?\d){8}\b/);
+    if (ph) { const d = ph[0].replace(/\D/g, ''); o.phone = d.startsWith('00212') ? '0' + d.slice(5) : d.startsWith('212') ? '0' + d.slice(3) : d; }
+    // الاسم
+    const nm = t0.match(/(?:سميتي|اسمي|إسمي|معاك|انا|أنا|je suis|je m'appelle|nom\s*:?|moi c'est)\s+([A-Za-zÀ-ÿء-ي]{2,20}(?:\s+[A-Za-zÀ-ÿء-ي]{2,20})?)/i);
+    if (nm && !/^(كنقلب|بغيت|باغي|نقلب|محتاج|عندي|ابحث|أبحث|cherche|recherche|veux)/i.test(nm[1])) o.name = nm[1].split(/\s+/).filter(w => !/^(و|من|في|ف|كنقلب|بغيت|باغي|et|de|je)$/i.test(w)).slice(0, 2).join(' ');
+    // نوع العملية
+    if (/رهن/.test(t)) o.trx = 'rahn';
+    else if (/كرا|كري|للكراء|نكري|location|louer|à louer|a louer|loyer/.test(t)) o.trx = /مفروش|meubl/.test(t) ? 'rent_furnished' : 'rent';
+    else if (/شرا|نشري|نشريو|بيع|للبيع|achat|acheter|achète|vente|à vendre/.test(t)) o.trx = 'sale';
+    // نوع العقار
+    const TY = [[/استوديو|studio/, 'studio'], [/دوبلكس|duplex/, 'duplex'], [/مفروش|meubl/, 'apartment_furnished'], [/شق[هة]|شقق|appart|appartement/, 'apartment'],
+      [/فيلا|villa/, 'villa'], [/رياض|riad/, 'riad'], [/\bدار\b|منزل|maison/, 'house'], [/بقع[هة]|\blot\b/, 'plot_house'], [/ارض|terrain/, 'land_urban'],
+      [/محل|حانوت|magasin|local commercial|commerce/, 'shop'], [/مكتب|bureau|plateau/, 'office'], [/ضيع[هة]|ferme/, 'farm']];
+    const ok = new Set(D.PROPERTY_TYPES.map(x => x.id));
+    o.types = TY.filter(([re]) => re.test(t)).map(([, id]) => id).filter(id => ok.has(id));
+    if (o.types.includes('apartment_furnished')) o.types = o.types.filter(x => x !== 'apartment');
+    // المدينة (الأطول أولا) والحي
+    const cities = Object.values(CITY).flatMap(c => [[c.n, c.n], [String(c.f || '').toLowerCase(), c.n]]).filter(([k]) => k && k.length > 2).sort((a, b) => b[0].length - a[0].length);
+    const norm1 = x => x.toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ة\b/g, 'ه');
+    const cm = cities.find(([k]) => t.includes(norm1(k)));
+    if (cm) o.city = cm[1];
+    if (o.city) {
+      const ds = districtsOf(o.city).filter(x => x && x.length > 2).sort((a, b) => b.length - a.length);
+      o.districts = ds.filter(x => t.includes(norm1(x.replace(/\s*\(.*\)\s*/, '')))).slice(0, 4);
+    }
+    const dm = t0.match(/(?:ف?حي|quartier)\s+([ء-يA-Za-zÀ-ÿ]{3,}(?:\s+[ء-يA-Za-zÀ-ÿ]{3,})?)/i);
+    if (dm && (!o.districts || !o.districts.length)) o.districts = [dm[1].trim()];
+    // الأرقام: الثمن (مليون = 10 000 درهم بالدارجة)، المساحة، الغرف
+    const W = { 'جوج': 2, 'زوج': 2, 'ثلاث': 3, 'تلات': 3, 'تلاته': 3, 'ثلاثه': 3, 'ربع': 4, 'اربع': 4, 'اربعه': 4, 'خمس': 5, 'خمسه': 5, 'deux': 2, 'trois': 3, 'quatre': 4, 'cinq': 5 };
+    const money = [];
+    const re = /(\d+(?:[.,]\d+)?)\s*(مليون درهم|مليار|ملايين|ملاين|مليون|million de dh|millions?|mdh|م\.?د|الف درهم|الف|ألف|k|dh|درهم|dhs)?/gi;
+    let m;
+    while ((m = re.exec(t))) {
+      const n = parseFloat(m[1].replace(',', '.')), u = (m[2] || '').toLowerCase();
+      const after = t.slice(m.index + m[0].length, m.index + m[0].length + 8);
+      if (/^\s*(م2|م²|متر|m2|m²|mètre|metre|غرف|بيوت|chambre|ch\b|طابق|étage)/.test(after) || /^0[5-7]\d{8}$/.test(m[1])) continue;
+      let v = 0;
+      if (/مليار/.test(u)) v = n * 1e7; else if (/مليون درهم|million de dh|mdh|م\.?د/.test(u)) v = n * 1e6; else if (/ملاين|ملايين|مليون|million/.test(u)) v = n < 10 ? n * 1e6 : n * 1e4; // «80 مليون» = 800 000 درهم، «1.5 مليون» = 1 500 000
+      else if (/الف|ألف|^k$/.test(u)) v = n * 1e3; else if (/dh|درهم/.test(u) || n >= 1000) v = n;
+      if (v >= 500) money.push(Math.round(v));
+    }
+    if (money.length) { const a = Math.min(...money), b = Math.max(...money); if (money.length > 1 && a !== b) { o.budgetMin = a; o.budgetMax = b; } else o.budgetMax = b; }
+    const ar = t.match(/(\d{2,5})\s*(?:م2|م²|متر|m2|m²|mètres?|metres?)/);
+    if (ar) o.area = +ar[1];
+    const bd = t.match(/(\d)\s*(?:غرف|بيوت|بيت|chambres?|ch\b)/) || t.match(/(جوج|زوج|ثلاث|تلات|تلاته|ثلاثه|ربع|اربع|اربعه|خمس|خمسه|deux|trois|quatre|cinq)\s*(?:غرف|بيوت|chambres?)/);
+    if (bd) o.beds = String(W[bd[1]] || +bd[1]);
+    return o;
+  }
   async function viewReqForm(id) {
     const existing = id ? S.reqs.find(r => r.id === id) : null;
     if (id && !existing) { main().innerHTML = notFound(); return; }
@@ -2461,6 +2524,7 @@
       <form class="form" id="rform" autocomplete="off" novalidate>
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">1</span> معلومات الزبون</h3>
+          <button type="button" class="btn gold paste-msg" id="paste-msg">📋 لصق رسالة الزبون <small>كتعمر الاستمارة بوحدها</small></button>
           <div class="form-grid">
             ${fInput('client.name', 'الاسم الكامل', r.client.name, { req: true })}
             ${fInput('client.phone', 'الهاتف', r.client.phone, { type: 'tel', req: true })}
@@ -2611,6 +2675,37 @@
       renderDs();
       $$('[name=districts]', form).forEach(el => { if (el.value === v) el.checked = true; });
       $('#new-district').value = '';
+    };
+    // 📋 لصق رسالة الزبون ← كنعمرو غير الخانات الخاوية، والرسالة كتمشي لـ«تفاصيل الطلب»
+    $('#paste-msg').onclick = async () => {
+      let clip = '';
+      try { if (navigator.clipboard && navigator.clipboard.readText) clip = (await navigator.clipboard.readText()) || ''; } catch (e) { /* */ }
+      modal(`<h3>📋 رسالة الزبون</h3><p class="muted" style="margin-top:0">لصق هنا الرسالة ديال الزبون (واتساب، فيسبوك، SMS…) والتطبيق غادي يعمر الاستمارة بوحدو. راجع الخانات قبل الحفظ.</p>
+        <textarea id="pm-txt" rows="7" style="width:100%" placeholder="مثال: السلام، سميتي كريم، كنقلب على شقة للكراء فحمرية مكناس، 2 بيوت، الميزانية 3500 درهم. 0612345678">${esc(clip.slice(0, 2000))}</textarea>
+        <div class="btn-row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-close>إلغاء</button><button class="btn gold" id="pm-go">✨ عمّر الاستمارة</button></div>`, (m, close) => {
+        $('#pm-go', m).onclick = () => {
+          const txt = $('#pm-txt', m).value.trim(); if (!txt) { toast('لصق الرسالة أولاً'); return; }
+          const o = parseClientMsg(txt), got = [];
+          const setV = (n, v, lbl) => { const el = $(`[name="${n}"]`, form); if (!el || v == null || v === '' || (el.value && el.value.trim())) return; el.value = el.dataset.money !== undefined ? String(v) : v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); got.push(lbl); };
+          setV('client.name', o.name, 'الاسم'); setV('client.phone', o.phone, 'الهاتف');
+          if (o.trx) { const r = $(`[name=transaction][value="${o.trx}"]`, form); if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); } if (r) { got.push('نوع العملية'); const sg = r.closest('.seg'); if (sg && r.closest('.seg-x')) sg.classList.remove('seg-less'); } }
+          if (o.types && o.types.length) { o.types.forEach(id => { const c = $(`[name=types][value="${id}"]`, form); if (c) { c.checked = true; const d = c.closest('details'); if (d) d.open = true; } }); const b = $('[data-more=r2]', form); if (b) { b.open = true; b.dispatchEvent(new Event('change')); } got.push('نوع العقار'); }
+          if (o.city) { const c = $('[name=city]', form); if (c && c.value !== o.city) { c.value = o.city; c.dispatchEvent(new Event('change')); } got.push('المدينة'); }
+          if (o.districts && o.districts.length) {
+            o.districts.forEach(dn => { let c = $$('[name=districts]', form).find(x => x.value === dn); if (!c) { $('#new-district').value = dn; $('#add-district').click(); c = $$('[name=districts]', form).find(x => x.value === dn); } if (c) c.checked = true; });
+            const b = $('[data-more=r3]', form); if (b) { b.open = true; b.dispatchEvent(new Event('change')); } got.push('الحي');
+          }
+          if (o.budgetMin) setV('budgetMin', o.budgetMin, 'الميزانية من');
+          if (o.budgetMax) setV('budgetMax', o.budgetMax, 'الميزانية');
+          if (o.area) setV('areaMin', o.area, 'المساحة');
+          if (o.beds) { const el = $('[name=bedroomsMin]', form); if (el && !el.value) { el.value = o.beds; el.dispatchEvent(new Event('change', { bubbles: true })); got.push('الغرف'); } }
+          const ds = $('[name=description]', form); if (ds && !ds.value.trim()) { ds.value = txt; ds.dispatchEvent(new Event('input', { bubbles: true })); }
+          close();
+          toast(got.length ? '✅ تعمّرات: ' + [...new Set(got)].join('، ') + ' — راجعها قبل الحفظ' : 'ما لقيتش معلومات واضحة — الرسالة تحطات فـ«تفاصيل الطلب»', 4500);
+          const first = got.length ? null : $('[name="client.name"]', form); if (first) first.focus();
+        };
+        setTimeout(() => { const ta = $('#pm-txt', m); if (ta) ta.focus(); }, 50);
+      });
     };
     form.onsubmit = async e => {
       e.preventDefault();
