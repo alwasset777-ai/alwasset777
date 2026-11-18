@@ -1470,7 +1470,7 @@
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
-        hubPic('#/game', 'games', 'الوسيط GAMES', '7 ألعاب عقارية: تلعب وتتعلم', '#c8102e'), finHub(),
+        hubPic('#/game', 'games', 'الوسيط GAMES', '7 ألعاب عقارية: تلعب وتتعلم', '#c8102e'), hubPic('#/learn', 'academy', 'أكاديمية مجموعة الوسيط', '7 وحدات + شهادة', '#b8860b'), finHub(),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري')]],
       net: ['✦ مجموعة الوسيط', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
@@ -3374,7 +3374,7 @@
   // الدارجة هي اللغة الافتراضية (مرة وحدة كنرجعو ليها حتى اللي كانو مختارين العربية من قبل)
   try { if (!localStorage.getItem('w777_agent_lang_v2')) { localStorage.setItem('w777_agent_lang_v2', '1'); localStorage.removeItem('w777_agent_lang'); } } catch (e) { /* */ }
   // الإسبانية والإيطالية تحيدو: اللي كانو مختارينهم كيرجعو للدارجة
-  const agLang = () => { try { const l = localStorage.getItem('w777_agent_lang'); return AG_LANGS.some(x => x.id === l) ? l : 'darija'; } catch (e) { return 'darija'; } };
+  const agLang = () => { if (/^#\/learn/.test(location.hash || '')) return 'ar'; try { const l = localStorage.getItem('w777_agent_lang'); return AG_LANGS.some(x => x.id === l) ? l : 'darija'; } catch (e) { return 'darija'; } };
   const agT = () => AG_T[agLang()] || AG_T.darija;
   // لغة التطبيق تبدلات ← الوكيل كيتبعها (فرنسية/إنجليزية، والعربية ← الدارجة)؛ اللغات الأخرى كيبقى على اختيار المستعمل
   window.addEventListener('w777-lang', e => {
@@ -3413,7 +3413,8 @@
   }
   const agMine = () => !!(AG.my && (AG.my.photo || AG.my.name));
   const agName = () => (AG.my && AG.my.name) || (AG.cfg && AG.cfg.name) || 'مساعد مجموعة الوسيط';
-  const agPhoto = () => (AG.my && AG.my.photo) || (AG.cfg && AG.cfg.photo) || 'icons/icon-192.png?v=9';
+  const AG_MOUNIR = 'icons/agent-mounir.webp?v=1';
+  const agPhoto = () => (AG.my && AG.my.photo) || (AG.cfg && AG.cfg.photo) || AG_MOUNIR;
   function agPaintButton() {
     const b = $('#agent-fab'); if (!b) return;
     b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
@@ -3944,11 +3945,31 @@
     return out.map((m, k) => (k !== last && m.role === 'user' && Array.isArray(m.content) && m.content.some(b => b.type === 'image' || b.type === 'document'))
       ? { ...m, content: m.content.map(b => (b.type === 'image' || b.type === 'document' ? { type: 'text', text: '[ملف مرفق قبل]' } : b)) } : m);
   }
+  // 🎓 v199: نصوص الأكاديمية (بالفصحى) كتمشي مع السؤال: الدرس المفتوح دابا + أقرب درسين للسؤال
+  function agAcad(q) {
+    const A = window.W777_ACAD; if (!A || !Array.isArray(A.modules)) return [];
+    const txt = (m, l, j) => `${m.m} — ${m.t} · الدرس ${j + 1}: ${l.t}\n${l.intro || ''}\n${(l.pts || []).map(x => '• ' + x).join('\n')}${l.ex ? '\nمثال: ' + l.ex : ''}${l.err ? '\nخطأ شائع: ' + l.err : ''}`;
+    const out = [], seen = new Set(), mm = (location.hash || '').match(/^#\/learn\/(M\d)(?:\/(\d+))?/);
+    if (mm) {
+      const m = A.modules.find(x => x.m === mm[1]);
+      if (m && mm[2] != null && m.lessons[+mm[2]]) { out.push(txt(m, m.lessons[+mm[2]], +mm[2])); seen.add(m.m + mm[2]); }
+      else if (m) out.push(`${m.m} — ${m.t}: ${m.sub || ''}\nالدروس: ${m.lessons.map((l, j) => (j + 1) + '. ' + l.t).join(' · ')}`);
+    }
+    const tk = tokens(q || '').filter(w => w.length > 2);
+    if (tk.length) {
+      const sc = [];
+      A.modules.forEach(m => m.lessons.forEach((l, j) => { if (seen.has(m.m + j)) return; const h = norm([l.t, l.intro, (l.pts || []).join(' ')].join(' ')); const n = tk.filter(w => h.includes(w)).length + tk.filter(w => norm(l.t).includes(w)).length * 2; if (n) sc.push([n, m, l, j]); }));
+      sc.sort((a, b) => b[0] - a[0]).slice(0, 2).forEach(([, m, l, j]) => out.push(txt(m, l, j)));
+    }
+    if (!out.length) out.push(`${A.title}: ${A.tagline}\n` + A.modules.map(m => `${m.m} — ${m.t}`).join(' · '));
+    return out.map(x => x.slice(0, 2400));
+  }
   async function agCall(onText) {
     const Sy = window.W777_SYNC;
     const lastQ = [...AG.history].reverse().find(agIsQ);
     const ctx = { today: today(), agency: S.role === 'agency' ? myAgencyName() : S.settings.officeName, role: S.role || 'office', page: location.hash || '#/', snap: agSnap(), agent_name: agName() };
     if (lastQ && AG_HOWTO.test(agQText(lastQ))) { const h = agGuide(agQText(lastQ), 2); if (h.length) ctx.help = h; }
+    if (/^#\/learn/.test(location.hash || '')) ctx.help = ['أنت في «أكاديمية مجموعة الوسيط»: أجب بالعربية الفصحى السليمة فقط، واعتمد على نصوص الدروس التالية كما هي دون تغيير المعلومات.', ...agAcad(lastQ ? agQText(lastQ) : '')];
     const res = await Sy.request('/functions/v1/w777-agent', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: agTrim(AG.history), lang: agLang(), ctx, stream: true }),
