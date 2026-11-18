@@ -1756,3 +1756,102 @@ language sql stable security definer set search_path = public as $$
   from w777_agencies a where a.uid = auth.uid() and a.code is not null limit 1 $$;
 revoke all on function public.w777_my_refs() from public, anon;
 grant execute on function public.w777_my_refs() to authenticated;
+
+-- ============================================================
+-- v205: 💳 طرق دفع الاشتراك (تحويل بنكي + وكالات تحويل الأموال) + وصل الأداء من التطبيق ← موافقة المدير
+-- ============================================================
+create table if not exists public.w777_pay_info (
+  id int primary key default 1 check (id = 1),
+  bank_name text check (length(bank_name) <= 80), bank_holder text check (length(bank_holder) <= 80), rib text check (length(rib) <= 40),
+  mt_name text check (length(mt_name) <= 80), mt_city text check (length(mt_city) <= 60), mt_phone text check (length(mt_phone) <= 30),
+  note text check (length(note) <= 400), updated_at timestamptz not null default now());
+insert into public.w777_pay_info (id) values (1) on conflict (id) do nothing;
+alter table public.w777_pay_info enable row level security;
+revoke all on public.w777_pay_info from anon;
+grant select, update on public.w777_pay_info to authenticated;
+drop policy if exists w777_payinfo_sel on public.w777_pay_info;
+create policy w777_payinfo_sel on public.w777_pay_info for select to authenticated using (true);
+drop policy if exists w777_payinfo_upd on public.w777_pay_info;
+create policy w777_payinfo_upd on public.w777_pay_info for update to authenticated using (w777_is_admin()) with check (w777_is_admin());
+
+create table if not exists public.w777_payments (
+  id bigserial primary key,
+  uid uuid not null references auth.users(id) on delete cascade,
+  method text not null check (method in ('bank', 'transfer')),
+  amount numeric not null check (amount > 0 and amount < 100000),
+  ref text check (length(ref) <= 80),
+  proof text not null check (length(proof) <= 200),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  created_at timestamptz not null default now(), decided_at timestamptz, new_until date);
+alter table public.w777_payments enable row level security;
+revoke all on public.w777_payments from anon;
+grant select on public.w777_payments to authenticated;
+drop policy if exists w777_pay_sel on public.w777_payments;
+create policy w777_pay_sel on public.w777_payments for select to authenticated using (uid = auth.uid() or w777_is_admin());
+
+-- الوصل: bucket خاص، كل مشترك فالدوسي ديالو (حتى إلا كان الحساب موقوف، باش يقدر يخلّص)، المدير كيشوف الكل
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('w777-pay', 'w777-pay', false, 6291456, array['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+drop policy if exists w777_pay_ins on storage.objects;
+create policy w777_pay_ins on storage.objects for insert to authenticated
+  with check (bucket_id = 'w777-pay' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists w777_payf_sel on storage.objects;
+create policy w777_payf_sel on storage.objects for select to authenticated
+  using (bucket_id = 'w777-pay' and ((storage.foldername(name))[1] = auth.uid()::text or public.w777_is_admin()));
+drop policy if exists w777_payf_del on storage.objects;
+create policy w777_payf_del on storage.objects for delete to authenticated
+  using (bucket_id = 'w777-pay' and public.w777_is_admin());
+
+-- المشترك: «صيفطت المبلغ» (حتى 3 كتسنى فنفس الوقت)
+create or replace function public.w777_pay_submit(p_method text, p_amount numeric, p_ref text, p_proof text)
+returns bigint language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); nid bigint;
+begin
+  if me is null then raise exception 'auth'; end if;
+  if not exists (select 1 from w777_agencies where uid = me) then raise exception 'no agency'; end if;
+  if p_proof is null or split_part(p_proof, '/', 1) <> me::text or p_proof !~ '^[0-9a-f-]{36}/[A-Za-z0-9._-]{1,120}$' then raise exception 'proof'; end if;
+  if (select count(*) from w777_payments where uid = me and status = 'pending') >= 3 then raise exception 'too many'; end if;
+  insert into w777_payments (uid, method, amount, ref, proof) values (me, p_method, p_amount, nullif(left(trim(coalesce(p_ref, '')), 80), ''), p_proof) returning id into nid;
+  return nid;
+end $$;
+revoke all on function public.w777_pay_submit(text, numeric, text, text) from public, anon;
+grant execute on function public.w777_pay_submit(text, numeric, text, text) to authenticated;
+
+-- المدير: اللائحة (اللي كتسنى أولاً) مع الاسم والرمز والهاتف وتواريخ الاشتراك
+create or replace function public.w777_pay_list()
+returns table (id bigint, uid uuid, method text, amount numeric, ref text, proof text, status text, created_at timestamptz, decided_at timestamptz, new_until date,
+               name text, code text, phone text, sub_until date, trial_until date, terms_at timestamptz)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  return query select p.id, p.uid, p.method, p.amount, p.ref, p.proof, p.status, p.created_at, p.decided_at, p.new_until,
+    a.name, a.code, a.phone, a.sub_until, a.trial_until, a.terms_at
+  from w777_payments p left join w777_agencies a on a.uid = p.uid
+  order by (p.status = 'pending') desc, p.created_at desc limit 100;
+end $$;
+revoke all on function public.w777_pay_list() from public, anon;
+grant execute on function public.w777_pay_list() to authenticated;
+
+-- المدير: ✅ قبول (+12 شهر من آخر نهاية: الخالص، المجاني ولا اليوم) ولا ✖ رفض — مرة وحدة
+create or replace function public.w777_pay_decide(p_id bigint, p_ok boolean, p_months int default 12)
+returns date language plpgsql security definer set search_path = public as $$
+declare r w777_payments; a w777_agencies; base date; nu date;
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  if p_months is null or p_months < 1 or p_months > 36 then raise exception 'months'; end if;
+  select * into r from w777_payments where id = p_id and status = 'pending' for update;
+  if not found then raise exception 'not pending'; end if;
+  if not coalesce(p_ok, false) then
+    update w777_payments set status = 'rejected', decided_at = now() where id = p_id; return null;
+  end if;
+  select * into a from w777_agencies where uid = r.uid for update;
+  if not found then raise exception 'no agency'; end if;
+  base := greatest(coalesce(a.sub_until, current_date), coalesce(a.trial_until, (coalesce(a.terms_at, now()) + interval '6 months')::date), current_date);
+  nu := (base + make_interval(months => p_months))::date;
+  update w777_agencies set sub_until = nu where uid = a.uid;
+  update w777_payments set status = 'approved', decided_at = now(), new_until = nu where id = p_id;
+  return nu;
+end $$;
+revoke all on function public.w777_pay_decide(bigint, boolean, int) from public, anon;
+grant execute on function public.w777_pay_decide(bigint, boolean, int) to authenticated;

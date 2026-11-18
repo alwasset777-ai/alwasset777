@@ -1237,6 +1237,108 @@
     };
   }
   // ⛔ المدة المجانية ولا الاشتراك سالاو: الحساب موقوف (البيانات محفوظة) حتى يمدّد المدير التاريخ
+  // 💳 v205: طرق الأداء (تحويل بنكي + وكالات تحويل الأموال) ← وصل من التطبيق ← موافقة المدير (+12 شهر)
+  const PAY_M = { bank: '🏦 تحويل بنكي (RIB)', transfer: '💸 وكالة تحويل الأموال (Cash Plus · Wafacash · Barid Cash)' };
+  async function payInfo() {
+    try { const r = await window.W777_SYNC.request('/rest/v1/w777_pay_info?id=eq.1&select=*'); if (r.ok) { const j = await r.json(); return (Array.isArray(j) && j[0]) || {}; } } catch (e) { /* */ }
+    return {};
+  }
+  const payCopy = v => v ? `<button type="button" class="btn sm pay-cp" data-cp="${esc(v)}">📋 نسخ</button>` : '';
+  async function payModal() {
+    const Sy = window.W777_SYNC; if (!Sy || !Sy.isOn()) { toast('دخل بالحساب ديالك باش تخلّص'); return; }
+    const ag = S.agency || {}, price = subPrice(ag) || SUB_BASE, I = await payInfo();
+    let mine = [];
+    try { const r = await Sy.request('/rest/v1/w777_payments?select=id,method,amount,status,created_at,new_until&order=created_at.desc&limit=5'); if (r.ok) mine = await r.json(); } catch (e) { /* */ }
+    const hasBank = I.rib || I.bank_holder, hasMt = I.mt_name || I.mt_phone;
+    const row = (l, v, cp) => v ? `<div class="pay-row"><small>${l}</small><b dir="auto">${esc(v)}</b>${cp ? payCopy(v) : ''}</div>` : '';
+    const ST = { pending: '⏳ كتسنى المراجعة', approved: '✅ مقبول', rejected: '✖ مرفوض' };
+    modal(`<h3>💳 خلّص الاشتراك</h3>
+      <p class="muted" style="margin-top:0">المبلغ: <b>${fmt(price)} درهم</b> للعام${ag.code ? ` · كتب فالمرجع/الملاحظة الرمز ديالك: <b dir="ltr">${esc(ag.code)}</b>` : ''}.</p>
+      <div class="pay-m"><h4>${PAY_M.bank}</h4>${hasBank ? row('البنك', I.bank_name) + row('باسم', I.bank_holder, 1) + row('رقم الحساب (RIB)', I.rib, 1) : '<p class="muted">⏳ رقم الحساب غادي يتزاد قريبا.</p>'}</div>
+      <div class="pay-m"><h4>${PAY_M.transfer}</h4>${hasMt ? row('الاسم الكامل للمستفيد', I.mt_name, 1) + row('المدينة', I.mt_city) + row('الهاتف', I.mt_phone, 1) : '<p class="muted">⏳ معلومات المستفيد غادي تتزاد قريبا.</p>'}</div>
+      ${I.note ? `<p class="muted pay-note">ℹ️ ${esc(I.note)}</p>` : ''}
+      <h4 style="margin:14px 0 6px">📤 صيفطت المبلغ؟ رفع الوصل</h4>
+      <form id="payf" class="form-grid">
+        ${fSelect('method', 'طريقة الأداء', Object.entries(PAY_M).map(([v, l]) => ({ v, l })), hasBank || !hasMt ? 'bank' : 'transfer', { noEmpty: true })}
+        ${fInput('amount', 'المبلغ (درهم)', price, { type: 'number' })}
+        ${fInput('ref', 'رقم العملية / المرجع (إلا كان)', '', { cls: 'full' })}
+        <div class="field full"><label>صورة الوصل (ولا PDF)</label><input type="file" id="pay-file" accept="image/*,application/pdf"></div>
+      </form>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-close>سدّ</button><button class="btn gold" id="pay-send">📤 صيفط الوصل</button></div>
+      ${mine.length ? `<h4 style="margin:14px 0 6px">🧾 الأداءات ديالي</h4><div class="ss-rows">${mine.map(x => `<div class="ss-row"><b>${ST[x.status] || x.status}</b><span>${fmt(+x.amount)} درهم</span><small class="muted">${esc(dAr(x.created_at))}${x.new_until ? ' · الاشتراك حتى ' + esc(dAr(x.new_until)) : ''}</small></div>`).join('')}</div>` : ''}`, (m, close) => {
+      $$('.pay-cp', m).forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.cp); toast('✅ تنسخ'); } catch (e) { toast(b.dataset.cp); } });
+      $('#pay-send', m).onclick = async () => {
+        const v = collect($('#payf', m)), f = $('#pay-file', m).files[0], amt = num(v.amount);
+        if (!f) { toast('زيد صورة الوصل'); return; }
+        if (!(amt > 0)) { toast('دخّل المبلغ'); return; }
+        const btn = $('#pay-send', m); btn.disabled = true; btn.textContent = '⏳ كيتصيفط…';
+        try {
+          const blob = f.type === 'application/pdf' ? f : (await compressImage(f, 1600, 0.82)).blob;
+          if (blob.size > 6 * 1048576) throw new Error('الملف كبير بزاف');
+          const path = await uploadMine('w777-pay', 'recu', blob);
+          const r = await Sy.request('/rest/v1/rpc/w777_pay_submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_method: v.method, p_amount: amt, p_ref: v.ref || '', p_proof: path }) });
+          if (!r.ok) { const t = await r.text(); throw new Error(/too many/.test(t) ? 'عندك 3 أداءات كتسنى — تسنى المراجعة' : 'ما تقدّش'); }
+          close(); toast('✅ توصلنا بالوصل — غادي يتراجع ويتجدد الاشتراك ديالك من بعد الموافقة', 6000);
+        } catch (e) { btn.disabled = false; btn.textContent = '📤 صيفط الوصل'; toast('تعذر: ' + e.message, 4500); }
+      };
+    });
+  }
+  // 👑 المدير: الأداءات اللي كتسنى + معلومات الحسابات
+  async function drawPayAdmin() {
+    const box = $('#pay-admin'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
+    let rows = [];
+    try { const r = await Sy.request('/rest/v1/rpc/w777_pay_list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) rows = await r.json(); } catch (e) { /* */ }
+    const I = await payInfo();
+    if (!box.isConnected) return;
+    if (!Array.isArray(rows)) rows = [];
+    const pend = rows.filter(x => x.status === 'pending'), done = rows.filter(x => x.status !== 'pending').slice(0, 6);
+    const row = x => `<div class="ss-row pay-adm" data-id="${+x.id}"><b>${esc(x.name || x.code || '—')}</b><span>${fmt(+x.amount)} درهم</span>
+      <small class="muted">${PAY_M[x.method] ? PAY_M[x.method].split(' (')[0] : esc(x.method)} · ${esc(dAr(x.created_at))}${x.ref ? ' · المرجع: ' + esc(x.ref) : ''}${x.code ? ' · الرمز: ' + esc(x.code) : ''}</small>
+      ${x.status === 'pending' ? `<div class="btn-row"><button type="button" class="btn sm pay-see">🧾 شوف الوصل</button><button type="button" class="btn sm gold pay-ok">✅ قبول (+12 شهر)</button><button type="button" class="btn sm pay-no">✖ رفض</button></div>`
+        : `<small>${x.status === 'approved' ? '✅ تقبل — حتى ' + esc(dAr(x.new_until)) : '✖ ترفض'}</small>`}</div>`;
+    box.innerHTML = `<div class="card card-pad" style="margin-bottom:14px">
+      <h3 class="section-title" style="margin-top:0">💳 أداءات الاشتراك ${pend.length ? `<span class="badge gold">${pend.length}</span>` : ''}</h3>
+      ${pend.length ? `<div class="ss-rows">${pend.map(row).join('')}</div>` : '<p class="muted" style="margin:0">ما كاين حتى أداء كيتسنى.</p>'}
+      ${done.length ? `<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">آخر القرارات</summary><div class="ss-rows">${done.map(row).join('')}</div></details>` : ''}
+      <details class="more-f" style="margin-top:12px"><summary><span>⚙️ معلومات الحسابات (اللي كيشوفوها المشتركين)</span></summary>
+        <form id="payi" class="form-grid">
+          ${fInput('bank_name', 'البنك', I.bank_name || '')}${fInput('bank_holder', 'باسم (صاحب الحساب)', I.bank_holder || '')}
+          ${fInput('rib', 'رقم الحساب RIB (24 رقم)', I.rib || '', { cls: 'full' })}
+          ${fInput('mt_name', 'تحويل الأموال: الاسم الكامل للمستفيد', I.mt_name || '')}${fInput('mt_city', 'المدينة', I.mt_city || '')}${fInput('mt_phone', 'الهاتف', I.mt_phone || '', { type: 'tel' })}
+          ${fInput('note', 'ملاحظة للمشتركين (اختياري)', I.note || '', { cls: 'full' })}
+          <div class="field"><button type="button" class="btn gold" id="payi-save">${ic('check', 16)} حفظ</button></div></form></details></div>`;
+    const decide = async (id, ok) => {
+      const x = rows.find(y => +y.id === id); if (!x) return;
+      if (!(await confirmBox(ok ? `تقبل الأداء ديال «${x.name || x.code}» وتزيد 12 شهر؟` : `ترفض الأداء ديال «${x.name || x.code}»؟`, ok ? '✅ قبول' : '✖ رفض', !ok))) return;
+      try {
+        const r = await Sy.request('/rest/v1/rpc/w777_pay_decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_id: id, p_ok: ok }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const until = await r.json();
+        if (ok && x.phone) {
+          const msg = `✅ مرحبا ${x.name || ''}، توصلنا بالأداء ديالك (${x.amount} درهم) — شكراً!\nالاشتراك ديالك فتطبيق مجموعة الوسيط ولا صالح حتى ${dAr(until)}.`;
+          modal(`<h3>✅ تقبل الأداء</h3><p>الاشتراك ولا صالح حتى <b>${esc(dAr(until))}</b>.</p><div class="btn-row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(x.phone)}?text=${encodeURIComponent(msg)}" data-close>${ic('wa', 16)} صيفط التأكيد فواتساب</a><button class="btn" data-close>سدّ</button></div>`);
+        } else toast(ok ? '✅ تقبل' : '✖ ترفض');
+        drawPayAdmin();
+      } catch (e) { toast('ما تقدّش: ' + e.message, 4000); }
+    };
+    $$('.pay-ok', box).forEach(b => b.onclick = () => decide(+b.closest('.pay-adm').dataset.id, true));
+    $$('.pay-no', box).forEach(b => b.onclick = () => decide(+b.closest('.pay-adm').dataset.id, false));
+    $$('.pay-see', box).forEach(b => b.onclick = async () => {
+      const x = rows.find(y => +y.id === +b.closest('.pay-adm').dataset.id); if (!x) return;
+      const w = window.open('', '_blank');
+      try {
+        const r = await (await Sy.request(`/storage/v1/object/sign/w777-pay/${x.proof}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 600 }) })).json();
+        if (!r.signedURL) throw new Error('—');
+        const u = Sy.account().url + '/storage/v1' + r.signedURL; if (w) w.location = u; else window.open(u, '_blank', 'noopener');
+      } catch (e) { if (w) w.close(); toast('تعذر فتح الوصل: ' + e.message, 4000); }
+    });
+    $('#payi-save', box).onclick = async () => {
+      const v = collect($('#payi', box)); const body = {}; ['bank_name', 'bank_holder', 'rib', 'mt_name', 'mt_city', 'mt_phone', 'note'].forEach(k => body[k] = String(v[k] || '').trim() || null);
+      body.updated_at = new Date().toISOString();
+      try { const r = await Sy.request('/rest/v1/w777_pay_info?id=eq.1', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) }); if (!r.ok) throw new Error('HTTP ' + r.status); toast('✅ تحفظات معلومات الحسابات'); }
+      catch (e) { toast('تعذر: ' + e.message, 4000); }
+    };
+  }
   async function viewStopped() {
     await refreshRole(true).catch(() => {});
     const ag = S.agency, si = ag ? subInfo(ag) : null, staff = MY && MY.staff && !MY.member;
@@ -1245,10 +1347,12 @@
       <p>${staff ? 'الاشتراك ديال المكتب اللي خدام معاه سالا.' : ag && !ag.active ? 'الحساب ديالك موقوف من طرف الإدارة.' : `سالات ${ag && ag.sub_until ? 'مدة الاشتراك' : 'المدة المجانية'} ديال الحساب ديالك.`}</p>
       ${si ? `<p class="muted auth-small">${esc(si.txt)}</p>` : ''}
       <p class="muted">✅ البيانات ديالك محفوظة وما كتضيعش. باش تكمل، جدّد الاشتراك عند مكتب الوسيط 777:</p>
-      <a class="btn gold block wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 18)} واتساب: تجديد الاشتراك</a>
+      ${ag && !staff ? '<button class="btn gold block" id="st-pay">💳 خلّص الاشتراك (تحويل بنكي ولا وكالة) + رفع الوصل</button>' : ''}
+      <a class="btn block wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 18)} واتساب: تجديد الاشتراك</a>
       <div class="btn-row auth-row"><a class="btn sm" href="${telLink(W777_OFFICE)}">${ic('phone', 16)} ${W777_OFFICE}</a><a class="btn sm" href="${telLink(W777_OFFICE2)}">${ic('phone', 16)} ${W777_OFFICE2}</a></div>
       <div class="btn-row auth-row"><button class="btn sm" id="st-re">🔄 جدّدت — دخلني</button><button class="btn sm ghost" id="st-out">↩️ خروج</button></div>`);
     $('#st-out').onclick = gateLogout;
+    const sp = $('#st-pay'); if (sp) sp.onclick = payModal;
     $('#st-re').onclick = async () => { const m = await myStatus(true); if (m && m.ok === false) toast('مازال ما تجدّدش — تواصل مع المكتب', 3500); else route(); };
   }
   // ⏰ 7 أيام قبل ما تسالي المدة: شريط فوق الصفحة مع زر واتساب للمكتب (كيتسد لهاد النهار)
@@ -1263,7 +1367,8 @@
     const what = e.paid ? 'الاشتراك ديالك' : 'المدة المجانية ديالك', left = e.days <= 0 ? 'كتسالي اليوم' : e.days === 1 ? 'باقي نهار واحد' : `باقي ${e.days} أيام`;
     const msg = `سلام، بغيت نجدد الاشتراك ديالي فتطبيق مجموعة الوسيط — الرمز: ${a.code}${a.email && !/@alwasset777\.ma$/.test(a.email) ? ' — الإيميل: ' + a.email : ''}`;
     bar.innerHTML = `<span>⏰ <b>${left}</b> ف${what} (حتى ${dAr(e.end.toISOString())}). من بعد الحساب كيتوقف حتى تجدّد.</span>
-      <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} جدّد دابا</a><button class="btn sm ghost" id="sub-bar-x" aria-label="إخفاء">✕</button>`;
+      <button type="button" class="btn sm gold" id="sub-bar-pay">💳 خلّص</button><a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 15)} جدّد دابا</a><button class="btn sm ghost" id="sub-bar-x" aria-label="إخفاء">✕</button>`;
+    const bp = $('#sub-bar-pay'); if (bp) bp.onclick = payModal;
     $('#sub-bar-x').onclick = () => { try { localStorage.setItem('w777_subbar_off', today + '|' + e.end.toISOString().slice(0, 10)); } catch (er) { /* */ } bar.remove(); };
   }
   // الرابط اللي فإيميل الدخول (بلاصة الكود) كيرجع بـ #access_token=…
@@ -1505,6 +1610,12 @@
     if (!box.isConnected || !n) return;
     box.innerHTML = `<a class="home-rw" href="#/agencies/manage"><span class="hr-ic">🎁</span><span class="hr-tx"><b>${n === 1 ? 'مكافأة وحدة كتسنى موافقتك' : `${fmt(n)} مكافآت كتسنى موافقتك`}</b><small>مشترك جاب 5 تسجيلات بالرابط ديالو — زيد ليه شهر مجاني ولا رفض</small></span><span class="hr-go">←</span></a>`;
   }
+  // 🏎️ v205: عدّاد السرعة: الرقم ← نسبة (سلم لوغاريتمي) ← طول القوس ولونو (أزرق 210° ← أحمر 0°)
+  function gauge(n, max) {
+    const v = Math.max(0, +n || 0), p = Math.min(1, Math.log10(1 + v) / Math.log10(1 + max));
+    const h = Math.round(210 - 210 * p);
+    return `--p:${p.toFixed(3)};--gh:${h};--c:hsl(${h} 100% 55%)`;
+  }
   async function viewHome() {
     setTimeout(homeRewards, 0);
     const avail = S.props.filter(p => p.status === 'available');
@@ -1536,10 +1647,10 @@
       </div>
       <div id="home-flags" class="flag-band hidden"></div>
       <div class="hstats">
-        <div class="hst" style="--c:#c8102e"><span class="hst-ic">🏠</span>${odo(avail.length)}<b>عقار متاح</b></div>
-        <div class="hst" style="--c:#2f6fd6"><span class="hst-ic">👥</span>${odo(open.length)}<b>طلب مفتوح</b></div>
-        <div class="hst" style="--c:#1f9d68"><span class="hst-ic">🎯</span>${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
-        <div class="hst" style="--c:#b8860b"><span class="hst-ic">💰</span>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
+        <div class="hst" style="${gauge(avail.length, 200)}">${odo(avail.length)}<b>عقار متاح</b></div>
+        <div class="hst" style="${gauge(open.length, 60)}">${odo(open.length)}<b>طلب مفتوح</b></div>
+        <div class="hst" style="${gauge(cold ? 0 : strong, 60)}">${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
+        <div class="hst" style="${gauge(saleValue / 1e7, 300)}">${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
       </div>
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
@@ -6395,8 +6506,8 @@
     const isReg = a => !!(a.self_signup || a.terms_at);
     const regAt = a => a.terms_at || a.created_at || null;
     const isNew = a => isReg(a) && regAt(a) && Date.now() - new Date(regAt(a)) < 7 * 864e5;
-    setTimeout(shareStats, 0);
-    main().innerHTML = head + seatBoard(ags) + '<div id="share-stats"></div>' + `
+    setTimeout(shareStats, 0); setTimeout(drawPayAdmin, 0);
+    main().innerHTML = head + seatBoard(ags) + '<div id="pay-admin"></div><div id="share-stats"></div>' + `
       <div class="card card-pad" style="margin-bottom:14px">
         <div class="kv kv-sm"><div><small>👥 المسجلين</small><b>${ags.filter(isReg).length}</b></div><div><small>🆕 هاد السيمانة</small><b>${ags.filter(isNew).length}</b></div>
           <div><small>🎁 فالمدة المجانية</small><b>${ags.filter(a => isReg(a) && subInfo(a).trial).length}</b></div><div><small>💳 خالصين</small><b>${ags.filter(a => isReg(a) && subInfo(a).ok && !subInfo(a).trial && !subInfo(a).free).length}</b></div>
@@ -7149,7 +7260,7 @@
     const myKind = S.kind && KINDS[S.kind];
     const plus = myKind && !(S.agency || {}).logo ? `<a class="pr-item pr-add" href="#/${myKind.route}/me" title="زيد الشعار ديالك">＋<small>شعارك</small></a>` : '';
     const moving = tiles.length > 6;
-    rail.innerHTML = `<div class="pr-title">الشركاء</div><button class="pr-item pr-story-add" type="button" title="ستوري جديد" aria-label="ستوري جديد">＋<small>ستوري</small></button><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? `<span class="pr-dup">${tiles.join('')}</span>` : ''}</div></div>${plus}`;
+    rail.innerHTML = `<button class="pr-item pr-story-add" type="button" title="ستوري جديد" aria-label="ستوري جديد">＋<small>ستوري</small></button><div class="pr-view"><div class="pr-track${moving ? ' moving' : ''}" style="--n:${tiles.length}">${tiles.join('')}${moving ? `<span class="pr-dup">${tiles.join('')}</span>` : ''}</div></div>${plus}`;
     rail.classList.remove('hidden');
     rail.onclick = e => {
       if (e.target.closest('.pr-story-add')) { e.preventDefault(); storyComposer(); return; }
@@ -7397,7 +7508,8 @@
       <div class="card card-pad tr-me" style="margin-top:14px">
         ${ag ? `${perkCard(ag)}<h3 class="section-title">🪪 الحساب ديالي</h3>
           <div class="kv"><div><small>الرمز</small><b dir="ltr">${esc(ag.code || '')}</b></div><div><small>القانون</small><b>${ag.terms_at ? '✅ موافق ' + dAr(ag.terms_at) : '⏳ مازال'}</b></div><div><small>الاشتراك</small><b style="font-size:13.5px">${esc(si.txt)}</b></div></div>
-          ${ag.terms_at ? '' : `<button class="btn gold" id="tr-ok" style="margin-top:12px">✅ قريت القانون ووافقت عليه</button>`}`
+          ${ag.terms_at ? '' : `<button class="btn gold" id="tr-ok" style="margin-top:12px">✅ قريت القانون ووافقت عليه</button>`}
+          ${ag.terms_at && !(seatTier(ag) && subPrice(ag) === 0) ? '<button class="btn gold" id="tr-pay" style="margin-top:12px">💳 خلّص / جدّد الاشتراك</button>' : ''}`
           : S.role === 'admin' ? '<p class="muted" style="margin:0">👑 المدير: الموافقة ديال كل مشترك والاشتراك كيبانو فـ «الإدارة» ديال كل خانة.</p>'
             : '<p class="muted" style="margin:0">دخل بالحساب ديالك (الإعدادات ← المزامنة السحابية) باش توافق على القانون وتشوف حالة الاشتراك.</p>'}
         <div class="btn-row" style="margin-top:12px">
@@ -7409,6 +7521,7 @@
       </div>
       ${groupsCard(true)}`;
     const ok = $('#tr-ok'); if (ok) ok.onclick = () => acceptTerms(() => viewTerms(sub));
+    const tp = $('#tr-pay'); if (tp) tp.onclick = payModal;
     $('#tr-report').onclick = reportDeal;
     const gf = $('#grpf');
     if (gf) gf.onsubmit = async e => {
