@@ -3490,13 +3490,14 @@
       try { AGV.ctx = new C(); AGV.an = AGV.ctx.createAnalyser(); AGV.an.fftSize = 512; AGV.an.smoothingTimeConstant = 0.35; AGV.an.connect(AGV.ctx.destination); AGV.buf = new Uint8Array(AGV.an.fftSize); }
       catch (e) { AGV.ctx = null; return null; }
     }
-    if (AGV.ctx.state === 'suspended') AGV.ctx.resume().catch(() => {});
+    if (AGV.ctx.state !== 'running' && AGV.ctx.state !== 'closed') AGV.ctx.resume().catch(() => {});
     return AGV.ctx;
   }
   let agTTSReady = false;
   function agUnlockTTS() { // iPhone: خاص أول صوت يكون من ضغطة
     const c = agAudio();
     if (c && !AGV.unlocked) { try { const b = c.createBuffer(1, 1, 22050), s0 = c.createBufferSource(); s0.buffer = b; s0.connect(c.destination); s0.start(0); AGV.unlocked = true; } catch (e) { /* */ } }
+    if (!AGV.mel) { try { const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='); a.setAttribute('playsinline', ''); a.volume = 0.01; AGV.mel = a; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* */ } }
     if (agTTSReady || !agTTS()) return; agTTSReady = true;
     try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) { /* */ }
   }
@@ -3567,6 +3568,7 @@
     const it = AGV.q.shift();
     if (!it || it.gen !== AGV.gen || !agHearing()) { AGV.playing = false; if (!AGV.q.length) agStage(false); if (AGV.onIdle) AGV.onIdle(); return; }
     AGV.playing = true; agStage(true); if (AGV.onTalk) AGV.onTalk();
+    if (!AGV.ext) setTimeout(() => agVoiceTip('media'), 1500);
     let buf, late = false;
     if (AGV.first) {
       // أول جملة: كنتسناو الصوت الطبيعي غير حتى 1.9 ثانية من الضغطة
@@ -3586,14 +3588,24 @@
       try { src.start(0); return; } catch (e) { /* نكملو بصوت المتصفح */ }
     }
     if (agCloudOK() && !buf && !late && AGV.synthGen !== it.gen) AGV.cloudOff = Date.now() + 90000; // الصوت الطبيعي ما خدمش: دقيقة ونص بصوت المتصفح ومن بعد كنعاودو
-    if (!agTTS()) { agPlayNext(); return; }
+    if (!agTTS()) { agVoiceTip('novoice'); agPlayNext(); return; }
     const tag = AG_SR_LANG[agLang()] || 'ar-SA', u = new SpeechSynthesisUtterance(it.txt);
     u.lang = tag; const v = agVoice(tag); if (v) u.voice = v;
+    if (!v && speechSynthesis.getVoices().length) { agVoiceTip('novoice'); agStage(false); AGV.playing = false; AGV.q = []; return; }
     u.rate = 1.02; u.pitch = 0.95;
     u.onstart = () => { AGV.synth = true; };
     u.onboundary = () => { AGV.pulse = performance.now(); };
     u.onend = u.onerror = () => { AGV.synth = false; if (it.gen === AGV.gen) agPlayNext(); };
     speechSynthesis.speak(u);
+  }
+  // 🔊 v201: نصائح الصوت (مرة وحدة فالجلسة لكل نوع): صوت الوسائط، ولا ما كاينش صوت عربي فالجهاز
+  const agTipsSeen = {};
+  function agVoiceTip(k) {
+    if (agTipsSeen[k]) return; agTipsSeen[k] = 1;
+    if (k === 'media') { try { if (localStorage.getItem('w777_tip_media')) return; localStorage.setItem('w777_tip_media', '1'); } catch (e) { return; } } // مرة وحدة فقط
+    const m = { novoice: '🔇 الجهاز ديالك ما فيهش صوت عربي، والصوت الطبيعي ما وصلش. شعّل الإنترنت، ولا نزّل «Speech Services by Google» (فابور) من Play Store ← عربي.',
+      media: '🔊 إلا ما سمعتيش منير: علّي «صوت الوسائط 🎵» (ماشي صوت الرنة)، وفالآيفون حيّد الوضع الصامت.' }[k];
+    if (m) toast(m, 7000);
   }
   // الطريقة القديمة (جواب كامل دفعة وحدة) — للمساعد البسيط
   function agSpeak(src, isHtml) {
