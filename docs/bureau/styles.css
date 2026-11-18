@@ -2035,3 +2035,39 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
   background: linear-gradient(135deg, #c8102e, #8a0d17); box-shadow: 0 3px 8px rgba(200,16,46,.35); white-space: nowrap; }
 .ag-quick button:nth-child(2) { background: linear-gradient(135deg, #1f9d68, #0f6b45); box-shadow: 0 3px 8px rgba(31,157,104,.35); }
 .ag-quick button:nth-child(3) { background: linear-gradient(135deg, #ef8a00, #b45f00); box-shadow: 0 3px 8px rgba(239,138,0,.35); }
+
+/* 🤖 v208: صفحة منير أصغر بـ20% + خط أوضح + خلفية الدائرة حسب الخدمة + بطاقة الزبناء المناسبين */
+.agent-panel { width: min(320px, calc(100vw - 24px)); height: min(544px, calc((100vh - 150px) * .8)); }
+.ag-head { padding: 8px 10px; gap: 8px; }
+.ag-head img { width: 34px; height: 34px; }
+.ag-head b { font-size: 15px; font-weight: 800; letter-spacing: .1px; }
+.ag-stage { height: 158px; }
+.ag-3d { width: 125px; height: 125px; }
+@media (max-height: 640px) { .ag-stage { height: 106px; } .ag-3d { width: 84px; height: 84px; } }
+.agent-panel { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.ag-body { background: linear-gradient(color-mix(in srgb, var(--bg) 95%, transparent), color-mix(in srgb, var(--bg) 97%, transparent)), var(--ag-photo) center 20% / cover no-repeat; }
+.ag-msg > div { font-size: 15.5px; line-height: 1.75; font-weight: 500; color: #111; background: #fff; border-color: rgba(0,0,0,.1); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.ag-msg.me > div { color: #fff; font-weight: 600; background: var(--gold); }
+.ag-msg b { font-weight: 800; }
+.ag-tool { font-size: 12.5px; font-weight: 600; color: #444; }
+.ag-input textarea { font-size: 15.5px; font-weight: 500; color: #111; }
+.ag-acts button, .ag-sugg button { font-size: 13.5px; }
+:root[data-theme="dark"] .ag-msg.bot > div, :root[data-theme="dark"] .ag-input textarea { color: #f2f2f2; background: #1c1c1e; }
+.ag-stage::before { background: var(--ag-bg, var(--ag-photo)) center / cover no-repeat; filter: blur(1.5px) brightness(.55) saturate(1.15); inset: -6px; transform: none; }
+.ag-stage.bg-ico::before { filter: none; inset: 0;
+  background: var(--ag-bg) 9% 55% / 78px auto no-repeat, var(--ag-bg) 91% 55% / 78px auto no-repeat,
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--ag-bgc, #222) 70%, #fff 10%), var(--ag-bgc, #111) 55%, #050505 100%); }
+.ag-stage.bg-ico[data-bg="academy"]::before { background: var(--ag-bg) 9% 55% / 78px auto no-repeat, var(--ag-bg) 91% 55% / 78px auto no-repeat,
+    repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 22px),
+    radial-gradient(circle at 50% 45%, #2f6b4c, #1f4d36 55%, #0d2419 100%); }
+.ag-stage.bg-ico[data-bg="academy"]::after { content: "∑  ✎  أ ب ت  ✓  ½"; display: grid; place-items: start center; padding-top: 8px; font: 700 13px/1 'Tajawal', sans-serif; letter-spacing: 6px; color: rgba(255,255,255,.35); background: none; }
+.ag-card.ag-mt { display: flex; align-items: center; gap: 8px; }
+.ag-card.ag-mt > a:first-child { flex: 1; min-width: 0; text-decoration: none; color: inherit; }
+.ag-mt .ag-sc { display: inline-block; font-size: 11.5px; font-weight: 800; color: #fff; background: var(--green, #1f9d68); border-radius: 99px; padding: 1px 7px; margin-inline-start: 4px; }
+.ag-quick button:nth-child(4) { background: linear-gradient(135deg, #6d28d9, #3b0f8c); box-shadow: 0 3px 8px rgba(109,40,217,.35); }
+.ag-quick button.on { animation: agpulse 1.2s infinite; }
+.ag-quick { gap: 4px; padding: 6px 8px 0; }
+.ag-quick button { font-size: 11.5px; padding: 6px 8px; }
+.ag-quick button { flex: 1 1 auto; font-size: 11px; padding: 6px 6px; }
+.ag-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); overflow: visible; }
+.ag-quick button { white-space: normal; line-height: 1.25; padding: 6px 3px; border-radius: 12px; font-size: 11.5px; }
