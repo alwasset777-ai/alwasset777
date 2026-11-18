@@ -1945,3 +1945,37 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 
 /* v202: شعار «الوسيط GAMES» فالرئيسية +50% (52→78، والتيليفون 58→87) وبعيد شوية على السهم */
 .grp-logos .grp-point { margin-left: 10px; }
+
+/* ⚡ v203: المربعات بحال عدّاد السرعة (نيون)، الكرة الأرضية كتدور، يد الألعاب، العبارة المضيئة */
+.hst { position: relative; overflow: hidden; background: radial-gradient(120% 90% at 50% 15%, #1a2340 0%, #0b1020 55%, #05070f 100%) !important;
+  border: 1px solid rgba(255,255,255,.08) !important; border-top: 0 !important; border-radius: 18px; padding: 16px 4px 12px !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent), 0 8px 22px -8px color-mix(in srgb, var(--c) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.08) !important; }
+.hst::before { content: ''; position: absolute; left: 50%; top: 6px; width: 86%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 225deg, #1e90ff 0deg, #6a5cff 90deg, #ff2d55 200deg, #ff2d55 270deg, transparent 270deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  filter: drop-shadow(0 0 4px rgba(120,140,255,.9)); opacity: .95; }
+.hst::after { content: ''; position: absolute; left: 50%; top: 14px; width: calc(86% - 16px); aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(from 225deg, rgba(255,255,255,.55) 0deg 1.5deg, transparent 1.5deg 13.5deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)), conic-gradient(from 225deg, #000 270deg, transparent 270deg); -webkit-mask-composite: source-in;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)) intersect, conic-gradient(from 225deg, #000 270deg, transparent 270deg); opacity: .7; }
+.hst > * { position: relative; z-index: 1; }
+.hst-ic { background: rgba(255,255,255,.08) !important; box-shadow: 0 0 12px color-mix(in srgb, var(--c) 60%, transparent); margin-top: 6px; }
+.hst .hnum { color: #fff !important; font-weight: 900; text-shadow: 0 0 6px var(--c), 0 0 14px var(--c), 0 0 26px color-mix(in srgb, var(--c) 70%, transparent); letter-spacing: .5px; }
+.hst b { color: #cfd6ea !important; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.hstats .hst:nth-child(1) { --c: #ff2d55 !important; } .hstats .hst:nth-child(2) { --c: #1e90ff !important; } .hstats .hst:nth-child(3) { --c: #19e68c !important; } .hstats .hst:nth-child(4) { --c: #ffb020 !important; }
+.fl-globe { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; position: relative;
+  background: #0b2d5b url(icons/earth-map.webp?v=1) 0 50% / auto 100% repeat-x; animation: globe-spin 16s linear infinite;
+  box-shadow: inset -7px -5px 12px rgba(0,0,0,.6), inset 3px 3px 7px rgba(255,255,255,.25), 0 0 10px rgba(80,170,255,.7); }
+.fl-globe::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.55), rgba(255,255,255,0) 42%); }
+@keyframes globe-spin { to { background-position-x: 72px; } }
+@media (prefers-reduced-motion: reduce) { .fl-globe { animation: none; } }
+.grp-game { overflow: visible !important; position: relative; }
+.grp-game img { border-radius: 50%; }
+.grp-pad { position: absolute; left: 50%; top: -24px; transform: translateX(-50%) rotate(-8deg); filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); animation: pad-bob 2.4s ease-in-out infinite; line-height: 0; }
+@keyframes pad-bob { 50% { transform: translateX(-50%) rotate(6deg) translateY(-3px); } }
+.grp-strip { margin-top: 30px !important; }
+.grp-glow { font-weight: 900; font-size: 15px; background: linear-gradient(90deg, #c8102e, #ff7a00, #ffd400, #ff7a00, #c8102e); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: grp-shine 2.6s linear infinite, grp-pulse 1.6s ease-in-out infinite; }
+@keyframes grp-shine { to { background-position: -220% 0; } }
+@keyframes grp-pulse { 50% { filter: drop-shadow(0 0 6px rgba(255,170,0,.9)); } }
+#btn-chat svg { filter: drop-shadow(0 2px 4px rgba(160,51,255,.45)); }
