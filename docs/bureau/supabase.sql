@@ -395,9 +395,9 @@ drop trigger if exists w777_st_guard on public.w777_stays;
 create trigger w777_st_guard before update on public.w777_stays for each row execute function public.w777_mod_guard();
 drop trigger if exists w777_st_new on public.w777_stays;
 create trigger w777_st_new before insert on public.w777_stays for each row execute function public.w777_mod_new();
--- 5 صور لكل عقار (المدير بلا حد)
+-- 10 صور (v208) لكل عقار (المدير بلا حد)
 create or replace function public.w777_st_photos() returns trigger language plpgsql security definer set search_path=public as
-$$ begin if not w777_is_admin() and coalesce(array_length(new.photos, 1), 0) > 5 then new.photos := new.photos[1:5]; end if; return new; end $$;
+$$ begin if not w777_is_admin() and coalesce(array_length(new.photos, 1), 0) > 10 then new.photos := new.photos[1:10]; end if; return new; end $$;
 drop trigger if exists w777_st_photos on public.w777_stays;
 create trigger w777_st_photos before insert or update on public.w777_stays for each row execute function public.w777_st_photos();
 
