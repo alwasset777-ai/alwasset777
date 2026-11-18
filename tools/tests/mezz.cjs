@@ -11,7 +11,7 @@ const SHOT = process.env.S || '';
   // البلاصة: مباشرة من بعد «المساحة الإجمالية»
   const pos = await p.evaluate(() => {
     const m = document.querySelector('[name="mezzanine"]'); if (!m) return 'missing';
-    const f = m.closest('.field'), prev = f.previousElementSibling;
+    const f = m.closest('.field'), mb = m.closest('details.more-f'), prev = f.previousElementSibling ? null : mb && mb.previousElementSibling;
     return { label: f.querySelector('label').textContent, prev: prev && prev.querySelector('[name]') && prev.querySelector('[name]').name, dir: getComputedStyle(m).direction };
   });
   if (pos === 'missing' || pos.prev !== 'areaTotal' || !/الميزانين/.test(pos.label) || pos.dir !== 'ltr') bad.push('pos ' + JSON.stringify(pos));
@@ -23,7 +23,7 @@ const SHOT = process.env.S || '';
   await p.fill('[name="owner.name"]', 'مالك تجريبي'); await p.fill('[name="owner.phone"]', '0600000000');
   const city = await p.$('[name="city"]');
   if (await city.evaluate(e => e.tagName) === 'SELECT') await p.selectOption('[name="city"]', { index: 1 }); else await p.fill('[name="city"]', 'مكناس');
-  await p.fill('[name="areaTotal"]', '60'); await p.fill('[name="mezzanine"]', '25');
+  await p.click('[data-more=p3] > summary'); await p.fill('[name="areaTotal"]', '60'); await p.fill('[name="mezzanine"]', '25');
   if (SHOT) { const f = await p.$('[name="mezzanine"]'); await f.scrollIntoViewIfNeeded(); await p.screenshot({ path: SHOT + '/mezz-form.png' }); }
   await p.evaluate(() => document.querySelector('[name="mezzanine"]').form.requestSubmit()); await p.waitForTimeout(1800);
   const det = await p.evaluate(() => ({ h: location.hash, t: document.body.innerText }));
