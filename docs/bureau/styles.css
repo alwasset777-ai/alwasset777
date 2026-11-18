@@ -2024,3 +2024,14 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 .hst.hbx:active { transform: scale(.97); }
 .hboxes.hstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 @media (min-width: 720px) { .hboxes.hstats { gap: 14px; } }
+
+/* 📸 v207: صور منير (حتى 25) */
+.ag-attc .ag-pics { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+.ag-attc .ag-pics img { width: 38px; height: 38px; object-fit: cover; border-radius: 8px; border: 1.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.ag-attc .ag-more { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; background: #111; color: #fff; font-weight: 800; font-size: 13px; }
+
+.ag-quick { display: flex; gap: 6px; padding: 6px 10px 0; overflow-x: auto; scrollbar-width: none; }
+.ag-quick button { flex: 1 0 auto; font: inherit; font-size: 12.5px; font-weight: 800; border: 0; border-radius: 99px; padding: 7px 10px; cursor: pointer; color: #fff;
+  background: linear-gradient(135deg, #c8102e, #8a0d17); box-shadow: 0 3px 8px rgba(200,16,46,.35); white-space: nowrap; }
+.ag-quick button:nth-child(2) { background: linear-gradient(135deg, #1f9d68, #0f6b45); box-shadow: 0 3px 8px rgba(31,157,104,.35); }
+.ag-quick button:nth-child(3) { background: linear-gradient(135deg, #ef8a00, #b45f00); box-shadow: 0 3px 8px rgba(239,138,0,.35); }

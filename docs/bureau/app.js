@@ -3848,11 +3848,19 @@
   function agHide() {
     agHush();
     if (agRec) { try { agRec.abort(); } catch (e) { /* */ } agRec = null; } AG.open = false; const p = $('#agent-panel'); if (p) p.remove(); }
+  // 📸 v207: حتى 25 صورة فمرة وحدة — كيبانو مصغّرين، و3 الأولين كيشوفهم منير، وكاملين كيتزادو للعقار ملي يتسجل
+  const AG_PICS_MAX = 25;
+  AG.pics = [];
   function agAttShow() {
     const c = $('#ag-attc'); if (!c) return;
-    c.classList.toggle('hidden', !AG.att);
-    c.innerHTML = AG.att ? `📎 ${esc(AG.att.name)} <button type="button" aria-label="✕">✕</button>` : '';
-    const x = $('button', c); if (x) x.onclick = () => { AG.att = null; agAttShow(); };
+    const n = AG.pics.length;
+    c.classList.toggle('hidden', !AG.att && !n);
+    if (n) {
+      (AG.picUrls || []).forEach(u => URL.revokeObjectURL(u));
+      AG.picUrls = AG.pics.slice(0, 8).map(f => URL.createObjectURL(f));
+      c.innerHTML = `<div class="ag-pics">${AG.picUrls.map(u => `<img src="${u}" alt="">`).join('')}${n > 8 ? `<span class="ag-more">+${n - 8}</span>` : ''}</div><span>📸 ${n} صورة — غادي يتزادو للعقار ملي يتسجل</span> <button type="button" aria-label="✕">✕</button>`;
+    } else c.innerHTML = AG.att ? `📎 ${esc(AG.att.name)} <button type="button" aria-label="✕">✕</button>` : '';
+    const x = $('button', c); if (x) x.onclick = () => { AG.att = null; AG.pics = []; agAttShow(); };
   }
   // تسخين السيرفر ملي كيتحل المساعد (أول جواب كيجي أسرع)
   let agPinged = 0;
@@ -3881,8 +3889,9 @@
         <div class="ag-wave"><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
+      ${S.role ? `<div class="ag-quick" id="ag-quick"><button type="button" data-q="prop">🏠 سجّل عقار</button><button type="button" data-q="req">👥 سجّل طلب</button><button type="button" data-q="appt">📅 سجّل موعد</button></div>` : ''}
       <div class="ag-attc hidden" id="ag-attc"></div>
-      <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<button type="button" class="ag-mic" id="ag-att" title="📎 صورة / PDF / Word" aria-label="📎">📎</button><input type="file" id="ag-file" hidden accept="image/*,application/pdf,.pdf,.docx,.txt"><textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
+      <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<button type="button" class="ag-mic" id="ag-att" title="📎 صورة / PDF / Word" aria-label="📎">📎</button><input type="file" id="ag-file" multiple hidden accept="image/*,application/pdf,.pdf,.docx,.txt"><textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
     document.body.appendChild(p);
     $('#ag-close').onclick = agClose;
     $('#ag-back').onclick = agClose;
@@ -3892,12 +3901,29 @@
     ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
     $('#ag-form').onsubmit = e => {
       e.preventDefault(); agUnlockTTS(); const v = ta.value.trim(), att = AG.att;
-      if ((v || att) && !AG.busy) { ta.value = ''; AG.att = null; agAttShow(); agSend(v || (agLang() === 'fr' ? 'Lis ce document et corrige-le si nécessaire.' : agLang() === 'en' ? 'Read this document and fix it if needed.' : 'قرا هاد العقد وقول ليا شنو فيه من مشاكل، وصلحو.'), att); }
+      const picsTxt = !v && AG.pics.length ? `هادي ${AG.pics.length} صورة ديال عقار. شوف الصور ووصف العقار، ومن بعد سولني على المعلومات الناقصة (بيع ولا كراء، النوع، المدينة، الحي، الثمن، المساحة، الغرف، اسم وهاتف المالك) باش تسجلو فالتطبيق بالصور.` : '';
+      if ((v || att) && !AG.busy) { ta.value = ''; AG.att = null; agAttShow(); agSend(v || picsTxt || (agLang() === 'fr' ? 'Lis ce document et corrige-le si nécessaire.' : agLang() === 'en' ? 'Read this document and fix it if needed.' : 'قرا هاد العقد وقول ليا شنو فيه من مشاكل، وصلحو.'), att); }
     };
+    // ⚡ v207: سجّل عقار / طلب / موعد من صفحة منير: بالذكاء ← منير كيسول ويسجّل؛ الوضع المجاني ← الاستمارة
+    const AGQ = { prop: ['#/property/new', 'بغيت نسجل عقار جديد فالتطبيق. سولني على المعلومات وحدة بوحدة (بيع ولا كراء، النوع، المدينة، الحي، الثمن، المساحة، الغرف، اسم وهاتف المالك) ومن بعد سجّلو. إلا عندي صور غادي نزيدها بـ 📎.'],
+      req: ['#/request/new', 'بغيت نسجل طلب زبون جديد. سولني على المعلومات (الاسم، الهاتف، بيع ولا كراء، النوع، المدينة والحي، الميزانية) ومن بعد سجّلو.'],
+      appt: ['#/appointment/new', 'بغيت نسجل موعد جديد. سولني على اسم وهاتف الزبون، النهار والساعة، والمكان، ومن بعد سجّلو.'] };
+    $$('#ag-quick [data-q]').forEach(b => b.onclick = () => { const q = AGQ[b.dataset.q]; if (!q || AG.busy) return; agUnlockTTS();
+      if (agAI()) agSend(q[1]); else { agClose(); location.hash = q[0]; } });
     const fi = $('#ag-file');
     $('#ag-att').onclick = () => fi.click();
     fi.onchange = async () => {
-      const f = fi.files && fi.files[0]; fi.value = ''; if (!f) return;
+      const all = Array.from(fi.files || []); fi.value = ''; if (!all.length) return;
+      const imgs = all.filter(x => /^image\//.test(x.type));
+      if (imgs.length && (imgs.length > 1 || AG.pics.length)) {
+        let list = [...AG.pics, ...imgs];
+        if (list.length > AG_PICS_MAX) { toast(`الحد الأقصى ${AG_PICS_MAX} صورة — تزادو غير ${AG_PICS_MAX - AG.pics.length}`, 4000); list = list.slice(0, AG_PICS_MAX); }
+        AG.pics = list;
+        try { const blocks = []; for (const x of AG.pics.slice(0, 3)) blocks.push(await agReadFile(x)); AG.att = { name: `${AG.pics.length} صورة`, block: blocks[0], blocks }; } catch (er) { AG.att = null; }
+        agAttShow(); ta.focus(); return;
+      }
+      const f = all[0];
+      if (/^image\//.test(f.type)) AG.pics = [f];
       try { AG.att = { name: f.name, block: await agReadFile(f) }; agAttShow(); ta.focus(); }
       catch (er) { toast(/big/.test(er.message) ? 'الملف كبير بزاف (الحد 8 ميغا)' : 'هاد النوع ديال الملفات ما مقبولش — صورة، PDF، Word ولا TXT'); }
     };
@@ -4127,7 +4153,7 @@
     }
     let usedTools = false, finalTxt = '';
     const base = AG.history.length; // إلا وقع مشكل كنرجعو المحادثة كيف كانت (باش ما تخسرش)
-    AG.history.push({ role: 'user', content: att ? [att.block, { type: 'text', text }] : text });
+    AG.history.push({ role: 'user', content: att ? [...(att.blocks || [att.block]), { type: 'text', text: AG.pics.length ? text + `\n[${AG.pics.length} photos attached in the app; when you call create_property they are added to the property automatically]` : text }] : text });
     AG.busy = true; AG.live = null; agRender();
     agMood('think', null, 0);
     agSayStart();
@@ -4528,8 +4554,23 @@
           notes: a.notes || '', media: [], cover: null, broker: { has: false } };
         o.ref = await DB.nextRef('W777', maxRef(S.props));
         o.title = a.title || autoTitle(o); o.description = a.description || buildDescription(o);
+        let added = 0, skipped = 0;
+        if (AG.pics.length) {
+          const room = photoLimit(), list = AG.pics.slice(0, room); skipped = AG.pics.length - list.length;
+          for (const f of list) {
+            try {
+              const fid = uid(), big = await compressImage(f, 1920, 0.85), rec = { id: fid, owner: o.id, kind: 'photo', name: f.name, mime: f.type, size: f.size };
+              if (S.settings.watermark !== false) { const wb = await watermark(big.blob, true); if (wb !== big.blob) { big.blob = wb; rec.wm = 1; } }
+              const small = await compressImage(big.blob, 480, 0.75);
+              rec.blob = big.blob; rec.thumb = small.blob; rec.mime = big.blob.type || f.type; rec.size = big.blob.size;
+              await DB.put('files', rec); o.media.push({ id: fid, kind: 'photo', name: f.name, mime: rec.mime, size: rec.size, ...(rec.wm ? { wm: 1 } : {}) }); added++;
+            } catch (e) { /* صورة خايبة: نكملو */ }
+          }
+          if (o.media.length) o.cover = o.media[0].id;
+          AG.pics = []; AG.att = null; agAttShow();
+        }
         await DB.saveRec('properties', o); await rememberDistricts(o.city, [o.district]); await loadAll();
-        return { created: o.ref, next: 'add photos from the property page (open_page property)', matches: matchesForProp(o).length };
+        return { created: o.ref, photos_added: added, ...(skipped ? { photos_skipped: skipped, why: `limit ${PHOTO_MAX} photos per property for members` } : {}), next: added ? 'done — open_page property to see it' : 'add photos from the property page (open_page property)', matches: matchesForProp(o).length };
       }
       case 'calculate': {
         const v = agCalc(a.expression);
