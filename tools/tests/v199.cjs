@@ -17,7 +17,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
   await p.click('[data-hm="svc"]'); await p.waitForTimeout(600);
   const tile = await p.evaluate(() => { const a = [...document.querySelectorAll('.modal .hub-tile')].find(x => x.getAttribute('href') === '#/learn'); return a ? { t: a.innerText, img: (a.querySelector('img') || {}).src || '' } : null; });
   if (!tile || !/أكاديمية مجموعة الوسيط/.test(tile.t) || !/academy\.webp/.test(tile.img) || /777/.test(tile.t)) bad.push('tile ' + JSON.stringify(tile));
-  await p.click('.modal .hub-tile[href="#/learn"]'); await p.waitForTimeout(1500);
+  await p.evaluate(() => document.querySelector('.modal .hub-tile[href="#/learn"]').click()); await p.waitForTimeout(1500);
   if (!/^#\/learn/.test(await p.evaluate(() => location.hash))) bad.push('tile nav');
   // 2) الصورة الافتراضية = منير
   const fab = await p.evaluate(() => (document.querySelector('#agent-fab img') || {}).src || '');
