@@ -1918,3 +1918,27 @@ input[data-num], input[data-money], input[inputmode="numeric"], input[inputmode=
 .home-rw .hr-go { font-size: 20px; font-weight: 900; color: var(--gold); }
 .paste-msg { width: 100%; justify-content: center; margin: 0 0 14px; padding: 12px; flex-wrap: wrap; gap: 6px; }
 .paste-msg small { font-weight: 600; opacity: .85; font-size: 12px; }
+
+/* ✨ v200: الشعار لامع وواضح فكل بلاصة + المدن بالأبيض + أيقونات المجموعات 3D بسهم */
+img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office img, .sp-c3 img {
+  filter: contrast(1.08) saturate(1.18) drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 2px 6px rgba(201,162,74,.55));
+  animation: logo-gleam 3.5s ease-in-out infinite;
+}
+@keyframes logo-gleam {
+  0%, 100% { filter: contrast(1.08) saturate(1.18) brightness(1) drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 2px 6px rgba(201,162,74,.5)); }
+  50% { filter: contrast(1.12) saturate(1.25) brightness(1.18) drop-shadow(0 0 2px rgba(255,255,255,1)) drop-shadow(0 0 12px rgba(255,215,120,.85)); }
+}
+.logo-pill:not(.logo-coin), .pr-office { position: relative; overflow: hidden; }
+.logo-pill:not(.logo-coin)::after, .pr-office::after { content: ''; position: absolute; inset: -20%; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.75) 48%, rgba(255,255,255,.15) 54%, transparent 62%);
+  transform: translateX(-120%); animation: logo-sweep 4.2s ease-in-out infinite; mix-blend-mode: screen; }
+@keyframes logo-sweep { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) { img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office img { animation: none; } .logo-pill:not(.logo-coin)::after, .pr-office::after { animation: none; display: none; } }
+.ct-set span { color: #fff; font-size: 15.6px; line-height: 27px; text-shadow: 0 1px 3px rgba(0,0,0,.55); }
+.city-ticker { height: 27px; }
+.grp-logo { width: 48px; height: 48px; transform: perspective(200px) rotateX(10deg); border-radius: 50%;
+  box-shadow: 0 6px 0 rgba(0,0,0,.18), 0 10px 18px rgba(0,0,0,.28), inset 0 -4px 8px rgba(0,0,0,.25), inset 0 4px 8px rgba(255,255,255,.45); position: relative; }
+.grp-logo::after { content: ''; position: absolute; top: 6%; left: 18%; width: 64%; height: 34%; border-radius: 50%; background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,0)); pointer-events: none; }
+.grp-logo:hover, .grp-logo:active { transform: perspective(200px) rotateX(0deg) translateY(-3px) scale(1.08); }
+.grp-point { font-size: 26px; line-height: 1; display: inline-block; animation: grp-point 1s ease-in-out infinite; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); order: 99; }
+@keyframes grp-point { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(7px); } }
