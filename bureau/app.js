@@ -44,8 +44,8 @@
   const safeUrl = u => /^https?:\/\//i.test(String(u || '').trim()) ? esc(String(u).trim()) : '#';
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const today = () => new Date().toISOString().slice(0, 10);
-  // الصور: 5 صور لكل عقار لجميع المشتركين — المدير بلا حد
-  const PHOTO_MAX = 5;
+  // الصور: 10 صور لكل عقار لجميع المشتركين (v208) — المدير بلا حد
+  const PHOTO_MAX = 10;
   const photoLimit = () => S.role === 'admin' ? Infinity : PHOTO_MAX;
   const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
   // مُنسّق واحد للأرقام (إنشاء Intl.NumberFormat فكل مرة كان كيبطّء التطبيق بزاف)
@@ -589,6 +589,7 @@
   }
   // اختبار محلي فقط (localhost): مفروش ↔ غير مفروش
   if (location.hostname === 'localhost') window.W777_TEST = {
+    loadAll: () => loadAll(),
     offer: () => {
       const ago = m => { const d = new Date(); d.setMonth(d.getMonth() - m); return d.toISOString(); };
       const A = (n, z, m, sub) => ({ seat_no: n, seat_zone: z || 'ma', terms_at: ago(m || 1), sub_until: sub || null });
@@ -3815,8 +3816,8 @@
   const AG_SR_LANG = { darija: 'ar-MA', ar: 'ar-MA', fr: 'fr-FR', en: 'en-US' };
   const agMicSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
   let agRec = null;
-  function agListen() {
-    const SR = agSR(), mic = $('#ag-mic'), ta = $('#ag-text');
+  function agListen(pre, btn) {
+    const SR = agSR(), mic = btn || $('#ag-mic'), ta = $('#ag-text');
     if (!SR || !mic) return;
     if (agRec) { agRec.stop(); return; }
     const rec = new SR();
@@ -3838,7 +3839,7 @@
     rec.onend = () => {
       agRec = null; mic.classList.remove('on'); ta.placeholder = agT().ph;
       const v = (finalText || ta.value).trim();
-      if (v && !AG.busy) { ta.value = ''; agSend(v); }
+      if (v && !AG.busy) { ta.value = ''; agSend(pre ? pre + v : v); }
     };
     try { rec.start(); agRec = rec; mic.classList.add('on'); ta.value = ''; ta.placeholder = '🎤 …'; }
     catch (e) { toast('🎤 ' + e.message); }
@@ -3851,6 +3852,33 @@
   // 📸 v207: حتى 25 صورة فمرة وحدة — كيبانو مصغّرين، و3 الأولين كيشوفهم منير، وكاملين كيتزادو للعقار ملي يتسجل
   const AG_PICS_MAX = 25;
   AG.pics = [];
+  // 🏆 v208: منير كيرتب الصور — كيقيس فالتيليفون (بلا إنترنت) الوضوح والإضاءة والتباين والدقة، والأحسن كتولي الغلاف
+  // 👥 v208: بطاقة الزبناء المناسبين للعقار الجديد (واتساب بالرسالة واجدة)
+  function agMatchCard(p, mt) {
+    return `<b>👥 ${mt.length} زبون مناسب لهاد العقار</b>` + mt.slice(0, 5).map(x => { const c = x.r.client || {};
+      return `<div class="ag-card ag-mt"><a href="#/request/${x.r.id}"><b>${esc(c.name || 'زبون')}</b> <span class="ag-sc">${x.m.score}%</span><small>${esc(trxAr(x.r.transaction))} · ${esc(x.r.city || '')}${num(x.r.budgetMax) ? ' · ' + fmt(num(x.r.budgetMax)) + ' د' : ''}</small></a>${c.phone ? `<a class="btn sm wa" target="_blank" rel="noopener" href="${esc(waShareUrl(p, x.r))}">${ic('wa', 15)}</a>` : ''}</div>`; }).join('')
+      + `<a class="ag-more" href="#/property/${p.id}">🏠 حل العقار والمطابقة ←</a>`;
+  }
+  async function agRankPics(files) {
+    const score = async f => {
+      try {
+        const bm = await createImageBitmap(f), W = 96, H = Math.max(1, Math.round(bm.height * W / bm.width));
+        const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d', { willReadFrequently: true });
+        x.drawImage(bm, 0, 0, W, H); const d = x.getImageData(0, 0, W, H).data, g = new Float32Array(W * H);
+        let sum = 0; for (let i = 0; i < W * H; i++) { g[i] = (d[i * 4] * 0.299 + d[i * 4 + 1] * 0.587 + d[i * 4 + 2] * 0.114) / 255; sum += g[i]; }
+        const mean = sum / (W * H); let v = 0, lap = 0, lm = 0, n = 0;
+        for (let i = 0; i < W * H; i++) v += (g[i] - mean) ** 2;
+        for (let y = 1; y < H - 1; y++) for (let k = 1; k < W - 1; k++) { const i = y * W + k, L = 4 * g[i] - g[i - 1] - g[i + 1] - g[i - W] - g[i + W]; lap += L * L; lm += L; n++; }
+        const sharp = n ? Math.min(1, Math.log10(1 + (lap / n - (lm / n) ** 2) * 65025) / 3.3) : 0;
+        const contrast = Math.min(1, Math.sqrt(v / (W * H)) / 0.25), light = 1 - Math.min(1, Math.abs(mean - 0.5) * 2);
+        const res = Math.min(1, (bm.width * bm.height) / (1600 * 1200)), wide = bm.width >= bm.height ? 1 : 0;
+        bm.close && bm.close();
+        return sharp * 0.42 + contrast * 0.2 + light * 0.22 + res * 0.1 + wide * 0.06;
+      } catch (e) { return 0; }
+    };
+    const sc = []; for (const f of files) sc.push(await score(f));
+    return files.map((f, i) => ({ f, s: sc[i], i })).sort((a, b) => b.s - a.s || a.i - b.i).map(x => x.f);
+  }
   function agAttShow() {
     const c = $('#ag-attc'); if (!c) return;
     const n = AG.pics.length;
@@ -3871,6 +3899,23 @@
     Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ping: true }) }).catch(() => {});
   }
   let agGreeted = 0;
+  // 🖼️ v208: خلفية دائرة منير كتبدل حسب الخدمة (الأكاديمية ← صورة تعليمية…)
+  const AG_BG = [[/^#\/learn/, 'academy', 'i', '#1f4d36'], [/^#\/game/, 'games', 'i', '#5c0a14'], [/^#\/guide/, 'guide', 'i', '#3a0a10'],
+    [/^#\/(estimate)/, 'estimate', 'p'], [/^#\/matching/, 'matching', 'p'], [/^#\/rental/, 'rentals', 'i', '#2b2410'], [/^#\/projects/, 'projects', 'p'],
+    [/^#\/news/, 'news', 'p'], [/^#\/events/, 'events', 'p'], [/^#\/(stays|contracts)/, 'stays', 'p'], [/^#\/disputes/, 'disputes', 'p'],
+    [/^#\/donations/, 'donations', 'p'], [/^#\/(terms|ownership)/, 'terms', 'p'], [/^#\/(loan|tamwil)/, 'loan-ico', 'i', '#3b2a06'],
+    [/^#\/(finance|report)/, 'finance-ico', 'i', '#1d3a1f'], [/^#\/map/, 'map-ico', 'i', '#0e2c45'], [/^#\/ad-maker/, 'ad-maker', 'p'],
+    [/^#\/appointment/, 'add-appointment', 'i', '#14304a'], [/^#\/(request|search)/, 'add-request', 'i', '#12345a'], [/^#\/(propert)/, 'agencies', 'p'],
+    [/^#\/(agencies|brokers)/, 'brokers', 'p'], [/^#\/notaries/, 'notaries', 'i', '#0f3b2a'], [/^#\/investors/, 'investors', 'p'], [/^#\/contractors/, 'contractors', 'p'],
+    [/^#\/finishing/, 'finishing', 'p'], [/^#\/associations/, 'associations', 'p'], [/^#\/inbox/, 'chat', 'i', '#2a1050'], [/^#\/settings/, 'toolbox', 'i', '#3a0a10']];
+  function agSetBg(p) {
+    p = p || $('#agent-panel'); if (!p) return;
+    const h = location.hash || '#/', m = AG_BG.find(x => x[0].test(h)), st = $('#ag-stage', p);
+    p.style.setProperty('--ag-bg', `url("${m ? 'icons/hub/' + m[1] + '.webp?v=8' : 'icons/hero-bg2.webp'}")`);
+    if (m && m[3]) p.style.setProperty('--ag-bgc', m[3]); else p.style.removeProperty('--ag-bgc');
+    if (st) { st.classList.toggle('bg-ico', !!(m && m[2] === 'i')); st.dataset.bg = m ? m[1] : 'home'; }
+  }
+  window.addEventListener('hashchange', () => { if (AG.open) agSetBg(); });
   function agOpen() {
     AG.open = true;
     agUnlockTTS(); // الفتح كيكون بضغطة: كنشعلو الصوت من دابا باش أول جملة تخرج
@@ -3889,10 +3934,10 @@
         <div class="ag-wave"><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
-      ${S.role ? `<div class="ag-quick" id="ag-quick"><button type="button" data-q="prop">🏠 سجّل عقار</button><button type="button" data-q="req">👥 سجّل طلب</button><button type="button" data-q="appt">📅 سجّل موعد</button></div>` : ''}
+      ${S.role ? `<div class="ag-quick" id="ag-quick"><button type="button" data-q="prop">🏠 سجّل عقار</button><button type="button" data-q="req">👥 سجّل طلب</button><button type="button" data-q="appt">📅 سجّل موعد</button>${agSR() ? '<button type="button" data-q="voice" title="سجّل عقار بالكلام">🎤 بالكلام</button>' : ''}</div>` : ''}
       <div class="ag-attc hidden" id="ag-attc"></div>
       <form class="ag-input" id="ag-form">${agSR() ? `<button type="button" class="ag-mic" id="ag-mic" title="🎤">${agMicSvg}</button>` : ''}<button type="button" class="ag-mic" id="ag-att" title="📎 صورة / PDF / Word" aria-label="📎">📎</button><input type="file" id="ag-file" multiple hidden accept="image/*,application/pdf,.pdf,.docx,.txt"><textarea id="ag-text" rows="1" placeholder="${esc(t.ph)}"></textarea><button class="btn gold sm" type="submit">${esc(t.send)}</button></form>`;
-    document.body.appendChild(p);
+    document.body.appendChild(p); agSetBg(p);
     $('#ag-close').onclick = agClose;
     $('#ag-back').onclick = agClose;
     $('#ag-new').onclick = () => { if (AG.busy) return; AG.history = []; AG.view = []; agRender(); };
@@ -3908,7 +3953,14 @@
     const AGQ = { prop: ['#/property/new', 'بغيت نسجل عقار جديد فالتطبيق. سولني على المعلومات وحدة بوحدة (بيع ولا كراء، النوع، المدينة، الحي، الثمن، المساحة، الغرف، اسم وهاتف المالك) ومن بعد سجّلو. إلا عندي صور غادي نزيدها بـ 📎.'],
       req: ['#/request/new', 'بغيت نسجل طلب زبون جديد. سولني على المعلومات (الاسم، الهاتف، بيع ولا كراء، النوع، المدينة والحي، الميزانية) ومن بعد سجّلو.'],
       appt: ['#/appointment/new', 'بغيت نسجل موعد جديد. سولني على اسم وهاتف الزبون، النهار والساعة، والمكان، ومن بعد سجّلو.'] };
-    $$('#ag-quick [data-q]').forEach(b => b.onclick = () => { const q = AGQ[b.dataset.q]; if (!q || AG.busy) return; agUnlockTTS();
+    $$('#ag-quick [data-q]').forEach(b => b.onclick = () => {
+      if (b.dataset.q === 'voice') { // 🎤 v208: كتقول معلومات العقار بصوتك ومنير كيكتبها وكيسجلها
+        if (AG.busy) return; agUnlockTTS(); agHush();
+        if (!agAI()) { toast('🎤 التسجيل بالكلام كيحتاج الوكيل الذكي — غادي نحل ليك الاستمارة', 3500); agClose(); location.hash = '#/property/new'; return; }
+        if (!agRec) toast('🎤 تكلم: النوع، بيع ولا كراء، المدينة، الحي، الثمن، المساحة، الغرف، اسم وهاتف المالك…', 5000);
+        agListen('سجّل هاد العقار من الكلام ديالي (إلا كانت شي معلومة ضرورية ناقصة سولني عليها، ومن بعد سجّلو بـ create_property' + (AG.pics.length ? ' مع الصور المرفقة' : '') + '): ', b); return;
+      }
+      const q = AGQ[b.dataset.q]; if (!q || AG.busy) return; agUnlockTTS();
       if (agAI()) agSend(q[1]); else { agClose(); location.hash = q[0]; } });
     const fi = $('#ag-file');
     $('#ag-att').onclick = () => fi.click();
@@ -4556,7 +4608,7 @@
         o.title = a.title || autoTitle(o); o.description = a.description || buildDescription(o);
         let added = 0, skipped = 0;
         if (AG.pics.length) {
-          const room = photoLimit(), list = AG.pics.slice(0, room); skipped = AG.pics.length - list.length;
+          const room = photoLimit(), list = (await agRankPics(AG.pics)).slice(0, room); skipped = AG.pics.length - list.length;
           for (const f of list) {
             try {
               const fid = uid(), big = await compressImage(f, 1920, 0.85), rec = { id: fid, owner: o.id, kind: 'photo', name: f.name, mime: f.type, size: f.size };
@@ -4570,7 +4622,11 @@
           AG.pics = []; AG.att = null; agAttShow();
         }
         await DB.saveRec('properties', o); await rememberDistricts(o.city, [o.district]); await loadAll();
-        return { created: o.ref, photos_added: added, ...(skipped ? { photos_skipped: skipped, why: `limit ${PHOTO_MAX} photos per property for members` } : {}), next: added ? 'done — open_page property to see it' : 'add photos from the property page (open_page property)', matches: matchesForProp(o).length };
+        const mt = matchesForProp(o), top = mt.slice(0, 5);
+        if (top.length) AG.view.push({ who: 'bot', html: agMatchCard(o, mt) });
+        return { created: o.ref, photos_added: added, ...(added > 1 ? { photos_order: 'sorted by quality, the clearest photo is the cover' } : {}), ...(skipped ? { photos_skipped: skipped, why: `limit ${PHOTO_MAX} photos per property for members` } : {}),
+          matches: mt.length, matching_clients: top.map(x => ({ name: (x.r.client || {}).name || '', score: x.m.score, budget: num(x.r.budgetMax) || null, city: x.r.city || '' })),
+          next: (top.length ? 'tell the manager these clients match (a card with WhatsApp buttons is already shown) and offer to contact them; ' : 'no matching client yet; ') + (added ? 'photos added — open_page property to see it' : 'add photos from the property page (open_page property)') };
       }
       case 'calculate': {
         const v = agCalc(a.expression);
@@ -6905,7 +6961,7 @@
     ['⚠️', 'حدود المسؤولية', 'لا يتحمل مكتب الوسيط 777 أي مسؤولية فحالة تمّ التعاقد بدون علمه ولا بدون الرجوع إليه.'],
   ];
   const TERMS_MORE = [
-    ['صحة المعلومات', 'المشترك مسؤول على صحة المعلومات والصور اللي كينشر (5 صور لكل عقار)، وعلى حصوله على موافقة صاحب العقار.'],
+    ['صحة المعلومات', 'المشترك مسؤول على صحة المعلومات والصور اللي كينشر (10 صور لكل عقار)، وعلى حصوله على موافقة صاحب العقار.'],
     ['السرية', 'معلومات المالك والزبناء كتبقى خاصة بالمشترك اللي زادها، وما كتبانش لباقي الأعضاء. يُمنع استعمال معلومات الشبكة خارج إطار التعاون المهني.'],
     ['التعاون والعمولة', 'العمولة كتتقسم بين الأطراف حسب الاتفاق المسبق بيناتهم، ومكتب الوسيط 777 كيبقى مرجع فحالة الخلاف (خانة «النزاعات»).'],
     ['حسن السلوك', 'يُمنع نشر عقارات وهمية، أثمنة مضللة، ولا أي محتوى مخالف للقانون. يحق لمكتب الوسيط 777 إيقاف أي حساب مخالف.'],
