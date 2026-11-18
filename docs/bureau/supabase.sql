@@ -1670,3 +1670,89 @@ begin
 end $$;
 revoke all on function public.w777_share_refs(date) from public, anon;
 grant execute on function public.w777_share_refs(date) to authenticated;
+
+-- ============================================================
+-- v197: 🎁 مكافأة الروابط — كل 5 تسجيلات حقيقية (5، 10، 15…) = شهر مجاني، غير بموافقة المدير
+-- ============================================================
+create table if not exists public.w777_ref_rewards (
+  id bigserial primary key,
+  ref text not null check (ref ~ '^[A-Za-z0-9_-]{1,24}$'),
+  milestone int not null check (milestone > 0 and milestone % 5 = 0),
+  status text not null default 'pending' check (status in ('pending', 'granted', 'rejected')),
+  created_at timestamptz not null default now(),
+  decided_at timestamptz,
+  new_until date,
+  unique (ref, milestone)
+);
+alter table public.w777_ref_rewards enable row level security;   -- بلا سياسات: حتى واحد ما يقرا/يكتب مباشرة (غير الدوال)
+revoke all on public.w777_ref_rewards from public, anon, authenticated;
+
+-- التسجيل بالرابط: كنزيدو مكافأة كتسنى الموافقة ملي يوصل العدد لمضاعف ديال 5
+create or replace function public.w777_set_referrer(p_ref text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); mine text; n int;
+begin
+  if me is null or p_ref is null or p_ref !~ '^[A-Za-z0-9_-]{1,24}$' then return false; end if;
+  select code into mine from w777_agencies where uid = me and referred_by is null and created_at > now() - interval '2 days';
+  if mine is null or mine = p_ref then return false; end if;
+  if not exists (select 1 from w777_agencies where code = p_ref and uid <> me) then return false; end if;
+  perform set_config('w777.ref_ok', '1', true);
+  update w777_agencies set referred_by = p_ref, ref_at = now() where uid = me;
+  perform set_config('w777.ref_ok', '', true);
+  select count(*) into n from w777_agencies where referred_by = p_ref;
+  if n > 0 and n % 5 = 0 then
+    insert into w777_ref_rewards (ref, milestone) values (p_ref, n) on conflict (ref, milestone) do nothing;
+  end if;
+  return true;
+end $$;
+revoke all on function public.w777_set_referrer(text) from public, anon;
+grant execute on function public.w777_set_referrer(text) to authenticated;
+
+-- للمدير: المكافآت (اللي كتسنى أولاً) مع الاسم والهاتف ونهاية الاشتراك
+create or replace function public.w777_rewards_list()
+returns table (id bigint, ref text, milestone int, status text, created_at timestamptz, decided_at timestamptz, new_until date,
+               name text, phone text, sub_until date, trial_until date, terms_at timestamptz, signups bigint)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  return query
+  select r.id, r.ref, r.milestone, r.status, r.created_at, r.decided_at, r.new_until, a.name, a.phone, a.sub_until, a.trial_until, a.terms_at,
+         (select count(*) from w777_agencies b where b.referred_by = r.ref)
+  from w777_ref_rewards r left join w777_agencies a on a.code = r.ref
+  order by (r.status = 'pending') desc, r.created_at desc limit 100;
+end $$;
+revoke all on function public.w777_rewards_list() from public, anon;
+grant execute on function public.w777_rewards_list() to authenticated;
+
+-- للمدير: ✅ زيد شهر (من آخر نهاية: الخالص، المجاني ولا اليوم) ولا ✖ رفض — مرة وحدة
+create or replace function public.w777_reward_decide(p_id bigint, p_ok boolean)
+returns date language plpgsql security definer set search_path = public as $$
+declare r w777_ref_rewards; a w777_agencies; base date; nu date;
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  select * into r from w777_ref_rewards where id = p_id and status = 'pending' for update;
+  if not found then raise exception 'not pending'; end if;
+  if not coalesce(p_ok, false) then
+    update w777_ref_rewards set status = 'rejected', decided_at = now() where id = p_id; return null;
+  end if;
+  select * into a from w777_agencies where code = r.ref for update;
+  if not found then raise exception 'no agency'; end if;
+  base := greatest(coalesce(a.sub_until, current_date), coalesce(a.trial_until, (coalesce(a.terms_at, now()) + interval '6 months')::date), current_date);
+  nu := (base + interval '1 month')::date;
+  update w777_agencies set sub_until = nu where uid = a.uid;
+  update w777_ref_rewards set status = 'granted', decided_at = now(), new_until = nu where id = p_id;
+  return nu;
+end $$;
+revoke all on function public.w777_reward_decide(bigint, boolean) from public, anon;
+grant execute on function public.w777_reward_decide(bigint, boolean) to authenticated;
+
+-- للمشترك: شحال جاب ديال التسجيلات وشحال من مكافأة تعطات ليه (غير ديالو)
+create or replace function public.w777_my_refs()
+returns table (signups bigint, granted bigint, pending bigint)
+language sql stable security definer set search_path = public as $$
+  select (select count(*) from w777_agencies b where b.referred_by = a.code),
+         (select count(*) from w777_ref_rewards r where r.ref = a.code and r.status = 'granted'),
+         (select count(*) from w777_ref_rewards r where r.ref = a.code and r.status = 'pending')
+  from w777_agencies a where a.uid = auth.uid() and a.code is not null limit 1 $$;
+revoke all on function public.w777_my_refs() from public, anon;
+grant execute on function public.w777_my_refs() to authenticated;

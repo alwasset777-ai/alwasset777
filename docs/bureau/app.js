@@ -981,15 +981,27 @@
         <button class="btn" type="button" id="ref-copy">📋 نسخ</button>
         <button class="btn gold" type="button" id="ref-share">📤 شارك</button>
         <a class="btn" href="brand-print.html?t=card&qr=page${r ? '&ref=' + encodeURIComponent(r) : ''}" target="_blank" rel="noopener">🪪 بطاقة زيارة بـ QR</a>
-      </div></div>`;
+      </div>${r ? '<div class="ref-prog" id="ref-prog"></div>' : ''}</div>`;
   }
   function bindRefCard() {
+    drawMyRefs();
     const c = $('#ref-copy'); if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(refUrl()); toast('✅ تنسخ الرابط'); } catch (e) { toast(refUrl()); } };
     const sh = $('#ref-share'); if (sh) sh.onclick = async () => {
       const url = refUrl(), text = '💼 تعرّف على تطبيق مجموعة الوسيط: فريق عمل كامل فجيبك';
       try { if (navigator.share) { await navigator.share({ title: 'مجموعة الوسيط', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
       window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
     };
+  }
+  // 🎁 v197: كل 5 تسجيلات حقيقية من الرابط = شهر مجاني (بموافقة المدير)
+  async function drawMyRefs() {
+    const box = $('#ref-prog'), Sy = window.W777_SYNC; if (!box || !Sy || !Sy.request) return;
+    let x = null;
+    try { const r = await Sy.request('/rest/v1/rpc/w777_my_refs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) { const j = await r.json(); x = Array.isArray(j) ? j[0] : j; } } catch (e) { /* */ }
+    if (!box.isConnected) return;
+    const n = +(x && x.signups) || 0, g = +(x && x.granted) || 0, w = +(x && x.pending) || 0, left = 5 - (n % 5);
+    box.innerHTML = `<div class="rp-top"><b>🎁 كل 5 تسجيلات = شهر مجاني</b><span>🎉 ${fmt(n)} تسجيل</span></div>
+      <div class="rp-bar"><i style="width:${(n % 5) * 20}%"></i></div>
+      <small class="muted">${w ? `⏳ عندك ${fmt(w)} مكافأة كتسنى موافقة المدير · ` : ''}${g ? `✅ خديتي ${fmt(g)} شهر مجاني · ` : ''}باقي ${fmt(left)} ${left === 1 ? 'تسجيل' : 'تسجيلات'} للشهر الجاي</small>`;
   }
   // 📊 عدّاد المشاركات (بلا اسم ولا حساب: النوع، الطريقة واللغة فقط) — كيتسجل حتى بلا دخول
   function logShare(kind, via, lang) {
@@ -6695,9 +6707,43 @@
       <div class="kv kv-sm"><div><small>7 أيام</small><b>${fmt(tot('d7'))}</b></div><div><small>30 يوم</small><b>${fmt(tot('d30'))}</b></div><div><small>المجموع</small><b>${fmt(tot('total'))}</b></div></div>
       <div class="ss-rows">${K.map(([k, l]) => `<div class="ss-row"><b>${l}</b><span>المجموع: ${fmt(sum(k, 'total'))}</span><small class="muted">7 أيام: ${fmt(sum(k, 'd7'))} · 30 يوم: ${fmt(sum(k, 'd30'))}</small><small class="muted">${rows.filter(r => r.kind === k && +r.total).map(r => `${esc(V[r.via] || r.via)}: ${fmt(+r.total)}`).join(' · ') || '—'}</small></div>`).join('')}</div>
       <p class="muted" style="margin:8px 0 0;font-size:12.5px">بلا أسماء: غير شحال من مرة تشارك الملف ولا تحلّات الصفحة.</p>
-      <div id="share-refs"></div></div>`;
+      <div id="ref-rewards"></div><div id="share-refs"></div></div>`;
+    drawRewards();
     // 🏅 الروابط الخاصة: شكون جاب أكثر تسجيلات (حقيقية) وزيارات — كاملين ولا شهر بشهر
     const rb = $('#share-refs'); if (rb) drawRefs(rb, '');
+  }
+  // 🎁 v197: مكافآت الروابط (كل 5 تسجيلات) — ✅ زيد شهر ولا ✖ رفض، والقرار مرة وحدة
+  async function drawRewards() {
+    const box = $('#ref-rewards'), Sy = window.W777_SYNC; if (!box || !Sy || !Sy.request) return;
+    let rows = [];
+    try { const r = await Sy.request('/rest/v1/rpc/w777_rewards_list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) rows = await r.json(); } catch (e) { /* */ }
+    if (!box.isConnected) return;
+    if (!Array.isArray(rows) || !rows.length) { box.innerHTML = ''; return; }
+    const pend = rows.filter(x => x.status === 'pending'), done = rows.filter(x => x.status !== 'pending').slice(0, 5);
+    const row = x => `<div class="ss-row rw-row" data-id="${+x.id}"><b>🎁 ${esc(x.name || x.ref)}</b><span>${fmt(+x.milestone)} تسجيلات</span>
+      <small class="muted">الكود: ${esc(x.ref)} · المجموع دابا: ${fmt(+x.signups || 0)}${x.sub_until ? ' · خالص حتى ' + esc(dAr(x.sub_until)) : ''}</small>
+      ${x.status === 'pending' ? `<div class="btn-row"><button type="button" class="btn sm gold rw-ok">✅ زيد شهر</button><button type="button" class="btn sm rw-no">✖ رفض</button></div>`
+        : `<small>${x.status === 'granted' ? `✅ تزاد شهر — حتى ${esc(dAr(x.new_until))}` : '✖ ترفضات'}</small>`}</div>`;
+    box.innerHTML = `<h4 style="margin:14px 0 6px">🎁 مكافآت كتسنى الموافقة ${pend.length ? `<span class="badge gold">${pend.length}</span>` : ''}</h4>
+      ${pend.length ? `<div class="ss-rows">${pend.map(row).join('')}</div>` : '<p class="muted" style="margin:0">ما كاين حتى مكافأة كتسنى.</p>'}
+      ${done.length ? `<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">آخر القرارات</summary><div class="ss-rows">${done.map(row).join('')}</div></details>` : ''}`;
+    const decide = async (id, ok) => {
+      const x = rows.find(y => +y.id === id); if (!x) return;
+      if (!(await confirmBox(ok ? `زيد شهر مجاني لـ«${x.name || x.ref}»؟` : `ترفض المكافأة ديال «${x.name || x.ref}»؟`, ok ? "✅ زيد شهر" : "✖ رفض", !ok))) return;
+      try {
+        const r = await Sy.request('/rest/v1/rpc/w777_reward_decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_id: id, p_ok: ok }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const until = await r.json();
+        if (ok && x.phone) {
+          const msg = `🎉 مبروك ${x.name || ''}!\nجبتي ${x.milestone} مشتركين جداد لمجموعة الوسيط بالرابط ديالك، وتزاد ليك شهر مجاني فالاشتراك (حتى ${dAr(until)}).\nشكراً على الثقة 🙏 — كمّل، كل 5 تسجيلات = شهر آخر.`;
+          modal(`<h3>✅ تزاد الشهر</h3><p>الاشتراك ديال «${esc(x.name || x.ref)}» ولا حتى <b>${esc(dAr(until))}</b>.</p>
+            <div class="btn-row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(x.phone)}?text=${encodeURIComponent(msg)}" data-close>${ic('wa', 16)} صيفط التهنئة فواتساب</a><button class="btn" data-close>سدّ</button></div>`);
+        } else toast(ok ? '✅ تزاد الشهر' : '✖ ترفضات');
+        drawRewards();
+      } catch (e) { toast('ما تقدّش: ' + e.message, 4000); }
+    };
+    $$('.rw-ok', box).forEach(b => b.onclick = () => decide(+b.closest('.rw-row').dataset.id, true));
+    $$('.rw-no', box).forEach(b => b.onclick = () => decide(+b.closest('.rw-row').dataset.id, false));
   }
   const monthAr = d => new Date(d + 'T00:00:00').toLocaleDateString('ar-MA', { month: 'long', year: 'numeric' });
   function refMonths() { const out = [], d = new Date(); d.setDate(1); for (let i = 0; i < 6; i++) { out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'); d.setMonth(d.getMonth() - 1); } return out; }
