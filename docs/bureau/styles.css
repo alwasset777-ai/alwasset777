@@ -1908,3 +1908,13 @@ input[data-num], input[data-money], input[inputmode="numeric"], input[inputmode=
 .ref-prog .rp-bar { height: 8px; border-radius: 99px; background: var(--line); margin: 8px 0 6px; overflow: hidden; }
 .ref-prog .rp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #c9a24a, var(--gold)); border-radius: 99px; }
 .rw-row .btn-row { grid-column: 1 / -1; margin-top: 4px; }
+
+/* 🎁📋 v198: تنبيه المكافآت فالرئيسية + زر لصق رسالة الزبون */
+.home-rw { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 14px; border-radius: 16px; text-decoration: none; color: inherit;
+  background: linear-gradient(135deg, rgba(201,162,74,.16), rgba(200,16,46,.08)); border: 1.5px solid #c9a24a; box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+.home-rw .hr-ic { font-size: 28px; line-height: 1; }
+.home-rw .hr-tx { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.home-rw .hr-tx small { color: var(--muted); font-size: 12.5px; }
+.home-rw .hr-go { font-size: 20px; font-weight: 900; color: var(--gold); }
+.paste-msg { width: 100%; justify-content: center; margin: 0 0 14px; padding: 12px; flex-wrap: wrap; gap: 6px; }
+.paste-msg small { font-weight: 600; opacity: .85; font-size: 12px; }
