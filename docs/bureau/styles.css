@@ -2071,3 +2071,15 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 .ag-quick button { flex: 1 1 auto; font-size: 11px; padding: 6px 6px; }
 .ag-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); overflow: visible; }
 .ag-quick button { white-space: normal; line-height: 1.25; padding: 6px 3px; border-radius: 12px; font-size: 11.5px; }
+
+/* 🕹️ v209: إبرة العدّاد — كتطلع حتى الأخر وترجع للقيمة (نفس حركة القوس) ومن بعد كترجف شوية بحال عدّاد السيارة */
+.hst > .hneedle { position: absolute; z-index: 0; left: 7%; top: 6px; width: 86%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  --pv: var(--p, 0); transform: rotate(calc(225deg + max(var(--pv), .14) * 270deg));
+  animation: gauge-on 2.2s cubic-bezier(.3,.8,.3,1) both, hn-idle 1.8s ease-in-out 2.2s infinite alternate; }
+.hst > .hneedle::before { content: ''; position: absolute; left: calc(50% - 2px); bottom: 69%; width: 4px; height: 25%; border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(to top, transparent 0%, #1b1f2a 22%, #1b1f2a 45%, hsl(var(--gh, 210) 95% 48%) 100%); clip-path: polygon(0 100%, 100% 100%, 75% 0, 25% 0);
+  box-shadow: 0 0 6px hsl(var(--gh, 210) 95% 55% / .8); }
+.hst > .hneedle::after { content: ''; position: absolute; left: calc(50% - 4px); top: 3.5%; width: 8px; height: 8px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0 20%, hsl(var(--gh, 210) 95% 50%) 60%); box-shadow: 0 0 8px hsl(var(--gh, 210) 95% 55%); }
+@keyframes hn-idle { from { rotate: -1.2deg; } to { rotate: 1.2deg; } }
+@media (prefers-reduced-motion: reduce) { .hst > .hneedle { animation: none; } }
