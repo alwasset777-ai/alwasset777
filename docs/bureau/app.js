@@ -1913,10 +1913,10 @@
           <div class="form-grid">
             ${fInput('priceMax', 'السعر (الثمن المطلوب)', p.priceMax, { money: true })}
             ${fInput('areaTotal', 'المساحة الإجمالية (م²)', p.areaTotal, { type: 'number' })}
-            ${moreF('p3', `${fInput('priceMin', 'أدنى ثمن مقبول', p.priceMin, { money: true })}
+            ${moreF('p3', `${fInput('mezzanine', 'الميزانين / Mezzanine (م²)', mezzOf(p), { type: 'number', ph: 'إلا كان' })}
+            ${fInput('priceMin', 'أدنى ثمن مقبول', p.priceMin, { money: true })}
             ${fSelect('priceUnit', 'الوحدة', D.PRICE_UNITS[p.transaction] || ['درهم'], p.priceUnit, { noEmpty: true })}
             ${fInput('commission', 'عمولة المكتب', p.commission, { ph: 'مثال: 2.5% أو 10 000 درهم' })}
-            ${fInput('mezzanine', 'الميزانين / Mezzanine (م²)', mezzOf(p), { type: 'number', ph: 'إلا كان' })}
             ${fInput('areaBuilt', 'المساحة المبنية (م²)', p.areaBuilt, { type: 'number' })}
             ${fInput('areaUseful', 'المساحة الصافية / المسكونة (م²)', p.areaUseful, { type: 'number' })}
             <div class="field"><label>ثمن المتر المربع</label><input id="ppm" disabled value=""></div>
