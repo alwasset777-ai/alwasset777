@@ -417,6 +417,22 @@
       ${o.money ? `<span class="hint" data-mil-range>${esc([millions(v1), millions(v2)].filter(Boolean).join(' — '))}</span>` : (o.hint ? `<span class="hint">${esc(o.hint)}</span>` : '')}
     </div>`;
   }
+  // v196: «➕ المزيد» — الخانات الثانوية مخبية (كتبقى فالاستمارة وكتتحفظ عادي)، والحالة محفوظة فالجلسة
+  const moreF = (key, html, label = 'المزيد', cls = '') => `<details class="more-f full ${cls}" data-more="${key}" ${S.moreOpen && S.moreOpen[key] ? 'open' : ''}><summary><span>${label}</span><b class="more-n"></b></summary><div class="form-grid">${html}</div></details>`;
+  function bindMore(root) {
+    $$('details.more-f', root).forEach(d => {
+      const cnt = () => { const n = $$('input,select,textarea', d).filter(i => i.type === 'checkbox' || i.type === 'radio' ? i.checked && i.dataset.multi !== undefined : i.type !== 'file' && i.type !== 'hidden' && !i.disabled && i.value && (i.tagName !== 'SELECT' || $('option[value=""]', i))).length; $('.more-n', d).textContent = n ? n : ''; };
+      cnt(); setTimeout(cnt, 50); d.addEventListener('change', cnt); d.addEventListener('input', cnt);
+      d.addEventListener('toggle', () => { (S.moreOpen = S.moreOpen || {})[d.dataset.more] = d.open; });
+    });
+    $$('.seg-more', root).forEach(b => b.onclick = () => { b.parentElement.classList.toggle('seg-less'); b.textContent = b.parentElement.classList.contains('seg-less') ? '⋯ المزيد' : '✕ أقل'; });
+  }
+  // نوع العملية: بيع وكراء ظاهرين، والباقي (رهن، مفروش، موسمي…) وراء «⋯ المزيد»
+  function fSegMore(name, options, value, nMain = 2) {
+    const less = !options.slice(nMain).some(o => o.v === value);
+    return `<div class="seg${less ? ' seg-less' : ''}">${options.map((o, i) => `<label${i >= nMain ? ' class="seg-x"' : ''}><input type="radio" name="${name}" value="${esc(o.v)}" ${o.v === value ? 'checked' : ''}><span>${esc(o.l)}</span></label>`).join('')}<button type="button" class="seg-more">${less ? '⋯ المزيد' : '✕ أقل'}</button></div>`;
+  }
+  const dzC = (kind, icn, t, sub, accept, extra = '') => `<label class="dropzone dz-c" data-kind="${kind}"${extra}><span class="dz-o">${ic(icn, 30)}</span><b>${t}</b><small>${sub}</small><input type="file" accept="${accept}" multiple hidden></label>`;
   function fSeg(name, options, value) {
     return `<div class="seg">${options.map(o => `<label><input type="radio" name="${name}" value="${esc(o.v)}" ${o.v === value ? 'checked' : ''}><span>${esc(o.l)}</span></label>`).join('')}</div>`;
   }
@@ -1870,11 +1886,11 @@
       <form class="form" id="pform" autocomplete="off" novalidate>
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">1</span> نوع العملية والعقار</h3>
-          <div class="field full" style="margin-bottom:12px"><label>نوع العملية</label>${fSeg('transaction', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), p.transaction)}</div>
+          <div class="field full" style="margin-bottom:12px"><label>نوع العملية</label>${fSegMore('transaction', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), p.transaction)}</div>
           <div class="form-grid">
             ${fSelect('type', 'نوع العقار', [], p.type, { groups: typeGroups(), req: true, noEmpty: true })}
-            ${fSelect('status', 'الحالة', D.STATUSES.map(s => ({ v: s.id, l: s.ar })), p.status, { noEmpty: true })}
-            ${fInput('title', 'عنوان الإعلان', p.title, { ph: 'يُنشأ تلقائيا إن تُرك فارغا', cls: 'full' })}
+            ${moreF('p1', `${fSelect('status', 'الحالة', D.STATUSES.map(s => ({ v: s.id, l: s.ar })), p.status, { noEmpty: true })}
+            ${fInput('title', 'عنوان الإعلان', p.title, { ph: 'يُنشأ تلقائيا إن تُرك فارغا', cls: 'full' })}`)}
           </div>
         </div>
 
@@ -1895,31 +1911,32 @@
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">3</span> السعر والمساحة</h3>
           <div class="form-grid">
-            ${fInput('priceMin', 'السعر من (أدنى ثمن مقبول)', p.priceMin, { money: true })}
-            ${fInput('priceMax', 'السعر إلى (الثمن المطلوب)', p.priceMax, { money: true })}
+            ${fInput('priceMax', 'السعر (الثمن المطلوب)', p.priceMax, { money: true })}
+            ${fInput('areaTotal', 'المساحة الإجمالية (م²)', p.areaTotal, { type: 'number' })}
+            ${moreF('p3', `${fInput('mezzanine', 'الميزانين / Mezzanine (م²)', mezzOf(p), { type: 'number', ph: 'إلا كان' })}
+            ${fInput('priceMin', 'أدنى ثمن مقبول', p.priceMin, { money: true })}
             ${fSelect('priceUnit', 'الوحدة', D.PRICE_UNITS[p.transaction] || ['درهم'], p.priceUnit, { noEmpty: true })}
             ${fInput('commission', 'عمولة المكتب', p.commission, { ph: 'مثال: 2.5% أو 10 000 درهم' })}
-            ${fInput('areaTotal', 'المساحة الإجمالية (م²)', p.areaTotal, { type: 'number' })}
-            ${fInput('mezzanine', 'الميزانين / Mezzanine (م²)', mezzOf(p), { type: 'number', ph: 'إلا كان' })}
             ${fInput('areaBuilt', 'المساحة المبنية (م²)', p.areaBuilt, { type: 'number' })}
             ${fInput('areaUseful', 'المساحة الصافية / المسكونة (م²)', p.areaUseful, { type: 'number' })}
             <div class="field"><label>ثمن المتر المربع</label><input id="ppm" disabled value=""></div>
-            <label class="toggle-line full"><input type="checkbox" name="negotiable" ${p.negotiable ? 'checked' : ''}> الثمن قابل للتفاوض</label>
+            <label class="toggle-line full"><input type="checkbox" name="negotiable" ${p.negotiable ? 'checked' : ''}> الثمن قابل للتفاوض</label>`)}
           </div>
         </div>
 
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">4</span> مواصفات العقار <span class="badge gold" id="cat-badge"></span></h3>
-          <div class="form-grid" id="spec-fields"></div>
-          <div class="field full" style="margin-top:14px"><label>المميزات والمرافق</label><div id="feat-fields"></div></div>
+          <details class="more-f desc-btn" data-more="p4"${S.moreOpen && S.moreOpen.p4 ? ' open' : ''}><summary><span>📝 صف عقارك</span><b class="more-n"></b></summary>
+            <div class="form-grid" id="spec-fields"></div>
+            <div class="field full" style="margin-top:14px"><label>المميزات والمرافق</label><div id="feat-fields"></div></div></details>
         </div>
 
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">5</span> الوضعية القانونية</h3>
           <div class="form-grid">
             ${fSelect('titleStatus', 'وضعية الملك', D.TITLE_STATUS, p.titleStatus)}
-            ${fInput('titleNumber', 'رقم الرسم العقاري', p.titleNumber)}
-            ${fInput('legalNotes', 'ملاحظات قانونية', p.legalNotes, { cls: 'full', ph: 'رهن بنكي، إرث، نزاع، وكالة...' })}
+            ${moreF('p5', `${fInput('titleNumber', 'رقم الرسم العقاري', p.titleNumber)}
+            ${fInput('legalNotes', 'ملاحظات قانونية', p.legalNotes, { cls: 'full', ph: 'رهن بنكي، إرث، نزاع، وكالة...' })}`)}
           </div>
         </div>
 
@@ -1928,7 +1945,7 @@
           <div class="form-grid">
             ${fInput('owner.name', 'الاسم الكامل', p.owner.name, { req: true })}
             ${fInput('owner.phone', 'الهاتف', p.owner.phone, { type: 'tel', req: true })}
-            ${fInput('owner.phone2', 'هاتف آخر', p.owner.phone2, { type: 'tel' })}
+            ${moreF('p6', `${fInput('owner.phone2', 'هاتف آخر', p.owner.phone2, { type: 'tel' })}
             ${fInput('owner.whatsapp', 'واتساب (إن كان مختلفا)', p.owner.whatsapp, { type: 'tel' })}
             ${fSelect('owner.relation', 'الصفة', D.OWNER_RELATIONS, p.owner.relation || 'المالك', { noEmpty: true })}
             ${fInput('owner.cin', 'رقم البطاقة الوطنية', p.owner.cin)}
@@ -1937,7 +1954,7 @@
             ${fInput('owner.visits', 'أوقات الزيارة المناسبة', p.owner.visits, { ph: 'مثال: كل يوم بعد 17h' })}
             ${fInput('owner.notes', 'ملاحظات عن المالك', p.owner.notes, { cls: 'full' })}
             <label class="toggle-line"><input type="checkbox" name="keysAtOffice" ${p.keysAtOffice ? 'checked' : ''}> ${ic('key', 18)} المفاتيح عند المكتب</label>
-            <label class="toggle-line"><input type="checkbox" name="exclusive" ${p.exclusive ? 'checked' : ''}> ${ic('star', 18)} تفويض حصري للمكتب</label>
+            <label class="toggle-line"><input type="checkbox" name="exclusive" ${p.exclusive ? 'checked' : ''}> ${ic('star', 18)} تفويض حصري للمكتب</label>`)}
           </div>
         </div>
 
@@ -1955,15 +1972,10 @@
 
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">8</span> الصور، الفيديو والمستندات</h3>
-          <div class="form-grid">
-            <div class="full">
-              <label class="dropzone" data-kind="photo">${ic('camera', 30)}<b>إضافة صور</b><small>من الكاميرا أو المعرض — تُضغط تلقائيا${S.role === 'admin' ? '' : ` · الحد الأقصى ${PHOTO_MAX} صور`}</small>
-                <input type="file" accept="image/*" multiple hidden></label>
-            </div>
-            <div><label class="dropzone" data-kind="video">${ic('video', 28)}<b>إضافة فيديو</b><small>جولة داخل العقار</small>
-                <input type="file" accept="video/*" multiple hidden></label></div>
-            <div><label class="dropzone" data-kind="doc">${ic('file', 28)}<b>إضافة مستندات</b><small>رسم عقاري، تصميم، عقد، PDF...</small>
-                <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*,.txt" multiple hidden></label></div>
+          <div class="dz-row">
+            ${dzC('photo', 'camera', 'صور', S.role === 'admin' ? 'كاميرا / معرض' : `حتى ${PHOTO_MAX} صور`, 'image/*')}
+            ${dzC('video', 'video', 'فيديو', 'جولة فالعقار', 'video/*')}
+            ${dzC('doc', 'file', 'مستندات', 'رسم، تصميم، PDF', '.pdf,.doc,.docx,.xls,.xlsx,image/*,.txt')}
           </div>
           <div class="progress hidden" id="up-prog"><div style="width:0"></div></div>
           <div class="media-grid" id="media-grid"></div>
@@ -1986,7 +1998,7 @@
       </form>`;
 
     const form = $('#pform');
-    bindMoney(form);
+    bindMoney(form); bindMore(form);
 
     // خانات حسب النوع
     const renderSpecs = () => {
@@ -2440,7 +2452,7 @@
           <div class="form-grid">
             ${fInput('client.name', 'الاسم الكامل', r.client.name, { req: true })}
             ${fInput('client.phone', 'الهاتف', r.client.phone, { type: 'tel', req: true })}
-            ${fInput('client.phone2', 'هاتف آخر', r.client.phone2, { type: 'tel' })}
+            ${moreF('r1', `${fInput('client.phone2', 'هاتف آخر', r.client.phone2, { type: 'tel' })}
             ${fInput('client.whatsapp', 'واتساب (إن كان مختلفا)', r.client.whatsapp, { type: 'tel' })}
             ${fInput('client.email', 'البريد الإلكتروني', r.client.email, { type: 'email' })}
             ${fInput('client.cin', 'رقم البطاقة الوطنية', r.client.cin)}
@@ -2449,20 +2461,20 @@
             ${fInput('client.residence', 'مدينة / بلد الإقامة', r.client.residence)}
             ${fSelect('client.source', 'كيف تعرّف على المكتب', D.CLIENT_SOURCES, r.client.source)}
             ${fInput('client.family', 'عدد أفراد الأسرة', r.client.family, { type: 'number' })}
-            ${fInput('client.notes', 'ملاحظات عن الزبون', r.client.notes, { cls: 'full' })}
+            ${fInput('client.notes', 'ملاحظات عن الزبون', r.client.notes, { cls: 'full' })}`)}
           </div>
         </div>
 
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">2</span> ماذا يبحث الزبون؟</h3>
-          <div class="field full" style="margin-bottom:12px"><label>نوع العملية</label>${fSeg('transaction', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), r.transaction)}</div>
-          <div class="field full"><label>أنواع العقار المطلوبة <span class="muted">(اترك فارغا = أي نوع)</span></label>
+          <div class="field full" style="margin-bottom:12px"><label>نوع العملية</label>${fSegMore('transaction', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), r.transaction)}</div>
+          ${moreF('r2', `<div class="field full"><label>أنواع العقار المطلوبة <span class="muted">(اترك فارغا = أي نوع)</span></label>
             <div class="type-picker">${Object.entries(D.CATEGORIES).map(([k, c]) => {
               const ts = D.PROPERTY_TYPES.filter(t => t.cat === k);
               const anyOn = ts.some(t => (r.types || []).includes(t.id));
               return `<details ${anyOn || k === 'apartment' || k === 'house' ? 'open' : ''} class="type-cat"><summary style="cursor:pointer;font-weight:700;margin-bottom:6px">${esc(c.ar)}</summary>
                 <div class="feat-grid">${ts.map(t => `<label><input type="checkbox" data-multi name="types" value="${t.id}" ${(r.types || []).includes(t.id) ? 'checked' : ''}>${esc(t.ar)}</label>`).join('')}</div></details>`;
-            }).join('')}</div></div>
+            }).join('')}</div></div>`, 'أنواع العقار')}
         </div>
 
         <div class="card card-pad">
@@ -2470,8 +2482,9 @@
           <div class="form-grid">
             ${fSelect('city', 'المدينة', [], r.city, { groups: cityGroups(), empty: 'أي مدينة' })}
             <div class="field full"><label>الأحياء المفضلة <span class="muted">(اترك فارغا = أي حي)</span></label>
+              <details class="more-f desc-btn" data-more="r3"${S.moreOpen && S.moreOpen.r3 ? ' open' : ''}><summary><span>🏘️ اختار الأحياء</span><b class="more-n"></b></summary>
               <div id="req-districts"></div>
-              <div class="range" style="margin-top:8px"><input id="new-district" placeholder="حي غير موجود في القائمة؟ اكتبه هنا"><button type="button" class="btn sm" id="add-district">${ic('plus', 16)} إضافة</button></div>
+              <div class="range" style="margin-top:8px"><input id="new-district" placeholder="حي غير موجود في القائمة؟ اكتبه هنا"><button type="button" class="btn sm" id="add-district">${ic('plus', 16)} إضافة</button></div></details>
             </div>
           </div>
         </div>
@@ -2479,20 +2492,22 @@
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">4</span> الميزانية والمواصفات</h3>
           <div class="form-grid">
-            ${fRange('budgetMin', 'budgetMax', 'الميزانية (درهم)', r.budgetMin, r.budgetMax, { money: true, cls: 'full' })}
-            ${fRange('areaMin', 'areaMax', 'المساحة (م²)', r.areaMin, r.areaMax, {})}
-            ${fSelect('bedroomsMin', 'غرف النوم (على الأقل)', ['1', '2', '3', '4', '5', '6'], r.bedroomsMin, { empty: 'لا يهم' })}
+            ${fRange('budgetMin', 'budgetMax', 'الثمن / الميزانية (درهم)', r.budgetMin, r.budgetMax, { money: true, cls: 'full' })}
+            ${fRange('areaMin', 'areaMax', 'المساحة (م²)', r.areaMin, r.areaMax, { cls: 'full' })}
+            ${moreF('r4', `${fSelect('bedroomsMin', 'غرف النوم (على الأقل)', ['1', '2', '3', '4', '5', '6'], r.bedroomsMin, { empty: 'لا يهم' })}
             ${fSelect('floorPref', 'الطابق', D.FLOOR_PREFS, r.floorPref, { empty: 'لا يهم' })}
             ${fSelect('financing', 'طريقة الأداء', D.FINANCING, r.financing)}
             <label class="toggle-line"><input type="checkbox" name="bankApproved" ${r.bankApproved ? 'checked' : ''}> موافقة البنك جاهزة</label>
-            <div class="field full"><label>مميزات ضرورية</label>${fChecks('features', allFeatures, r.features)}</div>
+            <div class="field full"><label>مميزات ضرورية</label>${fChecks('features', allFeatures, r.features)}</div>`)}
           </div>
         </div>
 
         <div class="card card-pad">
           <h3 class="section-title"><span class="num">5</span> ملفات ومستندات الزبون</h3>
-          <label class="dropzone" id="req-drop">${ic('upload', 28)}<b>تحميل ملفات</b><small>بطاقة التعريف، شهادة الأجرة، موافقة البنك، عقد، صور، PDF...</small>
-            <input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple hidden></label>
+          <div class="dz-row">
+            ${dzC('photo', 'camera', 'صور', 'البطاقة، الوثائق…', 'image/*', ' id="req-drop"')}
+            ${dzC('doc', 'file', 'مستندات', 'PDF، عقد، أجرة…', '.pdf,.doc,.docx,.xls,.xlsx,.txt,image/*')}
+          </div>
           <div class="progress hidden" id="req-prog"><div style="width:0"></div></div>
           <div class="media-grid" id="req-files"></div>
         </div>
@@ -2501,11 +2516,11 @@
           <h3 class="section-title"><span class="num">6</span> المتابعة</h3>
           <div class="form-grid">
             ${fSelect('status', 'حالة الطلب', D.REQUEST_STATUSES.map(s => ({ v: s.id, l: s.ar })), r.status, { noEmpty: true })}
-            ${fSelect('priority', 'الأولوية', D.PRIORITIES.map(s => ({ v: s.id, l: s.ar })), r.priority, { noEmpty: true })}
+            ${moreF('r6', `${fSelect('priority', 'الأولوية', D.PRIORITIES.map(s => ({ v: s.id, l: s.ar })), r.priority, { noEmpty: true })}
             ${fInput('followUp', 'تاريخ المتابعة القادمة', r.followUp, { type: 'date' })}
             ${fInput('deadline', 'آخر أجل للزبون', r.deadline, { ph: 'مثال: قبل الصيف، خلال شهر...' })}
             ${fText('description', 'تفاصيل الطلب', r.description, { ph: 'كل ما قاله الزبون عن العقار الذي يبحث عنه...' })}
-            ${fText('notes', 'ملاحظات داخلية', r.notes)}
+            ${fText('notes', 'ملاحظات داخلية', r.notes)}`)}
           </div>
         </div>
 
@@ -2516,7 +2531,7 @@
       </form>`;
 
     const form = $('#rform');
-    bindMoney(form);
+    bindMoney(form); bindMore(form);
 
     // ملفات الزبون
     const rmedia = r.media || [];
@@ -2559,11 +2574,13 @@
       setTimeout(() => prog.classList.add('hidden'), 500);
       renderRFiles();
     };
-    const rdz = $('#req-drop'), rinp = $('input[type=file]', rdz);
-    rinp.onchange = () => { if (rinp.files.length) addRFiles(Array.from(rinp.files)); rinp.value = ''; };
-    rdz.addEventListener('dragover', e => { e.preventDefault(); rdz.classList.add('over'); });
-    rdz.addEventListener('dragleave', () => rdz.classList.remove('over'));
-    rdz.addEventListener('drop', e => { e.preventDefault(); rdz.classList.remove('over'); addRFiles(Array.from(e.dataTransfer.files)); });
+    $$('.dz-c', form).forEach(rdz => {
+      const rinp = $('input[type=file]', rdz);
+      rinp.onchange = () => { if (rinp.files.length) addRFiles(Array.from(rinp.files)); rinp.value = ''; };
+      rdz.addEventListener('dragover', e => { e.preventDefault(); rdz.classList.add('over'); });
+      rdz.addEventListener('dragleave', () => rdz.classList.remove('over'));
+      rdz.addEventListener('drop', e => { e.preventDefault(); rdz.classList.remove('over'); addRFiles(Array.from(e.dataTransfer.files)); });
+    });
     leaveGuard = async () => { if (rSaved) return; for (const fid of rSession) await DB.del('files', fid); };
 
     let selected = new Set(r.districts || []);
@@ -4990,20 +5007,20 @@
           ${fInput('phone', 'هاتف الزبون', c.phone, { type: 'tel' })}
           ${fInput('date', 'التاريخ', a.date, { type: 'date', req: true })}
           ${fInput('time', 'الساعة', a.time, { type: 'time', req: true })}
-          ${fSelect('type', 'نوع الموعد', Object.entries(APPT_TYPES).map(([v, l]) => ({ v, l })), a.type, { noEmpty: true })}
+          ${fInput('place', 'مكان الموعد', a.place, { ph: 'مثال: المكتب، مرجان 2…', cls: 'full' })}
+          ${moreF('a1', `${fSelect('type', 'نوع الموعد', Object.entries(APPT_TYPES).map(([v, l]) => ({ v, l })), a.type, { noEmpty: true })}
           ${fSelect('remind', 'التنبيه ⏰', REMIND, String(a.remind ?? '30'), { noEmpty: true })}
-          ${fInput('place', 'المكان', a.place, { ph: 'مثال: المكتب، مرجان 2…' })}
           ${fSelect('status', 'الحالة', Object.entries(APPT_STATUS).map(([v, s]) => ({ v, l: s.ar })), a.status, { noEmpty: true })}
           ${fSelect('reqId', 'مرتبط بطلب (اختياري)', reqOpts, a.reqId, { noEmpty: true })}
           ${fSelect('propId', 'مرتبط بعقار (اختياري)', propOpts, a.propId, { noEmpty: true })}
-          ${fText('notes', 'ملاحظات', a.notes)}
+          ${fText('notes', 'ملاحظات', a.notes)}`)}
         </div>
         <div class="btn-row" style="margin-top:14px">
           <button class="btn gold" type="submit">${ic('check', 18)} حفظ</button>
           ${ex ? `<button class="btn danger" type="button" id="adel">${ic('trash', 18)} حذف</button>` : ''}
         </div>
       </form>`;
-    const form = $('#af');
+    const form = $('#af'); bindMore(form);
     $('[name=reqId]', form).onchange = e => {
       const rr = S.reqs.find(x => x.id === e.target.value); if (!rr) return;
       const nm = $('[name=name]', form), ph = $('[name=phone]', form);
@@ -5731,11 +5748,11 @@
         ${fInput('sv', 'الخدمة', f.sv, { ph: 'بيع، زليج، بناء، ترميم…' })}` : `
         ${fInput('q', 'كلمة البحث', f.q, { ph: isR ? 'اسم الزبون، الهاتف، المرجع، الحي…' : 'المرجع، الحي، النوع، المالك، الهاتف، الوصف…', cls: 'full' })}
         ${sel('trx', 'نوع العملية', D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar })), 'الكل')}
-        ${sel('cat', 'فئة العقار', Object.entries(D.CATEGORIES).map(([k, c]) => ({ v: k, l: c.ar })), 'كل الفئات')}
         ${fSelect('type', 'نوع العقار', [], f.type, { groups: typeGroups(), empty: 'كل الأنواع' })}
         ${fSelect('city', 'المدينة', [], f.city, { groups: cityGroups(), empty: 'كل المدن' })}
-        ${fSelect('district', 'الحي', districtsOf(f.city), f.district, { empty: 'كل الأحياء' })}
         ${rangeF('pmin', 'pmax', isR ? 'الميزانية (درهم)' : 'الثمن (درهم)', true)}
+        ${moreF('sf', `${sel('cat', 'فئة العقار', Object.entries(D.CATEGORIES).map(([k, c]) => ({ v: k, l: c.ar })), 'كل الفئات')}
+        ${fSelect('district', 'الحي', districtsOf(f.city), f.district, { empty: 'كل الأحياء' })}
         ${isP ? rangeF('amin', 'amax', 'المساحة (م²)') : ''}
         ${sel('beds', 'غرف النوم (على الأقل)', ['1', '2', '3', '4', '5', '6'], 'لا يهم')}
         ${isP ? sel('baths', 'الحمامات (على الأقل)', ['1', '2', '3', '4'], 'لا يهم') : ''}
@@ -5749,7 +5766,7 @@
           <span class="chip ${f.photos ? 'on' : ''}" data-opt="photos">📷 بالصور فقط</span>
           <span class="chip ${f.below ? 'on' : ''}" data-opt="below">▼ تحت ثمن السوق</span>
           <span class="chip ${f.nego ? 'on' : ''}" data-opt="nego">🤝 قابل للتفاوض</span>
-          ${f.scope === 'mine' ? `<span class="chip ${f.fav ? 'on' : ''}" data-opt="fav">★ المفضلة</span>` : ''}</div></div>` : ''}
+          ${f.scope === 'mine' ? `<span class="chip ${f.fav ? 'on' : ''}" data-opt="fav">★ المفضلة</span>` : ''}</div></div>` : ''}`, 'فلاتر أخرى')}
         ${isD ? '' : fSelect('sort', 'الترتيب', Object.entries(SORTS).filter(([k]) => isP || !k.startsWith('a')).map(([v, l]) => ({ v, l })), f.sort, { noEmpty: true })}`;
     main().innerHTML = `
       <div class="page-head"><div><h1>🔎 البحث</h1><div class="sub">بحث شامل بفلتر كامل — النتائج كتبان فالحين</div></div>
@@ -5764,7 +5781,7 @@
       </div>
       <div class="sf-sum" id="sf-sum"></div>
       <div id="sf-res"></div>`;
-    bindMoney(main());
+    bindMoney(main()); bindMore(main());
     const form = $('#sf');
     const read = () => {
       const v = collect(form);
