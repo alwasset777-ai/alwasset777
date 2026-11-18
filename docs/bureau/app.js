@@ -1431,7 +1431,7 @@
     if (!LANG_HOME.parentNode) b.before(LANG_HOME);
     const fl = $('#home-flags');
     if (fl) {
-      if (!fl.children.length) fl.innerHTML = '<b class="fl-title">🌐 لغة التطبيق</b><div class="fl-view"></div>';
+      if (!fl.children.length) fl.innerHTML = '<span class="fl-globe" role="img" aria-label="دول المشتركين" title="دول المشتركين"></span><div class="fl-view"></div>';
       fl.classList.remove('hidden'); fl.classList.add('has-lang');
       if (b.parentNode !== fl || fl.lastElementChild !== b) fl.appendChild(b);
     } else if (b.previousSibling !== LANG_HOME) LANG_HOME.after(b);
@@ -1534,13 +1534,13 @@
         </div>
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
+      <div id="home-flags" class="flag-band hidden"></div>
       <div class="hstats">
         <div class="hst" style="--c:#c8102e"><span class="hst-ic">🏠</span>${odo(avail.length)}<b>عقار متاح</b></div>
         <div class="hst" style="--c:#2f6fd6"><span class="hst-ic">👥</span>${odo(open.length)}<b>طلب مفتوح</b></div>
         <div class="hst" style="--c:#1f9d68"><span class="hst-ic">🎯</span>${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
         <div class="hst" style="--c:#b8860b"><span class="hst-ic">💰</span>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
       </div>
-      <div id="home-flags" class="flag-band hidden"></div>
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
         <div class="card empty">
@@ -7131,7 +7131,7 @@
     const items = Object.entries(cnt).sort((x, y) => y[1] - x[1]);
     if (fl && items.length) {
       const one = items.map(([c, n]) => `<span class="fl-item" title="${esc(c)} — ${n}"><span class="fl-emoji">${flagOf(c)}</span>${esc(c)}<small>${n}</small></span>`).join('');
-      fl.innerHTML = `<b class="fl-title">🌍 دول المشتركين</b><div class="fl-view"><div class="fl-track${items.length >= 5 ? ' moving' : ''}">${one}${items.length >= 5 ? one : ''}</div></div>`;
+      fl.innerHTML = `<span class="fl-globe" role="img" aria-label="دول المشتركين" title="دول المشتركين"></span><div class="fl-view"><div class="fl-track${items.length >= 5 ? ' moving' : ''}">${one}${items.length >= 5 ? one : ''}</div></div>`;
       fl.classList.remove('hidden');
       placeLang();
     }
@@ -7365,7 +7365,7 @@
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.length ? '<span class="grp-point" aria-hidden="true">👉</span>' : ''}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><b class="grp-glow">انضمّ الآن وكن أوّل العارفين</b><div class="grp-logos">${keys.length ? '<span class="grp-point" aria-hidden="true">👉</span>' : ''}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><span class="grp-pad" aria-hidden="true"><svg viewBox="0 0 64 40" width="44" height="28"><defs><linearGradient id="gpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dde6"/></linearGradient></defs><path d="M14 6h36c7 0 11 5 12 12l2 12c1 6-4 9-8 6l-8-7H16l-8 7c-4 3-9 0-8-6l2-12C3 11 7 6 14 6z" fill="url(#gpd)" stroke="#1b1f2a" stroke-width="1.6"/><path d="M22 6h20l-2 9H24z" fill="#1b1f2a"/><rect x="11" y="15" width="3" height="10" rx="1" fill="#1b1f2a"/><rect x="7.5" y="18.5" width="10" height="3" rx="1" fill="#1b1f2a"/><circle cx="50" cy="15" r="2" fill="#2f6fd6"/><circle cx="54.5" cy="19.5" r="2" fill="#c8102e"/><circle cx="45.5" cy="19.5" r="2" fill="#e55aa8"/><circle cx="50" cy="24" r="2" fill="#1f9d68"/><circle cx="24" cy="27" r="3.4" fill="#1b1f2a"/><circle cx="40" cy="27" r="3.4" fill="#1b1f2a"/><rect x="29" y="25" width="6" height="2" rx="1" fill="#2f6fd6" opacity=".8"/></svg></span><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -10200,7 +10200,7 @@
     const sync = $('#btn-sync'); if (!sync || $('#btn-chat')) return;
     const b = document.createElement('a');
     b.className = 'icon-btn hidden'; b.id = 'btn-chat'; b.href = '#/inbox'; b.title = 'الرسائل'; b.setAttribute('aria-label', 'الرسائل');
-    b.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span id="chat-n" class="chat-n hidden"></span>`;
+    b.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="chg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a7cff"/><stop offset=".55" stop-color="#a033ff"/><stop offset="1" stop-color="#ff5c87"/></linearGradient></defs><path d="M12 2.5c5.4 0 9.5 3.9 9.5 8.9s-4.1 8.9-9.5 8.9c-1 0-2-.1-2.9-.4L5 21.6l1.1-3.6C3.9 16.4 2.5 14 2.5 11.4 2.5 6.4 6.6 2.5 12 2.5z" fill="url(#chg)"/><circle cx="8" cy="11.4" r="1.35" fill="#fff"/><circle cx="12" cy="11.4" r="1.35" fill="#fff"/><circle cx="16" cy="11.4" r="1.35" fill="#fff"/></svg><span id="chat-n" class="chat-n hidden"></span>`;
     sync.parentNode.insertBefore(b, sync);
     paintUnread(); setInterval(() => { if (document.visibilityState === 'visible') paintUnread(); }, 60000);
   }
