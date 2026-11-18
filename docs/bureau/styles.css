@@ -2009,3 +2009,18 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 .grp-glow { align-self: center; height: auto !important; line-height: 1.5; width: fit-content; max-width: 100%; flex: 0 0 auto; }
 .bottomnav a.active .bn3d, .bottomnav a[aria-current] .bn3d { transform: translateY(-1px) scale(1.08); }
 .grp-glow { white-space: nowrap; font-size: 13.5px !important; padding: 5px 12px; }
+
+/* ⚪ v206: العدّادات كلها بخلفية بيضاء + الخانات الأربعة (الفرص، المواعيد، المتابعات، التوزيع) بنفس الشكل */
+.hst { background: radial-gradient(120% 90% at 50% 15%, #ffffff 0%, #f6f7fb 60%, #eceef5 100%) !important;
+  border: 1px solid rgba(0,0,0,.06) !important; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c) 40%, transparent), 0 8px 20px -10px color-mix(in srgb, var(--c) 70%, transparent), inset 0 1px 0 #fff !important; }
+.hst::before { background: conic-gradient(from 225deg, hsl(var(--gh, 210) 95% 50%) 0deg, hsl(calc(var(--gh, 210) + 40) 95% 52%) calc(var(--pv) * 270deg), rgba(0,0,0,.07) calc(var(--pv) * 270deg) 270deg, transparent 270deg) !important;
+  filter: drop-shadow(0 0 4px hsl(var(--gh, 210) 95% 55% / .7)) !important; }
+.hst::after { background: repeating-conic-gradient(from 225deg, rgba(20,24,40,.45) 0deg 1.5deg, transparent 1.5deg 13.5deg) !important; opacity: .55 !important; }
+.hst .hnum { color: hsl(var(--gh, 210) 90% 42%) !important; text-shadow: 0 0 1px #fff, 0 0 10px hsl(var(--gh, 210) 95% 55% / .55) !important; }
+.hst b { color: #1b1f2a !important; text-shadow: none !important; }
+.hboxes.hstats { margin: 0 0 18px; }
+.hst.hbx { font: inherit; cursor: pointer; text-decoration: none; color: inherit; width: 100%; }
+.hst.hbx small { display: block; font-size: 10.5px; line-height: 1.25; color: #5d6475; margin-top: 2px; padding: 0 2px; }
+.hst.hbx:active { transform: scale(.97); }
+.hboxes.hstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (min-width: 720px) { .hboxes.hstats { gap: 14px; } }

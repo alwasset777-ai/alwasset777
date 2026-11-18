@@ -1662,27 +1662,11 @@
             <button class="btn" id="seed">${ic('sparkle', 18)} بيانات تجريبية</button>
           </div>
         </div>` : `
-      <div class="hboxes">
-        <a class="card opp-cta" href="#/matching" style="--c:#1f9d68">
-          <span class="opp-ic">✨</span>
-          <span class="grow"><b>أفضل الفرص (طلب ↔ عقار)</b><small>${cold ? '⏳ جاري الحساب…' : strong ? 'ضغط باش تشوف المطابقات كاملين' : 'لا توجد مطابقات قوية حاليا'}</small></span>
-          <span class="opp-n">${cold ? '…' : strong}</span>
-        </a>
-        <button class="card opp-cta" data-hbox="appts" style="--c:#2f6fd6">
-          <span class="opp-ic">📅</span>
-          <span class="grow"><b>مواعيد اليوم</b><small>${todayAppts.length ? 'ضغط باش تشوف المواعيد' : 'ما كاين حتى موعد اليوم'}</small></span>
-          <span class="opp-n">${todayAppts.length}</span>
-        </button>
-        <button class="card opp-cta" data-hbox="follow" style="--c:#d98a14">
-          <span class="opp-ic">🔔</span>
-          <span class="grow"><b>متابعات اليوم</b><small>${follow.length ? 'زبناء خاصك تتاصل بيهم' : 'لا توجد متابعات مستحقة ✓'}</small></span>
-          <span class="opp-n">${follow.length}</span>
-        </button>
-        <button class="card opp-cta" data-hbox="dist" style="--c:#c8102e">
-          <span class="opp-ic">📊</span>
-          <span class="grow"><b>توزيع العقارات المتاحة</b><small>${esc(Object.entries(byType).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([k, v]) => k.split(' ')[0] + ' ' + v).join(' · ') || '—')}</small></span>
-          <span class="opp-n">${avail.length}</span>
-        </button>
+      <div class="hboxes hstats">
+        <a class="hst hbx" href="#/matching" style="${gauge(cold ? 0 : strong, 60)}">${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>أفضل الفرص</b><small>${cold ? '⏳ جاري الحساب…' : strong ? 'طلب ↔ عقار' : 'ما كاين حتى فرصة قوية'}</small></a>
+        <button type="button" class="hst hbx" data-hbox="appts" style="${gauge(todayAppts.length, 10)}">${odo(todayAppts.length)}<b>مواعيد اليوم</b><small>${todayAppts.length ? 'ضغط باش تشوفها' : 'ما كاين حتى موعد'}</small></button>
+        <button type="button" class="hst hbx" data-hbox="follow" style="${gauge(follow.length, 20)}">${odo(follow.length)}<b>متابعات اليوم</b><small>${follow.length ? 'زبناء خاصك تتاصل بيهم' : 'كلشي متابَع ✓'}</small></button>
+        <button type="button" class="hst hbx" data-hbox="dist" style="${gauge(avail.length, 200)}">${odo(avail.length)}<b>توزيع العقارات</b><small>${esc(Object.entries(byType).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k, v]) => k.split(' ')[0] + ' ' + v).join(' · ') || '—')}</small></button>
       </div>
       <h3 style="margin:22px 0 12px">آخر العقارات المضافة</h3>
       <div class="prop-grid">${S.props.slice(0, 6).map(propCard).join('')}</div>`}
