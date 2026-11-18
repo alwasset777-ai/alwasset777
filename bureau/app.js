@@ -1524,9 +1524,9 @@
     const saleValue = avail.filter(p => p.transaction === 'sale').reduce((s, p) => s + (num(p.priceMax) || num(p.priceMin) || 0), 0);
     const todayAppts = S.appts.filter(a => a.status === 'planned' && a.date === today()).sort((x, y) => (x.time || '').localeCompare(y.time || ''));
 
-    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main"><div id="home-flags" class="flag-band hidden"></div>` + gdBanner() + (S.role === 'admin' ? '<div id="home-rw"></div>' : '') + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
+    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main">` + gdBanner() + (S.role === 'admin' ? '<div id="home-rw"></div>' : '') + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
       <div class="hero">
-        <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت.</span></div>
+        <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت — مع الوسيط حلّك بسيط ✨</span></div>
         <div class="hero-big3">
           <button class="btn gold" data-hm="add">${ic('plus', 20)} إضافة</button>
           <button class="btn" data-hm="svc">🧰 خدمات المجموعة${todayAppts.length ? ` <span class="badge gold">${todayAppts.length}</span>` : ''}</button>
@@ -1540,6 +1540,7 @@
         <div class="hst" style="--c:#1f9d68"><span class="hst-ic">🎯</span>${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
         <div class="hst" style="--c:#b8860b"><span class="hst-ic">💰</span>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
       </div>
+      <div id="home-flags" class="flag-band hidden"></div>
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
         <div class="card empty">
@@ -7118,7 +7119,7 @@
     const items = Object.entries(cnt).sort((x, y) => y[1] - x[1]);
     if (fl && items.length) {
       const one = items.map(([c, n]) => `<span class="fl-item" title="${esc(c)} — ${n}"><span class="fl-emoji">${flagOf(c)}</span>${esc(c)}<small>${n}</small></span>`).join('');
-      fl.innerHTML = `<b class="fl-title">🌍 دول المشتركين</b><div class="fl-view"><div class="fl-track${items.length > 3 ? ' moving' : ''}">${one}${items.length > 3 ? one : ''}</div></div>`;
+      fl.innerHTML = `<b class="fl-title">🌍 دول المشتركين</b><div class="fl-view"><div class="fl-track${items.length >= 5 ? ' moving' : ''}">${one}${items.length >= 5 ? one : ''}</div></div>`;
       fl.classList.remove('hidden');
       placeLang();
     }
@@ -7352,7 +7353,7 @@
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><b>👥 مجموعات المشتركين</b><div class="grp-logos">${keys.length ? '<span class="grp-point" aria-hidden="true">👉</span>' : ''}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
