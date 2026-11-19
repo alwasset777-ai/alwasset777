@@ -1284,6 +1284,41 @@
       };
     });
   }
+  // 🛡️ v210: مراقبة النشاط المشبوه (للمدير): الدخول ديالك (الجهاز والعنوان)، الحسابات اللي دخلات من بزاف ديال الأماكن،
+  // التسجيلات وطلبات كلمة السر، والتحقق بخطوتين — مع «طرد من كل الأجهزة» و«خروج من الأجهزة الأخرى»
+  const secDev = ua => /iPhone|iPad/.test(ua || '') ? '📱 iPhone' : /Android/.test(ua || '') ? '📱 Android' : /Macintosh|Mac OS/.test(ua || '') ? '💻 Mac' : /Windows/.test(ua || '') ? '💻 Windows' : /Linux/.test(ua || '') ? '💻 Linux' : '🌐 ' + String(ua || '؟').slice(0, 20);
+  async function drawSecWatch() {
+    const box = $('#sec-watch'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
+    let d = null;
+    try { const r = await Sy.request('/rest/v1/rpc/w777_sec_watch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) d = await r.json(); } catch (e) { /* */ }
+    if (!box.isConnected || !d || typeof d !== 'object') return;
+    const warn = [];
+    if (!+d.admin_mfa) warn.push(`🔐 التحقق بخطوتين ما مفعّلش فحسابك — <a href="#/settings?s=security">فعّلو دابا</a> (أقوى حماية ضد الهكر)`);
+    if (+d.admin_ips_30d > 8) warn.push(`📍 حسابك دخل من ${+d.admin_ips_30d} عناوين مختلفة ف30 يوم — إلا ماشي نتا، دير «خروج من الأجهزة الأخرى»`);
+    if (+d.signups_24h > 30) warn.push(`🆕 ${+d.signups_24h} تسجيل جديد فـ24 ساعة — كثير من العادة`);
+    if (+d.recovery_24h > 5) warn.push(`🔑 ${+d.recovery_24h} طلب استرجاع كلمة السر فـ24 ساعة`);
+    (d.agent_limit_hits || []).forEach(x => warn.push(`🤖 «${esc(x.name)}» وصل للحد اليومي ديال منير (${+x.n} طلب)`));
+    const multi = (d.multi_ip || []).map(x => `<div class="ss-row"><b>${esc(x.name || x.code || '—')}</b><span>${+x.ips} أماكن · ${+x.sessions} دخول</span>
+      <small class="muted">آخر دخول: ${esc(dAr(x.last))}</small><div class="btn-row"><button type="button" class="btn sm sec-kick" data-uid="${esc(x.uid)}" data-n="${esc(x.name || x.code || '')}">🚪 طرد من كل الأجهزة</button></div></div>`).join('');
+    const ses = (d.admin_sessions || []).slice(0, 6).map(x => `<div class="ss-row"><b>${secDev(x.ua)}</b><span dir="ltr">${esc(x.ip || '—')}</span><small class="muted">${esc(dAr(x.at))}${x.aal === 'aal2' ? ' · 🔐' : ''}</small></div>`).join('');
+    box.innerHTML = `<div class="card card-pad" style="margin-bottom:14px"><h3 class="section-title">🛡️ مراقبة الأمان <span class="badge ${warn.length ? 'red' : 'green'}">${warn.length ? warn.length + ' تنبيه' : 'كلشي مزيان'}</span></h3>
+      ${warn.length ? `<div class="sec-warn">${warn.map(w => `<p>⚠️ ${w}</p>`).join('')}</div>` : ''}
+      <div class="kv kv-sm"><div><small>🆕 تسجيلات 24 ساعة</small><b>${+d.signups_24h}</b></div><div><small>🆕 تسجيلات 7 أيام</small><b>${+d.signups_7d}</b></div><div><small>🔓 دخول 24 ساعة</small><b>${+d.sessions_24h}</b></div><div><small>🔑 استرجاع كلمة السر</small><b>${+d.recovery_24h}</b></div></div>
+      <h4 style="margin:12px 0 6px">💻 آخر دخول لحسابك</h4>${ses || '<p class="muted">—</p>'}
+      ${multi ? `<h4 style="margin:12px 0 6px">📍 حسابات دخلات من 4 أماكن ولا كثر (7 أيام)</h4>${multi}` : ''}
+      <div class="btn-row" style="margin-top:10px"><button type="button" class="btn sm" id="sec-others">🚪 خروج من الأجهزة الأخرى ديالي</button><button type="button" class="btn sm ghost" id="sec-reload">↻ تحديث</button></div></div>`;
+    $('#sec-reload', box).onclick = drawSecWatch;
+    $('#sec-others', box).onclick = async () => {
+      if (!(await confirmBox('غادي يتخرج حسابك من كل الأجهزة الأخرى (هاد الجهاز كيبقى). كمل؟', 'خروج', true))) return;
+      try { const r = await Sy.request('/auth/v1/logout?scope=others', { method: 'POST' }); toast(r.ok ? '✅ تخرجتي من كل الأجهزة الأخرى' : '⚠️ ما تقدرش — عاود'); } catch (e) { toast(netErr(e)); }
+      drawSecWatch();
+    };
+    $$('.sec-kick', box).forEach(b => b.onclick = async () => {
+      if (!(await confirmBox(`طرد «${b.dataset.n}» من كل الأجهزة؟ غادي يحتاج يعاود يدخل بالكود ديال الإيميل.`, 'طرد', true))) return;
+      try { const r = await Sy.request('/rest/v1/rpc/w777_kick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_uid: b.dataset.uid }) }); toast(r.ok ? '✅ تطرد من كل الأجهزة' : '⚠️ ما تقدرش'); } catch (e) { toast(netErr(e)); }
+      drawSecWatch();
+    });
+  }
   // 👑 المدير: الأداءات اللي كتسنى + معلومات الحسابات
   async function drawPayAdmin() {
     const box = $('#pay-admin'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
@@ -6587,8 +6622,8 @@
     const isReg = a => !!(a.self_signup || a.terms_at);
     const regAt = a => a.terms_at || a.created_at || null;
     const isNew = a => isReg(a) && regAt(a) && Date.now() - new Date(regAt(a)) < 7 * 864e5;
-    setTimeout(shareStats, 0); setTimeout(drawPayAdmin, 0);
-    main().innerHTML = head + seatBoard(ags) + '<div id="pay-admin"></div><div id="share-stats"></div>' + `
+    setTimeout(shareStats, 0); setTimeout(drawPayAdmin, 0); setTimeout(drawSecWatch, 0);
+    main().innerHTML = head + seatBoard(ags) + '<div id="sec-watch"></div><div id="pay-admin"></div><div id="share-stats"></div>' + `
       <div class="card card-pad" style="margin-bottom:14px">
         <div class="kv kv-sm"><div><small>👥 المسجلين</small><b>${ags.filter(isReg).length}</b></div><div><small>🆕 هاد السيمانة</small><b>${ags.filter(isNew).length}</b></div>
           <div><small>🎁 فالمدة المجانية</small><b>${ags.filter(a => isReg(a) && subInfo(a).trial).length}</b></div><div><small>💳 خالصين</small><b>${ags.filter(a => isReg(a) && subInfo(a).ok && !subInfo(a).trial && !subInfo(a).free).length}</b></div>

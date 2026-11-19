@@ -1855,3 +1855,71 @@ begin
 end $$;
 revoke all on function public.w777_pay_decide(bigint, boolean, int) from public, anon;
 grant execute on function public.w777_pay_decide(bigint, boolean, int) to authenticated;
+
+-- ============================================================
+-- v210: 🛡️ مراجعة أمنية كاملة
+-- ============================================================
+-- 1) الزوار (anon) ما عندهم حتى حق كتابة مباشر فـ«الحجز الفوري» (الحجز كيدوز غير من w777_book المحروسة)
+revoke insert, update, delete on public.w777_stays from anon;
+
+-- 2) وصل الأداء: الطريقة من اللائحة والمبلغ معقول (الموافقة والمدة كيقررهم المدير فالسيرفر)
+create or replace function public.w777_pay_submit(p_method text, p_amount numeric, p_ref text, p_proof text)
+returns bigint language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); nid bigint;
+begin
+  if me is null then raise exception 'auth'; end if;
+  if not exists (select 1 from w777_agencies where uid = me) then raise exception 'no agency'; end if;
+  if p_method is null or p_method not in ('bank', 'transfer') then raise exception 'method'; end if;
+  if p_amount is not null and (p_amount <= 0 or p_amount > 100000) then raise exception 'amount'; end if;
+  if p_proof is null or split_part(p_proof, '/', 1) <> me::text or p_proof !~ '^[0-9a-f-]{36}/[A-Za-z0-9._-]{1,120}$' then raise exception 'proof'; end if;
+  if (select count(*) from w777_payments where uid = me and status = 'pending') >= 3 then raise exception 'too many'; end if;
+  if (select count(*) from w777_payments where uid = me and created_at > now() - interval '1 day') >= 10 then raise exception 'too many'; end if;
+  insert into w777_payments (uid, method, amount, ref, proof) values (me, p_method, p_amount, nullif(left(trim(coalesce(p_ref, '')), 80), ''), p_proof) returning id into nid;
+  return nid;
+end $$;
+revoke all on function public.w777_pay_submit(text, numeric, text, text) from public, anon;
+grant execute on function public.w777_pay_submit(text, numeric, text, text) to authenticated;
+
+-- 3) مراقبة النشاط المشبوه (للمدير فقط): الدخول ديال المدير، الحسابات اللي دخلات من بزاف ديال الأماكن،
+--    التسجيلات الجديدة، طلبات استرجاع كلمة السر، والحسابات اللي فاتت الحد اليومي ديال منير
+create or replace function public.w777_sec_watch()
+returns jsonb language plpgsql stable security definer set search_path = public, auth as $$
+declare r jsonb;
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  select jsonb_build_object(
+    'admin_sessions', coalesce((select jsonb_agg(x order by x.at desc) from (
+        select s.created_at at, s.refreshed_at last, host(s.ip) ip, left(coalesce(s.user_agent, ''), 140) ua, s.aal::text aal
+        from auth.sessions s where s.user_id in (select uid from w777_admins) order by s.created_at desc limit 15) x), '[]'::jsonb),
+    'admin_ips_30d', (select count(distinct s.ip) from auth.sessions s where s.user_id in (select uid from w777_admins) and s.created_at > now() - interval '30 days'),
+    'multi_ip', coalesce((select jsonb_agg(x order by x.ips desc) from (
+        select s.user_id uid, coalesce(a.name, u.email) name, a.code, count(distinct s.ip) ips, count(*) sessions, max(s.created_at) last
+        from auth.sessions s join auth.users u on u.id = s.user_id left join w777_agencies a on a.uid = s.user_id
+        where s.created_at > now() - interval '7 days' and s.user_id not in (select uid from w777_admins)
+        group by s.user_id, a.name, u.email, a.code having count(distinct s.ip) >= 4 order by count(distinct s.ip) desc limit 20) x), '[]'::jsonb),
+    'signups_24h', (select count(*) from auth.users where created_at > now() - interval '24 hours'),
+    'signups_7d', (select count(*) from auth.users where created_at > now() - interval '7 days'),
+    'unconfirmed', (select count(*) from auth.users where email_confirmed_at is null and created_at > now() - interval '7 days'),
+    'recovery_24h', (select count(*) from auth.users where recovery_sent_at > now() - interval '24 hours'),
+    'sessions_24h', (select count(*) from auth.sessions where created_at > now() - interval '24 hours'),
+    'admin_mfa', (select count(*) from auth.mfa_factors f where f.user_id in (select uid from w777_admins) and f.status = 'verified'),
+    'agent_limit_hits', coalesce((select jsonb_agg(x) from (
+        select coalesce(a.name, '?') name, h.n from w777_agent_usage h left join w777_agencies a on a.uid = h.uid
+        where h.day >= current_date - 1 and h.n >= 150 order by h.n desc limit 10) x), '[]'::jsonb),
+    'at', now()) into r;
+  return r;
+end $$;
+revoke all on function public.w777_sec_watch() from public, anon;
+grant execute on function public.w777_sec_watch() to authenticated;
+
+-- 4) طرد حساب مشبوه من كل الأجهزة (للمدير فقط): كيمسح الجلسات ← خاصو يعاود يدخل بالكود
+create or replace function public.w777_kick(p_uid uuid)
+returns int language plpgsql security definer set search_path = public, auth as $$
+declare n int;
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  delete from auth.sessions where user_id = p_uid; get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.w777_kick(uuid) from public, anon;
+grant execute on function public.w777_kick(uuid) to authenticated;

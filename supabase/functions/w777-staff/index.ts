@@ -3,12 +3,17 @@ const URL_ = Deno.env.get('SUPABASE_URL') || '', SR = Deno.env.get('SUPABASE_SER
 const H = { apikey: SR, Authorization: 'Bearer ' + SR, 'Content-Type': 'application/json' };
 const db = (p: string, o: RequestInit = {}) => fetch(`${URL_}/rest/v1/${p}`, { ...o, headers: { ...H, ...(o.headers || {}) } });
 const admin = (p: string, o: RequestInit = {}) => fetch(`${URL_}/auth/v1/admin/${p}`, { ...o, headers: { ...H, ...(o.headers || {}) } });
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+// 🛡️ v210: CORS غير لموقع التطبيق
+const ORIGINS = (Deno.env.get('W777_ORIGINS') ?? 'https://alwasset777-ai.github.io,http://localhost:8777,http://localhost:8779').split(',').map(x => x.trim()).filter(Boolean);
+const CORS_BASE = { 'Access-Control-Allow-Headers': 'authorization, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin' };
+let CORS: Record<string, string> = { ...CORS_BASE, 'Access-Control-Allow-Origin': ORIGINS[0] };
 const out = (b: unknown, s = 200) => Response.json(b, { status: s, headers: CORS });
 const MAX_STAFF = 15;
 const genPass = () => { const a = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from(crypto.getRandomValues(new Uint8Array(10)), b => a[b % a.length]).join(''); };
 
 Deno.serve(async req => {
+  const o = req.headers.get('Origin') || ''; CORS = { ...CORS_BASE, 'Access-Control-Allow-Origin': ORIGINS.includes(o) ? o : ORIGINS[0] };
+  if (Number(req.headers.get('content-length') || 0) > 200000) return out({ error: 'too_large' }, 413);
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return out({ error: 'method' }, 405);
   // المستعمل اللي نادى (توكن ديالو)

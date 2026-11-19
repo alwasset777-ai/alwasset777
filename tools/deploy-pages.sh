@@ -10,6 +10,7 @@ if [ ! -e $GHP/.git ]; then git -C "$ROOT" worktree prune; git -C "$ROOT" worktr
 cd $GHP && git checkout -q -B gh-pages origin/gh-pages && rm -rf bureau
 git -C "$ROOT" archive origin/main docs/bureau | tar -x --strip-components=1
 python3 "$ROOT/tools/offline_files.py" bureau  # لائحة الصور ديال «حفظ بلا إنترنت» محينة
+python3 "$ROOT/tools/csp_pages.py" bureau  # 🛡️ v210: بصمات CSP ديال الصفحات العمومية محينة
 git add -A bureau && git status --short | head -20
 git commit -q -m "$msg
 

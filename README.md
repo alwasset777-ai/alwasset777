@@ -1,20 +1,8 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# تطبيق مجموعة الوسيط — مكتب الوسيط 777 (مكناس)
 
-# Run and deploy your AI Studio app
+- التطبيق (PWA): `docs/bureau/` — منشور على https://alwasset777-ai.github.io/alwasset777/bureau/
+- قاعدة البيانات (Supabase): `docs/bureau/supabase.sql` — كل الجداول محروسة بـ RLS.
+- الخوادم الصغيرة (Edge Functions): `supabase/functions/` — المفاتيح (Gemini/Claude) كتبقى فالخادم، عمرها ما كتوصل للمتصفح.
+- التعليمات الكاملة والاختبارات: `CLAUDE.md`.
 
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/1SWm7Z2VEAM5_N4Ev6NTRdT0jTB6G2ahD
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+> 🛡️ الأمان: ما تحطش أبداً مفتاح سري (service_role، Gemini، Claude) فالكود ولا فملف `.env` داخل المستودع.

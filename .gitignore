@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 🛡️ v210: المفاتيح والأسرار عمرها ما كتدخل للمستودع
+.env
+.env.*
+*.pem
+*.key
+supabase/.temp
