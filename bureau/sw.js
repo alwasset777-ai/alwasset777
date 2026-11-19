@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v209';
+const CACHE = 'w777-bureau-v210';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 // الأصوات المحفوظة ديال المساعد (w777-tts) كتبقى حتى هي بين التحديثات
@@ -7,7 +7,7 @@ const IMG = 'w777-img-v1', IMG_MAX = 1500;
 const RT = 'w777-rt-v1', RT_MAX = 900;
 const FONTS = [400, 500, 700, 800, 900].flatMap(w => [`fonts/tajawal-arabic-${w}-normal.woff2`, `fonts/tajawal-latin-${w}-normal.woff2`]);
 const HUB_ICONS = ['academy', 'ad-maker', 'add-appointment', 'add-property', 'add-request', 'agencies', 'associations', 'bell', 'brokers', 'chart', 'chat', 'contractors', 'disputes', 'disputes-ico', 'donations', 'donations-ico', 'estimate', 'events', 'finance-ico', 'finishing', 'games', 'globe', 'groups', 'guide', 'investors', 'loan-ico', 'map-ico', 'matching', 'news', 'news-ico', 'notaries', 'opp', 'projects', 'projects-ico', 'rentals', 'stays', 'terms', 'toolbox'];
-const SHELL = ['./', 'index.html', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'wasla-levels.js', 'wasla.js', 'games.js', 'academy-data.js', 'academy.js', 'finance-data.js', 'manifest.webmanifest', ...FONTS,
+const SHELL = ['./', 'index.html', 'guard.js', 'styles.css', 'fonts.css', 'data.js', 'db.js', 'sync.js', 'app.js', 'guide-data.js', 'wasla-levels.js', 'wasla.js', 'games.js', 'academy-data.js', 'academy.js', 'finance-data.js', 'manifest.webmanifest', ...FONTS,
   'vendor/qrcode.js', 'icons/logo.png?v=10', 'icons/icon-192.png?v=9', 'icons/agent-mounir.webp?v=1', 'icons/earth-map.webp?v=1', 'icons/icon-512.png?v=9', 'icons/apple-touch-icon.png?v=9', 'icons/hero-bg.webp?v=2', 'icons/hero-bg2.webp?v=2',
   // كل أيقونات الخانات (نفس رقم النسخة ?v=8 فكل التطبيق)
   ...HUB_ICONS.map(n => `icons/hub/${n}.webp?v=8`),
