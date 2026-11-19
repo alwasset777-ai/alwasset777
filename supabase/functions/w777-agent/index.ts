@@ -4,8 +4,11 @@
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
+// 🛡️ v210: المواقع المسموح ليها تعيط على هاد الخادم من المتصفح (W777_ORIGINS باش تزيد وحدة بلا ما تبدل الكود)
+const ORIGINS = (Deno.env.get("W777_ORIGINS") ?? "https://alwasset777-ai.github.io,http://localhost:8777,http://localhost:8779").split(",").map((x) => x.trim()).filter(Boolean);
+const MAX_BODY = 15_000_000;
+const corsFor = (req: Request) => { const o = req.headers.get("Origin") ?? ""; return { ...CORS_BASE, "Access-Control-Allow-Origin": ORIGINS.includes(o) ? o : ORIGINS[0], "Vary": "Origin" }; };
+const CORS_BASE = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -365,6 +368,9 @@ async function sha(s: string) {
 let SEC: { at: number; rows: any[] } | null = null;
 
 Deno.serve(async (req) => {
+  // 🛡️ v210: CORS غير لموقع التطبيق (ماشي لأي موقع) + حد لحجم الطلب
+  const CORS = corsFor(req);
+  if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY) return new Response(JSON.stringify({ error: "too_large" }), { status: 413, headers: { ...CORS, "Content-Type": "application/json" } });
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
   if (req.method !== "POST") return json({ error: "method" }, 405);

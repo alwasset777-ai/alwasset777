@@ -2083,3 +2083,8 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
   background: radial-gradient(circle at 35% 35%, #fff 0 20%, hsl(var(--gh, 210) 95% 50%) 60%); box-shadow: 0 0 8px hsl(var(--gh, 210) 95% 55%); }
 @keyframes hn-idle { from { rotate: -1.2deg; } to { rotate: 1.2deg; } }
 @media (prefers-reduced-motion: reduce) { .hst > .hneedle { animation: none; } }
+
+/* 🛡️ v210: مراقبة الأمان */
+.sec-warn { background: #fff4f4; border: 1px solid #f3c2c6; border-radius: 12px; padding: 8px 12px; margin-bottom: 10px; }
+.sec-warn p { margin: 4px 0; font-size: 13.5px; font-weight: 600; color: #8a0d17; }
+.sec-warn a { color: #c8102e; text-decoration: underline; }
