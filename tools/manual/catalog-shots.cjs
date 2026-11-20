@@ -3,12 +3,14 @@
 // الاستعمال: cd docs && python3 -m http.server 8777 &  ثم  NODE_PATH=$(npm root -g) node tools/manual/catalog-shots.cjs OUTDIR
 const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs');
 const BASE = 'http://localhost:8777/bureau/'; const OUT = process.argv[2];
+// UI=fr: الواجهة بالفرنسية (ترجمة التطبيق، كتحتاج الإنترنت) — للكتالوج بالفرنسية
+const UI = process.env.UI || ''; const XW = UI ? 1800 : 0;
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const c = await b.newContext({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 2, serviceWorkers: 'block', isMobile: true, hasTouch: true });
   const p = await c.newPage(); p.on('pageerror', e => console.log('ERR', e.message));
-  await p.addInitScript(() => { localStorage.w777_agent_voice = '0'; localStorage.w777_guide_seen = '1'; localStorage.w777_open_sound = '0'; });
-  await p.route(/googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/, r => r.abort()); await F.install(p);
+  await p.addInitScript(ui => { localStorage.w777_agent_voice = '0'; localStorage.w777_guide_seen = '1'; localStorage.w777_open_sound = '0'; if (ui) localStorage.w777_lang = ui; }, UI);
+  await p.route(UI ? /fonts\.googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/ : /googleapis|gstatic|unpkg|jsdelivr|cdnjs|tile\.|openstreetmap|vercel\.app/, r => r.abort()); await F.install(p);
   // مجموعات الشبكة (باش تبان اليد والأيقونات فالرئيسية)
   await p.route(/w777_agent_config/, r => r.fulfill({ json: [{ id: 1, name: 'منير', ai_enabled: true, wa_group: 'https://chat.whatsapp.com/x', tg_group: 'https://t.me/x', fb_group: 'https://facebook.com/groups/x' }] }));
   // 🛡️ مراقبة الأمان (معلومات خيالية)
@@ -21,10 +23,10 @@ const BASE = 'http://localhost:8777/bureau/'; const OUT = process.argv[2];
     const bd = JSON.parse(r.request().postData() || '{}'); if (bd.ping || bd.tts !== undefined || bd.game) return r.fulfill({ json: { ok: true } });
     step++;
     if (step === 1) return r.fulfill({ json: { content: [{ type: 'tool_use', id: 't1', name: 'create_property', input: { property_type: 'apartment', transaction: 'sale', city: 'مكناس', district: 'حمرية', price: 850000, area: 92, bedrooms: 2, owner_name: 'مالك تجريبي', owner_phone: '0611223344' } }], stop_reason: 'tool_use' } });
-    r.fulfill({ json: { content: [{ type: 'text', text: 'تسجّل العقار W777 بالصور ✓ — وعندك زبون مناسب، واش نصيفط ليه الصور فواتساب؟' }], stop_reason: 'end_turn' } });
+    r.fulfill({ json: { content: [{ type: 'text', text: UI === 'fr' ? 'Bien W777 enregistré avec ses photos ✓ — un client correspond : je lui envoie les photos sur WhatsApp ?' : 'تسجّل العقار W777 بالصور ✓ — وعندك زبون مناسب، واش نصيفط ليه الصور فواتساب؟' }], stop_reason: 'end_turn' } });
   });
   const clean = () => p.evaluate(() => { document.querySelectorAll('.wl-mod,.gd-tip,.toast,#splash').forEach(m => m.remove()); });
-  const shot = async (name, wait = 1500) => { await p.waitForTimeout(wait); await clean(); await p.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 76 }); console.log('✓', name); };
+  const shot = async (name, wait = 1500) => { await p.waitForTimeout(wait + XW); await clean(); await p.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 76 }); console.log('✓', name); };
   const go = async (h, name, wait) => { await p.evaluate(h => { location.hash = h; window.scrollTo(0, 0); }, h); await shot(name, wait); };
   await p.goto(BASE); await p.waitForTimeout(1500);
   const sd = await p.$('#seed'); if (sd) { await sd.click(); await p.waitForTimeout(1500); }
@@ -74,6 +76,6 @@ const BASE = 'http://localhost:8777/bureau/'; const OUT = process.argv[2];
   try { await p.evaluate(() => { const x = document.getElementById('tr-pay'); if (x) x.click(); }); await shot('pay-modal', 1200); } catch (e) { console.log('pay', e.message); }
   await p.evaluate(() => document.querySelectorAll('.modal-bg,.modal').forEach(m => m.remove()));
   // 🌐 الصفحات العمومية
-  for (const [u, n] of [['decouvrir.html', 'pub-decouvrir'], ['catalog.html', 'pub-catalog'], ['stays.html', 'pub-stays'], ['join.html', 'pub-join'], ['game.html', 'pub-wasla']]) { await p.goto(BASE + u); await shot(n, 2000); }
+  for (const [u, n] of [[UI === 'fr' ? 'decouvrir.html?lang=fr' : 'decouvrir.html', 'pub-decouvrir'], ['catalog.html', 'pub-catalog'], ['stays.html', 'pub-stays'], ['join.html', 'pub-join'], ['game.html', 'pub-wasla']]) { await p.goto(BASE + u); await shot(n, 2000); }
   await b.close();
 })();

@@ -17,7 +17,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     await p.goto(BASE); await F.login(p, BASE);
     await p.evaluate(() => { location.hash = '#/guide'; }); await p.waitForTimeout(1500);
     const n = await p.$$eval('[data-share-pdf]', a => a.map(x => x.dataset.sharePdf).join(','));
-    if (n !== 'dalil,catalog,malaf,malaf_fr') bad.push(mode + ' btns ' + n);
+    if (n !== 'dalil,catalog,malaf,malaf_fr,catalog_fr') bad.push(mode + ' btns ' + n);
     // 📚 v212: الكتالوج الشامل كيتشارك بنفس الطريقة
     if (mode === 'files') { await p.click('[data-share-pdf="catalog"]'); await p.waitForTimeout(1800); const c0 = await p.evaluate(() => (window.__sh[0] || { files: [] }).files[0]); if (!c0 || c0[0] !== 'catalogue-khadamat-majmouat-alwasset.pdf' || c0[2] < 100000) bad.push('catalog ' + JSON.stringify(c0)); await p.evaluate(() => { window.__sh = []; }); }
     await p.click('[data-share-pdf="malaf"]'); await p.waitForTimeout(1500);

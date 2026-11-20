@@ -956,6 +956,7 @@
     catalog: ['files/guide/catalogue-khadamat-majmouat-alwasset.pdf', 'الكتالوج الشامل — تطبيق مجموعة الوسيط', '📚 الكتالوج الشامل ديال تطبيق مجموعة الوسيط: 53 خدمة ف9 مراحل، كل خدمة بالصورة وشنو هي وكيفاش كتخدم والفائدة ديالها.'],
     malaf: ['files/guide/malaf-taqdimi-majmouat-alwasset.pdf', 'الملف التقديمي — تطبيق مجموعة الوسيط', '💼 تعرّف على تطبيق مجموعة الوسيط: فريق عمل كامل فجيبك (المميزات والحلول لكل مهنة، بالصور).'],
     dalil: ['files/guide/dalil-majmouat-alwasset.pdf', 'الدليل الشامل — تطبيق مجموعة الوسيط', '📘 الدليل الشامل ديال تطبيق مجموعة الوسيط: كل خدمة خطوة بخطوة بالصور.'],
+    catalog_fr: ['files/guide/catalogue-services-groupe-alwasset-fr.pdf', 'Catalogue complet — Application Groupe Al Wasset', '📚 Le catalogue complet de l’application Groupe Al Wasset : 53 services en 9 étapes, chacun en image avec ce que c’est, comment ça marche et ce que vous y gagnez.', 'fr'],
     malaf_fr: ['files/guide/dossier-presentation-groupe-alwasset-fr.pdf', 'Dossier de présentation — Groupe Al Wasset', '💼 Découvrez l’application Groupe Al Wasset : une équipe complète dans votre poche (services et solutions par métier, en images).', 'fr'],
   };
   // 🔗 v195: جاي من رابط مشترك (./?gate=1&ref=CODE): كنحفظو الكود حتى يكمل التسجيل، ومن بعد كيتسجل مرة وحدة (w777_set_referrer)
@@ -6250,6 +6251,8 @@
             <button class="btn gold" type="button" data-share-pdf="malaf">📤 شارك الملف التقديمي</button>
             <a class="btn" href="files/guide/dossier-presentation-groupe-alwasset-fr.pdf" target="_blank" rel="noopener" download>🇫🇷 Dossier de présentation</a>
             <button class="btn" type="button" data-share-pdf="malaf_fr">📤 Partager (FR)</button>
+            <a class="btn" href="files/guide/catalogue-services-groupe-alwasset-fr.pdf" target="_blank" rel="noopener" download>🇫🇷 Catalogue complet</a>
+            <button class="btn" type="button" data-share-pdf="catalog_fr">📤 Partager le catalogue (FR)</button>
             <a class="btn" href="decouvrir.html" target="_blank" rel="noopener">🌐 صفحة «تعرّف على التطبيق»</a>
             <a class="btn" href="tuto/" target="_blank" rel="noopener">🎬 فيديوهات الدليل (19)</a>
             ${done.size ? '<button class="btn" id="gd-reset">↺ إعادة من الأول</button>' : ''}</div>
@@ -7059,7 +7062,7 @@
     try { const r = await Sy.request('/rest/v1/rpc/w777_share_stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (!r.ok) return; rows = await r.json(); } catch (e) { return; }
     if (!Array.isArray(rows)) return;
     if (!$('#share-stats')) return;
-    const K = [['malaf', '💼 الملف التقديمي'], ['malaf_fr', '🇫🇷 الملف بالفرنسية'], ['dalil', '📘 الدليل الشامل'], ['page', '🌐 صفحة «تعرّف على التطبيق»']];
+    const K = [['malaf', '💼 الملف التقديمي'], ['malaf_fr', '🇫🇷 الملف بالفرنسية'], ['catalog', '📚 الكتالوج الشامل'], ['catalog_fr', '🇫🇷 الكتالوج بالفرنسية'], ['dalil', '📘 الدليل الشامل'], ['page', '🌐 صفحة «تعرّف على التطبيق»']];
     const V = { file: 'ملف', link: 'رابط', wa: 'واتساب', view: 'زيارة', other: 'آخر' };
     const sum = (k, f) => rows.filter(r => r.kind === k).reduce((n, r) => n + (+r[f] || 0), 0);
     const tot = f => rows.reduce((n, r) => n + (+r[f] || 0), 0);
