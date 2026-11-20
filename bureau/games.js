@@ -157,6 +157,8 @@
 .gm-c:active{transform:translateY(2px);box-shadow:none}
 .gm-meter{height:10px;border-radius:10px;background:#eee;overflow:hidden;margin-top:4px}.gm-meter i{display:block;height:100%;background:var(--c)}
 .gm-meter.over i{background:#c8102e}
+.gm-city{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff;border:2px solid var(--k);border-radius:14px;padding:8px 12px;margin:10px 0 0;font-weight:800;box-shadow:0 3px 0 var(--c)}
+.gm-city select{flex:1;min-width:160px;font:inherit;font-weight:700;padding:7px 10px;border:1.5px solid #ccc;border-radius:10px;background:#fafafa;color:var(--k)}
 .gm-toast{position:fixed;inset-inline:16px;bottom:88px;margin:auto;max-width:420px;background:#111;color:#fff;border-radius:14px;padding:10px 14px;font-weight:800;text-align:center;z-index:99;animation:gmPop .3s}
 `;
     document.head.appendChild(st);
@@ -190,10 +192,12 @@
     const p = prog(g.id);
     root.innerHTML = `<div class="gm" style="--c:${g.color}">${top(g, `⭐ ${starsOf(g.id)}/${STAGES * 3}`)}
       <div class="gm-how"><b>كيفاش تلعب؟</b><br>${esc(g.how)}</div>
+      ${def.extra ? def.extra() : ''}
       <div class="gm-stg">${def.stages.map((s, i) => {
         const open = isOpen(g.id, i), n = (p.stars || [])[i] || 0;
         return `<button class="gm-s ${open ? '' : 'lk'}" data-s="${i}" ${open ? '' : 'aria-disabled="true"'}><span class="n">${open ? i + 1 : '🔒'}</span><span><b>${esc(s.name)}</b><small>${esc(s.sub)}</small></span><span class="sr">${n ? starTxt(n) : open ? '▶' : ''}</span></button>`;
       }).join('')}</div></div>`;
+    if (def.bindExtra) def.bindExtra(root);
     root.querySelectorAll('.gm-s').forEach(b => b.onclick = () => {
       const i = +b.dataset.s;
       if (!isOpen(g.id, i)) return toast('🔒 ربح نجمة فالمرحلة اللي قبل باش تتفتح');
@@ -226,7 +230,7 @@
       const q = qs[k]; done = false;
       root.querySelector('.gm-body').innerHTML = `
         <div class="gm-bar"><i style="width:${k / n * 100}%"></i></div>
-        <div class="gm-meta"><span>${esc(S.name)} · سؤال ${k + 1}/${n}</span><span>✅ ${ok}</span><span>🏅 ${grp(pts)}</span></div>
+        <div class="gm-meta"><span>${esc(S.name)}${def.where && def.where() ? ' · 📍 ' + esc(def.where()) : ''} · سؤال ${k + 1}/${n}</span><span>✅ ${ok}</span><span>🏅 ${grp(pts)}</span></div>
         ${S.timer ? '<div class="gm-tm"><i></i></div>' : ''}
         <div class="gm-q">${q.img ? `<img class="gm-img" src="${IMG}${q.img}.webp" alt="" decoding="async"><div class="gm-cred" data-k="${q.img}"></div>` : ''}${q.card || ''}
           <p class="gm-qt">${q.tag ? `<span class="tag">${esc(q.tag)}</span>` : ''}${esc(q.q)}</p>
@@ -281,7 +285,25 @@
   }
 
   // ============ 1) شحال يسوى؟ ============
+  // 📍 v214: اللاعب يختار مدينتو (ولا «كل المغرب») ← الأسئلة على الشقق والفيلات ديالها (مكناس بالأحياء)
+  const CITY_KEY = 'w777_price_city';
+  const cityGet = () => { try { return localStorage.getItem(CITY_KEY) || ''; } catch (e) { return ''; } };
+  const citySet = v => { try { v ? localStorage.setItem(CITY_KEY, v) : localStorage.removeItem(CITY_KEY); } catch (e) {} };
+  function cityRowOf(m) { const c = cityGet(); return c ? [...m.cities, ...m.small].find(d => d.name === c) || null : null; }
   const PRICE = {
+    where: () => { const c = cityRowOf(market()); return c ? c.name : ''; },
+    extra() {
+      const m = market(), cur = cityGet(), byName = (a, b) => a.name.localeCompare(b.name, 'ar');
+      const o = d => `<option value="${esc(d.name)}" ${d.name === cur ? 'selected' : ''}>${esc(d.name)}</option>`;
+      return `<label class="gm-city"><span>📍 الأسئلة على:</span><select id="gm-city" aria-label="اختار المدينة">
+        <option value="">🇲🇦 كل المدن المغربية</option>
+        <optgroup label="المدن الكبرى">${m.cities.map(o).join('')}</optgroup>
+        <optgroup label="مدن أخرى">${[...m.small].sort(byName).map(o).join('')}</optgroup></select></label>`;
+    },
+    bindExtra(root) {
+      const sel = root.querySelector('#gm-city'); if (!sel) return;
+      sel.onchange = () => { citySet(sel.value); toast(sel.value ? `📍 الأسئلة غادي تكون على ${sel.value}` : '🇲🇦 الأسئلة على كل المدن المغربية'); };
+    },
     stages: [
       { name: 'شقق المدن الكبرى', sub: 'كازا، الرباط، مراكش، طنجة… ختار الثمن الصحيح' },
       { name: 'فيلات وشقق عبر المغرب', sub: 'الفيلا ثمن المتر ديالها مختلف' },
@@ -290,11 +312,14 @@
       { name: 'الخبير', sub: 'الفرق صغير — ركّز مزيان' },
     ],
     make(si) {
-      const m = market(), out = [];
+      const m = market(), out = [], mine = cityRowOf(m);
+      // مدينة مختارة: مكناس بالأحياء (عندنا أثمنة الأحياء)، والمدن الأخرى بثمن المدينة
+      const local = mine ? (mine.name === 'مكناس' && m.dist.length ? [...m.dist, mine] : [mine]) : null;
       for (let i = 0; i < 8; i++) {
         let kind = 'apt', loc;
         const all = [...m.cities, ...m.small];
-        if (si === 0) loc = pick(m.cities.filter(d => d.apt));
+        if (local) { loc = pick(local); kind = loc.villa && (si > 0 && Math.random() < 0.4) ? 'villa' : 'apt'; }
+        else if (si === 0) loc = pick(m.cities.filter(d => d.apt));
         else if (si === 1 || si === 3) { loc = pick(all); kind = loc.villa && (!loc.apt || Math.random() < 0.5) ? 'villa' : 'apt'; }
         else { loc = pick(si === 2 ? (m.small.length ? m.small : m.cities) : Math.random() < 0.15 && m.dist.length ? m.dist : all); kind = loc.villa && Math.random() < 0.4 ? 'villa' : 'apt'; }
         if (!loc[kind]) kind = loc.apt ? 'apt' : 'villa';
