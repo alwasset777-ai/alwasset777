@@ -50,7 +50,7 @@
     house: ['🏠', 'أجزاء المنزل', 'La maison', 'The house'], types: ['🏘️', 'أنواع العقارات', 'Types de biens', 'Property types'],
     sale: ['🤝', 'البيع والشراء', 'Vente & achat', 'Buying & selling'], rent: ['🔑', 'الكراء', 'Location', 'Renting'],
     build: ['🏗️', 'البناء والأشغال', 'Construction', 'Construction'], deco: ['🛋️', 'الديكور والتجهيز', 'Déco & équipement', 'Decor & fittings'],
-    city: ['🏙️', 'المدينة والحي', 'Ville & quartier', 'City & neighbourhood'], meknes: ['🕌', 'مكناس والمغرب', 'Meknès & Maroc', 'Meknes & Morocco'],
+    city: ['🏙️', 'المدينة والحي', 'Ville & quartier', 'City & neighbourhood'], meknes: ['🇲🇦', 'مدن المغرب', 'Villes du Maroc', 'Cities of Morocco'],
     money: ['💰', 'المال والتمويل', 'Argent & financement', 'Money & finance'], law: ['⚖️', 'القانون والتوثيق', 'Droit & actes', 'Law & deeds'],
     jobs: ['👔', 'مهن العقار', 'Métiers de l’immobilier', 'Real-estate jobs'], mix: ['🎲', 'منوعات', 'Divers', 'Mixed'],
   };
