@@ -268,9 +268,13 @@
   function market() {
     const M = (window.W777_DATA || {}).MARKET;
     const dist = M ? (M.districts['مكناس'] || []).filter(r => r[1] || r[2]).map(r => ({ name: r[0][0], apt: r[1], villa: r[2] })) : [{ name: 'حمرية', apt: 6750, villa: 8760 }, { name: 'البساتين', apt: 5840 }, { name: 'مرجان', apt: 5363, villa: 7150 }, { name: 'ويسلان', apt: 4350, villa: 6053 }, { name: 'المنزه', apt: 6870, villa: 7630 }];
-    const big = ['الدار البيضاء', 'الرباط', 'مراكش', 'طنجة', 'أكادير', 'فاس', 'القنيطرة', 'تمارة', 'المحمدية', 'إفران'];
-    const cities = M ? big.filter(c => M.cities[c] && M.cities[c][0]).map(c => ({ name: c, apt: M.cities[c][0], villa: M.cities[c][1] })) : [{ name: 'الدار البيضاء', apt: 12000, villa: 17000 }, { name: 'الرباط', apt: 13000, villa: 18000 }, { name: 'مراكش', apt: 9000, villa: 12000 }];
-    return { dist, cities, src: M ? 'Yakeey و Agenz (' + M.updated + ')' : 'مرجع تقريبي' };
+    // 🇲🇦 v213: الأسئلة على جميع المدن المغربية (ماشي غير مكناس): المدن الكبرى + المتوسطة والصغيرة
+    const big = ['الدار البيضاء', 'الرباط', 'مراكش', 'طنجة', 'أكادير', 'فاس', 'مكناس', 'القنيطرة', 'تمارة', 'المحمدية', 'سلا', 'وجدة', 'تطوان'];
+    const cityRow = c => ({ name: c, apt: M.cities[c][0], villa: M.cities[c][1] });
+    const FB = [{ name: 'الدار البيضاء', apt: 12000, villa: 17000 }, { name: 'الرباط', apt: 13000, villa: 18000 }, { name: 'مراكش', apt: 9000, villa: 12000 }, { name: 'طنجة', apt: 9500, villa: 13000 }, { name: 'أكادير', apt: 9000, villa: 12500 }, { name: 'فاس', apt: 6500, villa: 9000 }, { name: 'وجدة', apt: 5500, villa: 7500 }, { name: 'مكناس', apt: 6000, villa: 8000 }];
+    const cities = M ? big.filter(c => M.cities[c] && M.cities[c][0]).map(cityRow) : FB.slice(0, 6);
+    const small = M ? Object.keys(M.cities).filter(c => !big.includes(c) && M.cities[c] && M.cities[c][0]).map(cityRow) : FB.slice(5);
+    return { dist, cities, small, src: M ? 'Yakeey و Agenz (' + M.updated + ')' : 'مرجع تقريبي' };
   }
   function propCard(p) {
     return `<div class="gm-card"><span class="big">${p.kind === 'villa' ? '🏡 فيلا' : '🏢 شقة'}${p.rooms ? ' · ' + p.rooms + ' بيوت' : ''}</span><span>📍 ${esc(p.where)}</span><span>📐 ${nf(p.area)} م²</span>${p.price ? `<span>💵 ${dh(p.price)}</span>` : ''}</div>`;
@@ -279,9 +283,9 @@
   // ============ 1) شحال يسوى؟ ============
   const PRICE = {
     stages: [
-      { name: 'شقق مكناس', sub: 'ختار الثمن الصحيح — الفرق كبير' },
-      { name: 'فيلات وشقق مكناس', sub: 'الفيلا ثمن المتر ديالها مختلف' },
-      { name: 'المدن الكبرى', sub: 'كازا، الرباط، مراكش، طنجة…' },
+      { name: 'شقق المدن الكبرى', sub: 'كازا، الرباط، مراكش، طنجة… ختار الثمن الصحيح' },
+      { name: 'فيلات وشقق عبر المغرب', sub: 'الفيلا ثمن المتر ديالها مختلف' },
+      { name: 'المدن المتوسطة', sub: 'الجديدة، بني ملال، الناظور، العيون…' },
       { name: 'رخيص ولا غالي؟', sub: 'قارن ثمن الإعلان مع السوق' },
       { name: 'الخبير', sub: 'الفرق صغير — ركّز مزيان' },
     ],
@@ -289,9 +293,10 @@
       const m = market(), out = [];
       for (let i = 0; i < 8; i++) {
         let kind = 'apt', loc;
-        if (si === 0) loc = pick(m.dist.filter(d => d.apt));
-        else if (si === 1 || si === 3) { loc = pick(m.dist); kind = loc.villa && (!loc.apt || Math.random() < 0.5) ? 'villa' : 'apt'; }
-        else { loc = pick(si === 4 ? [...m.cities, ...m.dist] : m.cities); kind = loc.villa && Math.random() < 0.4 ? 'villa' : 'apt'; }
+        const all = [...m.cities, ...m.small];
+        if (si === 0) loc = pick(m.cities.filter(d => d.apt));
+        else if (si === 1 || si === 3) { loc = pick(all); kind = loc.villa && (!loc.apt || Math.random() < 0.5) ? 'villa' : 'apt'; }
+        else { loc = pick(si === 2 ? (m.small.length ? m.small : m.cities) : Math.random() < 0.15 && m.dist.length ? m.dist : all); kind = loc.villa && Math.random() < 0.4 ? 'villa' : 'apt'; }
         if (!loc[kind]) kind = loc.apt ? 'apt' : 'villa';
         const ref = loc[kind], area = kind === 'villa' ? R(15, 40) * 10 : R(11, 26) * 5;
         const rooms = kind === 'villa' ? R(4, 6) : area < 70 ? 2 : area < 100 ? 3 : 4;
@@ -495,7 +500,8 @@
   const RATE = 0.05, YRS = 20, FEES = 0.07, COMM = 0.025;
   const annuity = L => L * RATE / (1 - Math.pow(1 + RATE, -YRS));
   function sim(lv) {
-    const L = TLV[lv], dist = market().dist.map(d => d.name);
+    // 🇲🇦 v213: العقارات فجميع المدن المغربية (ماشي غير أحياء مكناس)
+    const mk = market(), L = TLV[lv], dist = [...mk.cities, ...mk.small].map(d => d.name);
     const st = { lv, year: 1, cash: L.cash, owned: [], log: [], over: false, won: 0, id: 0 };
     const offer = () => {
       const k = pick(lv === 0 ? ['studio', 'apt', 'apt', 'plot', 'shop'] : Object.keys(TY)), t = TY[k], img = pick(TIMG[k]);
