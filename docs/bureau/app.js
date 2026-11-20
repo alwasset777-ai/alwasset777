@@ -953,6 +953,7 @@
   }
   // 📤 مشاركة ملفات الدليل: الملف نيت (واتساب، إيميل…) ← ولا الرابط ← ولا واتساب بالرابط
   const SHARE_PDF = {
+    catalog: ['files/guide/catalogue-khadamat-majmouat-alwasset.pdf', 'الكتالوج الشامل — تطبيق مجموعة الوسيط', '📚 الكتالوج الشامل ديال تطبيق مجموعة الوسيط: 53 خدمة ف9 مراحل، كل خدمة بالصورة وشنو هي وكيفاش كتخدم والفائدة ديالها.'],
     malaf: ['files/guide/malaf-taqdimi-majmouat-alwasset.pdf', 'الملف التقديمي — تطبيق مجموعة الوسيط', '💼 تعرّف على تطبيق مجموعة الوسيط: فريق عمل كامل فجيبك (المميزات والحلول لكل مهنة، بالصور).'],
     dalil: ['files/guide/dalil-majmouat-alwasset.pdf', 'الدليل الشامل — تطبيق مجموعة الوسيط', '📘 الدليل الشامل ديال تطبيق مجموعة الوسيط: كل خدمة خطوة بخطوة بالصور.'],
     malaf_fr: ['files/guide/dossier-presentation-groupe-alwasset-fr.pdf', 'Dossier de présentation — Groupe Al Wasset', '💼 Découvrez l’application Groupe Al Wasset : une équipe complète dans votre poche (services et solutions par métier, en images).', 'fr'],
@@ -6243,6 +6244,8 @@
           <div class="btn-row" style="margin-top:12px">${next ? `<a class="btn gold" href="#/guide/${next.n}">▶ ${done.size ? 'كمّل' : 'ابدأ'}: ${esc(next.t)}</a>` : '<span class="badge green">🏆 كمّلتي كل الدروس — مبروك!</span>'}
             <a class="btn" href="files/guide/dalil-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>📘 الدليل الشامل PDF</a>
             <button class="btn" type="button" data-share-pdf="dalil">📤 شارك الدليل</button>
+            <a class="btn gold" href="files/guide/catalogue-khadamat-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>📚 الكتالوج الشامل PDF</a>
+            <button class="btn" type="button" data-share-pdf="catalog">📤 شارك الكتالوج</button>
             <a class="btn" href="files/guide/malaf-taqdimi-majmouat-alwasset.pdf" target="_blank" rel="noopener" download>💼 الملف التقديمي PDF</a>
             <button class="btn gold" type="button" data-share-pdf="malaf">📤 شارك الملف التقديمي</button>
             <a class="btn" href="files/guide/dossier-presentation-groupe-alwasset-fr.pdf" target="_blank" rel="noopener" download>🇫🇷 Dossier de présentation</a>
