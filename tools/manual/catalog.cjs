@@ -2,8 +2,10 @@
 // الخط: Tajawal (خط الهوية) بالوزن 900 للعناوين البارزة. القاعدة: ما كنكتبوش 777 حدا الشعار.
 // الاستعمال: 1) NODE_PATH=$(npm root -g) node tools/manual/shots.cjs SHOTS && node tools/manual/pitch-shots.cjs SHOTS && node tools/manual/catalog-shots.cjs SHOTS
 //            2) NODE_PATH=$(npm root -g) node tools/manual/catalog.cjs SHOTS OUT.pdf
+// v214 بالفرنسية: الصور بـ UI=fr (shots + pitch-shots + catalog-shots) ← CAT_LANG=fr node tools/manual/catalog.cjs SHOTS_FR OUT_FR.pdf
 const { chromium } = require('playwright'); const fs = require('fs'); const path = require('path');
-const C = require('./catalog-content.cjs'); const BASE_C = require('./content.cjs');
+const FRL = process.env.CAT_LANG === 'fr';
+const C = require(FRL ? './catalog-content-fr.cjs' : './catalog-content.cjs'); const BASE_C = FRL ? C : require('./content.cjs');
 const APP = path.join(__dirname, '..', '..', 'docs', 'bureau'); const SH = path.resolve(process.argv[2]); const OUT = path.resolve(process.argv[3]);
 const VER = (fs.readFileSync(path.join(APP, 'sw.js'), 'utf8').match(/w777-bureau-v(\d+)/) || [])[1] || '';
 const APP_URL = 'https://alwasset777-ai.github.io/alwasset777/bureau/';
@@ -16,7 +18,31 @@ const miss = [...need].filter(n => !fs.existsSync(path.join(SH, n + '.jpg'))); i
 const fonts = [400, 500, 700, 800, 900].map(w => ['arabic', 'latin'].map(s => `@font-face{font-family:'Tajawal';font-weight:${w};src:url(${u(path.join(APP, 'fonts', `tajawal-${s}-${w}-normal.woff2`))}) format('woff2')}`).join('')).join('');
 const phone = (n, cls = '') => /^desk-/.test(n) ? `<div class="lap ${cls}"><div class="scr"><img src="${img(n)}" alt=""></div><div class="base"></div></div>` : `<div class="ph ${cls}"><img src="${img(n)}" alt=""></div>`;
 const LOGO_W = u(path.join(APP, 'icons/brand/logo-flat-white.png')), LOGO_D = u(path.join(APP, 'icons/brand/logo-flat.png'));
-const BRAND = 'مجموعة الوسيط';
+const BRAND = FRL ? 'Groupe Al Wasset' : 'مجموعة الوسيط';
+// النصوص الثابتة (عربي / فرنسي)
+const T = FRL ? {
+  app: 'Application', cat: 'Catalogue complet', h1: `Application <span>${BRAND}</span><br>Tous les services en images`,
+  sub: (n, k) => `${n} services en ${k} étapes : pour chacun, une vraie capture de l’application, ce que c’est, comment ça marche et ce que vous y gagnez.`,
+  place: 'Meknès · Royaume du Maroc', ver: 'Version', road: 'LE PARCOURS · مسار المشترك', roadH: 'De l’inscription… <span>jusqu’à la vente</span>',
+  roadP: `« ${BRAND} » réunit tout le travail d’une agence immobilière dans une seule application : biens, clients, assistant IA, marketing, finances et juridique, réseau, formation et sécurité. Voici les étapes que parcourt chaque adhérent, et les services de chacune.`,
+  kpi0: 'services en images', nsv: n => `${n} services`, roadL: 'Le parcours', st: 'ÉTAPE · المرحلة', how: 'Comment ça marche :', gain: '★ Le plus :',
+  offK: 'OFFRE 777 · العرض', offH: 'Offre 777 <span>pour les premiers</span>', offP: 'Chaque inscrit reçoit un numéro de place dans sa catégorie, et l’avantage dépend de l’ordre d’inscription. Nombre de membres illimité.',
+  secH: 'Sécurité <span>et confidentialité</span>', faqH: 'Questions <span>fréquentes</span>', offL: 'Offre et sécurité',
+  endH: 'Toute votre agence… <span>dans votre poche</span><br>Il suffit de commencer', slog: 'Avec Al Wasset, la solution est simple',
+  ct: url => `Scannez le code ou ouvrez : <b class="lat">${url}</b><br>Inscription par e-mail · 6 mois offerts<br>📞 <b class="lat">0777 77 79 59</b> · <b class="lat">0777 77 78 48</b> — Meknès`,
+  tocK: 'SOMMAIRE · الفهرس', tocH: (n, k) => `${n} services <span>en ${k} étapes</span>`, tocL: 'Sommaire',
+} : {
+  app: 'تطبيق', cat: 'الكتالوج الشامل', h1: `تطبيق <span>${BRAND}</span><br>كل الخدمات… بالصورة`,
+  sub: (n, k) => `${n} خدمة فـ${k} مراحل: لكل خدمة صورة حقيقية من التطبيق، شنو هي، كيفاش كتخدم، والفائدة اللي كتربح منها.`,
+  place: 'مكناس · المملكة المغربية', ver: 'النسخة', road: 'LE PARCOURS · رحلة المشترك', roadH: 'من التسجيل… <span>حتى الصفقة</span>',
+  roadP: `«${BRAND}» تطبيق واحد كيجمع خدمة المكتب العقاري كاملة: العقارات، الزبناء، المساعد الذكي، التسويق، المال والقانون، الشبكة، التكوين، والأمان. هادي المراحل اللي كيدوز منها كل مشترك، وكل مرحلة فيها خدماتها.`,
+  kpi0: 'خدمة بالصورة', nsv: n => `${n} خدمات`, roadL: 'رحلة المشترك', st: 'ÉTAPE · المرحلة', how: 'كيفاش كتخدم:', gain: '★ الفائدة:',
+  offK: 'OFFRE 777 · العرض', offH: 'عرض 777 <span>للأوائل</span>', offP: 'كل واحد كيتسجل كياخد رقم مقعد فالفئة ديالو، والامتياز كيتحدد بالترتيب. عدد الأعضاء بلا حد.',
+  secH: 'الأمان <span>والخصوصية</span>', faqH: 'أسئلة <span>متكررة</span>', offL: 'العرض والأمان',
+  endH: 'مكتبك كامل… <span>فجيبك</span><br>غير بدا', slog: 'مع الوسيط… حلّك بسيط',
+  ct: url => `سكاني الرمز ولا حل: <b class="lat">${url}</b><br>التسجيل بالإيميل · 6 أشهر مجانية<br>📞 <b class="lat">0777 77 79 59</b> · <b class="lat">0777 77 78 48</b> — مكناس`,
+  tocK: 'SOMMAIRE · الفهرس', tocH: (n, k) => `${n} خدمة <span>فـ${k} مراحل</span>`, tocL: 'الفهرس',
+};
 
 const css = `${fonts}
 @page{size:A4;margin:0}
@@ -117,7 +143,7 @@ h1,h2,h3,h4,p{margin:0}
 .card ol li{counter-increment:s;position:relative;padding-inline-start:7mm;margin-bottom:1.2mm;font-size:9.8pt;line-height:1.55}
 .card ol li::before{content:counter(s);position:absolute;inset-inline-start:0;top:.2mm;width:5mm;height:5mm;border-radius:50%;background:var(--c);color:#fff;font-size:7.6pt;font-weight:900;display:grid;place-items:center}
 .card .gain{margin-top:3.4mm;border-radius:3.4mm;padding:2.6mm 3.6mm;background:linear-gradient(135deg,#fff5f6,#fff);border:1px solid #f1cdd3;font-size:10pt;font-weight:800;color:#7a0d1c;line-height:1.6;display:flex;gap:2mm}
-.card .gain::before{content:'★ الفائدة:';color:#c8102e;white-space:nowrap}
+.card .gain::before{content:'${T.gain}';color:#c8102e;white-space:nowrap}
 /* العرض والأمان */
 .offer{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;margin-top:4mm}
 .offer div{border:1.2px solid #111;border-radius:4mm;padding:3mm;text-align:center}
@@ -143,26 +169,27 @@ h1,h2,h3,h4,p{margin:0}
 .end .ct{font-size:11pt;line-height:2;color:#ddd}
 .end .ct b{color:#fff}
 .end .band{position:absolute;bottom:0;left:0;right:0;height:7mm;background:#c8102e}
+${FRL ? `.rs .dot{right:auto;left:-14.4mm}.sec-open .side{left:auto;right:18mm;transform:rotate(5deg)}.cover .band{right:auto;left:0}.cover .top{right:18mm;left:22mm}.cover .bot{right:18mm;left:22mm}.rs b{min-width:58mm}.cover h1{font-size:33pt}.rs{margin-bottom:2.6mm;padding:2mm 3.4mm}.rs small{font-size:8.3pt;line-height:1.42}.offp .lead{font-size:10.2pt;line-height:1.6;margin-top:2.4mm}.offp .offer{gap:2.4mm}.offp .offer div{padding:2.2mm}.offp .feats{gap:2.4mm}.offp .feats div{padding:2.6mm}.offp .feats small{font-size:8pt;line-height:1.4}.offp .faq small{font-size:8.3pt;line-height:1.45}.offp h2.big[style]{margin-top:5mm!important}` : ''}
 `;
 
-const pages = []; const foot = label => `<div class="foot"><span><img src="${LOGO_D}" alt=""> &nbsp;تطبيق <b>${BRAND}</b> — الكتالوج الشامل</span><span>${e(label || '')}</span><span class="lat">${pages.length + 1}</span></div>`;
+const pages = []; const foot = label => `<div class="foot"><span><img src="${LOGO_D}" alt=""> &nbsp;${T.app} <b>${BRAND}</b> — ${T.cat}</span><span>${e(label || '')}</span><span class="lat">${pages.length + 1}</span></div>`;
 const NS = ALL.length;
 // 1) الغلاف
 pages.push(`<section class="pg cover dk"><div class="grid"></div><div class="glow"></div><div class="band"></div>
   <div class="top"><img class="lg" src="${LOGO_W}" alt="${BRAND}">
     <div class="kk">CATALOGUE COMPLET · الكتالوج الشامل</div>
-    <h1 class="emb">تطبيق <span>${BRAND}</span><br>كل الخدمات… بالصورة</h1>
-    <p class="sub">${NS} خدمة فـ${C.stages.length} مراحل: لكل خدمة صورة حقيقية من التطبيق، شنو هي، كيفاش كتخدم، والفائدة اللي كتربح منها.</p>
+    <h1 class="emb">${T.h1}</h1>
+    <p class="sub">${T.sub(NS, C.stages.length)}</p>
     <div class="pills">${C.stages.map(s => `<span>${e(s.n)} · ${e(s.t)}</span>`).join('')}</div></div>
   <div class="stage">${phone('desk-home')}${phone('home-groups', 'p2')}${phone('agent-quick')}</div>
-  <div class="bot"><span>مكناس · المملكة المغربية · <b class="lat">2026</b></span><span>النسخة <b class="lat">v${e(VER)}</b></span></div></section>`);
+  <div class="bot"><span>${T.place} · <b class="lat">2026</b></span><span>${T.ver} <b class="lat">v${e(VER)}</b></span></div></section>`);
 // 2) الرحلة: المراحل
-pages.push(`<section class="pg"><div class="kick">LE PARCOURS · رحلة المشترك</div>
-  <h2 class="big emb">من التسجيل… <span>حتى الصفقة</span></h2>
-  <p class="lead">«${BRAND}» تطبيق واحد كيجمع خدمة المكتب العقاري كاملة: العقارات، الزبناء، المساعد الذكي، التسويق، المال والقانون، الشبكة، التكوين، والأمان. هادي المراحل اللي كيدوز منها كل مشترك، وكل مرحلة فيها خدماتها.</p>
-  <div class="kpis">${[[String(NS), 'خدمة بالصورة'], ...C.kpis.slice(1)].map(([n, t]) => `<div class="kpi"><b class="lat emb">${e(n)}</b><small>${e(t)}</small></div>`).join('')}</div>
-  <div class="road">${C.stages.map(s => `<div class="rs"><span class="dot lat" style="background:${s.c}">${e(s.n)}</span><b>${e(s.t)}</b><small>${e(s.p)}</small><em>${s.items.length} خدمات</em></div>`).join('')}</div>
-  ${foot('رحلة المشترك')}</section>`);
+pages.push(`<section class="pg"><div class="kick">${T.road}</div>
+  <h2 class="big emb">${T.roadH}</h2>
+  <p class="lead">${T.roadP}</p>
+  <div class="kpis">${[[String(NS), T.kpi0], ...C.kpis.slice(1)].map(([n, t]) => `<div class="kpi"><b class="lat emb">${e(n)}</b><small>${e(t)}</small></div>`).join('')}</div>
+  <div class="road">${C.stages.map(s => `<div class="rs"><span class="dot lat" style="background:${s.c}">${e(s.n)}</span><b>${e(s.t)}</b><small>${e(s.p)}</small><em>${T.nsv(s.items.length)}</em></div>`).join('')}</div>
+  ${foot(T.roadL)}</section>`);
 // 3) الفهرس (أرقام الصفحات كتتعمر من بعد)
 const TOC_AT = pages.length; pages.push('');
 // 4) المراحل والخدمات
@@ -170,7 +197,7 @@ const pageOf = {}; let k = 0;
 C.stages.forEach((s, si) => {
   const sideShot = s.items[0].shot;
   pages.push(`<section class="pg sec-open dk" style="background:linear-gradient(150deg,${s.c} 0%,#0b0b0b 78%)"><div class="grid"></div><div class="in">
-    <div class="st">ÉTAPE · المرحلة</div><div class="nn lat emb">${e(s.n)}</div><h2 class="emb">${e(s.t)}</h2><div class="en">${e(s.en)}</div>
+    <div class="st">${T.st}</div><div class="nn lat emb">${e(s.n)}</div><h2 class="emb">${e(s.t)}</h2><div class="en">${e(s.en)}</div>
     <p>${e(s.p)}</p><div class="chips">${s.items.map(x => `<span>${x.ic} ${e(x.t)}</span>`).join('')}</div></div>
     ${/^desk-/.test(sideShot) ? '' : `<div class="side">${phone(sideShot)}</div>`}<div class="band"></div></section>`);
   for (let i = 0; i < s.items.length; i += 2) {
@@ -179,39 +206,39 @@ C.stages.forEach((s, si) => {
       return `<article class="card ${(k % 2) ? '' : 'alt'}" style="--c:${s.c}"><div class="tx"><span class="num lat">${two(k)} / ${NS}</span>
         <h3 class="emb"><i>${x.ic}</i>${e(x.t)}</h3><div class="en">${e(x.en)}</div>
         <p class="what">${e(x.what)}</p>
-        <h4>كيفاش كتخدم:</h4><ol>${x.how.map(h => `<li>${e(h)}</li>`).join('')}</ol>
+        <h4>${T.how}</h4><ol>${x.how.map(h => `<li>${e(h)}</li>`).join('')}</ol>
         <div class="gain">${e(x.gain)}</div></div>
         <div class="vis">${phone(x.shot)}</div></article>`; }).join('');
     pages.push(`<section class="pg sv"><div class="ph-head"><i class="lat" style="background:${s.c}">${e(s.n)}</i><b>${e(s.t)}</b><small>${e(s.en)}</small></div>${cards}${foot(s.t)}</section>`);
   }
 });
 // 5) العرض والأمان والأسئلة
-pages.push(`<section class="pg"><div class="kick">OFFRE 777 · العرض</div>
-  <h2 class="big emb">عرض 777 <span>للأوائل</span></h2>
-  <p class="lead">كل واحد كيتسجل كياخد رقم مقعد فالفئة ديالو، والامتياز كيتحدد بالترتيب. عدد الأعضاء بلا حد.</p>
+pages.push(`<section class="pg offp"><div class="kick">${T.offK}</div>
+  <h2 class="big emb">${T.offH}</h2>
+  <p class="lead">${T.offP}</p>
   <div class="offer">${BASE_C.offer.map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
-  <h2 class="big emb" style="margin-top:7mm;font-size:19pt">الأمان <span>والخصوصية</span></h2>
-  <div class="feats">${[...BASE_C.security.slice(0, 7), ['🛡️', 'مراقبة الأمان', 'تنبيه ملي يدخل شي حد مشبوه، وطرد من كل الأجهزة بضغطة.']].map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
-  <h2 class="big emb" style="margin-top:7mm;font-size:19pt">أسئلة <span>متكررة</span></h2>
+  <h2 class="big emb" style="margin-top:7mm;font-size:19pt">${T.secH}</h2>
+  <div class="feats">${(FRL ? BASE_C.security : [...BASE_C.security.slice(0, 7), ['🛡️', 'مراقبة الأمان', 'تنبيه ملي يدخل شي حد مشبوه، وطرد من كل الأجهزة بضغطة.']]).map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div>
+  <h2 class="big emb" style="margin-top:7mm;font-size:19pt">${T.faqH}</h2>
   <div class="faq">${BASE_C.faq.slice(0, 4).map(([q, a]) => `<div><b>${e(q)}</b><small>${e(a)}</small></div>`).join('')}</div>
-  ${foot('العرض والأمان')}</section>`);
+  ${foot(T.offL)}</section>`);
 // 6) الختام
 pages.push(`<section class="pg end dk"><div class="grid"></div><div class="in">
   <img class="lg" src="${LOGO_W}" alt="${BRAND}">
-  <h2 class="emb">مكتبك كامل… <span>فجيبك</span><br>غير بدا</h2><p class="slog">مع الوسيط… حلّك بسيط</p>
+  <h2 class="emb">${T.endH}</h2><p class="slog">${T.slog}</p>
   <div class="qr" id="qr"></div>
-  <p class="ct">سكاني الرمز ولا حل: <b class="lat">${APP_URL}</b><br>التسجيل بالإيميل · 6 أشهر مجانية<br>📞 <b class="lat">0777 77 79 59</b> · <b class="lat">0777 77 78 48</b> — مكناس</p></div><div class="band"></div></section>`);
+  <p class="ct">${T.ct(APP_URL)}</p></div><div class="band"></div></section>`);
 // الفهرس
-const toc = `<section class="pg"><div class="kick">SOMMAIRE · الفهرس</div>
-  <h2 class="big emb">${NS} خدمة <span>فـ${C.stages.length} مراحل</span></h2>
+const toc = `<section class="pg"><div class="kick">${T.tocK}</div>
+  <h2 class="big emb">${T.tocH(NS, C.stages.length)}</h2>
   <div class="toc">${C.stages.map(s => `<div class="tg"><h4><i class="lat" style="background:${s.c}">${e(s.n)}</i>${e(s.t)}</h4>${s.items.map(x => `<div class="row"><span>${x.ic} ${e(x.t)}</span><span class="d"></span><span class="n lat">${pageOf[x.t]}</span></div>`).join('')}</div>`).join('')}</div>
-  <div class="foot"><span><img src="${LOGO_D}" alt=""> &nbsp;تطبيق <b>${BRAND}</b> — الكتالوج الشامل</span><span>الفهرس</span><span class="lat">${TOC_AT + 1}</span></div></section>`;
+  <div class="foot"><span><img src="${LOGO_D}" alt=""> &nbsp;${T.app} <b>${BRAND}</b> — ${T.cat}</span><span>${T.tocL}</span><span class="lat">${TOC_AT + 1}</span></div></section>`;
 pages[TOC_AT] = toc;
 
-const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>${css}</style></head><body>${pages.join('')}
+const html = `<!doctype html><html lang="${FRL ? 'fr' : 'ar'}" dir="${FRL ? 'ltr' : 'rtl'}"><head><meta charset="utf-8"><style>${css}</style></head><body>${pages.join('')}
 <script src="${u(path.join(APP, 'vendor/qrcode.js'))}"></script><script>const q=qrcode(0,'M');q.addData(${JSON.stringify(APP_URL)});q.make();document.getElementById('qr').innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true});</script></body></html>`;
 (async () => {
-  const tmp = path.join(path.dirname(OUT), '_catalog.html'); fs.writeFileSync(tmp, html);
+  const tmp = path.join(path.dirname(OUT), '_catalog.html'); fs.writeFileSync(tmp, FRL ? html.replace(/’/g, "'") : html);
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }); const p = await b.newPage();
   await p.goto('file://' + tmp, { waitUntil: 'load' }); await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(900);
   // فحص: حتى صفحة ما خرجات، وحتى عنصر ما دخل تحت التذييل
