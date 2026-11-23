@@ -8,6 +8,14 @@
   // نسخة مدمجة (صفحة claude.ai): لا طباعة ولا تنزيل ملفات ولا اتصال خارجي
   const EMBED = !!window.W777_EMBED;
   const LOGO = window.W777_LOGO || 'icons/logo.png?v=10';
+  // 🪙 v216: الشعار فالرأس: إلا ما تحمّلاتش الصورة ← أيقونة التطبيق ← ولا الاسم مكتوب (ما تبقاش دائرة خاوية أبداً)
+  (function logoGuard() {
+    const im = document.querySelector('.coin-img'); if (!im) return;
+    const alt = ['icons/icon-192.png?v=9'];
+    const fix = () => { const n = alt.shift(); if (n) { im.src = n; return; } const c = im.parentNode; im.remove(); if (c) c.classList.add('coin-txt'); };
+    im.addEventListener('error', fix);
+    if (im.complete && !im.naturalWidth) fix();
+  })();
   const DB = window.W777_DB;
 
   /* ============================================================
