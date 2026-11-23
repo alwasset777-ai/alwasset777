@@ -1650,6 +1650,26 @@
     if (!box.isConnected || !n) return;
     box.innerHTML = `<a class="home-rw" href="#/agencies/manage"><span class="hr-ic">🎁</span><span class="hr-tx"><b>${n === 1 ? 'مكافأة وحدة كتسنى موافقتك' : `${fmt(n)} مكافآت كتسنى موافقتك`}</b><small>مشترك جاب 5 تسجيلات بالرابط ديالو — زيد ليه شهر مجاني ولا رفض</small></span><span class="hr-go">←</span></a>`;
   }
+  // 📅 v215: تقرير الأسبوع فالرئيسية — لكل مشترك (العقارات والطلبات الجداد، المواعيد اللي تمّت، الصفقات)،
+  // وللمدير زيادة الشبكة (التسجيلات، المشاركات، زيارات الصفحة، ضغطات «سجّل») من w777_week_stats()
+  const wkIt = (i, n, t) => `<div class="wk-it"><span aria-hidden="true">${i}</span><b>${fmt(n)}</b><small>${t}</small></div>`;
+  function weekCard() {
+    if (!S.props.length && !S.reqs.length && S.role !== 'admin') return '';
+    const since = new Date(Date.now() - 7 * 864e5).toISOString(), d7 = since.slice(0, 10), td = today();
+    const np = S.props.filter(p => (p.createdAt || '') >= since).length, nr = S.reqs.filter(r => (r.createdAt || '') >= since).length;
+    const ap = S.appts.filter(a => a.status === 'done' && (a.date || '') >= d7 && (a.date || '') <= td).length;
+    const deals = S.props.filter(p => ['sold', 'rented'].includes(p.status) && (p.updatedAt || '') >= since).length;
+    return `<div class="card wk-card" id="home-week"><div class="wk-h"><b>📅 أسبوعك</b><small>آخر 7 أيام</small></div>
+      <div class="wk-row">${wkIt('🏠', np, 'عقار جديد')}${wkIt('👥', nr, 'طلب جديد')}${wkIt('📅', ap, 'موعد تمّ')}${wkIt('🤝', deals, 'صفقة')}</div>
+      ${S.role === 'admin' ? '<div id="home-wk-net" class="wk-row wk-net"></div>' : ''}</div>`;
+  }
+  async function homeWeekNet() {
+    const box = $('#home-wk-net'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
+    let j = null;
+    try { const r = await Sy.request('/rest/v1/rpc/w777_week_stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) j = await r.json(); } catch (e) { /* */ }
+    if (!box.isConnected || !j || typeof j !== 'object') return;
+    box.innerHTML = wkIt('✍️', +j.signups || 0, 'تسجيل فالشبكة') + wkIt('📤', +j.shares || 0, 'مشاركة') + wkIt('👀', +j.visits || 0, 'زيارة للصفحة') + wkIt('✅', +j.joins || 0, 'ضغطة «سجّل»');
+  }
   // 🏎️ v205: عدّاد السرعة: الرقم ← نسبة (سلم لوغاريتمي) ← طول القوس ولونو (أزرق 210° ← أحمر 0°)
   function gauge(n, max) {
     const v = Math.max(0, +n || 0), p = Math.min(1, Math.log10(1 + v) / Math.log10(1 + max));
@@ -1657,7 +1677,7 @@
     return `--p:${p.toFixed(3)};--gh:${h};--c:hsl(${h} 100% 55%)`;
   }
   async function viewHome() {
-    setTimeout(homeRewards, 0);
+    setTimeout(homeRewards, 0); setTimeout(homeWeekNet, 0);
     const avail = S.props.filter(p => p.status === 'available');
     const open = S.reqs.filter(openReq);
     // أول فتح: الصفحة كتبان فورا، والفرص كتتحسب فالخلفية ومن بعد كتتعرض
@@ -1692,6 +1712,7 @@
         <div class="hst" style="${gauge(cold ? 0 : strong, 60)}"><i class="hneedle" aria-hidden="true"></i>${cold ? '<span class="hnum">…</span>' : odo(strong)}<b>مطابقة قوية</b></div>
         <div class="hst" style="${gauge(saleValue / 1e7, 300)}"><i class="hneedle" aria-hidden="true"></i>${saleValue ? odo(saleCompact(saleValue).n) : '<span class="hnum">—</span>'}<b>${saleValue ? saleCompact(saleValue).u : 'سنتيم'}</b></div>
       </div>
+      ${weekCard()}
       ${officeAlerts()}
       ${!S.props.length && !S.reqs.length ? `
         <div class="card empty">
@@ -3898,6 +3919,21 @@
       return `<div class="ag-card ag-mt"><a href="#/request/${x.r.id}"><b>${esc(c.name || 'زبون')}</b> <span class="ag-sc">${x.m.score}%</span><small>${esc(trxAr(x.r.transaction))} · ${esc(x.r.city || '')}${num(x.r.budgetMax) ? ' · ' + fmt(num(x.r.budgetMax)) + ' د' : ''}</small></a>${c.phone ? `<a class="btn sm wa" target="_blank" rel="noopener" href="${esc(waShareUrl(p, x.r))}">${ic('wa', 15)}</a>` : ''}</div>`; }).join('')
       + `<a class="ag-more" href="#/property/${p.id}">🏠 حل العقار والمطابقة ←</a>`;
   }
+  // 💡 v215: الثمن المقترح من السوق (ثمن المتر فالحي ولا المدينة × المساحة) — للبيع فقط
+  function agPriceHint(p) {
+    if (!['sale', 'offplan'].includes(p.transaction)) return null;
+    const ref = marketRef(p.city, p.district, p.type), area = mktArea(p);
+    if (!ref || !area) return null;
+    const r10 = v => Math.round(v / 10000) * 10000, est = r10(ref.v * area), price = num(p.priceMax) || num(p.priceMin);
+    return { ppm: ref.v, where: ref.where, area, est, low: r10(est * 0.9), high: r10(est * 1.1), price: price || null, diff: price ? Math.round((price / area - ref.v) / ref.v * 100) : null };
+  }
+  function agPriceCard(p, h) {
+    const d = h.diff, tag = d == null ? '<span class="badge blue">ما عطيتيش الثمن — هادا اقتراح</span>' : Math.abs(d) <= 5 ? `<span class="badge green">✅ قريب من السوق (${ltr((d > 0 ? '+' : '') + d + '%')})</span>`
+      : d > 0 ? `<span class="badge red">▲ فوق السوق بـ ${ltr(d + '%')}</span>` : `<span class="badge gold">▼ تحت السوق بـ ${ltr(-d + '%')}</span>`;
+    return `<div class="ag-card ag-ph"><b>💡 الثمن المقترح: ${ltr('~' + fmt(h.est))} د</b><small>المجال المعقول: ${ltr(fmt(h.low) + ' – ' + fmt(h.high))} د</small>`
+      + `<small>ثمن المتر فـ ${esc(h.where)} ≈ ${ltr(fmt(h.ppm))} د/م² × ${ltr(fmt(h.area))} م²</small>${tag}<small class="muted">تقريبي: الحالة والطابق والتشطيب كيبدلو الثمن.</small>`
+      + `<a class="ag-more" href="#/property/${p.id}">✏️ بدّل الثمن فالعقار ←</a></div>`;
+  }
   async function agRankPics(files) {
     const score = async f => {
       try {
@@ -4636,7 +4672,8 @@
       case 'create_property': {
         if (!a.owner_name || !a.owner_phone) return { error: 'owner_name and owner_phone are required (private, only for the agency)' };
         const type = TYPE[a.property_type] ? a.property_type : 'apartment', trx = TRX[a.transaction] ? a.transaction : 'sale';
-        const ok = await agAsk(`🤖 زيد عقار: ${typeAr(type)} ${trxShort(trx)}${a.district ? ' — ' + a.district : ''}${a.city ? ' — ' + a.city : ''}${a.price ? ' — ' + fmt(a.price) + ' د' : ''}؟`);
+        const hint = agPriceHint({ type, transaction: trx, city: a.city || S.settings.officeCity || '', district: a.district || '', areaBuilt: num(a.area) || null, areaTotal: num(a.land_area) || null, priceMin: num(a.price) || null });
+        const ok = await agAsk(`🤖 زيد عقار: ${typeAr(type)} ${trxShort(trx)}${a.district ? ' — ' + a.district : ''}${a.city ? ' — ' + a.city : ''}${a.price ? ' — ' + fmt(a.price) + ' د' : ''}${hint ? ` (💡 السوق ~${fmt(hint.est)} د)` : ''}؟`);
         if (!ok) return { cancelled: true };
         const o = { id: uid(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: 'available', type, transaction: trx,
           city: a.city || S.settings.officeCity || '', district: a.district || '', priceMin: num(a.price) || null, priceUnit: 'درهم',
@@ -4661,9 +4698,12 @@
           AG.pics = []; AG.att = null; agAttShow();
         }
         await DB.saveRec('properties', o); await rememberDistricts(o.city, [o.district]); await loadAll();
+        if (hint) AG.view.push({ who: 'bot', html: agPriceCard(o, hint) });
         const mt = matchesForProp(o), top = mt.slice(0, 5);
         if (top.length) AG.view.push({ who: 'bot', html: agMatchCard(o, mt) });
         return { created: o.ref, photos_added: added, ...(added > 1 ? { photos_order: 'sorted by quality, the clearest photo is the cover' } : {}), ...(skipped ? { photos_skipped: skipped, why: `limit ${PHOTO_MAX} photos per property for members` } : {}),
+          ...(hint ? { price_hint: { suggested_price: hint.est, fair_range: [hint.low, hint.high], price_per_m2: hint.ppm, reference: hint.where, area_m2: hint.area, asked_vs_market_pct: hint.diff,
+            note: (hint.diff == null ? 'no price given: suggest this market price and offer to set it' : 'tell the manager if the asked price is above/below the market') + ' (a card is already shown; approximate, condition and floor change the price)' } } : {}),
           matches: mt.length, matching_clients: top.map(x => ({ name: (x.r.client || {}).name || '', score: x.m.score, budget: num(x.r.budgetMax) || null, city: x.r.city || '' })),
           next: (top.length ? 'tell the manager these clients match (a card with WhatsApp buttons is already shown) and offer to contact them; ' : 'no matching client yet; ') + (added ? 'photos added — open_page property to see it' : 'add photos from the property page (open_page property)') };
       }
