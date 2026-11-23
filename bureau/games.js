@@ -286,24 +286,36 @@
 
   // ============ 1) شحال يسوى؟ ============
   // 📍 v214: اللاعب يختار مدينتو (ولا «كل المغرب») ← الأسئلة على الشقق والفيلات ديالها (مكناس بالأحياء)
+  // v215: نفس الاختيار مشترك مع «مليونير العقار» و«بني دارك» (نفس المفتاح باش ما يضيعش الاختيار القديم)
   const CITY_KEY = 'w777_price_city';
   const cityGet = () => { try { return localStorage.getItem(CITY_KEY) || ''; } catch (e) { return ''; } };
   const citySet = v => { try { v ? localStorage.setItem(CITY_KEY, v) : localStorage.removeItem(CITY_KEY); } catch (e) {} };
   function cityRowOf(m) { const c = cityGet(); return c ? [...m.cities, ...m.small].find(d => d.name === c) || null : null; }
+  // غلاء المدينة مقارنة مع مكناس (ثمن متر الشقق) — لثمن البقعة فـ«بني دارك»
+  function cityFactor(m) {
+    const c = cityRowOf(m), ref = [...m.cities, ...m.small].find(d => d.name === 'مكناس');
+    return c && ref && c.apt && ref.apt ? Math.max(0.6, Math.min(3, c.apt / ref.apt)) : 1;
+  }
+  // خانة «📍» فوق المراحل: label = شنو كيتبدل، all = الاختيار بلا مدينة، msg(city) = الرسالة
+  function cityPick(label, all, msg) {
+    return {
+      where: () => { const c = cityRowOf(market()); return c ? c.name : ''; },
+      extra() {
+        const m = market(), cur = cityGet(), byName = (a, b) => a.name.localeCompare(b.name, 'ar');
+        const o = d => `<option value="${esc(d.name)}" ${d.name === cur ? 'selected' : ''}>${esc(d.name)}</option>`;
+        return `<label class="gm-city"><span>📍 ${esc(label)}</span><select id="gm-city" aria-label="اختار المدينة">
+          <option value="">${esc(all)}</option>
+          <optgroup label="المدن الكبرى">${m.cities.map(o).join('')}</optgroup>
+          <optgroup label="مدن أخرى">${[...m.small].sort(byName).map(o).join('')}</optgroup></select></label>`;
+      },
+      bindExtra(root) {
+        const sel = root.querySelector('#gm-city'); if (!sel) return;
+        sel.onchange = () => { citySet(sel.value); toast(msg(sel.value)); };
+      },
+    };
+  }
   const PRICE = {
-    where: () => { const c = cityRowOf(market()); return c ? c.name : ''; },
-    extra() {
-      const m = market(), cur = cityGet(), byName = (a, b) => a.name.localeCompare(b.name, 'ar');
-      const o = d => `<option value="${esc(d.name)}" ${d.name === cur ? 'selected' : ''}>${esc(d.name)}</option>`;
-      return `<label class="gm-city"><span>📍 الأسئلة على:</span><select id="gm-city" aria-label="اختار المدينة">
-        <option value="">🇲🇦 كل المدن المغربية</option>
-        <optgroup label="المدن الكبرى">${m.cities.map(o).join('')}</optgroup>
-        <optgroup label="مدن أخرى">${[...m.small].sort(byName).map(o).join('')}</optgroup></select></label>`;
-    },
-    bindExtra(root) {
-      const sel = root.querySelector('#gm-city'); if (!sel) return;
-      sel.onchange = () => { citySet(sel.value); toast(sel.value ? `📍 الأسئلة غادي تكون على ${sel.value}` : '🇲🇦 الأسئلة على كل المدن المغربية'); };
-    },
+    ...cityPick('الأسئلة على:', '🇲🇦 كل المدن المغربية', c => c ? `📍 الأسئلة غادي تكون على ${c}` : '🇲🇦 الأسئلة على كل المدن المغربية'),
     stages: [
       { name: 'شقق المدن الكبرى', sub: 'كازا، الرباط، مراكش، طنجة… ختار الثمن الصحيح' },
       { name: 'فيلات وشقق عبر المغرب', sub: 'الفيلا ثمن المتر ديالها مختلف' },
@@ -526,7 +538,9 @@
   const annuity = L => L * RATE / (1 - Math.pow(1 + RATE, -YRS));
   function sim(lv) {
     // 🇲🇦 v213: العقارات فجميع المدن المغربية (ماشي غير أحياء مكناس)
-    const mk = market(), L = TLV[lv], dist = [...mk.cities, ...mk.small].map(d => d.name);
+    // 📍 v215: مدينة مختارة ← كل العروض فيها (مكناس بالأحياء)
+    const mk = market(), L = TLV[lv], mine = cityRowOf(mk);
+    const dist = mine ? (mine.name === 'مكناس' && mk.dist.length ? mk.dist.map(d => d.name + ' — مكناس') : [mine.name]) : [...mk.cities, ...mk.small].map(d => d.name);
     const st = { lv, year: 1, cash: L.cash, owned: [], log: [], over: false, won: 0, id: 0 };
     const offer = () => {
       const k = pick(lv === 0 ? ['studio', 'apt', 'apt', 'plot', 'shop'] : Object.keys(TY)), t = TY[k], img = pick(TIMG[k]);
@@ -590,6 +604,7 @@
     return st;
   }
   const TYC = {
+    ...cityPick('العقارات فـ:', '🇲🇦 كل المدن المغربية', c => c ? `📍 العروض غادي تكون فـ ${c}` : '🇲🇦 العروض من كل المدن المغربية'),
     stages: TLV,
     play(root, g, si) {
       const gen = ++GEN, L = TLV[si], st = sim(si);
@@ -628,7 +643,7 @@
   const BLV = [
     { name: 'دار صغيرة R+1', sub: 'بقعة 90 م² · 180 م² مبنية', plot: 90, ppm: 3200, area: 180, budget: 1100000, months: 20, ev: 0.35 },
     { name: 'دار عائلية R+2', sub: 'بقعة 100 م² · 270 م² مبنية', plot: 100, ppm: 3500, area: 270, budget: 1450000, months: 22, ev: 0.4 },
-    { name: 'فيلا فالمنزه', sub: 'بقعة 300 م² · 320 م² · جودة 95 مطلوبة', plot: 300, ppm: 4000, area: 320, budget: 2600000, months: 22, ev: 0.4, q: 95 },
+    { name: 'فيلا فحي راقي', sub: 'بقعة 300 م² · 320 م² · جودة 95 مطلوبة', plot: 300, ppm: 4000, area: 320, budget: 2600000, months: 22, ev: 0.4, q: 95 },
     { name: 'ميزانية مزيرة', sub: '180 م² بـ 960 ألف درهم فقط', plot: 90, ppm: 3200, area: 180, budget: 960000, months: 18, ev: 0.4 },
     { name: 'الورش الصعيب', sub: '240 م² · وقت قصير · مفاجآت كثيرة', plot: 120, ppm: 3600, area: 240, budget: 1300000, months: 18, ev: 0.6 },
   ];
@@ -676,9 +691,13 @@
     [1, 0, '🌧️ الشتا وقفات الورش شهر.'], [0, 15000, '🔩 ثمن الحديد والإسمنت طلع.'], [0, -8000, '🤝 لقيتي مواد بثمن مزيان عند مورد معروف.'], [0, 0, '🏘️ الجار اشتكى من الغبار — حطيتي حماية وتفاهمتو (الاحترام كيسهل الورش).'], [1, 6000, '🚛 تأخر فالتوصيل ديال المواد.'],
   ];
   const BLD = {
+    ...cityPick('البناء فـ:', '🇲🇦 مدينة متوسطة (المرجع)', c => c ? `📍 ثمن البقعة غادي يكون ديال ${c}` : '🇲🇦 ثمن البقعة المرجعي'),
     stages: BLV,
     play(root, g, si) {
-      const gen = ++GEN, L = BLV[si], st = { k: 0, cost: 0, months: 0, q: 20, log: [] };
+      // 📍 v215: ثمن البقعة حسب غلاء المدينة، والميزانية كتزاد/تنقص بنفس الفرق (اللعبة تبقى عادلة)
+      const mk = market(), f = cityFactor(mk), city = (cityRowOf(mk) || {}).name || '', B = BLV[si];
+      const L = f === 1 ? B : { ...B, ppm: Math.round(B.ppm * f / 100) * 100, budget: Math.round((B.budget + B.plot * B.ppm * (f - 1)) / 10000) * 10000 };
+      const gen = ++GEN, st = { k: 0, cost: 0, months: 0, q: 20, log: [] };
       root.innerHTML = `<div class="gm" style="--c:${g.color}">${top(g, `مرحلة ${si + 1}/${STAGES}`, '#/game/' + g.id)}<div class="gm-body"></div></div>`;
       root.querySelector('.gm-top a').onclick = e => { e.preventDefault(); GEN++; stagesView(root, g, BLD); };
       const kpi = () => {
@@ -699,7 +718,7 @@
         if (st.k >= STEPS.length) return finish();
         const S = STEPS[st.k];
         root.querySelector('.gm-body').innerHTML = `${kpi()}
-          ${out ? `<div class="gm-why ${out.good ? 'y' : 'n'}">${out.html}</div>` : `<div class="gm-how" style="margin-top:10px">🏗️ <b>${esc(L.name)}</b> — ${esc(L.sub)}. ثمن البقعة فالحي ~${grp(L.ppm)} د/م².</div>`}
+          ${out ? `<div class="gm-why ${out.good ? 'y' : 'n'}">${out.html}</div>` : `<div class="gm-how" style="margin-top:10px">🏗️ <b>${esc(L.name)}</b>${city ? ` فـ <b>${esc(city)}</b>` : ''} — ${esc(L.sub)}. ثمن البقعة فالحي ~${grp(L.ppm)} د/م²${city ? ` · الميزانية ${dh(L.budget)}` : ''}.</div>`}
           <h3 class="gm-h">${esc(S.t)} — ${esc(S.d)}</h3>
           <div class="gm-ch">${S.ch.map((c, i) => `<button class="gm-c" data-c="${i}"><b>${esc(c.t)}</b><span>${esc(c.s)}</span><i>💰 ${dh(c.c(L))}${c.m ? ` · ⏱️ ${c.m} شهر` : ''}</i></button>`).join('')}</div>`;
         root.querySelectorAll('.gm-c').forEach(b => b.onclick = () => choose(S.ch[+b.dataset.c]));
@@ -731,5 +750,5 @@
     stagesView(root, g, def);
   }
 
-  window.W777_GAMES = { list: GAMES, hub, mount, _t: { sim, TLV, BLV, STEPS, LAW, SCAM, PRICE, CALC, market } };
+  window.W777_GAMES = { list: GAMES, hub, mount, _t: { sim, TLV, BLV, STEPS, LAW, SCAM, PRICE, CALC, market, cityFactor } };
 })();

@@ -2092,3 +2092,17 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 /* 🧤 v211: اليد الكرتونية (قفاز أبيض) بلاصة 👉 */
 .grp-point .grp-hand { display: block; width: 50px; height: 38px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.28)); }
 @media (max-width: 480px) { .grp-point .grp-hand { width: 42px; height: 32px; } }
+
+/* v215: 📅 تقرير الأسبوع فالرئيسية */
+.wk-card{margin:14px 0;padding:12px 14px}
+.wk-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+.wk-h b{font-size:16px}.wk-h small{color:var(--muted)}
+.wk-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wk-row:empty{display:none}
+.wk-net{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line,#e5e5e5)}
+.wk-it{display:flex;flex-direction:column;align-items:center;text-align:center;background:var(--soft,#f7f7f8);border-radius:12px;padding:8px 4px;min-width:0}
+.wk-it span{font-size:18px;line-height:1}.wk-it b{font-size:20px;font-weight:900;margin-top:3px;direction:ltr}
+.wk-it small{font-size:11.5px;color:var(--muted);line-height:1.3}
+/* v215: 💡 الثمن المقترح فمحادثة منير */
+.ag-card.ag-ph{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.ag-card.ag-ph .badge{margin-top:2px}
