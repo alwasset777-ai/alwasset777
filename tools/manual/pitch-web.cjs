@@ -8,11 +8,13 @@ const L = { ar: require('./pitch-content.cjs'), fr: require('./pitch-content-fr.
 const e = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const two = n => String(n).padStart(2, '0');
 const PDF = { ar: 'files/guide/malaf-taqdimi-majmouat-alwasset.pdf', fr: 'files/guide/dossier-presentation-groupe-alwasset-fr.pdf' };
+// v215: الكتالوج الشامل (53 خدمة) بجوج لغات
+const CAT = { ar: 'files/guide/catalogue-khadamat-majmouat-alwasset.pdf', fr: 'files/guide/catalogue-services-groupe-alwasset-fr.pdf' };
 // نصوص الصفحة (زايدة على نصوص الملف)
 const W = {
-  ar: { title: 'تعرّف على تطبيق مجموعة الوسيط', desc: 'فريق عمل كامل فجيبك: 13 مهمة كيقوم بها التطبيق، وحلول لكل مهنة عقارية — بالصور.', join: '✅ سجّل فابور (6 أشهر)', pdf: '📄 حمّل الملف PDF', share: '📤 شارك الصفحة',
+  ar: { title: 'تعرّف على تطبيق مجموعة الوسيط', desc: 'فريق عمل كامل فجيبك: 13 مهمة كيقوم بها التطبيق، وحلول لكل مهنة عقارية — بالصور.', join: '✅ سجّل فابور (6 أشهر)', pdf: '📄 حمّل الملف PDF', cat: '📚 الكتالوج الشامل (53 خدمة)', share: '📤 شارك الصفحة',
     probs: 'المشكل والحل', team: 'الفريق اللي كيعوضو التطبيق', subs: 'حل لكل مشترك', start: 'كيفاش تبدا', toTop: 'فوق', shareMsg: '💼 تعرّف على تطبيق مجموعة الوسيط: فريق عمل كامل فجيبك' },
-  fr: { title: 'Découvrir l’application Groupe Al Wasset', desc: 'Une équipe complète dans votre poche : 13 postes assurés par l’application et des solutions pour chaque métier de l’immobilier — en images.', join: '✅ Inscription gratuite (6 mois)', pdf: '📄 Télécharger le PDF', share: '📤 Partager la page',
+  fr: { title: 'Découvrir l’application Groupe Al Wasset', desc: 'Une équipe complète dans votre poche : 13 postes assurés par l’application et des solutions pour chaque métier de l’immobilier — en images.', join: '✅ Inscription gratuite (6 mois)', pdf: '📄 Télécharger le PDF', cat: '📚 Catalogue complet (53 services)', share: '📤 Partager la page',
     probs: 'Le constat', team: 'L’équipe que l’application remplace', subs: 'Une solution par métier', start: 'Démarrer', toTop: 'Haut', shareMsg: '💼 Découvrez l’application Groupe Al Wasset : une équipe complète dans votre poche' },
 };
 // 1) الصور: webp عرض 420 (كافي للتيليفون والحاسوب)
@@ -34,7 +36,7 @@ const section = lg => {
     <div class="kk">${U.coverKick}</div>
     <h1>${U.coverH1}</h1>
     <p class="sub">${e(T(U.coverSub))}</p>
-    <div class="cta"><a class="b red" href="./?gate=1" data-go="join">${w.join}</a><a class="b" href="${PDF[lg]}" download data-go="pdf">${w.pdf}</a><button class="b" type="button" data-share>${w.share}</button></div>
+    <div class="cta"><a class="b red" href="./?gate=1" data-go="join">${w.join}</a><a class="b" href="${PDF[lg]}" download data-go="pdf">${w.pdf}</a><a class="b" href="${CAT[lg]}" download data-go="cat">${w.cat}</a><button class="b" type="button" data-share>${w.share}</button></div>
     <div class="kpis">${[[String(R), U.kpi[0]], ['+40', U.kpi[1]], ['7', U.kpi[2]], ['6', U.kpi[3]]].map(([n, t]) => `<div><b>${n}</b><small>${e(t)}</small></div>`).join('')}</div></div>
     <div class="stage">${img(lg, 'desk-home', 'lap')}${img(lg, 'home2')}</div></section>
   <section class="blk"><div class="kick">${U.k1}</div><h2>${U.h1}</h2><p class="lead">${e(U.lead1)}</p>
@@ -63,7 +65,7 @@ const section = lg => {
     <h2 style="margin-top:28px">${U.h7}</h2>
     <div class="feats">${C.security.slice(0, 6).map(([i, t, s]) => `<div><i>${i}</i><b>${e(t)}</b><small>${e(s)}</small></div>`).join('')}</div></section>
   <section class="end"><img src="icons/brand/logo-flat-white.webp" alt="${e(U.brand)}" width="220" height="116"><h2>${U.endH}</h2><p>${e(U.slogan)}</p>
-    <div class="cta"><a class="b red" href="./?gate=1" data-go="join">${w.join}</a><a class="b" href="${PDF[lg]}" download data-go="pdf">${w.pdf}</a><button class="b" type="button" data-share>${w.share}</button></div>
+    <div class="cta"><a class="b red" href="./?gate=1" data-go="join">${w.join}</a><a class="b" href="${PDF[lg]}" download data-go="pdf">${w.pdf}</a><a class="b" href="${CAT[lg]}" download data-go="cat">${w.cat}</a><button class="b" type="button" data-share>${w.share}</button></div>
     <p class="ct">📞 <span dir="ltr">0777 77 79 59</span> · <span dir="ltr">0777 77 78 48</span> — ${U.city}</p></section>
 </main>`;
 };
@@ -182,6 +184,7 @@ const js = `
   try { if (!sessionStorage.getItem('w777_page_seen')) { sessionStorage.setItem('w777_page_seen', '1'); log('page', 'view', cur); } } catch (e) { log('page', 'view', cur); }
   document.querySelectorAll('[data-go="join"]').forEach(function (a) { if (REF) a.href = './?gate=1&ref=' + REF; a.addEventListener('click', function () { log('page', 'join', cur); }); });
   document.querySelectorAll('[data-go="pdf"]').forEach(function (a) { a.addEventListener('click', function () { log(cur === 'fr' ? 'malaf_fr' : 'malaf', 'file', cur); }); });
+  document.querySelectorAll('[data-go="cat"]').forEach(function (a) { a.addEventListener('click', function () { log(cur === 'fr' ? 'catalog_fr' : 'catalog', 'file', cur); }); });
   document.querySelectorAll('[data-share]').forEach(function (b) { b.onclick = function () {
     var url = location.href.split('#')[0].split('?')[0] + '?lang=' + cur + (REF ? '&ref=' + REF : ''), text = W[cur].msg;
     if (navigator.share) { navigator.share({ title: W[cur].title, text: text, url: url }).then(function () { log('page', 'link', cur); }).catch(function () {}); return; }

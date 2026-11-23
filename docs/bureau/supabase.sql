@@ -1939,3 +1939,18 @@ begin
 end $$;
 revoke all on function public.w777_share_log(text, text, text, text) from public;
 grant execute on function public.w777_share_log(text, text, text, text) to anon, authenticated;
+
+-- ============ v215: 📅 تقرير الأسبوع للمدير (الأرقام فقط، بلا أسماء) ============
+create or replace function public.w777_week_stats()
+returns json language plpgsql stable security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  return json_build_object(
+    'signups', (select count(*) from auth.users where created_at > now() - interval '7 days'),
+    'shares', (select count(*) from w777_shares where at > now() - interval '7 days' and via in ('file', 'link', 'wa', 'other')),
+    'visits', (select count(*) from w777_shares where at > now() - interval '7 days' and via = 'view'),
+    'joins', (select count(*) from w777_shares where at > now() - interval '7 days' and via = 'join'));
+end $$;
+revoke all on function public.w777_week_stats() from public, anon;
+grant execute on function public.w777_week_stats() to authenticated;
+
