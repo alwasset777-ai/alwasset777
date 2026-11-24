@@ -27,7 +27,7 @@
   // ---------- أدوات ----------
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // الأرقام ديما معزولة (LTR) باش ما يتقلبوش وسط الجملة العربية
-  const grp = n => '⁦' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + '⁩';
+  const grp = n => '⁦' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + '⁩'; // v217: فراغ ثابت باش ما تتقلبش الأرقام
   const nf = grp;
   const dh = n => nf(n) + ' د';
   const mil = n => { const m = n / 10000; return '⁦' + (Math.round(m * 10) / 10).toString().replace('.', ',') + '⁩ مليون'; };

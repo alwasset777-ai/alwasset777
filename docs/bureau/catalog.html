@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" data-w777-csp content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-Tp40KNSs6x8X5GIK3D7hRT9WK6/SM6lKBrQHOBMzHBg=' 'sha256-yyjq/GGlTvm0YhdkNx72uPxcwaIXqWZBYZftmpA6pYU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://maps.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://wa.me https://api.whatsapp.com; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" data-w777-csp content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-Te5TqDqjS8IC9cNSu9GpZPXcMKYh5aL0OpeYppf4a2A=' 'sha256-yyjq/GGlTvm0YhdkNx72uPxcwaIXqWZBYZftmpA6pYU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://maps.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://wa.me https://api.whatsapp.com; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <script src="guard.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -68,7 +68,7 @@
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const NF = new Intl.NumberFormat('fr-FR');
     const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
-    const fmt = n => '⁦' + NF.format(Number(n) || 0).replace(/[  ]/g, ' ') + '⁩';
+    const fmt = n => '⁦' + NF.format(Number(n) || 0).replace(/[   ]/g, '\u00a0') + '⁩';
     const TYPE = Object.fromEntries(D.PROPERTY_TYPES.map(t => [t.id, t.ar]));
     const TRX = Object.fromEntries(D.TRANSACTIONS.map(t => [t.id, t.ar]));
     const isRent = t => ['rent', 'rent_furnished', 'seasonal'].includes(t);
