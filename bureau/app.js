@@ -6687,7 +6687,9 @@
           : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.';
     const groupsTxt = () => (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
     const offerTxt = `🎁 عرض 777: ${FREE_MONTHS} أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? ' (ونفس العرض خارج المغرب)' : ''} — الترتيب حسب نهار التسجيل`;
-    const inviteMsg = a => `السلام عليكم${a && isNamed(a) ? ' ' + a.name : ''}،\nمرحبا بكم فشبكة ${K.ar} ديال مجموعة الوسيط ${K.ic}\n\n📲 التسجيل ساهل (بلا كلمة سر):\n1️⃣ حلّو التطبيق: ${appUrl}\n2️⃣ كتبو الإيميل ديالكم ← «صيفط ليا الكود»\n3️⃣ كتبو الكود (6 أرقام) اللي وصلكم فالإيميل\n4️⃣ ختارو «${K.one}» وعمّرو البطاقة (الاسم، الهاتف، المدينة) ووافقو على القانون ✅\n\n${nextStep}\n${offerTxt}\n💼 تعرّفو على التطبيق (PDF): ${appBase()}files/guide/malaf-taqdimi-majmouat-alwasset.pdf\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` + groupsTxt();
+    // 🔗 v221: رابط التسجيل ديال الدعوات فيه كود المكتب المحجوز «WASSET» ← التسجيلات كتتحسب فـ«🏅 الروابط الخاصة» (بلا مكافأة)
+    const regLink = appBase() + '?gate=1&ref=WASSET';
+    const inviteMsg = a => `السلام عليكم${a && isNamed(a) ? ' ' + a.name : ''}،\nمرحبا بكم فشبكة ${K.ar} ديال مجموعة الوسيط ${K.ic}\n\n📲 التسجيل ساهل (بلا كلمة سر):\n1️⃣ حلّو رابط التسجيل: ${regLink}\n2️⃣ كتبو الإيميل ديالكم ← «صيفط ليا الكود»\n3️⃣ كتبو الكود (6 أرقام) اللي وصلكم فالإيميل\n4️⃣ ختارو «${K.one}» وعمّرو البطاقة (الاسم، الهاتف، المدينة) ووافقو على القانون ✅\n\n${nextStep}\n${offerTxt}\n💼 تعرّفو على التطبيق (PDF): ${appBase()}files/guide/malaf-taqdimi-majmouat-alwasset.pdf\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` + groupsTxt();
     const welcomeMsg = a => { const tr = seatTier(a), si = subInfo(a), e = subEnd(a);
       return `السلام عليكم ${a.name}،\nمرحبا بكم فمجموعة الوسيط ${K.ic} — الحساب ديالكم مفعّل ✅\n🆔 الرمز: ${loginOf(a)}${a.email ? `\n✉️ الدخول بالإيميل: ${a.email} (كيوصلكم كود من 6 أرقام، بلا كلمة السر)` : ''}` +
         (tr ? `\n🎟️ رقم المقعد ديالكم فعرض 777: ${a.seat_no} — ${tr.s}` : '') +
@@ -6717,10 +6719,11 @@
         <div class="btn-row" id="ag-oldrow" style="margin-top:8px" hidden><button class="btn sm" id="ag-add">➕ زيد حسابات بالرموز (الطريقة القديمة)</button><span class="muted" style="font-size:12.5px">ما بقاتش ضرورية: التسجيل دابا بالإيميل. الرسالة ما فيهاش كلمة السر.</span></div>
         <div class="btn-row" id="ag-soonrow" style="margin-top:8px" hidden><button class="btn sm" id="ag-copy">📋 نسخ اللائحة (الاسم، الهاتف، التاريخ)</button></div>
       </div>
+      <div id="invites"></div>
       <div class="card" id="aglist"></div>`;
     let shown = 60;
     // ➕ v220: «إضافة مشترك جديد» — المشترك كيتسجل بالإيميل ديالو (بلا كلمة سر)، والمدير كيصيفط ليه الدعوة: واتساب لرقمو، QR قدامو، ولا الرابط
-    const regUrl = appUrl.replace(/[?#].*$/, '') + '?gate=1';
+    const regUrl = regLink;
     const addMember = () => modal(`<h3>➕ إضافة مشترك جديد</h3>
       <p class="muted" style="margin-top:0">المشترك كيتسجل بالإيميل ديالو (كود 6 أرقام، بلا كلمة سر)، وكيبان هنا أوتوماتيكيا مع الاشتراك ديالو.</p>
       <div class="am-kinds">${Object.entries(KINDS).map(([k, x]) => `<a class="chip${k === kind ? ' on' : ''}" href="#/${x.route}/manage?add=1">${x.ic} ${esc(x.one)}</a>`).join('')}</div>
@@ -6736,13 +6739,49 @@
       $$('.am-kinds a', m).forEach(x => x.addEventListener('click', () => close())); // فئة أخرى ← النافذة ديالها (ما تبقاش جوج فوق بعض)
       $('#am-wa', m).onclick = () => { const ph = ($('[name=am-phone]', m).value || '').trim();
         if (!/\d{6,}/.test(ph.replace(/\D/g, ''))) { toast('كتب رقم الواتساب ديال المشترك'); return $('[name=am-phone]', m).focus(); }
-        window.open(`https://wa.me/${waPhone(ph)}?text=${encodeURIComponent(msg())}`, '_blank', 'noopener'); };
+        window.open(`https://wa.me/${waPhone(ph)}?text=${encodeURIComponent(msg())}`, '_blank', 'noopener');
+        saveInvite({ kind, name: ($('[name=am-name]', m).value || '').trim().slice(0, 80) || null, phone: waPhone(ph) }); };
       $('#am-copy', m).onclick = async () => { try { await navigator.clipboard.writeText(msg()); toast('✅ تنسخات الرسالة'); } catch (e) { toast('ما تنسخاتش'); } };
       $('#am-link', m).onclick = async () => { try { await navigator.clipboard.writeText(regUrl); toast('✅ تنسخ الرابط'); } catch (e) { toast(regUrl, 5000); } };
       $('#am-old', m).onclick = () => { close(); const b = $('#ag-add'); if (b) b.click(); };
       try { await loadScript('vendor/qrcode.js'); const q = window.qrcode(0, 'M'); q.addData(regUrl); q.make(); $('#am-qr', m).innerHTML = q.createSvgTag({ cellSize: 5, margin: 2, scalable: true }); }
       catch (e) { $('#am-qr', m).innerHTML = `<p class="muted" style="font-size:12px;padding:8px">${esc(regUrl)}</p>`; }
     });
+    // 📨 v221: سجل الدعوات (السحابة، للمدير فقط): اللي تسجل ✅ (نفس الرقم فالمسجلين)، واللي فاتو عليه 3 أيام ← «⏰ ذكّرو»
+    async function saveInvite(x) {
+      const Sy = window.W777_SYNC; if (!Sy || !Sy.request || !/^\d{8,15}$/.test(x.phone || '')) return;
+      try { await Sy.request('/rest/v1/w777_invites?on_conflict=phone', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(x) }); } catch (e) { /* بلا إنترنت */ }
+      drawInvites();
+    }
+    const invRemind = x => { const KK = KINDS[x.kind] || K;
+      return `السلام عليكم${x.name ? ' ' + x.name : ''}،\nكنذكّركم بالدعوة للتسجيل فتطبيق مجموعة الوسيط (${KK.one}) ${KK.ic}\n🎁 ${FREE_MONTHS} أشهر مجانية من نهار التسجيل.\n📲 التسجيل فدقيقة بالإيميل (بلا كلمة سر): ${regLink}\n📞 أي سؤال: 0777777959 · 0777777848`; };
+    async function drawInvites() {
+      const box = $('#invites'), Sy = window.W777_SYNC; if (!box || !Sy || !Sy.request) return;
+      let rows = [];
+      try { const r = await Sy.request('/rest/v1/w777_invites?select=*&order=created_at.desc&limit=100'); if (r.ok) rows = await r.json(); } catch (e) { /* */ }
+      if (!box.isConnected) return;
+      if (!Array.isArray(rows) || !rows.length) { box.innerHTML = ''; return; }
+      let dir = []; try { dir = await loadDir(true); } catch (e) { /* */ }
+      const tail = p => String(p || '').replace(/\D/g, '').slice(-9), DAY = 864e5;
+      const reg = new Set(dir.filter(isReg).map(a => tail(a.phone)).filter(t => t.length === 9));
+      const st = rows.map(x => ({ ...x, ok: reg.has(tail(x.phone)), d: Math.floor((Date.now() - new Date(x.created_at)) / DAY) }));
+      const isDue = x => !x.ok && x.d >= 3 && (!x.reminded_at || Date.now() - new Date(x.reminded_at) >= 3 * DAY);
+      const due = st.filter(isDue), wait = st.filter(x => !x.ok && !isDue(x)), done = st.filter(x => x.ok);
+      box.innerHTML = `<div class="card card-pad inv-card" style="margin-bottom:14px"><h4 style="margin:0 0 4px">📨 الدعوات اللي صيفطتي</h4>
+        <p class="muted" style="margin:0 0 8px;font-size:12.5px">✅ ${fmt(done.length)} تسجلو · ⏳ ${fmt(wait.length + due.length)} كيتسناو${due.length ? ` · <b style="color:var(--red,#c8102e)">⏰ ${fmt(due.length)} خاصهم تذكير</b>` : ''}</p>
+        <div class="inv-rows">${[...due, ...wait, ...done].slice(0, 30).map(x => { const KK = KINDS[x.kind] || K;
+          return `<div class="inv-row${x.ok ? ' ok' : ''}"><span class="inv-k" aria-hidden="true">${KK.ic}</span><span class="inv-t"><b>${esc(x.name || KK.one)}</b><small dir="ltr">+${esc(x.phone)}</small></span>
+            <span class="inv-s">${x.ok ? '✅ تسجّل' : `⏳ ${x.d ? 'قبل ' + fmt(x.d) + ' يوم' : 'اليوم'}${x.reminders ? ` · ذكّرتيه ${fmt(x.reminders)}` : ''}`}</span>
+            ${isDue(x) ? `<button class="btn sm gold" type="button" data-inv-r="${x.id}">⏰ ذكّرو</button>` : ''}<button class="btn sm" type="button" data-inv-x="${x.id}" title="مسح من اللائحة" aria-label="مسح">✕</button></div>`; }).join('')}</div></div>`;
+      box.querySelectorAll('[data-inv-r]').forEach(b => b.onclick = async () => { const x = st.find(y => String(y.id) === b.dataset.invR); if (!x) return;
+        window.open(`https://wa.me/${x.phone}?text=${encodeURIComponent(invRemind(x))}`, '_blank', 'noopener');
+        try { await Sy.request('/rest/v1/w777_invites?id=eq.' + encodeURIComponent(x.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ reminded_at: new Date().toISOString(), reminders: (+x.reminders || 0) + 1 }) }); } catch (e) { /* */ }
+        drawInvites(); });
+      box.querySelectorAll('[data-inv-x]').forEach(b => b.onclick = async () => { if (!(await confirmBox('نمسحو هاد الدعوة من اللائحة؟', 'مسح'))) return;
+        try { await Sy.request('/rest/v1/w777_invites?id=eq.' + encodeURIComponent(b.dataset.invX), { method: 'DELETE' }); } catch (e) { /* */ }
+        drawInvites(); });
+    }
+    setTimeout(drawInvites, 0);
     $('#ag-new-mem').onclick = addMember;
     if (query && query.add) setTimeout(addMember, 60);
     const remindMsg = a => { const e = subEnd(a); return `السلام عليكم ${a.name}،\n${e && e.days < 0 ? `⏳ سالات ${e.paid ? 'مدة الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط (${dAr(e.end.toISOString())}) والحساب توقف.` : `⏰ ${e && e.paid ? 'الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط كتسالي نهار ${e ? dAr(e.end.toISOString()) : ''}.`}\n💳 الاشتراك السنوي: ${subPrice(a)} درهم.\nباش تجددو تواصلو معانا: 0777777959 · 0777777848\nالبيانات ديالكم محفوظة ✅`; };
@@ -7211,10 +7250,11 @@
     if (!rb.isConnected) return;
     if (!Array.isArray(refs)) refs = [];
     if (!refs.length && !month) { rb.innerHTML = ''; return; }
+    refs.forEach(x => { if (x.ref === 'WASSET') x.name = '🏢 مجموعة الوسيط (دعواتك)'; });
     const label = month ? monthAr(month) : 'كل المدة';
     rb.innerHTML = `<h4 style="margin:14px 0 6px">🏅 الروابط الخاصة (أكثر المشتركين جلباً)</h4>
       <div class="chips wrap ref-months">${[['', 'كل المدة'], ...refMonths().map(m => [m, monthAr(m)])].map(([m, l]) => `<button type="button" class="chip${m === month ? ' on' : ''}" data-rm="${m}">${esc(l)}</button>`).join('')}</div>
-      ${refs.length ? `<div class="ss-rows">${refs.slice(0, 10).map((x, i) => `<div class="ss-row"><b>${i + 1}. ${esc(x.name || x.ref)}</b><span>🎉 ${fmt(+x.signups || 0)}</span><small class="muted">الكود: ${esc(x.ref)} · تسجيلات: ${fmt(+x.signups || 0)} · ضغطات «سجّل»: ${fmt(+x.joins || 0)} · زيارات: ${fmt(+x.views || 0)}</small>${month && i < 3 && (+x.signups || +x.joins || +x.views) ? `<button type="button" class="btn sm gold ref-cert" data-i="${i}">🏆 شهادة شكر</button>` : ''}</div>`).join('')}</div>`
+      ${refs.length ? `<div class="ss-rows">${refs.slice(0, 10).map((x, i) => `<div class="ss-row"><b>${i + 1}. ${esc(x.name || x.ref)}</b><span>🎉 ${fmt(+x.signups || 0)}</span><small class="muted">الكود: ${esc(x.ref)} · تسجيلات: ${fmt(+x.signups || 0)} · ضغطات «سجّل»: ${fmt(+x.joins || 0)} · زيارات: ${fmt(+x.views || 0)}</small>${month && i < 3 && x.ref !== 'WASSET' && (+x.signups || +x.joins || +x.views) ? `<button type="button" class="btn sm gold ref-cert" data-i="${i}">🏆 شهادة شكر</button>` : ''}</div>`).join('')}</div>`
         : `<p class="muted">ما كاين حتى نشاط فـ${esc(label)}.</p>`}
       ${month ? '' : '<p class="muted" style="font-size:12.5px;margin:6px 0 0">🏆 ختار شهر باش تصاوب «شهادة شكر» للأوائل.</p>'}`;
     rb.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => drawRefs(rb, b.dataset.rm));

@@ -1954,3 +1954,44 @@ end $$;
 revoke all on function public.w777_week_stats() from public, anon;
 grant execute on function public.w777_week_stats() to authenticated;
 
+-- ============ v221: 📨 دعوات المدير + كود المكتب المحجوز «WASSET» فالرابط الخاص ============
+-- سجل الدعوات (الاسم، الرقم الدولي بالأرقام، الفئة، التذكيرات): المدير بوحدو كيقرا وكيكتب
+create table if not exists public.w777_invites (
+  id bigint generated always as identity primary key,
+  kind text not null default 'agency' check (kind in ('agency', 'broker', 'contractor', 'finishing', 'investor', 'notary', 'association')),
+  name text check (name is null or char_length(name) <= 80),
+  phone text not null check (phone ~ '^[0-9]{8,15}$'),
+  created_at timestamptz not null default now(),
+  reminded_at timestamptz,
+  reminders int not null default 0 check (reminders between 0 and 50)
+);
+create unique index if not exists w777_invites_phone on public.w777_invites (phone);
+alter table public.w777_invites enable row level security;
+drop policy if exists w777_invites_admin on public.w777_invites;
+create policy w777_invites_admin on public.w777_invites for all to authenticated using (w777_is_admin()) with check (w777_is_admin());
+revoke all on public.w777_invites from anon, public;
+grant select, insert, update, delete on public.w777_invites to authenticated;
+
+-- الرابط الخاص: «WASSET» = المكتب (الدعوات ديال المدير) — كيتقبل بلا ما يكون كود ديال مشترك، وبلا مكافأة
+create or replace function public.w777_set_referrer(p_ref text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); mine text; n int;
+begin
+  if me is null or p_ref is null or p_ref !~ '^[A-Za-z0-9_-]{1,24}$' then return false; end if;
+  select code into mine from w777_agencies where uid = me and referred_by is null and created_at > now() - interval '2 days';
+  if mine is null or mine = p_ref then return false; end if;
+  if p_ref <> 'WASSET' and not exists (select 1 from w777_agencies where code = p_ref and uid <> me) then return false; end if;
+  perform set_config('w777.ref_ok', '1', true);
+  update w777_agencies set referred_by = p_ref, ref_at = now() where uid = me;
+  perform set_config('w777.ref_ok', '', true);
+  if p_ref <> 'WASSET' then
+    select count(*) into n from w777_agencies where referred_by = p_ref;
+    if n > 0 and n % 5 = 0 then
+      insert into w777_ref_rewards (ref, milestone) values (p_ref, n) on conflict (ref, milestone) do nothing;
+    end if;
+  end if;
+  return true;
+end $$;
+revoke all on function public.w777_set_referrer(text) from public, anon;
+grant execute on function public.w777_set_referrer(text) to authenticated;
+
