@@ -30,7 +30,8 @@ const on=await p.evaluate(()=>window.W777_SYNC.isOn());
 // المدير: البطاقة كتبان، التفعيل كيورّي QR وكيقبل الرمز
 await p.goto('http://127.0.0.1:8777/bureau/#/terms');await p.waitForTimeout(1500);await p.goto('http://127.0.0.1:8777/bureau/#/settings?s=security');
 await p.waitForSelector('#mfa-on',{timeout:8000});await p.click('#mfa-on');await p.waitForSelector('#mfa-code');
-const qrOk=await p.$eval('.modal img[alt=QR]',i=>i.complete&&i.naturalWidth>0);
+// v218: الرمز مرسوم فالتطبيق (SVG داخل الصفحة، ماشي صورة data: اللي كانت كتبان «?» فـ Safari) — حتى بلا uri من الخادم
+const qrOk=await p.$eval('.modal .mfa-qr',d=>{const s=d.querySelector('svg');return !!s&&s.querySelectorAll('rect,path').length>0&&d.getBoundingClientRect().width>150;});
 await p.fill('#mfa-code','654321');await p.click('#mfa-ok');await p.waitForSelector('#mfa-off',{timeout:5000});
 await p.screenshot({path:process.argv[2]||'/tmp/mfa.png'});
 console.log('admin card enroll ok, qr shown:',qrOk);
