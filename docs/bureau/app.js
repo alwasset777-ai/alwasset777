@@ -1629,7 +1629,8 @@
   const finHub = () => hubTile('#/tamwil', '#c8102e', `<i class="emo fin-rot" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}<b class="fin-777">٪</b></i>`, 'التمويل العقاري', 'البنوك وجهات التمويل');
   function homeMenu(kind, nAppts) {
     const M = {
-      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…')]],
+      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…'),
+        ...(S.role === 'admin' ? [hubTile('#/agencies/manage?add=1', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/agencies.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', 'دعوة بواتساب ولا QR')] : [])]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'), hubPic('#/ad-maker', 'ad-maker', 'إعلانات فورية', 'منشورات إعلانية'),
         hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubIco('#/appointments', 'add-appointment', 'المواعيد', nAppts ? nAppts + ' اليوم' : ''), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
@@ -6704,7 +6705,7 @@
           <div><small>♾️ مجاني مدى الحياة</small><b>${ags.filter(a => isReg(a) && subInfo(a).free).length}</b></div><div><small>⛔ متوقفين / سالاو</small><b>${ags.filter(a => isReg(a) && (!a.active || !subInfo(a).ok)).length}</b></div>
           ${kind === 'agency' ? `<div><small>🇲🇦 / 🌍</small><b>${ags.filter(a => isReg(a) && !isAbroad(a)).length} / ${ags.filter(a => isReg(a) && isAbroad(a)).length}</b></div>` : ''}
           <div><small>🏠 زادو عقارات</small><b>${ags.filter(a => counts[a.uid]).length}</b></div></div>
-        <div class="btn-row" style="margin-top:10px"><a class="btn gold sm wa" id="ag-inv" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(inviteMsg())}">📲 رسالة الدعوة (التسجيل بالإيميل)</a><a class="btn sm wa" id="ag-offer" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(offerMsg(ags, kind))}">📣 رسالة العرض</a>
+        <div class="btn-row" style="margin-top:10px"><button class="btn primary ag-newmem" id="ag-new-mem" type="button">➕ إضافة مشترك جديد</button><a class="btn gold sm wa" id="ag-inv" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(inviteMsg())}">📲 رسالة الدعوة (التسجيل بالإيميل)</a><a class="btn sm wa" id="ag-offer" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(offerMsg(ags, kind))}">📣 رسالة العرض</a>
           <span class="muted" style="font-size:12.5px">كل واحد تسجّل فالتطبيق كيبان هنا بوحدو مع المعلومات والاشتراك ديالو.</span></div>
         <div class="form-grid" style="margin-top:12px">${fInput('agq', 'بحث', query.q || '', { ph: 'اسم، إيميل، هاتف، مدينة، رمز…' })}
           ${fSelect('agf', 'عرض', [{ v: 'reg', l: `👥 المسجلين (${ags.filter(isReg).length})` }, { v: 'new', l: `🆕 هاد السيمانة (${ags.filter(isNew).length})` },
@@ -6718,6 +6719,32 @@
       </div>
       <div class="card" id="aglist"></div>`;
     let shown = 60;
+    // ➕ v220: «إضافة مشترك جديد» — المشترك كيتسجل بالإيميل ديالو (بلا كلمة سر)، والمدير كيصيفط ليه الدعوة: واتساب لرقمو، QR قدامو، ولا الرابط
+    const regUrl = appUrl.replace(/[?#].*$/, '') + '?gate=1';
+    const addMember = () => modal(`<h3>➕ إضافة مشترك جديد</h3>
+      <p class="muted" style="margin-top:0">المشترك كيتسجل بالإيميل ديالو (كود 6 أرقام، بلا كلمة سر)، وكيبان هنا أوتوماتيكيا مع الاشتراك ديالو.</p>
+      <div class="am-kinds">${Object.entries(KINDS).map(([k, x]) => `<a class="chip${k === kind ? ' on' : ''}" href="#/${x.route}/manage?add=1">${x.ic} ${esc(x.one)}</a>`).join('')}</div>
+      <h4 style="margin:14px 0 6px">1️⃣ صيفط ليه الدعوة فواتساب</h4>
+      <div class="form-grid">${fInput('am-name', 'الاسم (اختياري)', '', { ph: 'مثلا: وكالة النور' })}${fInput('am-phone', 'رقم الواتساب', '', { ph: '06… ولا +33…', type: 'tel' })}</div>
+      <div class="btn-row" style="margin-top:8px"><button class="btn gold wa" id="am-wa" type="button">📲 صيفط الدعوة (${esc(K.one)})</button><button class="btn" id="am-copy" type="button">📋 نسخ الرسالة</button></div>
+      <h4 style="margin:16px 0 6px">2️⃣ ولا يسكاني هاد الرمز قدامك</h4>
+      <div class="am-qr" id="am-qr" role="img" aria-label="QR التسجيل"></div>
+      <div class="btn-row" style="justify-content:center;margin-top:8px"><button class="btn sm" id="am-link" type="button">🔗 نسخ رابط التسجيل</button></div>
+      <details style="margin-top:14px"><summary class="muted" style="cursor:pointer">🗝️ حسابات بالرموز (الطريقة القديمة)</summary><p class="muted" style="font-size:12.5px">ما بقاتش ضرورية: التسجيل بالإيميل أسهل وآمن.</p><button class="btn sm" id="am-old" type="button">➕ زيد حسابات بالرموز</button></details>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:12px"><button class="btn" type="button" data-close>إغلاق</button></div>`, async (m, close) => {
+      const msg = () => inviteMsg({ name: ($('[name=am-name]', m).value || '').trim(), kind });
+      $$('.am-kinds a', m).forEach(x => x.addEventListener('click', () => close())); // فئة أخرى ← النافذة ديالها (ما تبقاش جوج فوق بعض)
+      $('#am-wa', m).onclick = () => { const ph = ($('[name=am-phone]', m).value || '').trim();
+        if (!/\d{6,}/.test(ph.replace(/\D/g, ''))) { toast('كتب رقم الواتساب ديال المشترك'); return $('[name=am-phone]', m).focus(); }
+        window.open(`https://wa.me/${waPhone(ph)}?text=${encodeURIComponent(msg())}`, '_blank', 'noopener'); };
+      $('#am-copy', m).onclick = async () => { try { await navigator.clipboard.writeText(msg()); toast('✅ تنسخات الرسالة'); } catch (e) { toast('ما تنسخاتش'); } };
+      $('#am-link', m).onclick = async () => { try { await navigator.clipboard.writeText(regUrl); toast('✅ تنسخ الرابط'); } catch (e) { toast(regUrl, 5000); } };
+      $('#am-old', m).onclick = () => { close(); const b = $('#ag-add'); if (b) b.click(); };
+      try { await loadScript('vendor/qrcode.js'); const q = window.qrcode(0, 'M'); q.addData(regUrl); q.make(); $('#am-qr', m).innerHTML = q.createSvgTag({ cellSize: 5, margin: 2, scalable: true }); }
+      catch (e) { $('#am-qr', m).innerHTML = `<p class="muted" style="font-size:12px;padding:8px">${esc(regUrl)}</p>`; }
+    });
+    $('#ag-new-mem').onclick = addMember;
+    if (query && query.add) setTimeout(addMember, 60);
     const remindMsg = a => { const e = subEnd(a); return `السلام عليكم ${a.name}،\n${e && e.days < 0 ? `⏳ سالات ${e.paid ? 'مدة الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط (${dAr(e.end.toISOString())}) والحساب توقف.` : `⏰ ${e && e.paid ? 'الاشتراك' : 'المدة المجانية'} ديال حسابكم فتطبيق مجموعة الوسيط كتسالي نهار ${e ? dAr(e.end.toISOString()) : ''}.`}\n💳 الاشتراك السنوي: ${subPrice(a)} درهم.\nباش تجددو تواصلو معانا: 0777777959 · 0777777848\nالبيانات ديالكم محفوظة ✅`; };
     // 🪪 خانة المشترك المسجّل: المعلومات + الاشتراك + الأزرار
     const memberCard = a => {
