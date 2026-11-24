@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" data-w777-csp content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-A9nAJIxzpTmC11NUutcPos5HgnyK3Vbeay7lviQF+JQ=' 'sha256-GZIcz60Uwd6wT3vaYke/atSr53TehbYAPepOa3d03Vw=' 'sha256-yyjq/GGlTvm0YhdkNx72uPxcwaIXqWZBYZftmpA6pYU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://maps.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://wa.me https://api.whatsapp.com; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" data-w777-csp content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-GZIcz60Uwd6wT3vaYke/atSr53TehbYAPepOa3d03Vw=' 'sha256-QAxdLEhcUClSFeNRuSpy2XUI0ooWzED4cIwRI3Cp9RM=' 'sha256-yyjq/GGlTvm0YhdkNx72uPxcwaIXqWZBYZftmpA6pYU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://maps.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://wa.me https://api.whatsapp.com; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <script src="guard.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -39,7 +39,7 @@
     const box = document.getElementById('pb');
     const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const fmt = n => `<span dir="ltr" style="unicode-bidi:isolate">${new Intl.NumberFormat('fr-FR').format(Number(n) || 0).replace(/[  ]/g, ' ')}</span>`;
+    const fmt = n => `<span dir="ltr" style="unicode-bidi:isolate">${new Intl.NumberFormat('fr-FR').format(Number(n) || 0).replace(/[   ]/g, '\u00a0')}</span>`;
     const today = () => new Date().toISOString().slice(0, 10);
     const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
     const nights = (a, b) => a && b ? Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5) : 0;

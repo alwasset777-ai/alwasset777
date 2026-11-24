@@ -1466,6 +1466,9 @@ function tx(lang, key, sub){ const pick = l => sub ? TX[l][key][sub] : TX[l][key
 function typeName(lang, t){ const row = TYPES.find(r=>r.includes(t)) || [t,t,t]; return lang==='ar' ? row[1] : lang==='en' ? row[2] : lang==='both' ? `${row[0]} · ${row[1]}` : row[0]; }
 function roomKey(l){ const q=String(l||'').trim().toLowerCase(); if (!q) return null; return Object.keys(ROOMS).find(k=>k.toLowerCase()===q || ROOMS[k]===q.trim() || ROOMS[k]===String(l).trim() || ROOMS_EN[k].toLowerCase()===q) || null; }
 function roomName(lang, l){ if (!l) return ''; const k = roomKey(l); if (!k) return l; return lang==='ar' ? ROOMS[k] : lang==='en' ? ROOMS_EN[k] : lang==='both' ? `${k} · ${ROOMS[k]}` : k; }
+// 🔢 v217: أي رقم بالآلاف بفراغ عادي فالنصوص المرسومة (حتى اللي كتبها المستعمل) ← فراغ ثابت باش ما يتقلبش فالعربية (Safari)
+(function(){ const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype; if (!P || P.__w777nf) return; P.__w777nf = 1; const nf = t => typeof t === 'string' ? t.replace(/(\d)[ \u202f](?=\d{3}(?!\d))/g, '$1\u00a0') : t;
+  for (const m of ['fillText', 'strokeText', 'measureText']) { const f = P[m]; P[m] = function (t, ...a) { return f.call(this, nf(t), ...a); }; } })();
 function fmtPrice(v){ const d = String(v==null?'':v).replace(/[^\d]/g,''); return d ? d.replace(/\B(?=(\d{3})+(?!\d))/g,'\u00A0') : ''; }
 function dirOf(str){ const m = String(str||'').match(/[A-Za-z\u00C0-\u024F\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/); return m && RTL_RE.test(m[0]) ? 'rtl' : 'ltr'; }
 function setDir(ctx, d){ try { ctx.direction = d; } catch(e){} }

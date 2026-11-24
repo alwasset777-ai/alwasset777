@@ -23,7 +23,12 @@
      ============================================================ */
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // 🔢 v217: «2 087» / «30 000» المكتوبين بفراغ عادي (عناوين قديمة، نصوص المستعمل) ← فراغ ثابت باش ما يتقلبوش فالعربية
+  const numFix = s => String(s == null ? '' : s).replace(/(\d)[ \u202f](?=\d{3}(?!\d))/g, '$1\u00a0');
+  // نفس الشي لكل نص كيترسم فالـ canvas (الملصقات، العلامة المائية…) — Safari ما كيفهمش العلامات الخفية فالرسم
+  (function () { const P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype; if (!P || P.__w777nf) return; P.__w777nf = 1;
+    for (const m of ['fillText', 'strokeText', 'measureText']) { const f = P[m]; P[m] = function (t, ...a) { return f.call(this, typeof t === 'string' ? numFix(t) : t, ...a); }; } })();
+  const esc = s => numFix(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // روابط جاية من قاعدة البيانات (أخبار، مناسبات، مجموعات): غير http/https — ماشي javascript: ولا data:
   // القوائم الطويلة: أول دفعة كتبان فورا، والباقي كيتزاد ملي كتنزل (بدل مئات البطاقات دفعة وحدة)
   function lazyFill(box, items, render, after, first = 24, step = 24) {
@@ -58,9 +63,15 @@
   const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
   // مُنسّق واحد للأرقام (إنشاء Intl.NumberFormat فكل مرة كان كيبطّء التطبيق بزاف)
   const NF = new Intl.NumberFormat('fr-FR');
-  const fmtRaw = n => num(n) === null ? '' : NF.format(Number(n)).replace(/[\u202f\u00a0]/g, ' ');
+  // 🔢 v217: بين الآلاف «فراغ ثابت» (\u00a0) ماشي فراغ عادي: قاعدة الكتابة كتعتبرو جزء من الرقم ← «30 000» ما تتقلبش حتى فـ Safari
+  // وفالملصقات (canvas) اللي ما كتفهمش العلامات الخفية \u2066…\u2069. (\u202f ما كاينش فخط Tajawal)
+  const fmtRaw = n => num(n) === null ? '' : NF.format(Number(n)).replace(/[\u202f\u00a0 ]/g, '\u00a0');
   // عزل الأرقام حتى لا تنقلب مجموعات الأرقام داخل النص العربي
   const fmt = n => num(n) === null ? '' : '\u2066' + fmtRaw(n) + '\u2069';
+  // 🔢 v217: نص رسائل واتساب: الأرقام بفراغ ثابت (الروابط كاملين، بلا ما نبدلو 40 بلاصة)
+  const waFix = u => typeof u === 'string' && /\/\/(wa\.me|api\.whatsapp\.com)\//.test(u) ? u.replace(/([?&]text=)([^&#]*)/, (m, k, v) => { try { return k + encodeURIComponent(numFix(decodeURIComponent(v))); } catch (e) { return m; } }) : u;
+  (function () { const o = window.open; window.open = function (u, ...a) { return o.call(window, waFix(u), ...a); };
+    document.addEventListener('click', e => { const a = e.target && e.target.closest && e.target.closest('a[href*="wa.me/"], a[href*="api.whatsapp.com/"]'); if (a) a.href = waFix(a.getAttribute('href')); }, true); })();
   const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
   const get = (o, path) => path.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
   const set = (o, path, v) => {
@@ -9913,7 +9924,7 @@
   /* ---------- 🖼️ الملصق الإعلاني + QR ---------- */
   const POSTER_FMT = { post: [1080, 1350, '📱 منشور 4:5'], square: [1080, 1080, '⬛ مربع'], story: [1080, 1920, '📲 ستوري'] };
   function wrapText(x, text, maxW, maxLines) {
-    const words = String(text || '').split(/\s+/), lines = [];
+    const words = String(text || '').split(/[ \t\r\n]+/), lines = []; // v217: ماشي \s (كتقطع حتى الفراغ الثابت ديال الأرقام)
     let line = '';
     words.forEach(w => { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; });
     if (line) lines.push(line);
@@ -9982,7 +9993,8 @@
     x.fillStyle = '#fff'; rrect(x, qx - 10, qy - 10, qs + 20, qs + 20, 14); x.fill(); x.fillStyle = '#111';
     for (let r = 0; r < qn; r++) for (let k = 0; k < qn; k++) if (q.isDark(r, k)) x.fillRect(qx + k * cell, qy + r * cell, Math.ceil(cell), Math.ceil(cell));
     x.fillStyle = '#fff'; x.font = '800 40px Tajawal, sans-serif';
-    x.fillText(wrapText(x, offName(), W - 330, 1)[0], W - 50, fy + 70);
+    // الشعار فيه 777 أصلاً ← ما نكتبوش «777» مع اسم المجموعة فالملصق (قاعدة المدير)
+    x.fillText(wrapText(x, /الوسيط/.test(offName() || '') ? String(offName()).replace(/\s*777/g, '') : offName(), W - 330, 1)[0], W - 50, fy + 70);
     x.direction = 'ltr'; x.textAlign = 'right';
     const tel = '☎ ' + offPhones(); let fs = 58; x.font = `900 ${fs}px Tajawal, sans-serif`;
     while (x.measureText(tel).width > W - 380 && fs > 30) { fs -= 2; x.font = `900 ${fs}px Tajawal, sans-serif`; } // جوج أرقام: كنصغرو الخط باش ما يغطيش QR
