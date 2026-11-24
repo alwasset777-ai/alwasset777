@@ -2151,3 +2151,14 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 .am-qr { width: 200px; height: 200px; margin: 0 auto; background: #fff; padding: 8px; border-radius: 12px; border: 1px solid var(--line); }
 .am-qr svg { width: 100%; height: 100%; display: block; }
 
+/* v221: 📨 الدعوات اللي صيفط المدير */
+.inv-rows { display: flex; flex-direction: column; gap: 6px; }
+.inv-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.inv-row.ok { opacity: .7; }
+.inv-k { font-size: 18px; flex: none; }
+.inv-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.inv-t b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-t small { color: var(--muted); font-size: 12px; text-align: end; }
+.inv-s { font-size: 12px; color: var(--muted); white-space: nowrap; }
+@media (max-width: 520px) { .inv-row { flex-wrap: wrap; } .inv-s { order: 3; width: 100%; } }
+
