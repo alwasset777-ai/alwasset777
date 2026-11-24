@@ -1671,7 +1671,8 @@
   }
   // 📅 v215: تقرير الأسبوع فالرئيسية — لكل مشترك (العقارات والطلبات الجداد، المواعيد اللي تمّت، الصفقات)،
   // وللمدير زيادة الشبكة (التسجيلات، المشاركات، زيارات الصفحة، ضغطات «سجّل») من w777_week_stats()
-  const wkIt = (i, n, t) => `<div class="wk-it"><span aria-hidden="true">${i}</span><b>${fmt(n)}</b><small>${t}</small></div>`;
+  // v219: سطر واحد عصري — أيقونة فدائرة ملونة (--h = اللون) والرقم بارز حداها؛ فالتيليفون السطر كيتسحب
+  const wkIt = (i, n, t, h, full) => `<div class="wk-it" style="--h:${h}" title="${esc(full || t)}"><span class="wk-top"><span class="wk-ic" aria-hidden="true">${i}</span><b>${fmt(n)}</b></span><small>${t}</small></div>`;
   function weekCard() {
     if (!S.props.length && !S.reqs.length && S.role !== 'admin') return '';
     const since = new Date(Date.now() - 7 * 864e5).toISOString(), d7 = since.slice(0, 10), td = today();
@@ -1679,15 +1680,14 @@
     const ap = S.appts.filter(a => a.status === 'done' && (a.date || '') >= d7 && (a.date || '') <= td).length;
     const deals = S.props.filter(p => ['sold', 'rented'].includes(p.status) && (p.updatedAt || '') >= since).length;
     return `<div class="card wk-card" id="home-week"><div class="wk-h"><b>📅 أسبوعك</b><small>آخر 7 أيام</small></div>
-      <div class="wk-row">${wkIt('🏠', np, 'عقار جديد')}${wkIt('👥', nr, 'طلب جديد')}${wkIt('📅', ap, 'موعد تمّ')}${wkIt('🤝', deals, 'صفقة')}</div>
-      ${S.role === 'admin' ? '<div id="home-wk-net" class="wk-row wk-net"></div>' : ''}</div>`;
+      <div class="wk-row">${wkIt('🏠', np, 'عقار جديد', 4)}${wkIt('👥', nr, 'طلب جديد', 212)}${wkIt('📅', ap, 'موعد تمّ', 268)}${wkIt('🤝', deals, 'صفقة', 145)}${S.role === 'admin' ? '<div id="home-wk-net" class="wk-net"></div>' : ''}</div></div>`;
   }
   async function homeWeekNet() {
     const box = $('#home-wk-net'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
     let j = null;
     try { const r = await Sy.request('/rest/v1/rpc/w777_week_stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) j = await r.json(); } catch (e) { /* */ }
     if (!box.isConnected || !j || typeof j !== 'object') return;
-    box.innerHTML = wkIt('✍️', +j.signups || 0, 'تسجيل فالشبكة') + wkIt('📤', +j.shares || 0, 'مشاركة') + wkIt('👀', +j.visits || 0, 'زيارة للصفحة') + wkIt('✅', +j.joins || 0, 'ضغطة «سجّل»');
+    box.innerHTML = '<i class="wk-sep" aria-hidden="true"></i>' + wkIt('✍️', +j.signups || 0, 'تسجيلات', 28, 'تسجيلات جديدة فالشبكة') + wkIt('📤', +j.shares || 0, 'مشاركات', 190, 'مشاركات الملفات والصفحة') + wkIt('👀', +j.visits || 0, 'زيارات', 320, 'زيارات صفحة «تعرّف على التطبيق»') + wkIt('✅', +j.joins || 0, 'ضغطات «سجّل»', 160, 'ضغطات على زر «سجّل»');
   }
   // 🏎️ v205: عدّاد السرعة: الرقم ← نسبة (سلم لوغاريتمي) ← طول القوس ولونو (أزرق 210° ← أحمر 0°)
   function gauge(n, max) {

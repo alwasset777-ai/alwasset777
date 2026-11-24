@@ -2119,3 +2119,27 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 @keyframes logo-flip { 0% { transform: scaleX(1); } 25% { transform: scaleX(.06); } 50% { transform: scaleX(1); } 75% { transform: scaleX(.06); } 100% { transform: scaleX(1); } }
 /* v218: الرمز QR ديال التحقق بخطوتين مرسوم فالتطبيق */
 .mfa-qr svg { width: 100%; height: 100%; display: block; }
+
+/* v219: 📅 «أسبوعك» فسطر واحد عصري — كل خانة: فوق دائرة ملونة + رقم بارز، تحت الكلمة؛ الشبكة (المدير) فنفس السطر من بعد خط رقيق.
+   الحاسوب: التمانية كاملين فسطر؛ التيليفون: السطر كيتسحب باليد (بلا شريط التمرير) */
+.wk-card { padding: 12px 14px; }
+.wk-h { margin-bottom: 10px; align-items: center; }
+.wk-h small { background: var(--surface-2); border: 1px solid var(--line); border-radius: 99px; padding: 2px 10px; font-size: 11.5px; }
+.wk-row { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 2px; margin: -2px; }
+.wk-row::-webkit-scrollbar { display: none; }
+.wk-net { display: contents; }
+.wk-net:empty { display: none; }
+.wk-sep { flex: none; width: 1px; align-self: stretch; margin: 4px 0; background: linear-gradient(transparent, var(--line), transparent); }
+.wk-it { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 4px; padding: 8px 10px 7px; border-radius: 14px; scroll-snap-align: start;
+  background: linear-gradient(160deg, hsl(var(--h) 90% 97%), var(--surface)); border: 1px solid hsl(var(--h) 70% 88%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 4px 12px -8px hsl(var(--h) 70% 40% / .5); transition: transform .15s; }
+.wk-it:hover { transform: translateY(-1px); }
+.wk-top { display: flex; align-items: center; gap: 7px; }
+.wk-ic { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; line-height: 1;
+  background: radial-gradient(circle at 35% 30%, #fff, hsl(var(--h) 85% 88%)); box-shadow: 0 0 0 1px hsl(var(--h) 70% 82%); }
+.wk-it .wk-top b { font-size: 21px; font-weight: 900; margin: 0; line-height: 1; color: hsl(var(--h) 60% 32%); direction: ltr; }
+.wk-it > small { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.3; }
+:root[data-theme="dark"] .wk-it { background: linear-gradient(160deg, hsl(var(--h) 40% 16%), var(--surface)); border-color: hsl(var(--h) 35% 26%); box-shadow: none; }
+:root[data-theme="dark"] .wk-ic { background: radial-gradient(circle at 35% 30%, hsl(var(--h) 40% 34%), hsl(var(--h) 45% 20%)); box-shadow: 0 0 0 1px hsl(var(--h) 35% 30%); }
+:root[data-theme="dark"] .wk-it .wk-top b { color: hsl(var(--h) 80% 75%); }
+@media (max-width: 700px) { .wk-it { flex: 0 0 auto; min-width: 92px; } }

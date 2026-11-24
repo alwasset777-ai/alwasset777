@@ -40,7 +40,8 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
   // 3) الرئيسية: «📅 أسبوعك» + أرقام الشبكة للمدير
   await p.evaluate(async () => { const now = new Date().toISOString(); await window.W777_DB.saveRec('properties', { id: 'wk1', ref: 'W777-9001', createdAt: now, updatedAt: now, status: 'available', type: 'apartment', transaction: 'sale', city: 'فاس', priceMin: 500000, media: [] }); if (window.W777_TEST) await window.W777_TEST.loadAll(); });
   await p.goto(BASE + '#/game'); await p.goto(BASE + '#/'); await p.waitForTimeout(1800);
-  const wk = await p.evaluate(() => { const c = document.getElementById('home-week'); return c ? { n: c.querySelectorAll('.wk-it').length, txt: c.textContent } : null; });
+  const wk = await p.evaluate(() => { const c = document.getElementById('home-week'); return c ? { n: c.querySelectorAll('.wk-it').length, txt: c.textContent, rows: new Set([...c.querySelectorAll('.wk-it')].map(e => Math.round(e.offsetTop))).size } : null; });
+  if (wk && wk.rows !== 1) bad.push('week not one row ' + wk.rows); // v219: سطر واحد
   if (!wk || wk.n !== 8 || !/12/.test(wk.txt) || !/56/.test(wk.txt)) bad.push('week ' + JSON.stringify(wk)); await ow('home');
   await p.evaluate(() => { document.querySelectorAll('#splash').forEach(x => x.remove()); const c = document.getElementById('home-week'); if (c) window.scrollTo(0, c.getBoundingClientRect().top + scrollY - 240); }); await p.waitForTimeout(1200);
   await p.screenshot({ path: (process.env.SHOT || '/tmp/v215') + '-week.png' });
