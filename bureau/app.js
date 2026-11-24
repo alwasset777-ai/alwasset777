@@ -3445,11 +3445,18 @@
       try { f = await Sy.mfaEnroll(); } catch (e) { return toast('تعذر: ' + e.message, 4500); }
       const qr = String((f.totp && f.totp.qr_code) || ''), svg = qr.replace(/^data:image\/svg\+xml;[^,]*,/, '');
       const src = svg && svg !== qr ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) : qr;
+      // 🔐 v218: الرمز QR كيترسم فالتطبيق من رابط المفتاح (otpauth://) — صورة الخادم (SVG فـ data:) كانت كتبان «?» فـ Safari.
+      // إلا ما جاش الرابط، كنبنيوه من المفتاح (الرمز كيتحسب غير من المفتاح: SHA1، 6 أرقام، 30 ثانية). صورة الخادم غير احتياط.
+      const sec = String((f.totp && f.totp.secret) || '').replace(/\s/g, '');
+      const uri = (f.totp && f.totp.uri) || (sec ? `otpauth://totp/${encodeURIComponent('مجموعة الوسيط:' + ((S.user && S.user.email) || 'admin'))}?secret=${sec}&issuer=${encodeURIComponent('مجموعة الوسيط')}&algorithm=SHA1&digits=6&period=30` : '');
+      let qrHtml = '';
+      try { await loadScript('vendor/qrcode.js'); if (uri && window.qrcode) { const q = window.qrcode(0, 'M'); q.addData(uri); q.make(); qrHtml = q.createSvgTag({ cellSize: 5, margin: 2, scalable: true }); } } catch (e) { /* الاحتياط تحت */ }
+      if (!qrHtml && src) qrHtml = `<img src="${esc(src)}" alt="QR" style="width:100%;height:100%">`;
       modal(`<h3>🔐 تفعيل التحقق بخطوتين</h3>
         <ol style="padding-inline-start:20px;line-height:1.9;margin-top:0">
           <li>نزّل تطبيق <b>Google Authenticator</b> (فابور) فالتيليفون.</li>
           <li>فالتطبيق ورك على <b>+</b> ← «مسح رمز QR» وصوّر هاد الرمز:</li></ol>
-        <div style="text-align:center"><img src="${esc(src)}" alt="QR" style="width:200px;height:200px;background:#fff;padding:8px;border-radius:12px"></div>
+        <div class="mfa-qr" role="img" aria-label="QR" style="width:216px;height:216px;margin:0 auto;background:#fff;padding:8px;border-radius:12px">${qrHtml || '<p class="muted" style="padding-top:80px;text-align:center">ما بانش الرمز — كتب المفتاح باليد ⬇️</p>'}</div>
         <p class="muted" style="font-size:12.5px">ولا كتب هاد المفتاح باليد: <b dir="ltr" style="user-select:all;word-break:break-all">${esc((f.totp && f.totp.secret) || '')}</b></p>
         <ol start="3" style="padding-inline-start:20px;margin:0"><li>كتب الرمز ديال 6 أرقام اللي بان فالتطبيق:</li></ol>
         <input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" style="font-size:24px;letter-spacing:8px;text-align:center;width:100%;margin-top:8px">
