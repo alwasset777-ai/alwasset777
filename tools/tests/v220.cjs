@@ -12,7 +12,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
   const vis = await p.evaluate(() => { const b = document.getElementById('ag-new-mem'); if (!b) return 0; const r = b.getBoundingClientRect(); return r.width > 80 && r.top < 1400 ? 1 : 0; });
   if (!vis) bad.push('button not visible near top');
   await p.click('#ag-new-mem'); await p.waitForSelector('#am-qr svg', { timeout: 8000 }).catch(() => bad.push('qr not drawn'));
-  const kinds = await p.$$eval('.am-kinds .chip', a => a.length); if (kinds !== 7) bad.push('kinds ' + kinds);
+  const kinds = await p.$$eval('.am-kinds .chip', a => a.length); if (kinds !== 8) bad.push('kinds ' + kinds); // v230: + «👤 آخر»
   // 2) واتساب بلا رقم ← ما كيتحلش؛ برقم مغربي ← wa.me/2126… والرسالة فيها رابط التطبيق والاسم
   await p.click('#am-wa'); await p.waitForTimeout(200);
   if ((await p.evaluate(() => window.__opened.length)) !== 0) bad.push('opened without phone');

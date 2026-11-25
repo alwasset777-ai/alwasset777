@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v229'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v230'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1148,7 +1148,7 @@
       [...side.children].forEach(el => {
         if (el.classList.contains('sep')) return;
         if (el.classList.contains('nav-group')) { flush(); html += `<div class="nav-group">${el.innerHTML}</div>`; return; }
-        if (el.tagName === 'A') { const c = el.cloneNode(true); c.setAttribute('data-close', ''); grid.push(c.outerHTML); }
+        if (el.tagName === 'A' && !el.hidden) { const c = el.cloneNode(true); c.setAttribute('data-close', ''); grid.push(c.outerHTML); }
       });
       flush();
       modal(`<div class="more-sheet"><h3 style="margin:0">☰ كل الخدمات</h3>${html}</div>`);
@@ -1590,6 +1590,7 @@
     else if (a === 'investors') { nav = a; await viewNetKind('investor', parts, query); }
     else if (a === 'notaries') { nav = a; await viewNetKind('notary', parts, query); }
     else if (a === 'associations') { nav = a; await viewNetKind('association', parts, query); }
+    else if (a === 'members') { nav = a; await viewNetKind('member', parts, query); }
     else if (a === 'terms') { nav = b === 'groups' ? 'groups' : 'terms'; await viewTerms(b); }
     else if (a === 'projects') { nav = a; await viewProjects(parts, query); }
     else if (a === 'events') { nav = a; await viewEvents(parts); }
@@ -1599,6 +1600,7 @@
     else if (a === 'settings') { nav = 'settings'; await viewSettings(); }
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
+    $$('.sidenav [data-nav=members]').forEach(el => { el.hidden = !(S.role === 'admin' || S.kind === 'member'); });
     { const bm = $('#bn-more'); if (bm) bm.classList.toggle('active', !document.querySelector('.bottomnav a.active')); }
     if (a !== 'properties') $('#q').value = '';
     placeLang();
@@ -3728,7 +3730,7 @@
     estimate: ['page', '📊'], loan: ['page', '🏦'], tamwil: ['page', '🏦'], events: ['page', '🎉'], donations: ['page', '🎁'], disputes: ['think'], matching: ['page', '💞'], search: ['page', '🔍'],
     stays: ['page', '🏨'], projects: ['page', '🏗️'], investors: ['page', '💼'], notaries: ['page', '📜'], ownership: ['page', '🏡'], settings: ['page', '⚙️'], chat: ['page', '💬'],
     inbox: ['page', '💬'], 'ad-maker': ['page', '📸'], report: ['page', '📈'], agencies: ['page', '🏢'], brokers: ['page', '🤝'], contractors: ['page', '👷'], finishing: ['page', '🎨'],
-    associations: ['page', '🏛️'], terms: ['page', '📜'],
+    associations: ['page', '🏛️'], members: ['page', '👤'], terms: ['page', '📜'],
   };
   let agMoodT = 0;
   function agMood(m, fx, ms = 3600) {
@@ -6501,6 +6503,10 @@
       sv: ['عقود البيع', 'الوعد بالبيع', 'عقود الكراء', 'البيع فـ طور الإنجاز', 'الشركات والشراكات', 'الهبة والإراثة', 'التحفيظ العقاري', 'الرهون', 'الاستشارة العقارية'] },
     association: { ar: 'الجمعيات السكنية', one: 'جمعية سكنية', ic: '🏘️', route: 'associations', def: /^جمعية \d+$/,
       sv: ['السكن الاقتصادي', 'ودادية سكنية', 'تعاونية سكنية', 'تجزئات سكنية', 'شراء أراضي جماعية', 'بناء جماعي', 'تسوية الوضعية العقارية', 'مرافقة الأعضاء'] },
+    // 👤 v230: «آخر» — زبون ولا أي واحد من خارج ميدان العقار: كيتسجل بحال الآخرين وكيشوف عقارات الوكالات المشتركة.
+    // المعلومات ديالو خاصة: ما كيبانش فالدليل؛ كيشوفو غير المدير والمشتركين اللي تراسل معاهم (RLS فـw777_agencies)
+    member: { ar: 'الزبناء والعموم', one: 'آخر', ic: '👤', route: 'members', def: /^عضو \d+$/, priv: true,
+      sv: ['شراء', 'كراء', 'كراء موسمي / عطلة', 'استثمار', 'بيع عقار ديالي', 'تقييم عقار', 'تمويل / قرض', 'أراضي'] },
   };
   const kindOf = a => (a && a.kind) || 'agency';
   const isNamed = a => !!a.name && !KINDS[kindOf(a)].def.test(a.name);
@@ -6590,16 +6596,18 @@
     if (!await netGate(K.ar, K.ic, kind === 'agency')) return;
     if (kind === 'agency' && parts[1] === 'p') return viewNetProp(parts[2], decodeURIComponent(parts[3] || ''));
     const tabs = [];
+    if (K.priv && S.role !== 'admin' && S.kind !== kind) { location.hash = '#/agencies'; return; }
     if (kind === 'agency') tabs.push(['', '🏘️ عقارات الشبكة']);
     if (kind === 'investor') tabs.push(['', '💼 فرص الاستثمار']);
     if (kind === 'notary') tabs.push(S.role === 'admin' ? ['all', '📋 كل الطلبات'] : S.kind === 'notary' ? ['inbox', '📥 الطلبات الواردة'] : ['sent', '📤 طلباتي']);
-    tabs.push(['dir', '📇 الدليل']);
+    if (!K.priv || S.role === 'admin') tabs.push(['dir', '📇 الدليل']);
     if (S.role === 'admin') tabs.push(['manage', '🔑 الإدارة']);
     else if (S.kind === kind) tabs.push(['me', K.ic + ' حسابي']);
-    const tab = pickTab(tabs, parts[1] || '', kind === 'agency' || kind === 'investor' ? '' : kind === 'notary' && S.kind === 'notary' ? 'inbox' : 'dir');
+    const tab = pickTab(tabs, parts[1] || '', kind === 'agency' || kind === 'investor' ? '' : kind === 'notary' && S.kind === 'notary' ? 'inbox' : K.priv && S.role !== 'admin' ? 'me' : 'dir');
     const sub = kind === 'investor' ? 'المستثمرون كيحطّو الميزانية ديالهم (تمويل، شراكة، شراء ولا كراء طويل) وكيزيدو العقارات ديالهم فـ «العقارات».'
       : kind === 'notary' ? 'كل موثق كيتقترح أوتوماتيكيا مع العقارات القريبة ليه، وكيوصلو الاستشارات وطلبات توثيق العقود مباشرة.'
-        : kind === 'association' ? 'الجمعيات والوداديات والتعاونيات السكنية: كتلقاو هنا الأراضي، المقاولين، الموثقين والتمويل لمشاريع السكن ديال أعضائكم.' : '';
+        : kind === 'association' ? 'الجمعيات والوداديات والتعاونيات السكنية: كتلقاو هنا الأراضي، المقاولين، الموثقين والتمويل لمشاريع السكن ديال أعضائكم.'
+          : kind === 'member' ? 'الزبناء وأي واحد من خارج ميدان العقار: كيتصفحو عقارات الوكالات المشتركة وكيتواصلو معاهم مباشرة. المعلومات ديالهم خاصة (ما كتبانش فالدليل).' : '';
     const head = secHead(K.ic, K.ar, sub, tabs, tab, K.route);
     if (tab === 'manage') return viewAgManage(kind, head, query);
     if (tab === 'me') return viewAgMe(kind, head);
@@ -6717,7 +6725,8 @@
     const abroad = isAbroad(ag);
     main().innerHTML = head + `
       <div class="card card-pad form">
-        <h3 class="section-title">${K.ic} معلومات ${esc(K.one)} (كتبان فالدليل${kind === 'agency' || kind === 'broker' ? ' ومع العقارات ديالك فالشبكة' : ''})</h3>
+        ${K.priv ? `<div class="btn-row" style="margin-bottom:12px"><a class="btn gold" href="#/agencies">🏘️ تصفح عقارات الوكالات المشتركة</a><a class="btn" href="#/agencies/dir">📇 دليل الوكالات</a></div>` : ''}
+        <h3 class="section-title">${K.ic} ${K.priv ? 'المعلومات ديالك (خاصة: كيشوفها غير مكتب الوسيط والوكالات اللي تواصلتي معاهم)' : `معلومات ${esc(K.one)} (كتبان فالدليل${kind === 'agency' || kind === 'broker' ? ' ومع العقارات ديالك فالشبكة' : ''})`}</h3>
         <form id="agme" class="form-grid">
           ${fInput('name', 'الاسم', ag.name, { req: true })}
           ${fInput('phone', 'الهاتف / واتساب', ag.phone, { type: 'tel' })}
@@ -6729,13 +6738,13 @@
           ${kind === 'investor' ? fInput('budget', 'الميزانية القصوى (درهم)', ag.budget, { money: true }) : ''}
           ${kind === 'investor' ? `<div class="field full"><label>نوع الاستثمار</label><div class="chips wrap" id="mode-pick">${Object.values(INV_MODES).map(m => `<label class="chip"><input type="checkbox" data-mode value="${esc(m[0])}" ${splitList(ag.invest_modes).includes(m[0]) ? 'checked' : ''}> ${esc(m[0])}</label>`).join('')}</div></div>` : ''}
           <div class="field"><label>الرمز</label><input value="${esc(ag.code || '')}" disabled dir="ltr"></div>
-          ${fInput('services', kind === 'investor' ? 'القطاعات اللي كتهمك (فرّق بالفاصلة)' : kind === 'notary' ? 'الاختصاصات (فرّق بالفاصلة)' : 'الخدمات (فرّق بالفاصلة)', ag.services, { cls: 'full', ph: K.sv.slice(0, 4).join('، ') })}
+          ${fInput('services', kind === 'investor' ? 'القطاعات اللي كتهمك (فرّق بالفاصلة)' : kind === 'notary' ? 'الاختصاصات (فرّق بالفاصلة)' : K.priv ? 'شنو كتقلب عليه (فرّق بالفاصلة)' : 'الخدمات (فرّق بالفاصلة)', ag.services, { cls: 'full', ph: K.sv.slice(0, 4).join('، ') })}
           <div class="field full"><div class="chips wrap" id="sv-pick">${K.sv.map(s => `<button type="button" class="chip" data-sv="${esc(s)}">+ ${esc(s)}</button>`).join('')}</div></div>
-          ${fText('about', 'تعريف قصير', ag.about, { ph: 'شكون نتوما، شحال من عام فالميدان، المناطق اللي خدامين فيها…' })}
+          ${fText('about', 'تعريف قصير', ag.about, { ph: K.priv ? 'مثلا: كنقلب على شقة 3 بيوت فمكناس، الميزانية…' : 'شكون نتوما، شحال من عام فالميدان، المناطق اللي خدامين فيها…' })}
           <div class="field" style="justify-content:flex-end"><button class="btn gold">${ic('check', 18)} حفظ</button></div>
         </form>
         ${placeLists()}
-        <p class="muted" style="font-size:13px">✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.${kind === 'notary' ? '<br>✔️ الموقع (GPS) والحي كيخليوك تتقترح أوتوماتيكيا مع العقارات القريبة ليك.' : ''}${kind === 'investor' ? '<br>✔️ زيد عروض الاستثمار ديالك فـ «💼 فرص الاستثمار» باش يتواصلو معاك أصحاب المشاريع.' : ''}</p>
+        ${K.priv ? '<p class="muted" style="font-size:13px">✔️ المعلومات ديالك ما كتبانش فالدليل.<br>✔️ تصفح «عقارات الشبكة» وتواصل مع الوكالة اللي عجباتك عقار ديالها مباشرة.</p>' : ''}<p class="muted" style="font-size:13px"${K.priv ? ' hidden' : ''}>✔️ ملي تكمّل الاسم والهاتف كتبان فـ «الدليل» لجميع أعضاء الشبكة.<br>✔️ العقارات اللي كتزيد فـ «العقارات» (المتاحة) كتبان أوتوماتيكيا لباقي الأعضاء، بلا اسم ولا هاتف المالك.<br>✔️ الزبناء والطلبات ديالك كيبقاو خاصين بيك.${kind === 'notary' ? '<br>✔️ الموقع (GPS) والحي كيخليوك تتقترح أوتوماتيكيا مع العقارات القريبة ليك.' : ''}${kind === 'investor' ? '<br>✔️ زيد عروض الاستثمار ديالك فـ «💼 فرص الاستثمار» باش يتواصلو معاك أصحاب المشاريع.' : ''}</p>
       </div>
       ${memberMediaCard()}
       ${perkCard(ag)}
@@ -6792,7 +6801,8 @@
     const nextStep = shares ? 'من بعد كمّلو «حسابي» وزيدو العقارات ديالكم، غادي يبانو لجميع الأعضاء (بلا معلومات المالك).'
       : kind === 'investor' ? 'من بعد كمّلو «حسابي» (الميزانية ونوع الاستثمار) وزيدو عروضكم فـ «فرص الاستثمار».'
         : kind === 'notary' ? 'من بعد كمّلو «حسابي» (المدينة، الحي والموقع GPS) باش تتقترحو مع العقارات القريبة وتوصلكم الاستشارات وطلبات التوثيق.'
-          : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.';
+          : kind === 'member' ? 'من بعد تقدرو تتصفحو «عقارات الشبكة» ديال جميع الوكالات المشتركة وتتواصلو معاهم مباشرة (المعلومات ديالكم خاصة، ما كتبانش فالدليل).'
+            : 'من بعد كمّلو «حسابي» (الهاتف، المدينة، الخدمات) باش تبانو فالدليل لجميع الوكالات والوسطاء.';
     const groupsTxt = () => (groupLinks().wa ? `\n👥 مجموعة واتساب: ${groupLinks().wa}` : '') + (groupLinks().tg ? `\n✈️ مجموعة تيليغرام: ${groupLinks().tg}` : '') + (groupLinks().fb ? `\n📘 مجموعة فيسبوك: ${groupLinks().fb}` : '');
     const offerTxt = `🎁 عرض 777: ${FREE_MONTHS} أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? ' (ونفس العرض خارج المغرب)' : ''} — الترتيب حسب نهار التسجيل`;
     // 🔗 v221: رابط التسجيل ديال الدعوات فيه كود المكتب المحجوز «WASSET» ← التسجيلات كتتحسب فـ«🏅 الروابط الخاصة» (بلا مكافأة)
@@ -6841,7 +6851,7 @@
       <h4 style="margin:16px 0 6px">2️⃣ ولا يسكاني هاد الرمز قدامك</h4>
       <div class="am-qr" id="am-qr" role="img" aria-label="QR التسجيل"></div>
       <div class="btn-row" style="justify-content:center;margin-top:8px"><button class="btn sm" id="am-link" type="button">🔗 نسخ رابط التسجيل</button></div>
-      <details style="margin-top:14px"><summary class="muted" style="cursor:pointer">🗝️ حسابات بالرموز (الطريقة القديمة)</summary><p class="muted" style="font-size:12.5px">ما بقاتش ضرورية: التسجيل بالإيميل أسهل وآمن.</p><button class="btn sm" id="am-old" type="button">➕ زيد حسابات بالرموز</button></details>
+      <details style="margin-top:14px"${K.priv ? ' hidden' : ''}><summary class="muted" style="cursor:pointer">🗝️ حسابات بالرموز (الطريقة القديمة)</summary><p class="muted" style="font-size:12.5px">ما بقاتش ضرورية: التسجيل بالإيميل أسهل وآمن.</p><button class="btn sm" id="am-old" type="button">➕ زيد حسابات بالرموز</button></details>
       <div class="btn-row" style="justify-content:flex-end;margin-top:12px"><button class="btn" type="button" data-close>إغلاق</button></div>`, async (m, close) => {
       const msg = () => inviteMsg({ name: ($('[name=am-name]', m).value || '').trim(), kind });
       $$('.am-kinds a', m).forEach(x => x.addEventListener('click', () => close())); // فئة أخرى ← النافذة ديالها (ما تبقاش جوج فوق بعض)
@@ -6929,7 +6939,7 @@
         (f !== 'reg' || isReg(a)) && (f !== 'new' || isNew(a)) && (f !== 'old' || !isReg(a)) && (f !== 'idwait' || (a.id_doc && !a.id_ok)));
       if (f === 'soon' || f === 'expired') res.sort((x, y) => end(x).end - end(y).end);
       else if (f !== 'old' && f !== 'all') res.sort((x, y) => String(regAt(y) || '').localeCompare(String(regAt(x) || '')));
-      $('#ag-oldrow').hidden = f !== 'old';
+      $('#ag-oldrow').hidden = f !== 'old' || !!K.priv;
       $('#ag-soonrow').hidden = !(f === 'soon' || f === 'expired') || !res.length;
       $('#ag-copy').onclick = () => navigator.clipboard.writeText(res.map(a => `${a.code} · ${a.name} · ${a.phone || '—'} · ${dAr(end(a).end.toISOString())}`).join('\n')).then(() => toast(`تنسخات ${res.length} سطر ✓`), () => toast('تعذر النسخ'));
       $('#aglist').innerHTML = res.slice(0, shown).map(a => isReg(a) ? memberCard(a) : `<div class="list-row" style="flex-wrap:wrap;gap:8px">
