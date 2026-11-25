@@ -1384,7 +1384,7 @@ begin
   if exists(select 1 from w777_agencies where uid = me) then raise exception 'exists'; end if;
   if exists(select 1 from w777_staff where uid = me) or exists(select 1 from w777_admins where uid = me) then raise exception 'role'; end if;
   pre := case p_kind when 'agency' then '' when 'broker' then 'W' when 'contractor' then 'B' when 'finishing' then 'F'
-                     when 'investor' then 'I' when 'notary' then 'N' when 'association' then 'J' end;
+                     when 'investor' then 'I' when 'notary' then 'N' when 'association' then 'J' when 'member' then 'U' end;
   if pre is null then raise exception 'kind'; end if;
   p_name := left(btrim(coalesce(p_name, '')), 80);
   if length(p_name) < 2 then raise exception 'name'; end if;
@@ -2095,3 +2095,15 @@ end $$;
 revoke all on function public.w777_share_log(text, text, text, text) from public;
 grant execute on function public.w777_share_log(text, text, text, text) to anon, authenticated;
 
+
+-- v230: 👤 الفئة «آخر» (member): زبون ولا أي واحد من خارج ميدان العقار — كيتسجل بحال الآخرين (الرمز U001…)
+-- وكيشوف عقارات الوكالات المشتركة. البطاقة ديالو خاصة: كيشوفها غير هو، المدير، واللي تراسل معاهم (w777_msgs)
+alter table public.w777_agencies drop constraint if exists w777_agencies_kind_chk;
+alter table public.w777_agencies add constraint w777_agencies_kind_chk check (kind in ('agency', 'broker', 'contractor', 'finishing', 'investor', 'notary', 'association', 'member'));
+alter table public.w777_invites drop constraint if exists w777_invites_kind_check;
+alter table public.w777_invites add constraint w777_invites_kind_check check (kind in ('agency', 'broker', 'contractor', 'finishing', 'investor', 'notary', 'association', 'member'));
+-- w777_register: نفس الدالة ديال v175 مع «when 'member' then 'U'» فالبادئة
+drop policy if exists w777_ag_sel on public.w777_agencies;
+create policy w777_ag_sel on public.w777_agencies for select to authenticated using (
+  (select w777_can_use()) and (kind <> 'member' or uid = (select auth.uid())
+    or exists (select 1 from w777_msgs m where (m.sender = w777_agencies.uid and m.recipient = (select auth.uid())) or (m.recipient = w777_agencies.uid and m.sender = (select auth.uid())))));
