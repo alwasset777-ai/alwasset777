@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v230'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v231'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1814,7 +1814,7 @@
     const saleValue = avail.filter(p => p.transaction === 'sale').reduce((s, p) => s + (num(p.priceMax) || num(p.priceMin) || 0), 0);
     const todayAppts = S.appts.filter(a => a.status === 'planned' && a.date === today()).sort((x, y) => (x.time || '').localeCompare(y.time || ''));
 
-    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main">` + gdBanner() + (S.role === 'admin' ? '<div id="home-rw"></div>' : '') + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
+    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main">` + gdBanner() + (S.role === 'admin' ? '<div id="home-rw"></div>' : '') + '<div id="home-al"></div>' + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
       <div class="hero">
         <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت — مع الوسيط حلّك بسيط ✨</span></div>
         <div class="hero-big3">
@@ -1872,7 +1872,7 @@
           <div class="bar"><span>${esc(kk)}</span><div class="track"><div class="fill" style="width:${v / maxT * 100}%"></div></div><b>${v}</b></div>`).join('') || '<span class="muted">—</span>'}</div>
         <div class="btn-row" style="margin-top:14px"><a class="btn" href="#/properties" data-close>${ic('building', 16)} جميع العقارات</a></div>`);
     });
-    $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length));
+    $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length)); alPaint();
     if (!EMBED && window.W777_SYNC && window.W777_SYNC.isOn()) homeNetwork();
     // الشريط ديما كاين (أيقونة اللعبة)؛ ملي توصل روابط المجموعات كنجددوه
     if (inNetwork()) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (!h || !g) return; const o = $('.grp-strip', h); if (!o) h.insertAdjacentHTML('beforeend', g); else if ($$('.grp-logo', o).length !== (g.match(/class="grp-logo"/g) || []).length) o.outerHTML = g; }).catch(() => {});
@@ -5763,6 +5763,7 @@
         <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span><span class="badge blue">🏢 ${esc(x.agency || '')}</span>${mktBadge(p)}</div>
         ${p.ref ? `<span class="ref">${esc(p.ref)}</span>` : ''}
         ${(x.photo_ids || []).length ? `<span class="cnt">${ic('camera', 14)}${x.photo_ids.length}</span>` : ''}
+        ${likesGet()[x.owner + '/' + x.id] ? '<span class="net-liked" title="عجبك">❤️</span>' : ''}
       </div>
       <div class="prop-body">
         <div class="prop-price">${esc(priceText(p))}</div>
@@ -5771,6 +5772,117 @@
         <div class="prop-specs"><span>${esc(typeAr(p.type))}</span>${a ? `<span>${ic('area', 15)} ${fmt(a)} م²</span>` : ''}${sp.bedrooms ? `<span>${ic('bed', 15)} ${sp.bedrooms}</span>` : ''}</div>
       </div></a>`;
   }
+
+  /* ============================================================
+     v231: ❤️ «عجبني» + 🔔 تنبيهات البحث (فالجهاز، فابور، بلا خادم)
+     ============================================================ */
+  const likeKey = () => 'w777_likes_' + (myUid() || 'x');
+  const likesGet = () => { try { return JSON.parse(localStorage.getItem(likeKey()) || '{}') || {}; } catch (e) { return {}; } };
+  const likesSet = o => { try { localStorage.setItem(likeKey(), JSON.stringify(o)); } catch (e) { /* */ } };
+  // ❤️ الزبون (ولا أي مشترك) كيعجبو عقار ← رسالة مباشرة للوكالة فيها الاسم والهاتف ← كتبان فـ«💬 الرسائل» ديالها
+  function netLike(x, p, done) {
+    const ag = S.agency || {}, url = appBase() + '#/agencies/p/' + x.owner + '/' + encodeURIComponent(x.id);
+    modal(`<h3>❤️ عجبني هاد العقار</h3>
+      <p class="muted" style="margin-top:0">غادي توصل رسالة لـ<b>${esc(x.agency || 'الوكالة')}</b> فيها اسمك ورقمك باش يتواصلو معاك.</p>
+      <div class="form-grid">${fInput('lk-name', 'الاسم', ag.name || '', { req: true })}${fInput('lk-phone', 'الهاتف / واتساب', ag.phone || '', { type: 'tel', req: true, attrs: 'dir="ltr"' })}
+        ${fText('lk-note', 'ملاحظة (اختياري)', '', { ph: 'مثلا: بغيت نزور العقار هاد السيمانة…' })}</div>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:12px"><button class="btn" type="button" data-close>إلغاء</button><button class="btn gold" id="lk-go" type="button">❤️ صيفط</button></div>`, (m, close) => {
+      $('#lk-go', m).onclick = async () => {
+        const name = ($('[name=lk-name]', m).value || '').trim(), phone = ($('[name=lk-phone]', m).value || '').trim(), note = ($('[name=lk-note]', m).value || '').trim();
+        if (name.length < 2 || phone.replace(/\D/g, '').length < 9) { toast('عمّر الاسم والهاتف'); return; }
+        const body = `❤️ زبون مهتم بالعقار ${p.ref || ''}\n🏠 ${p.title || typeAr(p.type)} — ${priceText(p)}${p.city ? ' · ' + p.city : ''}\n👤 ${name}\n📞 ${phone}${note ? '\n📝 ' + note : ''}\n🔗 ${url}`.slice(0, 1900);
+        const b = $('#lk-go', m); b.disabled = true;
+        try {
+          await rqJson('/rest/v1/w777_msgs', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ recipient: x.owner, body }) });
+          const o = likesGet(); o[x.owner + '/' + x.id] = Date.now(); likesSet(o);
+          close(); toast('❤️ وصلات الرسالة للوكالة — غادي يتواصلو معاك', 5000); if (done) done();
+        } catch (e) { b.disabled = false; toast(netErr(e).replace(/<[^>]+>/g, ' ').trim() || e.message); }
+      };
+    });
+  }
+  // 🔔 تنبيهات البحث: الشروط كتتحفظ فالجهاز؛ كل نص ساعة (والتطبيق محلول) كنقلبو فعقارات الشبكة على الجديد
+  const alKey = () => 'w777_alerts_' + (myUid() || 'x');
+  const alGet = () => { try { const a = JSON.parse(localStorage.getItem(alKey()) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  const alSet = a => { try { localStorage.setItem(alKey(), JSON.stringify(a)); } catch (e) { /* */ } };
+  const alPrice = x => { const p = netAsProp(x); return num(x.price) || num(p.priceMax) || num(p.priceMin) || num(p.price) || 0; };
+  function alMatch(a, x) {
+    const p = netAsProp(x);
+    if (a.trx && p.transaction !== a.trx) return false;
+    if (a.cat && catOf(p.type) !== a.cat) return false;
+    if (a.city && x.city !== a.city) return false;
+    const pr = alPrice(x); if (a.max && pr && pr > a.max) return false;
+    const t = tokens(a.q || '');
+    return !t.length || hit(norm([x.agency, p.ref, p.title, typeAr(p.type), trxAr(p.transaction), p.city, p.district, p.description].join(' ')), t);
+  }
+  const alLabel = a => [a.trx ? trxAr(a.trx) : '', a.cat && D.CATEGORIES[a.cat] ? D.CATEGORIES[a.cat].ar : '', a.city || '', a.max ? 'حتى ' + fmtRaw(a.max) + ' درهم' : '', a.q ? '«' + a.q + '»' : ''].filter(Boolean).join(' · ') || 'كل العقارات';
+  const alKeyOf = x => x.owner + '/' + x.id;
+  const alFresh = (a, list) => list.filter(x => alMatch(a, x) && !(a.seen || []).includes(alKeyOf(x)));
+  function alertSave(f) {
+    const cities = [...new Set((S.net || []).map(x => x.city).filter(Boolean))].sort();
+    modal(`<h3>🔔 نبهني ملي يتزاد عقار كيناسبني</h3>
+      <form id="alf" class="form-grid" onsubmit="return false">
+        ${fSelect('trx', 'العملية', [{ v: '', l: 'الكل' }, ...D.TRANSACTIONS.map(t => ({ v: t.id, l: t.ar }))], f.trx || '', { noEmpty: true })}
+        ${fSelect('cat', 'الصنف', [{ v: '', l: 'الكل' }, ...Object.entries(D.CATEGORIES).map(([v, c]) => ({ v, l: c.ar }))], f.cat || '', { noEmpty: true })}
+        ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], f.city || '', { noEmpty: true })}
+        ${fInput('max', 'الثمن الأقصى (درهم، اختياري)', '', { type: 'number', attrs: 'dir="ltr" inputmode="numeric"' })}
+        ${fInput('q', 'كلمات (اختياري)', f.q || '', { ph: 'حي، نوع…', cls: 'full' })}
+      </form>
+      <p class="muted" style="font-size:12.5px">التنبيه كيتحفظ فهاد الجهاز، وكيوصلك ملي التطبيق محلول (وإشعار إلا كانو الإشعارات مسموحة).</p>
+      <div class="btn-row" style="justify-content:flex-end"><button class="btn" type="button" data-close>إلغاء</button><button class="btn gold" id="al-ok" type="button">🔔 حفظ التنبيه</button></div>`, (m, close) => {
+      $('#al-ok', m).onclick = () => {
+        const v = collect($('#alf', m)), a = { id: Date.now().toString(36), trx: v.trx || '', cat: v.cat || '', city: v.city || '', q: (v.q || '').trim(), max: num(v.max) || 0, at: Date.now() };
+        a.seen = (S.net || []).filter(x => alMatch(a, x)).map(alKeyOf).slice(-800); // اللي كاين دابا ماشي «جديد»
+        const all = alGet(); if (all.length >= 10) all.shift(); all.push(a); alSet(all);
+        close(); toast('🔔 تحفظ: غادي نعلمك ملي يتزاد عقار كيناسب «' + alLabel(a) + '»', 5000); alPaint();
+      };
+    });
+  }
+  async function alertsModal() {
+    let list = []; try { list = await loadNetwork(); } catch (e) { list = S.net || []; }
+    const draw = (m) => {
+      const all = alGet();
+      $('#al-body', m).innerHTML = all.length ? all.map(a => { const fr = alFresh(a, list);
+        return `<div class="card card-pad al-card" data-id="${esc(a.id)}"><div class="btn-row" style="justify-content:space-between"><b>🔔 ${esc(alLabel(a))}</b>
+          <span class="badge${fr.length ? ' gold' : ''}">${fr.length ? fr.length + ' جديد' : 'ما كاين جديد'}</span></div>
+          ${fr.length ? `<div class="prop-grid" style="margin-top:10px">${fr.slice(0, 12).map(netCard).join('')}</div>` : ''}
+          <div class="btn-row" style="margin-top:8px">${fr.length ? '<button class="btn sm" data-al-seen>✓ شفتهم</button>' : ''}<button class="btn sm danger" data-al-del>✕ مسح التنبيه</button></div></div>`; }).join('')
+        : '<div class="card empty">ما عندك حتى تنبيه — ختار الفلاتر فـ«عقارات الشبكة» وضغط «🔔 نبهني بالجديد».</div>';
+      hydrateNet($('#al-body', m));
+      $$('[data-al-del]', m).forEach(b => b.onclick = () => { const id = b.closest('[data-id]').dataset.id; alSet(alGet().filter(a => a.id !== id)); draw(m); alPaint(); });
+      $$('[data-al-seen]', m).forEach(b => b.onclick = () => { const id = b.closest('[data-id]').dataset.id;
+        alSet(alGet().map(a => a.id === id ? Object.assign(a, { seen: [...(a.seen || []), ...alFresh(a, list).map(alKeyOf)].slice(-800) }) : a)); draw(m); alPaint(); });
+    };
+    modal(`<h3>🔔 تنبيهات البحث ديالي</h3><div id="al-body"></div>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:10px"><a class="btn sm" href="#/agencies" data-close>🏘️ عقارات الشبكة</a><button class="btn" type="button" data-close>إغلاق</button></div>`, m => {
+      draw(m); $$('a.prop-card', m).forEach(a => a.setAttribute('data-close', ''));
+    });
+  }
+  // العدد الجديد فالرئيسية وفالزر
+  function alPaint(n) {
+    if (n === undefined) {
+      if (!S.net && alGet().length && syOn() && myUid()) { loadNetwork().then(() => { if (S.net) alPaint(); }).catch(() => {}); return; }
+      const list = S.net || []; n = alGet().reduce((s, a) => s + alFresh(a, list).length, 0);
+    }
+    const c = $('#al-n'); if (c) c.textContent = n ? '(' + n + ')' : '';
+    const box = $('#home-al');
+    if (box) box.innerHTML = n ? `<button class="home-rw" type="button" id="home-al-go"><span class="hr-ic">🔔</span><span class="hr-tx"><b>${n === 1 ? 'عقار جديد كيناسب البحث ديالك' : fmt(n) + ' عقارات جداد كيناسبو البحث ديالك'}</b><small>من الوكالات المشتركة فمجموعة الوسيط</small></span><span class="hr-go">←</span></button>` : '';
+    const g = $('#home-al-go'); if (g) g.onclick = alertsModal;
+  }
+  async function runAlerts() {
+    const all = alGet(); if (!all.length || !syOn() || !myUid()) return;
+    let list; try { list = await loadNetwork(true); } catch (e) { return; }
+    let n = 0, fresh = [];
+    const upd = all.map(a => { const fr = alFresh(a, list), nk = fr.map(alKeyOf).filter(k => !(a.told || []).includes(k)); n += fr.length; fresh.push(...nk); return Object.assign(a, { told: [...(a.told || []), ...nk].slice(-800) }); });
+    alSet(upd); alPaint(n);
+    if (!fresh.length) return;
+    const msg = fresh.length === 1 ? 'عقار جديد كيناسب البحث ديالك' : fresh.length + ' عقارات جداد كيناسبو البحث ديالك';
+    toast('🔔 ' + msg, 7000);
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try { const reg = await swReg(); const opt = { body: msg, icon: 'icons/icon-192.png?v=9', badge: 'icons/icon-192.png?v=9', tag: 'w777-alert', data: { url: '#/agencies' }, lang: 'ar', dir: 'rtl' };
+        if (reg) await reg.showNotification('🔔 مجموعة الوسيط', opt); else new Notification('🔔 مجموعة الوسيط', opt); } catch (e) { /* */ }
+    }
+  }
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#me-alerts')) alertsModal(); });
   async function viewNetProp(owner, id) {
     const list = await loadNetwork();
     const x = list.find(r => r.owner === owner && r.id === id);
@@ -5806,6 +5918,7 @@
               ${x.phone ? `<a class="btn sm" href="${telLink(x.phone)}">${ic('phone', 16)} ${esc(x.phone)}</a>
               <a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(x.phone)}?text=${encodeURIComponent(msg)}">${ic('wa', 16)} واتساب</a>` : '<span class="muted">بلا هاتف</span>'}
             </div>
+            ${S.role !== 'admin' && myUid() ? `<button class="btn sm gold" id="net-like" type="button" style="margin-top:10px">${likesGet()[x.owner + '/' + x.id] ? '❤️ بعثتي الاهتمام ديالك — عاود' : '❤️ عجبني — تواصلو معايا'}</button>` : ''}
             ${S.role === 'admin' ? `<button class="btn sm" id="own" style="margin-top:10px">${ic('key', 15)} معلومات المالك (المدير فقط)</button><div id="own-box" class="muted" style="margin-top:8px"></div>` : ''}
             <p class="muted" style="font-size:12.5px;margin-bottom:0">معلومات المالك كتبقى خاصة بالوكالة. تواصل معاها باش تتعاونو 🤝</p>
           </div>
@@ -5813,6 +5926,7 @@
         </div>
       </div>`;
     hydrateNet(main());
+    { const lb = $('#net-like'); if (lb) lb.onclick = () => netLike(x, p, () => { lb.textContent = '❤️ بعثتي الاهتمام ديالك — عاود'; }); }
     notaryBox($('#nt-near'), { ref: p.ref, title: p.title || typeAr(p.type), city: p.city, district: p.district });
     const me = $('#mkt-edit'); if (me) me.onclick = () => editMarketRef(p.city, p.district, p.type, () => viewNetProp(owner, id));
     $$('.net-gallery img').forEach(img => img.onclick = async () => {
@@ -6635,7 +6749,8 @@
           ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], f.city, { noEmpty: true })}
           ${fSelect('ag', 'الوكالة', [{ v: '', l: 'الكل' }, ...agencies.map(c => ({ v: c, l: c }))], f.ag, { noEmpty: true })}
         </form>
-        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncount"></span><a class="btn sm" href="#/agencies?r=1">${ic('share', 15)} تحديث</a></div>
+        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncount"></span><a class="btn sm" href="#/agencies?r=1">${ic('share', 15)} تحديث</a>
+          ${myUid() ? '<button class="btn sm gold" id="al-save" type="button">🔔 نبهني بالجديد</button><button class="btn sm" id="al-list" type="button">🔔 تنبيهاتي <b id="al-n"></b></button>' : ''}</div>
       </div>
       <div class="prop-grid" id="ngrid"></div>`;
     const draw = () => {
@@ -6656,6 +6771,7 @@
       hydrateNet($('#ngrid'));
     };
     $$('#nf input, #nf select').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', draw));
+    { const sv = $('#al-save'); if (sv) sv.onclick = () => alertSave(collect($('#nf'))); const ls = $('#al-list'); if (ls) ls.onclick = alertsModal; alPaint(); }
     $('#nf').onsubmit = e => e.preventDefault();
     draw();
   }
@@ -6725,7 +6841,7 @@
     const abroad = isAbroad(ag);
     main().innerHTML = head + `
       <div class="card card-pad form">
-        ${K.priv ? `<div class="btn-row" style="margin-bottom:12px"><a class="btn gold" href="#/agencies">🏘️ تصفح عقارات الوكالات المشتركة</a><a class="btn" href="#/agencies/dir">📇 دليل الوكالات</a></div>` : ''}
+        ${K.priv ? `<div class="btn-row" style="margin-bottom:12px"><a class="btn gold" href="#/agencies">🏘️ تصفح عقارات الوكالات المشتركة</a><a class="btn" href="#/agencies/dir">📇 دليل الوكالات</a><button class="btn" type="button" id="me-alerts">🔔 تنبيهات البحث</button></div>` : ''}
         <h3 class="section-title">${K.ic} ${K.priv ? 'المعلومات ديالك (خاصة: كيشوفها غير مكتب الوسيط والوكالات اللي تواصلتي معاهم)' : `معلومات ${esc(K.one)} (كتبان فالدليل${kind === 'agency' || kind === 'broker' ? ' ومع العقارات ديالك فالشبكة' : ''})`}</h3>
         <form id="agme" class="form-grid">
           ${fInput('name', 'الاسم', ag.name, { req: true })}
@@ -11341,6 +11457,7 @@
     if (DB.isDemo) demoSeed().then(() => { let go = false; try { go = sessionStorage.getItem('w777_tour') === '1'; sessionStorage.removeItem('w777_tour'); } catch (e) { /* */ } if (go) setTimeout(tourStart, 700); });
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     checkAlarms(); setInterval(checkAlarms, 30000);
+    setTimeout(runAlerts, 9000); setInterval(() => { if (document.visibilityState === 'visible') runAlerts(); }, 30 * 60000); // 🔔 v231
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { /* */ });
       // عند تثبيت نسخة جديدة: إعادة تحميل الصفحة مرة واحدة
