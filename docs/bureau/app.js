@@ -1074,12 +1074,12 @@
       <small class="muted">${w ? `⏳ عندك ${fmt(w)} مكافأة كتسنى موافقة المدير · ` : ''}${g ? `✅ خديتي ${fmt(g)} شهر مجاني · ` : ''}باقي ${fmt(left)} ${left === 1 ? 'تسجيل' : 'تسجيلات'} للشهر الجاي</small>`;
   }
   // 📊 عدّاد المشاركات (بلا اسم ولا حساب: النوع، الطريقة واللغة فقط) — كيتسجل حتى بلا دخول
-  function logShare(kind, via, lang) {
+  function logShare(kind, via, lang, ref) {
     try {
       const C = window.__ALWASSET_SUPABASE__ || {}; const url = String(C.url || '').replace(/\/+$/, ''), key = C.anonKey || '';
       if (!url || !key || !navigator.onLine) return;
       fetch(url + '/rest/v1/rpc/w777_share_log', { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_kind: kind, p_via: via, p_lang: lang || null }) }).catch(() => {});
+        body: JSON.stringify(Object.assign({ p_kind: kind, p_via: via, p_lang: lang || null }, ref ? { p_ref: ref } : {})) }).catch(() => {});
     } catch (e) { /* */ }
   }
   async function sharePdf(k, btn) {
@@ -1369,6 +1369,27 @@
   // 🛡️ v210: مراقبة النشاط المشبوه (للمدير): الدخول ديالك (الجهاز والعنوان)، الحسابات اللي دخلات من بزاف ديال الأماكن،
   // التسجيلات وطلبات كلمة السر، والتحقق بخطوتين — مع «طرد من كل الأجهزة» و«خروج من الأجهزة الأخرى»
   const secDev = ua => /iPhone|iPad/.test(ua || '') ? '📱 iPhone' : /Android/.test(ua || '') ? '📱 Android' : /Macintosh|Mac OS/.test(ua || '') ? '💻 Mac' : /Windows/.test(ua || '') ? '💻 Windows' : /Linux/.test(ua || '') ? '💻 Linux' : '🌐 ' + String(ua || '؟').slice(0, 20);
+  // 🩺 v224: صحة التطبيق (آخر 7 أيام) — الأخطاء اللي تسجلات من الأجهزة، بلا أسماء: النوع، الصفحة، الجهاز، النسخة
+  const devAr = ua => { ua = String(ua || ''); const v = (ua.match(/^ios(\d+)/) || [])[1];
+    const d = /^ios/.test(ua) ? `📱 آيفون${v ? ' (iOS ' + v + ')' : ''}` : /^android/.test(ua) ? '🤖 أندرويد' : /^mac/.test(ua) ? '💻 ماك' : /^win/.test(ua) ? '🖥️ ويندوز' : '❔ جهاز آخر';
+    return d + (/-pwa$/.test(ua) ? ' · التطبيق المثبّت' : ' · المتصفح'); };
+  async function drawAppHealth() {
+    const box = $('#app-health'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
+    let rows = null;
+    try { const r = await Sy.request('/rest/v1/rpc/w777_errors_recent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_days: 7 }) }); if (r.ok) rows = await r.json(); } catch (e) { /* */ }
+    if (!box.isConnected || !Array.isArray(rows)) return;
+    const tot = rows.reduce((n, x) => n + (+x.n || 0), 0), boots = rows.filter(x => x.kind === 'boot').reduce((n, x) => n + (+x.n || 0), 0);
+    const KIND = { boot: '🛟 الفتح تعطّل', error: '⚠️ خطأ' };
+    const list = rows.slice(0, 12).map(x => `<div class="ah-row"><div class="ah-h"><b>${KIND[x.kind] || esc(x.kind)}</b><span class="badge ${x.kind === 'boot' ? 'red' : 'gray'}">×${fmt(+x.n || 0)}</span></div>
+      <small class="ah-m" dir="ltr">${esc(x.place || '—')} — ${esc(String(x.msg || '').split('\n')[0].slice(0, 110))}</small>
+      <small class="muted">${devAr(x.ua)} · ${esc(x.ver || '—')} · آخر مرة: ${esc(whenText(x.last_at))}</small></div>`).join('');
+    box.innerHTML = `<div class="card card-pad app-health" style="margin-bottom:14px"><h3 class="section-title">🩺 صحة التطبيق <span class="badge ${tot ? 'red' : 'green'}">${tot ? fmt(tot) + ' خطأ' : '✅ بلا أخطاء'}</span></h3>
+      <p class="muted" style="margin-top:0;font-size:12.5px">آخر 7 أيام، من كل الأجهزة — بلا أسماء ولا معلومات شخصية. كنشوفها حتى أنا كل صباح وكنصلّح.</p>
+      ${tot ? `<div class="kv kv-sm"><div><small>⚠️ الأخطاء</small><b>${fmt(tot)}</b></div><div><small>🛟 الفتح تعطّل</small><b>${fmt(boots)}</b></div><div><small>📋 أنواع</small><b>${fmt(rows.length)}</b></div></div>
+      <div class="ah-rows">${list}</div>` : '<p style="margin:4px 0">✅ حتى جهاز ما سجّل شي خطأ فهاد الأيام.</p>'}
+      <div class="btn-row" style="margin-top:10px"><a class="btn sm gold" href="#/check">🩺 فحص هاد الجهاز</a><button type="button" class="btn sm ghost" id="ah-reload">↻ تحديث</button></div></div>`;
+    $('#ah-reload', box).onclick = drawAppHealth;
+  }
   async function drawSecWatch() {
     const box = $('#sec-watch'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
     let d = null;
@@ -3196,7 +3217,7 @@
         ${EMBED ? '' : `<div class="card card-pad">
           <h3 class="section-title">🩺 فحص قبل العرض</h3>
           <p class="muted" style="margin-top:0">قبل ما تورّي التطبيق لشي حد: 10 ثواني وكتعرف واش الإنترنت، الحساب، المزامنة، منير والنسخة كلهم واجدين — وإلا كاين شي مشكل كتلقى الزر اللي كيصلحو.</p>
-          <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}</div>
+          <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}<button class="btn" type="button" data-tour>▶️ عرض أوتوماتيكي</button><button class="btn" type="button" data-demo-share>📤 شارك رابط التجربة</button></div>
         </div>`}
 
         ${EMBED ? '' : `<div class="card card-pad upd-card">
@@ -6767,7 +6788,7 @@
     const offerTxt = `🎁 عرض 777: ${FREE_MONTHS} أشهر مجانية للجميع، و7 الأوائل مجاني مدى الحياة، 70 اللي موراهم -50% مدى الحياة، 700 اللي موراهم -25% مدى الحياة${kind === 'agency' ? ' (ونفس العرض خارج المغرب)' : ''} — الترتيب حسب نهار التسجيل`;
     // 🔗 v221: رابط التسجيل ديال الدعوات فيه كود المكتب المحجوز «WASSET» ← التسجيلات كتتحسب فـ«🏅 الروابط الخاصة» (بلا مكافأة)
     const regLink = appBase() + '?gate=1&ref=WASSET';
-    const inviteMsg = a => `السلام عليكم${a && isNamed(a) ? ' ' + a.name : ''}،\nمرحبا بكم فشبكة ${K.ar} ديال مجموعة الوسيط ${K.ic}\n\n📲 التسجيل ساهل (بلا كلمة سر):\n1️⃣ حلّو رابط التسجيل: ${regLink}\n2️⃣ كتبو الإيميل ديالكم ← «صيفط ليا الكود»\n3️⃣ كتبو الكود (6 أرقام) اللي وصلكم فالإيميل\n4️⃣ ختارو «${K.one}» وعمّرو البطاقة (الاسم، الهاتف، المدينة) ووافقو على القانون ✅\n\n${nextStep}\n${offerTxt}\n💼 تعرّفو على التطبيق (PDF): ${appBase()}files/guide/malaf-taqdimi-majmouat-alwasset.pdf\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` + groupsTxt();
+    const inviteMsg = a => `السلام عليكم${a && isNamed(a) ? ' ' + a.name : ''}،\nمرحبا بكم فشبكة ${K.ar} ديال مجموعة الوسيط ${K.ic}\n\n📲 التسجيل ساهل (بلا كلمة سر):\n1️⃣ حلّو رابط التسجيل: ${regLink}\n2️⃣ كتبو الإيميل ديالكم ← «صيفط ليا الكود»\n3️⃣ كتبو الكود (6 أرقام) اللي وصلكم فالإيميل\n4️⃣ ختارو «${K.one}» وعمّرو البطاقة (الاسم، الهاتف، المدينة) ووافقو على القانون ✅\n\n${nextStep}\n${offerTxt}\n🎬 جرّبو التطبيق قبل التسجيل (معلومات خيالية، بلا حساب): ${demoLink('WASSET')}\n💼 تعرّفو على التطبيق (PDF): ${appBase()}files/guide/malaf-taqdimi-majmouat-alwasset.pdf\n📜 قانون التطبيق: ${appUrl}#/terms\n🎁 العرض والمقاعد الباقية: ${appBase()}join.html?k=${kind}` + groupsTxt();
     const welcomeMsg = a => { const tr = seatTier(a), si = subInfo(a), e = subEnd(a);
       return `السلام عليكم ${a.name}،\nمرحبا بكم فمجموعة الوسيط ${K.ic} — الحساب ديالكم مفعّل ✅\n🆔 الرمز: ${loginOf(a)}${a.email ? `\n✉️ الدخول بالإيميل: ${a.email} (كيوصلكم كود من 6 أرقام، بلا كلمة السر)` : ''}` +
         (tr ? `\n🎟️ رقم المقعد ديالكم فعرض 777: ${a.seat_no} — ${tr.s}` : '') +
@@ -6777,8 +6798,8 @@
     const isReg = a => !!(a.self_signup || a.terms_at);
     const regAt = a => a.terms_at || a.created_at || null;
     const isNew = a => isReg(a) && regAt(a) && Date.now() - new Date(regAt(a)) < 7 * 864e5;
-    setTimeout(shareStats, 0); setTimeout(drawPayAdmin, 0); setTimeout(drawSecWatch, 0);
-    main().innerHTML = head + seatBoard(ags) + '<div id="sec-watch"></div><div id="pay-admin"></div><div id="share-stats"></div>' + `
+    setTimeout(shareStats, 0); setTimeout(drawPayAdmin, 0); setTimeout(drawSecWatch, 0); setTimeout(drawAppHealth, 0);
+    main().innerHTML = head + seatBoard(ags) + '<div id="app-health"></div><div id="sec-watch"></div><div id="pay-admin"></div><div id="share-stats"></div>' + `
       <div class="card card-pad" style="margin-bottom:14px">
         <div class="kv kv-sm"><div><small>👥 المسجلين</small><b>${ags.filter(isReg).length}</b></div><div><small>🆕 هاد السيمانة</small><b>${ags.filter(isNew).length}</b></div>
           <div><small>🎁 فالمدة المجانية</small><b>${ags.filter(a => isReg(a) && subInfo(a).trial).length}</b></div><div><small>💳 خالصين</small><b>${ags.filter(a => isReg(a) && subInfo(a).ok && !subInfo(a).trial && !subInfo(a).free).length}</b></div>
@@ -7272,7 +7293,7 @@
     try { const r = await Sy.request('/rest/v1/rpc/w777_share_stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (!r.ok) return; rows = await r.json(); } catch (e) { return; }
     if (!Array.isArray(rows)) return;
     if (!$('#share-stats')) return;
-    const K = [['malaf', '💼 الملف التقديمي'], ['malaf_fr', '🇫🇷 الملف بالفرنسية'], ['catalog', '📚 الكتالوج الشامل'], ['catalog_fr', '🇫🇷 الكتالوج بالفرنسية'], ['dalil', '📘 الدليل الشامل'], ['page', '🌐 صفحة «تعرّف على التطبيق»']];
+    const K = [['demo', '🎬 رابط التجربة (وضع العرض)'], ['malaf', '💼 الملف التقديمي'], ['malaf_fr', '🇫🇷 الملف بالفرنسية'], ['catalog', '📚 الكتالوج الشامل'], ['catalog_fr', '🇫🇷 الكتالوج بالفرنسية'], ['dalil', '📘 الدليل الشامل'], ['page', '🌐 صفحة «تعرّف على التطبيق»']];
     const V = { file: 'ملف', link: 'رابط', wa: 'واتساب', view: 'زيارة', other: 'آخر' };
     const sum = (k, f) => rows.filter(r => r.kind === k).reduce((n, r) => n + (+r[f] || 0), 0);
     const tot = f => rows.reduce((n, r) => n + (+r[f] || 0), 0);
@@ -9075,9 +9096,83 @@
     });
     if (!DB.isDemo || $('#demo-bar')) return;
     const bar = document.createElement('div'); bar.id = 'demo-bar'; bar.setAttribute('role', 'status');
-    bar.innerHTML = '🎬 <b>وضع العرض</b> — معلومات خيالية للتجربة <button type="button" class="btn sm" data-demo-exit>خروج</button>';
+    bar.innerHTML = '🎬 <b>وضع العرض</b> <span class="db-sub">معلومات خيالية</span> <button type="button" class="btn sm gold" data-tour>▶️ عرض</button> <button type="button" class="btn sm" data-demo-exit>📝 سجّل مجاناً</button>';
     document.body.prepend(bar); document.body.classList.add('is-demo');
+    // جا من رابط التجربة: نحيدو ?demo=1 من العنوان ونحسبو الزيارة (بلا اسم)
+    try {
+      const ln = sessionStorage.getItem('w777_demo_link');
+      if (ln) { sessionStorage.removeItem('w777_demo_link'); logShare('demo', 'view', null, /^[A-Za-z0-9_-]{1,24}$/.test(ln) && ln !== '1' ? ln : null); }
+      if (/[?&](demo|tour)=/.test(location.search)) history.replaceState(null, '', location.pathname + (location.hash || '#/'));
+    } catch (e) { /* */ }
   }
+  // 📤 v224: رابط التجربة (وضع العرض + العرض الأوتوماتيكي) — للوكالات والزبناء قبل التسجيل
+  const demoLink = ref => appBase() + '?demo=1&tour=1' + (ref ? '&ref=' + encodeURIComponent(ref) : '');
+  const demoMsg = ref => `🎬 جرّب تطبيق مجموعة الوسيط فدقيقة — بلا تسجيل وبلا كلمة سر (معلومات خيالية):\n${demoLink(ref)}\n\nالعقارات، الزبناء، المواعيد، منير المساعد، الألعاب والأكاديمية… فتيليفونك. 📲`;
+  async function shareDemo() {
+    const ref = (S.agency && S.agency.code) || (S.role === 'admin' ? 'WASSET' : '');
+    const text = demoMsg(ref);
+    try { if (navigator.share) { await navigator.share({ title: 'تطبيق مجموعة الوسيط', text }); logShare('demo', 'link', null, ref); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener'); logShare('demo', 'wa', null, ref);
+  }
+  document.addEventListener('click', ev => { const t = ev.target.closest('[data-demo-share]'); if (t) { ev.preventDefault(); shareDemo(); } });
+  // ▶️ v224: العرض الأوتوماتيكي — التطبيق كيدوز بوحدو على أحسن الصفحات بحال فيديو (غير فوضع العرض: معلومات خيالية)
+  const TOUR = [
+    ['#/', '🏠 الرئيسية', 'كلشي فنظرة وحدة: العقارات، الطلبات، المواعيد والفرص ديال اليوم'],
+    ['#/properties', '🏢 العقارات', 'كل عقار بالصور والثمن والحي — والبحث فثانية'],
+    [() => S.props[0] ? '#/property/' + S.props[0].id : '#/properties', '📸 صفحة العقار', 'الصور بالعلامة المائية، الوصف كيتكتب بوحدو، والنشر فالشبكات بضغطة'],
+    ['#/requests', '👥 طلبات الزبناء', 'كل زبون وشنو باغي — وتقدر تلصق الرسالة ديال الواتساب وهو يعمّر'],
+    ['#/matching', '🎯 المطابقة', 'التطبيق كيربط كل زبون بالعقار المناسب ليه أوتوماتيكياً'],
+    ['#/appointments', '📅 المواعيد', 'الزيارات والمواعيد ديال اليوم مع تنبيه قبل الوقت'],
+    ['#/loan', '🏦 حساب القرض', 'شحال غادي يخلّص الزبون فالشهر — فثانية قدامو'],
+    ['#/game', '🎮 الوسيط GAMES', 'ألعاب كتعلّم ثمن العقار فالمدن المغربية بطريقة ممتعة'],
+    ['#/learn', '🎓 الأكاديمية', '42 درس وشهادة — من مندوب حتى صاحب وكالة'],
+    ['#/', '🤖 منير المساعد', 'كيسجّل العقارات والطلبات والمواعيد بالكلام ولا بالصور — وكيقترح الثمن'],
+  ];
+  const TOUR_MS = 6500;
+  let tourT = null, tourI = 0, tourPaused = false, tourNav = false;
+  function tourStop() {
+    clearTimeout(tourT); tourT = null; document.body.classList.remove('in-tour');
+    const b = $('#tour-bar'); if (b) b.remove();
+  }
+  function tourStart() {
+    if (!DB.isDemo) { try { localStorage.setItem('w777_demo', '1'); sessionStorage.setItem('w777_tour', '1'); } catch (e) { /* */ } location.replace(location.pathname + '#/'); setTimeout(() => location.reload(), 50); return; }
+    tourStop(); tourI = 0; tourPaused = false;
+    const bar = document.createElement('div'); bar.id = 'tour-bar'; bar.setAttribute('role', 'status');
+    bar.innerHTML = `<div class="tb-txt"><small id="tb-n"></small><b id="tb-t"></b><span id="tb-d"></span></div>
+      <div class="tb-prog"><i id="tb-p"></i></div>
+      <div class="tb-btns"><button type="button" class="btn sm" id="tb-pause" aria-label="وقف">⏸</button><button type="button" class="btn sm" id="tb-next" aria-label="الموالية">⏭</button><button type="button" class="btn sm" id="tb-x" aria-label="سدّ">✕</button></div>`;
+    document.body.appendChild(bar); document.body.classList.add('in-tour');
+    $('#tb-x').onclick = tourStop;
+    $('#tb-next').onclick = () => { clearTimeout(tourT); tourI++; tourStep(); };
+    $('#tb-pause').onclick = () => { tourPaused = !tourPaused; $('#tb-pause').textContent = tourPaused ? '▶️' : '⏸'; bar.classList.toggle('paused', tourPaused); if (!tourPaused) { clearTimeout(tourT); tourI++; tourStep(); } else clearTimeout(tourT); };
+    tourStep();
+  }
+  async function tourStep() {
+    const bar = $('#tour-bar'); if (!bar) return;
+    if (tourI >= TOUR.length) { tourEnd(); return; }
+    const [h, t, d] = TOUR[tourI], href = typeof h === 'function' ? h() : h;
+    $('#tb-n').textContent = `${tourI + 1}/${TOUR.length}`; $('#tb-t').textContent = t; $('#tb-d').textContent = d;
+    const p = $('#tb-p'); p.style.transition = 'none'; p.style.width = '0%'; void p.offsetWidth; p.style.transition = `width ${TOUR_MS}ms linear`; p.style.width = '100%';
+    tourNav = true;
+    if (location.hash !== href) location.hash = href; else await route();
+    setTimeout(() => { tourNav = false; }, 400);
+    // حركة خفيفة للتحت فنص الوقت (بحال الفيديو)
+    setTimeout(() => { if ($('#tour-bar') && !tourPaused) window.scrollBy({ top: Math.min(380, document.documentElement.scrollHeight), behavior: 'smooth' }); }, TOUR_MS * 0.45);
+    if (tourI === TOUR.length - 1) setTimeout(() => { try { if ($('#tour-bar') && !AG.open) agOpen(); } catch (e) { /* */ } }, 900);
+    tourT = setTimeout(() => { if (tourPaused) return; tourI++; tourStep(); }, TOUR_MS);
+  }
+  function tourEnd() {
+    const bar = $('#tour-bar'); if (!bar) return;
+    clearTimeout(tourT);
+    try { if (AG.open) agHide(); } catch (e) { /* */ }
+    bar.classList.add('done');
+    bar.innerHTML = `<div class="tb-txt"><b>✅ هادا هو تطبيق مجموعة الوسيط</b><span>جرّب بيدك دابا، ولا سجّل مجاناً (6 أشهر فابور).</span></div>
+      <div class="tb-btns"><button type="button" class="btn sm gold" data-demo-exit>📝 سجّل مجاناً</button><button type="button" class="btn sm" id="tb-again">↻ عاود</button><button type="button" class="btn sm" id="tb-x">✕</button></div>`;
+    $('#tb-again').onclick = tourStart; $('#tb-x').onclick = tourStop;
+  }
+  // المستعمل بدّل الصفحة بيدو ← العرض كيتوقف
+  window.addEventListener('hashchange', () => { if ($('#tour-bar') && !tourNav && !$('#tour-bar').classList.contains('done')) tourStop(); });
+  document.addEventListener('click', ev => { if (ev.target.closest('[data-tour]')) { ev.preventDefault(); tourStart(); } });
   async function demoSeed() {
     if (S.props.length || S.reqs.length) return;
     await seedDemo(true);
@@ -11166,7 +11261,7 @@
     bootOk = true;
     hideSplash();
     DB.persist();
-    if (DB.isDemo) demoSeed();
+    if (DB.isDemo) demoSeed().then(() => { let go = false; try { go = sessionStorage.getItem('w777_tour') === '1'; sessionStorage.removeItem('w777_tour'); } catch (e) { /* */ } if (go) setTimeout(tourStart, 700); });
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     checkAlarms(); setInterval(checkAlarms, 30000);
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
