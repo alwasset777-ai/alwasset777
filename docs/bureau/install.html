@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" data-w777-csp content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-swKNbrBvbDedtb850ThLEiBuJq/x4gsr1tvzjuYD2uU=' 'sha256-yyjq/GGlTvm0YhdkNx72uPxcwaIXqWZBYZftmpA6pYU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://maps.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://wa.me https://api.whatsapp.com; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <script src="guard.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ثبّت تطبيق مجموعة الوسيط — مجاناً</title>
+  <meta name="description" content="ثبّت تطبيق مجموعة الوسيط على الآيفون أو الأندرويد فدقيقة، مجاناً وبلا متجر: من المتصفح ← «إضافة إلى الشاشة الرئيسية».">
+  <meta name="theme-color" content="#111111">
+  <link rel="icon" href="icons/icon-192.png?v=9" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=9">
+  <link rel="stylesheet" href="fonts.css">
+  <style>
+    /* v227: صفحة عمومية — كيفاش تثبّت التطبيق مجاناً (بلا متجر) على الآيفون والأندرويد */
+    :root { --red: #d71920; --ink: #111; --mut: #666; --line: #e7e7e7; --ok: #0a7a2f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f4f4; color: var(--ink); font-family: 'Tajawal', 'Noto Sans Arabic', system-ui, sans-serif; line-height: 1.7; }
+    header { background: #111; border-bottom: 5px solid var(--red); }
+    header .in { max-width: 720px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 12px; color: #fff; }
+    header img { height: 40px; width: auto; }
+    header b { font-size: 17px; }
+    header .lg { margin-inline-start: auto; color: #fff; text-decoration: none; border: 1px solid #555; border-radius: 99px; padding: 3px 12px; font-size: 13px; }
+    main { max-width: 720px; margin: 0 auto; padding: 18px 16px 44px; }
+    h1 { font-size: 26px; margin: 6px 0 4px; line-height: 1.35; }
+    .lead { color: var(--mut); margin: 0 0 14px; }
+    .free { display: inline-block; background: #e9f7ee; color: var(--ok); border-radius: 99px; padding: 2px 12px; font-weight: 700; font-size: 14px; }
+    .tabs { display: flex; gap: 8px; margin: 16px 0 10px; }
+    .tabs button { flex: 1; font: inherit; font-weight: 700; padding: 10px; border-radius: 14px; border: 2px solid var(--line); background: #fff; cursor: pointer; }
+    .tabs button.on { border-color: var(--red); color: var(--red); }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin: 0 0 14px; }
+    .steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+    .steps li { counter-increment: s; display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+    .steps li:last-child { border-bottom: 0; }
+    .steps li::before { content: counter(s); flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font-weight: 800; }
+    .steps b { display: block; }
+    .ico { display: inline-grid; place-items: center; min-width: 30px; height: 26px; padding: 0 6px; border: 1px solid var(--line); border-radius: 8px; background: #fafafa; font-size: 15px; vertical-align: middle; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 800; padding: 12px 18px; border-radius: 14px; border: 0; background: var(--red); color: #fff; text-decoration: none; cursor: pointer; }
+    .btn.dark { background: #111; }
+    .btn.ghost { background: #fff; color: var(--ink); border: 2px solid var(--line); }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .note { font-size: 13.5px; color: var(--mut); margin: 8px 0 0; }
+    .qr { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .qr #qr { width: 170px; height: 170px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 6px; display: grid; place-items: center; }
+    .qr #qr svg { width: 100%; height: 100%; }
+    .hide { display: none !important; }
+    footer { text-align: center; color: var(--mut); font-size: 13px; padding: 10px 16px 30px; }
+    [lang="fr"] body, html[lang="fr"] { direction: ltr; }
+  </style>
+</head>
+<body>
+  <header><div class="in"><img src="icons/brand/logo-flat-white.webp" alt="مجموعة الوسيط" width="76" height="40"><b data-t="brand">مجموعة الوسيط</b><a class="lg" href="#" id="lang">Français</a></div></header>
+  <main>
+    <span class="free" data-t="free">✅ مجاناً — بلا متجر وبلا اشتراك</span>
+    <h1 data-t="title">ثبّت التطبيق فتيليفونك فدقيقة</h1>
+    <p class="lead" data-t="lead">التطبيق كيتثبّت من المتصفح بحال أي تطبيق: أيقونة فالشاشة، كيتحل بلا عنوان، وكيخدم حتى بلا إنترنت.</p>
+
+    <div class="tabs"><button type="button" data-os="ios" data-t="ios">📱 آيفون</button><button type="button" data-os="android" data-t="android">🤖 أندرويد</button></div>
+
+    <section class="card" id="os-ios">
+      <ol class="steps">
+        <li><span><b data-t="i1">حل هاد الصفحة فـ Safari</b><span data-t="i1d">ضروري Safari (المتصفح الأزرق ديال الآيفون)، ماشي من داخل واتساب ولا فيسبوك.</span></span></li>
+        <li><span><b data-t="i2">ضغط على زر المشاركة <span class="ico">⬆️</span></b><span data-t="i2d">المربع بالسهم لفوق، تحت فالوسط ولا الفوق.</span></span></li>
+        <li><span><b data-t="i3">ختار «إضافة إلى الشاشة الرئيسية» <span class="ico">➕</span></b><span data-t="i3d">إلا ما بانتش، طلع اللائحة لفوق شوية.</span></span></li>
+        <li><span><b data-t="i4">ضغط «إضافة»</b><span data-t="i4d">الأيقونة ديال مجموعة الوسيط غادي تبان فالشاشة — من دابا حل التطبيق منها.</span></span></li>
+      </ol>
+    </section>
+
+    <section class="card hide" id="os-android">
+      <div class="row hide" id="inst-row"><button type="button" class="btn" id="inst" data-t="inst">📲 ثبّت التطبيق دابا</button></div>
+      <ol class="steps">
+        <li><span><b data-t="a1">حل هاد الصفحة فـ Chrome</b><span data-t="a1d">ماشي من داخل واتساب ولا فيسبوك (ضغط «⋮» ← «فتح فـ Chrome»).</span></span></li>
+        <li><span><b data-t="a2">ضغط على النقط التلاتة <span class="ico">⋮</span></b><span data-t="a2d">فوق على اليمين.</span></span></li>
+        <li><span><b data-t="a3">ختار «تثبيت التطبيق» ولا «إضافة إلى الشاشة الرئيسية»</b><span data-t="a3d">السمية كتختلف شوية حسب التيليفون.</span></span></li>
+        <li><span><b data-t="a4">ضغط «تثبيت»</b><span data-t="a4d">الأيقونة ديال مجموعة الوسيط غادي تبان مع التطبيقات ديالك.</span></span></li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <b data-t="next">من بعد التثبيت</b>
+      <div class="row"><a class="btn" id="go-reg" href="./?gate=1" data-t="reg">📝 سجّل مجاناً</a><a class="btn dark" id="go-demo" href="./?demo=1&amp;tour=1" data-t="demo">🎬 جرّب بلا تسجيل</a></div>
+      <p class="note" data-t="regn">التسجيل بالإيميل فدقيقة، بلا كلمة سر — 6 أشهر فابور.</p>
+    </section>
+
+    <section class="card qr">
+      <div id="qr" aria-label="QR"></div>
+      <div><b data-t="qrt">فالحاسوب؟</b><p class="note" data-t="qrd">سكاني هاد الرمز بكاميرا التيليفون ديالك باش تحل هاد الصفحة فيه وتبع الخطوات.</p>
+        <div class="row"><button type="button" class="btn ghost" id="share" data-t="share">📤 صيفط الصفحة</button></div></div>
+    </section>
+  </main>
+  <footer>📞 0777777959 · 0777777848 — <span data-t="foot">مع الوسيط… حلّك بسيط</span></footer>
+  <script src="../app/config.js" onerror="void 0"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script>
+  (function () {
+    var q = new URLSearchParams(location.search), REF = /^[A-Za-z0-9_-]{1,24}$/.test(q.get('ref') || '') ? q.get('ref') : '';
+    var FR = q.get('lang') === 'fr' || (!q.get('lang') && /^fr/i.test(navigator.language || '') && !/^ar/i.test(navigator.language || ''));
+    var T = { brand: 'Groupe Al Wasset', free: '✅ Gratuit — sans store ni abonnement', title: 'Installez l’application en une minute', lead: 'L’application s’installe depuis le navigateur comme une vraie application : icône sur l’écran, sans barre d’adresse, et elle marche même sans internet.',
+      ios: '📱 iPhone', android: '🤖 Android', i1: 'Ouvrez cette page dans Safari', i1d: 'Obligatoirement Safari (le navigateur bleu de l’iPhone), pas depuis WhatsApp ou Facebook.', i2: 'Touchez le bouton Partager <span class="ico">⬆️</span>', i2d: 'Le carré avec la flèche vers le haut, en bas au centre ou en haut.', i3: 'Choisissez « Sur l’écran d’accueil » <span class="ico">➕</span>', i3d: 'S’il n’apparaît pas, faites défiler la liste vers le haut.', i4: 'Touchez « Ajouter »', i4d: 'L’icône Groupe Al Wasset apparaît sur l’écran — ouvrez l’application à partir d’elle.',
+      inst: '📲 Installer maintenant', a1: 'Ouvrez cette page dans Chrome', a1d: 'Pas depuis WhatsApp ou Facebook (touchez « ⋮ » → « Ouvrir dans Chrome »).', a2: 'Touchez les trois points <span class="ico">⋮</span>', a2d: 'En haut à droite.', a3: 'Choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil »', a3d: 'Le nom varie un peu selon le téléphone.', a4: 'Touchez « Installer »', a4d: 'L’icône Groupe Al Wasset apparaît avec vos applications.',
+      next: 'Après l’installation', reg: '📝 S’inscrire gratuitement', demo: '🎬 Essayer sans inscription', regn: 'Inscription par e-mail en une minute, sans mot de passe — 6 mois offerts.', qrt: 'Sur ordinateur ?', qrd: 'Scannez ce code avec l’appareil photo de votre téléphone pour ouvrir cette page et suivre les étapes.', share: '📤 Envoyer la page', foot: 'Avec Al Wasset… la solution est simple' };
+    if (FR) {
+      document.documentElement.lang = 'fr'; document.documentElement.dir = 'ltr'; document.title = 'Installer l’application Groupe Al Wasset — gratuit';
+      document.querySelectorAll('[data-t]').forEach(function (el) { var k = el.getAttribute('data-t'); if (T[k]) el.innerHTML = T[k]; });
+    }
+    var lang = document.getElementById('lang'); lang.textContent = FR ? 'العربية' : 'Français';
+    lang.onclick = function (e) { e.preventDefault(); q.set('lang', FR ? 'ar' : 'fr'); location.search = q.toString(); };
+    // الروابط ديال التسجيل والتجربة كيحملو الكود ديال اللي صيفط الصفحة
+    if (REF) { document.getElementById('go-reg').href = './?gate=1&ref=' + REF; document.getElementById('go-demo').href = './?demo=1&tour=1&ref=' + REF; }
+    // الجهاز ← الخطوات المناسبة
+    var ua = navigator.userAgent || '', isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    function show(os) { ['ios', 'android'].forEach(function (o) { document.getElementById('os-' + o).classList.toggle('hide', o !== os); document.querySelector('[data-os="' + o + '"]').classList.toggle('on', o === os); }); }
+    document.querySelectorAll('[data-os]').forEach(function (b) { b.onclick = function () { show(b.getAttribute('data-os')); }; });
+    show(/Android/.test(ua) ? 'android' : isIOS ? 'ios' : 'ios');
+    // أندرويد (Chrome): زر التثبيت المباشر
+    var dp = null;
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); dp = e; document.getElementById('inst-row').classList.remove('hide'); });
+    document.getElementById('inst').onclick = function () { if (!dp) return; dp.prompt(); dp.userChoice.then(function () { dp = null; document.getElementById('inst-row').classList.add('hide'); }); };
+    // QR ديال هاد الصفحة (بالكود واللغة)
+    var self = location.origin + location.pathname + (REF || FR ? '?' + [REF ? 'ref=' + REF : '', FR ? 'lang=fr' : ''].filter(Boolean).join('&') : '');
+    try { var qr = window.qrcode(0, 'M'); qr.addData(self); qr.make(); document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 2, scalable: true }); } catch (e) {}
+    document.getElementById('share').onclick = function () {
+      var t = (FR ? 'Installez l’application Groupe Al Wasset gratuitement : ' : 'ثبّت تطبيق مجموعة الوسيط مجاناً فدقيقة: ') + self;
+      if (navigator.share) navigator.share({ text: t }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
+      log('wa');
+    };
+    // زيارة (مرة فالجلسة) — بلا اسم
+    function log(via) { try { var C = window.__ALWASSET_SUPABASE__ || {}, u = String(C.url || '').replace(/\/+$/, ''), k = C.anonKey || ''; if (!u || !k) return;
+      fetch(u + '/rest/v1/rpc/w777_share_log', { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: k, Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_kind: 'install', p_via: via, p_lang: FR ? 'fr' : 'ar', p_ref: REF || null }) }).catch(function () {}); } catch (e) {} }
+    try { if (!sessionStorage.getItem('w777_inst_v')) { sessionStorage.setItem('w777_inst_v', '1'); log('view'); } } catch (e) {}
+  })();
+  </script>
+</body>
+</html>

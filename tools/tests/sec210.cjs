@@ -2,7 +2,7 @@
 // (3) clickjacking: الصفحة داخل إطار ديال موقع آخر كتخبّى، (4) لوحة «🛡️ مراقبة الأمان» للمدير + الطرد
 const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs');
 const BASE = 'http://localhost:8777/bureau/', OTHER = 'http://127.0.0.1:8777/bureau/';
-const PUB = ['verify.html?no=W777-0001', 'join.html', 'partner.html?t=x', 'stays.html', 'catalog.html', 'decouvrir.html', 'game.html', 'games.html', 'brand.html', 'brand-print.html', 'academy-print.html'];
+const PUB = ['verify.html?no=W777-0001', 'join.html', 'partner.html?t=x', 'stays.html', 'catalog.html', 'decouvrir.html', 'game.html', 'games.html', 'brand.html', 'brand-print.html', 'academy-print.html', 'install.html'];
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const bad = [], viol = [], errs = [];

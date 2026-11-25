@@ -6,7 +6,7 @@
 import base64, hashlib, re, sys, pathlib
 
 ROOT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parent.parent / 'docs/bureau')
-PAGES = ['academy-print', 'brand-print', 'brand', 'catalog', 'decouvrir', 'game', 'games', 'join', 'partner', 'stays', 'verify']
+PAGES = ['academy-print', 'brand-print', 'brand', 'catalog', 'decouvrir', 'game', 'games', 'join', 'partner', 'stays', 'verify', 'install']
 h = lambda s: "'sha256-" + base64.b64encode(hashlib.sha256(s.encode('utf-8')).digest()).decode() + "'"
 
 def csp(hashes):

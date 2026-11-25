@@ -5,7 +5,7 @@ const ROUTES = ['#/', '#/search', '#/properties', '#/requests', '#/matching', '#
   '#/ownership', '#/contracts', '#/inbox', '#/map', '#/rentals', '#/finance', '#/loan', '#/tamwil', '#/estimate', '#/guide', '#/learn', '#/learn/certs', '#/learn/team', '#/terms', '#/terms/groups',
   '#/game', '#/game/wasla', '#/game/price', '#/game/scam', '#/game/calc', '#/game/tf', '#/game/million', '#/game/build',
   '#/ad-maker', '#/ad-maker?m=post', '#/ad-maker?m=reels', '#/ad-maker?m=project', '#/property/new', '#/request/new', '#/appointment/new', '#/report'];
-const PUB = ['decouvrir.html', 'decouvrir.html?lang=fr', 'brand.html', 'brand-print.html', 'game.html', 'games.html', 'verify.html', 'join.html', 'partner.html', 'catalog.html', 'stays.html'];
+const PUB = ['decouvrir.html', 'decouvrir.html?lang=fr', 'brand.html', 'brand-print.html', 'game.html', 'games.html', 'verify.html', 'join.html', 'partner.html', 'catalog.html', 'stays.html', 'install.html', 'install.html?lang=fr'];
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const c = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await c.newPage();
