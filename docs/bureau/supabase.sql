@@ -2077,3 +2077,21 @@ alter table public.w777_records_trash add column if not exists trashed_at timest
 alter table public.w777_records_trash enable row level security;
 revoke all on public.w777_records_trash from anon, authenticated, public;
 -- 2026-11-25: 354 علامة «طلب ممسوح» ديال المدير (من 2–3 نونبر) تنقلات للنسخة الاحتياطية وتمسحات (الطلبات الحية ما تقاستش)
+
+-- ============ v227: 📲 صفحة التثبيت المجانية (install.html) فعدّاد المشاركات ============
+alter table public.w777_shares drop constraint if exists w777_shares_kind_check;
+alter table public.w777_shares add constraint w777_shares_kind_check check (kind in ('malaf', 'malaf_fr', 'dalil', 'page', 'catalog', 'catalog_fr', 'demo', 'install'));
+create or replace function public.w777_share_log(p_kind text, p_via text default 'other', p_lang text default null, p_ref text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_kind not in ('malaf', 'malaf_fr', 'dalil', 'page', 'catalog', 'catalog_fr', 'demo', 'install') then return; end if;
+  if p_via is null or p_via not in ('file', 'link', 'wa', 'view', 'join', 'signup', 'other') then p_via := 'other'; end if;
+  if p_via = 'signup' and p_kind <> 'demo' then return; end if;
+  if p_lang is not null and p_lang not in ('ar', 'fr') then p_lang := null; end if;
+  if p_ref is not null and p_ref !~ '^[A-Za-z0-9_-]{1,24}$' then p_ref := null; end if;
+  if (select count(*) from w777_shares where at > now() - interval '1 minute') >= 120 then return; end if;
+  insert into w777_shares (kind, via, lang, ref) values (p_kind, p_via, p_lang, p_ref);
+end $$;
+revoke all on function public.w777_share_log(text, text, text, text) from public;
+grant execute on function public.w777_share_log(text, text, text, text) to anon, authenticated;
+
