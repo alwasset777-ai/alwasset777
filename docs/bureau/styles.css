@@ -2259,3 +2259,21 @@ body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255
 .net-liked { position: absolute; bottom: 8px; inset-inline-start: 8px; background: #fff; border-radius: 99px; width: 30px; height: 30px; display: grid; place-items: center; font-size: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
 button.home-rw { width: 100%; border: 0; font: inherit; cursor: pointer; text-align: start; }
 .al-card { margin-bottom: 10px; }
+
+/* 🎠 v232: سطرين فالرئيسية (خدمات المجموعة / مجموعة الوسيط): العنوان + الدوائر كتتمرر باليد */
+.hero-big3 .hrow { grid-column: 1 / -1; display: flex; align-items: stretch; background: rgba(255,255,255,.94); border: 1.5px solid #e6d3a3; border-radius: 18px; overflow: hidden; min-height: 112px; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.hrow .hr-head { flex: 0 0 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; background: none; border: 0; border-inline-end: 2px solid #e6d3a3; font: inherit; color: #111; cursor: pointer; text-align: center; }
+.hrow .hr-ic { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
+.hrow .hr-ic img { width: 100%; height: 100%; object-fit: contain; }
+.hrow .hr-head b { font-size: 14px; font-weight: 900; line-height: 1.25; }
+.hrow .hr-strip { flex: 1; min-width: 0; display: flex; gap: 6px; padding: 10px 8px 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.hrow .hr-strip::-webkit-scrollbar { display: none; }
+.hrow .hr-strip .hub-tile { flex: 0 0 82px; scroll-snap-align: start; animation: none; gap: 2px; }
+.hrow .hr-strip .hub-tile .hi { width: 64px; height: 64px; margin-bottom: 4px; font-size: 26px; }
+.hrow .hr-strip .hub-tile .hi::before { bottom: -10px; height: 8px; }
+.hrow .hr-strip .hub-tile b { font-size: 11.5px; line-height: 1.2; font-weight: 800; }
+.hrow .hr-strip .hub-tile small { display: none; }
+.hrow[data-hr="net"] .hr-strip .hub-tile b { font-size: 11.5px; }
+:root[data-theme="dark"] .hero-big3 .hrow { background: rgba(28,28,32,.94); border-color: #5a4a22; }
+:root[data-theme="dark"] .hrow .hr-head { color: #f2f2f2; border-color: #5a4a22; }
+@media (min-width: 720px) { .hrow .hr-head { flex-basis: 120px; } .hrow .hr-strip .hub-tile { flex-basis: 96px; } .hrow .hr-strip .hub-tile .hi { width: 76px; height: 76px; } }
