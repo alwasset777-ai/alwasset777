@@ -2052,3 +2052,20 @@ end $$;
 revoke all on function public.w777_share_log(text, text, text, text) from public;
 grant execute on function public.w777_share_log(text, text, text, text) to anon, authenticated;
 
+-- ============ v225: 🎬 مسار رابط التجربة (جرّبو ← ضغطو «سجّل» ← تسجلو) ============
+alter table public.w777_shares drop constraint if exists w777_shares_via_check;
+alter table public.w777_shares add constraint w777_shares_via_check check (via in ('file', 'link', 'wa', 'view', 'join', 'signup', 'other'));
+create or replace function public.w777_share_log(p_kind text, p_via text default 'other', p_lang text default null, p_ref text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_kind not in ('malaf', 'malaf_fr', 'dalil', 'page', 'catalog', 'catalog_fr', 'demo') then return; end if;
+  if p_via is null or p_via not in ('file', 'link', 'wa', 'view', 'join', 'signup', 'other') then p_via := 'other'; end if;
+  if p_via = 'signup' and p_kind <> 'demo' then return; end if;
+  if p_lang is not null and p_lang not in ('ar', 'fr') then p_lang := null; end if;
+  if p_ref is not null and p_ref !~ '^[A-Za-z0-9_-]{1,24}$' then p_ref := null; end if;
+  if (select count(*) from w777_shares where at > now() - interval '1 minute') >= 120 then return; end if;
+  insert into w777_shares (kind, via, lang, ref) values (p_kind, p_via, p_lang, p_ref);
+end $$;
+revoke all on function public.w777_share_log(text, text, text, text) from public;
+grant execute on function public.w777_share_log(text, text, text, text) to anon, authenticated;
+

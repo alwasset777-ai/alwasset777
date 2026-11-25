@@ -17,9 +17,23 @@
 
   // 🛡️ v223: فالآيفون، أول فتح ديال القاعدة من بعد إعادة التحميل كيبقى أحياناً بلا جواب (مشكل معروف فـ Safari)
   // ← كنستناو 3–4 ثواني، كنفيقو القاعدة (indexedDB.databases) ونعاودو (حتى 4 مرات) بلا ما يتبلوكا التطبيق
+  // ⚡ v225: Safari (الآيفون) كيبقى أحياناً بلا جواب فأول فتح ← كنعيطو indexedDB.databases() كل 100ms حتى يجاوب (أقصى 3 ث)
+  let ready = null;
+  function idbReady() {
+    if (ready) return ready;
+    const ua = navigator.userAgent || '';
+    if (!indexedDB.databases || !/Safari\//.test(ua) || /Chrom(e|ium)|Android/.test(ua)) return (ready = Promise.resolve());
+    let iv;
+    ready = Promise.race([
+      new Promise(res => { const go = () => { indexedDB.databases().then(res, res); }; iv = setInterval(go, 100); go(); }),
+      new Promise(res => setTimeout(res, 3000)),
+    ]).then(() => clearInterval(iv));
+    return ready;
+  }
   function open() {
     if (dbp) return dbp;
     dbp = (async () => {
+      await idbReady();
       for (let i = 0; i < 4; i++) {
         try {
           if (i && indexedDB.databases) await Promise.race([indexedDB.databases().catch(() => {}), new Promise(r => setTimeout(r, 800))]);
