@@ -1995,3 +1995,44 @@ end $$;
 revoke all on function public.w777_set_referrer(text) from public, anon;
 grant execute on function public.w777_set_referrer(text) to authenticated;
 
+-- ============ v223: 🩺 أخطاء التطبيق (المراقبة اليومية) — بلا معلومات شخصية ============
+create table if not exists public.w777_app_errors (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  uid uuid default auth.uid(),
+  kind text not null check (kind ~ '^[a-z0-9_-]{1,24}$'),
+  msg text check (msg is null or char_length(msg) <= 300),
+  place text check (place is null or char_length(place) <= 80),
+  ver text check (ver is null or char_length(ver) <= 12),
+  ua text check (ua is null or char_length(ua) <= 60)
+);
+create index if not exists w777_app_errors_at on public.w777_app_errors (at desc);
+alter table public.w777_app_errors enable row level security;
+revoke all on public.w777_app_errors from anon, authenticated, public;
+
+-- التسجيل (حتى الزوار، باش نشوفو حتى أخطاء شاشة الدخول): سقف 300 فالساعة للكل و20 لكل حساب، وكيتمسح من بعد 30 يوم
+create or replace function public.w777_log_error(p_kind text, p_msg text, p_place text, p_ver text, p_ua text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_kind is null or p_kind !~ '^[a-z0-9_-]{1,24}$' then return; end if;
+  if (select count(*) from w777_app_errors where at > now() - interval '1 hour') >= 300 then return; end if;
+  if auth.uid() is not null and (select count(*) from w777_app_errors where uid = auth.uid() and at > now() - interval '1 hour') >= 20 then return; end if;
+  insert into w777_app_errors (kind, msg, place, ver, ua) values (p_kind, left(p_msg, 300), left(p_place, 80), left(p_ver, 12), left(p_ua, 60));
+  delete from w777_app_errors where at < now() - interval '30 days';
+end $$;
+revoke all on function public.w777_log_error(text, text, text, text, text) from public;
+grant execute on function public.w777_log_error(text, text, text, text, text) to anon, authenticated;
+
+-- المدير: ملخص الأخطاء (بلا أسماء)
+create or replace function public.w777_errors_recent(p_days int default 7)
+returns table (day date, kind text, msg text, place text, ver text, ua text, n bigint, last_at timestamptz)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not w777_is_admin() then raise exception 'forbidden'; end if;
+  return query select e.at::date, e.kind, left(e.msg, 160), e.place, e.ver, e.ua, count(*), max(e.at)
+    from w777_app_errors e where e.at > now() - make_interval(days => greatest(1, least(coalesce(p_days, 7), 30)))
+    group by 1, 2, 3, 4, 5, 6 order by max(e.at) desc limit 100;
+end $$;
+revoke all on function public.w777_errors_recent(int) from public, anon;
+grant execute on function public.w777_errors_recent(int) to authenticated;
+
