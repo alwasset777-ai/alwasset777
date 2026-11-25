@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v235'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v236'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1604,6 +1604,9 @@
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
     $$('.sidenav [data-nav=members]').forEach(el => { el.hidden = !(S.role === 'admin' || S.kind === 'member'); });
     $$('.sidenav [data-nav=works]').forEach(el => { el.hidden = !wkMine().length; }); paintFab();
+    { const noSell = ['contractor', 'finishing', 'notary', 'association', 'member'].includes(S.kind);
+      $$('a[data-nav=properties]').forEach(el => el.setAttribute('href', noSell ? '#/agencies' : '#/properties'));
+      if (noSell && nav === 'agencies' && !parts[1]) $$('.bottomnav a[data-nav=properties]').forEach(el => el.classList.add('active')); }
     { const bm = $('#bn-more'); if (bm) bm.classList.toggle('active', !document.querySelector('.bottomnav a.active')); }
     if (a !== 'properties') $('#q').value = '';
     placeLang();
@@ -1832,7 +1835,7 @@
       <div class="hero">
         <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت — مع الوسيط حلّك بسيط ✨</span></div>
         <div class="hero-big3">
-          ${hubRow('svc', 'icons/hub/toolbox.webp?v=8', 'خدمات المجموعة')}
+          ${hubRow('svc', 'icons/hub/svc-logo.webp?v=1', 'خدمات المجموعة')}
           ${hubRow('net', 'icons/logo.png', 'مجموعة الوسيط')}
         </div>
         ${inNetwork() ? groupsCard(false) : ''}
@@ -2107,6 +2110,8 @@
     const nTodo = S.props.filter(needsInfo).length;
     const nPart = S.props.filter(p => p.partner).length;
     const stChips = [{ v: 'active', l: 'المعروضة' }, ...(nTodo ? [{ v: 'todo', l: '📥 للإكمال (' + nTodo + ')' }] : []), ...(nPart ? [{ v: 'partner', l: '🤝 الشركاء (' + nPart + ')' }] : []), { v: '', l: 'كل الحالات' }, ...D.STATUSES.map(s => ({ v: s.id, l: s.ar }))];
+    const netTabs = inNetwork() ? `<div class="seg prop-scope"><a class="on" href="#/properties">🏠 عقاراتي (${S.props.length})</a><a href="#/agencies">🏘️ عقارات الشبكة${S.net ? ' (' + S.net.length + ')' : ''}</a></div>` : '';
+    const netEmpty = inNetwork() && !S.props.length ? `<a class="card card-pad net-cta" href="#/agencies"><span class="big">🏘️</span><span><b>عقارات الوكالات المشتركة كتبان فـ«عقارات الشبكة»</b><small>هنا غير العقارات اللي كتزيدها نتا. ضغط باش تشوف كل العقارات المنشورة ←</small></span></a>` : '';
     main().innerHTML = `
       <div class="page-head">
         <div><h1>العقارات</h1><div class="sub">${list.length} نتيجة${q ? ` لـ «${esc(q)}»` : ''}</div></div>
@@ -2115,6 +2120,7 @@
           <a class="btn primary" href="#/property/new">${ic('plus', 18)} عقار جديد</a>
         </div>
       </div>
+      ${netTabs}${netEmpty}
       <div class="toolbar" style="flex-direction:column;align-items:stretch">
         <div class="chips">${trxChips.map(c => `<span class="chip ${f.trx === c.v ? 'on' : ''}" data-trx="${c.v}">${esc(c.l)}</span>`).join('')}</div>
         <div class="chips">${stChips.map(c => `<span class="chip ${f.status === c.v ? 'on' : ''}" data-st="${c.v}">${esc(c.l)}</span>`).join('')}
@@ -6513,10 +6519,10 @@
   function homeSearch() {
     // ⭕ v233: 4 دوائر فسطر واحد (بطلب المدير): إضافة · بحث · إعلانات فورية · التمويل العقاري
     return `<div class="card hs-card hs-circ">
-      <button class="hc" type="button" data-hm="add"><span class="hc-c hc-red">${ic('plus', 30)}</span><b>إضافة</b></button>
-      <a class="hc" href="#/search?scope=mine"><span class="hc-c hc-red">${ic('search', 26)}</span><b>بحث</b></a>
-      <a class="hc" href="#/ad-maker"><span class="hc-c hc-gold"><img src="icons/hub/ad-maker.webp?v=8" alt="" decoding="async"></span><b>إعلانات فورية</b></a>
-      <a class="hc" href="#/tamwil"><span class="hc-c hc-dark"><i class="fin-rot fin-mini" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}</i></span><b>التمويل العقاري</b></a>
+      <button class="hc" type="button" data-hm="add"><span class="hc-c hc-plus3d">${ic('plus', 32)}</span><b>إضافة</b></button>
+      <a class="hc" href="#/search?scope=mine"><span class="hc-c hc-lens" aria-hidden="true"><img class="ln-base" src="icons/logo.png" alt="" decoding="async"><i class="ln-glass"><img src="icons/logo.png" alt="" decoding="async"></i><i class="ln-handle"></i></span><b>بحث</b></a>
+      <a class="hc" href="#/ad-maker"><span class="hc-c hc-logo"><img src="icons/hub/ads-logo.webp?v=1" alt="" decoding="async"></span><b>إعلانات فورية</b></a>
+      <a class="hc" href="#/tamwil"><span class="hc-c hc-logo"><img src="icons/hub/fin-orbit.webp?v=1" alt="" decoding="async"></span><b>التمويل العقاري</b></a>
     </div>`;
   }
   function bindHomeSearch() { /* الأزرار روابط عادية */ }
@@ -6949,7 +6955,7 @@
           ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], f.city, { noEmpty: true })}
           ${fSelect('ag', 'الوكالة', [{ v: '', l: 'الكل' }, ...agencies.map(c => ({ v: c, l: c }))], f.ag, { noEmpty: true })}
         </form>
-        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncount"></span><a class="btn sm" href="#/agencies?r=1">${ic('share', 15)} تحديث</a>
+        <div class="btn-row" style="margin-top:10px"><span class="muted" id="ncount"></span><a class="btn sm" href="#/agencies?r=1">${ic('share', 15)} تحديث</a>${S.props.length ? `<a class="btn sm" href="#/properties">🏠 عقاراتي (${S.props.length})</a>` : ''}
           ${myUid() ? '<button class="btn sm gold" id="al-save" type="button">🔔 نبهني بالجديد</button><button class="btn sm" id="al-list" type="button">🔔 تنبيهاتي <b id="al-n"></b></button>' : ''}</div>
       </div>
       <div class="prop-grid" id="ngrid"></div>`;
