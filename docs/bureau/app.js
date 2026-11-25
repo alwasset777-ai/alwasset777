@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v225'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v226'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -3193,8 +3193,8 @@
     paint();
   }
   async function viewSettings() {
-    const est = await DB.estimate();
-    const persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : false;
+    const est = await within(DB.estimate(), 1500, null);
+    const persisted = navigator.storage && navigator.storage.persisted ? await within(navigator.storage.persisted(), 1500, false) : false;
     const theme = localStorage.getItem('w777_theme') || 'auto';
     const hasPin = !!localStorage.getItem('w777_pin');
     const lastBackup = await DB.getMeta('lastBackup', null);
@@ -11043,7 +11043,7 @@
   const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const ub64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
   const bioOn = () => !!localStorage.getItem('w777_bio');
-  async function bioAvailable() { try { return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; } }
+  async function bioAvailable() { try { return !!(window.PublicKeyCredential && await within(PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(), 1500, false)); } catch (e) { return false; } }
   async function bioEnable() {
     if (!localStorage.getItem('w777_pin')) { toast('فعّل الرمز السري أولا (كاحتياط إلا ما خدماتش البصمة)', 4500); return; }
     try {
@@ -11162,12 +11162,17 @@
   const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
   const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  async function pushSub() { try { const reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); } catch (e) { return null; } }
+  // ⏱️ v226: انتظار ديال المتصفح بمهلة (الآيفون ممكن ما يجاوبش ← الصفحة كانت كتبقى معلّقة)
+  const within = (p, ms, def) => Promise.race([Promise.resolve(p).catch(() => def), new Promise(r => setTimeout(() => r(def), ms))]);
+  // ⚠️ ماشي serviceWorker.ready: من بعد «التحديث الكامل» الـ Service Worker كيتسجّل غير من بعد ما تتحل الصفحة ← كانو كيتسناو بعضياتهم بلا نهاية
+  async function swReg() { try { return (await within(navigator.serviceWorker.getRegistration(), 1500, null)) || null; } catch (e) { return null; } }
+  async function pushSub() { try { const reg = await swReg(); return reg && reg.pushManager ? await within(reg.pushManager.getSubscription(), 1500, null) : null; } catch (e) { return null; } }
   async function pushEnable() {
     if (!syOn()) { toast('خاصك تدخل للمزامنة السحابية أولا', 4000); return; }
     if (await Notification.requestPermission() !== 'granted') { toast('ما تعطاتش الموافقة على الإشعارات — فعّلها من إعدادات التيليفون', 5000); return; }
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = (await swReg()) || (await within(navigator.serviceWorker.ready, 5000, null));
+      if (!reg) { toast('عاود من بعد شوية (التطبيق مازال كيتحضّر)', 4000); return; }
       const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: ub64(VAPID_PUB) });
       const j = sub.toJSON();
       await rqJson('/rest/v1/w777_push_subs?on_conflict=uid,endpoint', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ uid: myUid(), endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }) });

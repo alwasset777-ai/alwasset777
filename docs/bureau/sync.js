@@ -233,7 +233,17 @@
     if (!st) { if (localStorage.getItem('w777_relogin')) { const x = new Error(EXPIRED); x.expired = true; throw x; } throw new Error('غير متصل بالحساب'); }
     if (st.exp * 1000 < Date.now() + 60000) await refreshToken();
     const headers = Object.assign({ apikey: st.key, Authorization: 'Bearer ' + st.access }, opts.headers || {});
-    const res = await fetch(st.url + path, Object.assign({}, opts, { headers }));
+    // ⏱️ v226: مهلة 25 ث (رفع الملفات 3 دقايق) ← «ما كاينش الإنترنت» بلاصة صفحة معلّقة
+    let ctl = null, tm = null;
+    if (!opts.signal && typeof AbortController === 'function') {
+      ctl = new AbortController();
+      const big = /^\/storage\/v1\/object\/(?!list|sign)/.test(path) && String(opts.method || 'GET').toUpperCase() !== 'GET';
+      tm = setTimeout(() => ctl.abort(), big ? 180000 : 25000);
+    }
+    let res;
+    try { res = await fetch(st.url + path, Object.assign({}, opts, { headers }, ctl ? { signal: ctl.signal } : {})); }
+    catch (e) { if (ctl && ctl.signal.aborted) throw new Error('Failed to fetch (timeout)'); throw e; }
+    finally { if (tm) clearTimeout(tm); }
     if (res.status === 401 && retry) { await refreshToken(); return api(path, opts, false); }
     return res;
   }
