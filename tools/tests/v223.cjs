@@ -38,7 +38,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     await p.evaluate(() => { location.hash = '#/'; }); await p.waitForTimeout(1200);
     const items = await p.$$eval('#fab-menu a', a => a.map(x => x.getAttribute('href') + '|' + x.textContent.trim()));
     const hrefs = items.map(x => x.split('|')[0]);
-    if (JSON.stringify(hrefs) !== JSON.stringify(['#/property/new', '#/request/new', '#/appointment/new', '#', '#/search'])) bad.push('fab order ' + JSON.stringify(items));
+    if (JSON.stringify(hrefs) !== JSON.stringify(['#/qr', '#/property/new', '#/request/new', '#/appointment/new', '#', '#/search'])) bad.push('fab order ' + JSON.stringify(items));
     if (items.some(x => /الحجز|الوكالات/.test(x))) bad.push('fab still has stays/agencies');
     await p.click('#fab'); await p.waitForTimeout(400);
     await p.screenshot({ path: (process.env.SHOT || '/tmp/v223') + '-fab.png' });

@@ -2205,3 +2205,31 @@ body.in-tour #fab, body.in-tour #fab-menu { display: none !important; }
 .ah-m { font-size: 12.5px; color: var(--ink, #222); text-align: start; overflow-wrap: anywhere; unicode-bidi: plaintext; }
 @media (max-width: 420px) { #demo-bar .db-sub { display: none; } #demo-bar { font-size: 13px; gap: 6px; } }
 
+/* ============ v225: ⚡ التطبيق الخفيف (body.lite، مشعول من الأول) ============ */
+/* الحركات اللي كتدور ديما (الزواق) كتوقف — كيبقاو غير اللي كيقولو شي حاجة (المزامنة، منير كيتكلم، التحميل) */
+body.lite .hero-marq span, body.lite .topbar::after, body.lite .card.stat::after, body.lite .btn.gold::after, body.lite .fab::after, body.lite .fab,
+body.lite .hero h2, body.lite .hub-tile, body.lite .hub-tile.lv-pop, body.lite .hub-spin .hub-tile .hi, body.lite .agent-fab:not(.mood-on) img,
+body.lite .fin-rot img, body.lite .fin-orbit, body.lite .fin-orbit .fo-c, body.lite .fin-orbit span img, body.lite .empty .ic, body.lite .empty-ic,
+body.lite img[src*="icons/logo"], body.lite img[src*="icons/brand/logo"], body.lite .logo-pill img, body.lite .pr-office img,
+body.lite .logo-pill:not(.logo-coin)::after, body.lite .pr-office::after, body.lite .grp-point, body.lite .fl-globe, body.lite .grp-pad, body.lite .grp-glow,
+body.lite .ag-3d { animation: none !important; }
+body.lite .hst > .hneedle { animation: gauge-on 1.2s cubic-bezier(.3,.8,.3,1) both !important; }
+body.lite .hst { animation-iteration-count: 1 !important; }
+/* تغبيش الخلفية (backdrop-filter) كيثقّل التمرير فالتيليفون */
+body.lite * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+body.lite #tour-bar { background: #151515; }
+/* اللوائح الطويلة: المتصفح ما كيرسمش غير اللي باين */
+body.lite .prop-grid > .prop-card { content-visibility: auto; contain-intrinsic-size: auto 320px; }
+.lite-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0 10px; cursor: pointer; }
+.lite-row input { width: 20px; height: 20px; margin-top: 3px; flex: none; }
+
+/* 📱 شاشة QR */
+.qr-page { max-width: 760px; margin: 0 auto; }
+.qr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0 16px; }
+.qr-card { padding: 16px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.qr-card h3 { margin: 0; font-size: 19px; }
+.qr-box { width: 100%; max-width: 300px; aspect-ratio: 1; background: #fff; border-radius: 14px; padding: 8px; display: grid; place-items: center; box-shadow: inset 0 0 0 1px #eee; }
+.qr-box svg { width: 100%; height: 100%; }
+@media (max-width: 640px) { .qr-grid { grid-template-columns: 1fr; } .qr-box { max-width: 270px; } }
+.demo-funnel .ss-row small { font-size: 13px; }
+
