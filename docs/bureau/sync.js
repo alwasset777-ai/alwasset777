@@ -15,8 +15,9 @@
   const LISTS = ['ledger', 'leases'];
 
   let st = null;
-  try { st = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { st = null; }
-  const save = () => { if (st) localStorage.setItem(LS, JSON.stringify(st)); else localStorage.removeItem(LS); };
+  const DEMO = !!(DB && DB.isDemo); // 🎬 v223: وضع العرض ← بلا سحابة، والحساب الحقيقي ما كيتمسّش
+  try { st = DEMO ? null : JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) { st = null; }
+  const save = () => { if (DEMO) return; if (st) localStorage.setItem(LS, JSON.stringify(st)); else localStorage.removeItem(LS); };
 
   let status = { state: 'off', msg: '', at: null };
   const statusCbs = [];

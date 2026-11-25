@@ -2166,3 +2166,18 @@ img[src*="icons/logo"], img[src*="icons/brand/logo"], .logo-pill img, .pr-office
 .relogin-note { background: #fff7e6; border: 1px solid #f0c36d; color: #6b4a00; border-radius: 12px; padding: 9px 12px; font-size: 13.5px; margin: 0 0 10px; }
 [data-theme="dark"] .relogin-note { background: #3a2e12; border-color: #8a6a1f; color: #f6dfa4; }
 
+/* v223: 🎬 وضع العرض + 🩺 فحص قبل العرض + 🛟 الإنقاذ */
+#demo-bar { position: sticky; top: 0; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 10px; background: #fff3cd; color: #5c4400; font-size: 13.5px; border-bottom: 1px solid #f0c36d; }
+#demo-bar .btn { padding: 3px 10px; min-height: 0; }
+.ck-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.ck-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.ck-row.bad { border-color: #f0b4b4; background: #fff5f5; }
+.ck-s { font-size: 20px; width: 26px; text-align: center; }
+.ck-t { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
+.ck-t small { font-size: 12.5px; }
+.ck-good { color: #11733a; font-weight: 700; margin: 6px 0 10px; }
+.ck-bad { color: #b3261e; font-weight: 700; margin: 6px 0 10px; }
+.boot-rescue { margin-top: 30px; }
+[data-theme="dark"] #demo-bar { background: #3a2e12; color: #f6dfa4; border-color: #8a6a1f; }
+[data-theme="dark"] .ck-row.bad { background: #3a1d1d; border-color: #7a3434; }
+

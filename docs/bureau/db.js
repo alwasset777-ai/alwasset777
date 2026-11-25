@@ -4,13 +4,31 @@
    ============================================================ */
 (function () {
   'use strict';
-  const DB_NAME = 'wasset777_bureau';
+  // 🎬 v223: «وضع العرض» كيخدم على قاعدة منفصلة بمعلومات خيالية (المعلومات الحقيقية ما كتمسّش)
+  const DEMO = (() => { try { return localStorage.getItem('w777_demo') === '1'; } catch (e) { return false; } })();
+  const DB_NAME = DEMO ? 'wasset777_demo' : 'wasset777_bureau';
   const DB_VERSION = 2;
   let dbp = null;
 
+  // 🛡️ v223: فالآيفون، أول فتح ديال القاعدة من بعد إعادة التحميل كيبقى أحياناً بلا جواب (مشكل معروف فـ Safari)
+  // ← كنستناو 3–4 ثواني، كنفيقو القاعدة (indexedDB.databases) ونعاودو (حتى 4 مرات) بلا ما يتبلوكا التطبيق
   function open() {
     if (dbp) return dbp;
-    dbp = new Promise((resolve, reject) => {
+    dbp = (async () => {
+      for (let i = 0; i < 4; i++) {
+        try {
+          if (i && indexedDB.databases) await Promise.race([indexedDB.databases().catch(() => {}), new Promise(r => setTimeout(r, 800))]);
+          return await openOnce(i ? 4000 : 3000);
+        } catch (e) { if (!(e && e.message === 'idb-timeout') || i === 3) throw e; }
+      }
+    })();
+    dbp.catch(() => { dbp = null; });
+    return dbp;
+  }
+  function openOnce(ms) {
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const tm = setTimeout(() => { if (!done) { done = true; reject(new Error('idb-timeout')); } }, ms);
       const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = () => {
         const db = req.result;
@@ -23,22 +41,33 @@
         if (!db.objectStoreNames.contains('appointments')) db.createObjectStore('appointments', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
       };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+      req.onsuccess = () => {
+        const db = req.result;
+        if (done) { try { db.close(); } catch (e) { /* */ } return; }
+        done = true; clearTimeout(tm);
+        // نسخة جديدة ولا الآيفون سدّ القاعدة (التطبيق فالخلفية) ← الفتحة الجاية كتعاود تتحل
+        db.onversionchange = () => { try { db.close(); } catch (e) { /* */ } dbp = null; };
+        db.onclose = () => { dbp = null; };
+        resolve(db);
+      };
+      req.onerror = () => { if (done) return; done = true; clearTimeout(tm); reject(req.error); };
     });
-    return dbp;
   }
 
-  function tx(store, mode, fn) {
-    return open().then(db => new Promise((resolve, reject) => {
-      const t = db.transaction(store, mode);
+  function tx(store, mode, fn, again) {
+    return open().then(db => {
+      let t;
+      // الآيفون سدّ الاتصال (التطبيق بقى فالخلفية) ← كنعاودو نحلو القاعدة مرة وحدة
+      try { t = db.transaction(store, mode); } catch (e) { if (!again && e && e.name === 'InvalidStateError') { dbp = null; return tx(store, mode, fn, true); } throw e; }
+      return new Promise((resolve, reject) => {
       const s = t.objectStore(store);
       let result;
       Promise.resolve(fn(s)).then(r => { result = r; });
       t.oncomplete = () => resolve(result);
       t.onerror = () => reject(t.error);
       t.onabort = () => reject(t.error || new Error('abort'));
-    }));
+      });
+    });
   }
   const wrap = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 
@@ -108,5 +137,6 @@
     },
   };
 
+  DB.isDemo = DEMO;
   window.W777_DB = DB;
 })();
