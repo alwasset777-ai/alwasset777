@@ -2277,3 +2277,17 @@ button.home-rw { width: 100%; border: 0; font: inherit; cursor: pointer; text-al
 :root[data-theme="dark"] .hero-big3 .hrow { background: rgba(28,28,32,.94); border-color: #5a4a22; }
 :root[data-theme="dark"] .hrow .hr-head { color: #f2f2f2; border-color: #5a4a22; }
 @media (min-width: 720px) { .hrow .hr-head { flex-basis: 120px; } .hrow .hr-strip .hub-tile { flex-basis: 96px; } .hrow .hr-strip .hub-tile .hi { width: 76px; height: 76px; } }
+
+/* ⭕ v233: أزرار الرئيسية دوائر فسطر واحد */
+.hs-card.hs-circ { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 14px 8px 12px; }
+.hs-circ .hc { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: var(--ink); background: none; border: 0; padding: 0; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.hs-circ .hc-c { width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; color: #fff; box-shadow: 0 6px 16px -6px rgba(0,0,0,.45), inset 0 2px 2px rgba(255,255,255,.35); border: 2px solid rgba(255,255,255,.9); outline: 2px solid #e6c77e; transition: transform .15s; }
+.hs-circ .hc:active .hc-c { transform: scale(.93); }
+.hs-circ .hc-red { background: linear-gradient(145deg, #e63946, #b5121f); }
+.hs-circ .hc-gold { background: linear-gradient(145deg, #f3d27a, #c99a2e); }
+.hs-circ .hc-gold img { width: 70%; height: 70%; object-fit: contain; border-radius: 50%; }
+.hs-circ .hc-dark { background: linear-gradient(145deg, #1b1b1f, #3a0a14); }
+.hs-circ .hc-dark .fin-mini { width: 46px; height: 46px; }
+.hs-circ .hc b { font-size: 13px; font-weight: 800; line-height: 1.2; text-align: center; }
+@media (min-width: 720px) { .hs-circ .hc-c { width: 78px; height: 78px; } .hs-circ .hc b { font-size: 14.5px; } }
+body.lite .fin-rot img:first-child { opacity: 1; } /* v233: الوضع الخفيف كان كيخلي دائرة التمويل خاوية */

@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v232'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v233'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1828,7 +1828,6 @@
       <div class="hero">
         <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت — مع الوسيط حلّك بسيط ✨</span></div>
         <div class="hero-big3">
-          <button class="btn gold" data-hm="add">${ic('plus', 20)} إضافة</button>
           ${hubRow('svc', 'icons/hub/toolbox.webp?v=8', 'خدمات المجموعة')}
           ${hubRow('net', 'icons/logo.png', 'مجموعة الوسيط')}
         </div>
@@ -6508,10 +6507,12 @@
   // الرئيسية (لفوق): غير جوج أزرار — «إصنع إعلانا» (على اليمين) و«بحث» ← صفحة البحث بالفلتر الكامل
   // ترتيب المدير: «بحث» على اليمين، «إعلانات فورية» فالوسط، «التمويل العقاري» على اليسار (بشعارات الجهات كتدور)
   function homeSearch() {
-    return `<div class="card hs-card hs-two hs-three">
-      <a class="btn gold" href="#/search?scope=mine">${ic('search', 18)} بحث</a>
-      <a class="btn ad-cta" href="#/ad-maker">✨ إعلانات فورية</a>
-      <a class="btn fin-cta" href="#/tamwil"><i class="fin-rot fin-mini" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}</i> التمويل العقاري</a>
+    // ⭕ v233: 4 دوائر فسطر واحد (بطلب المدير): إضافة · بحث · إعلانات فورية · التمويل العقاري
+    return `<div class="card hs-card hs-circ">
+      <button class="hc" type="button" data-hm="add"><span class="hc-c hc-red">${ic('plus', 30)}</span><b>إضافة</b></button>
+      <a class="hc" href="#/search?scope=mine"><span class="hc-c hc-red">${ic('search', 26)}</span><b>بحث</b></a>
+      <a class="hc" href="#/ad-maker"><span class="hc-c hc-gold"><img src="icons/hub/ad-maker.webp?v=8" alt="" decoding="async"></span><b>إعلانات فورية</b></a>
+      <a class="hc" href="#/tamwil"><span class="hc-c hc-dark"><i class="fin-rot fin-mini" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}</i></span><b>التمويل العقاري</b></a>
     </div>`;
   }
   function bindHomeSearch() { /* الأزرار روابط عادية */ }
