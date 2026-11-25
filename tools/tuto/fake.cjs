@@ -54,7 +54,7 @@ const TYPE_AR = { apartment: 'شقة', villa: 'فيلا', riad: 'رياض', shop
 const shared = P.map(([owner, trx, type, city, district, price, area, bedrooms, photos], i) => {
   const ag = agencies.find(a => a.uid === owner);
   const id = 'net' + (i + 1);
-  return { owner, id, agency: ag.name, phone: ag.phone, city, type, trx, price, photo_ids: photos, updated_at: ago(i * 7 + 2),
+  return { owner, id, agency: ag.name, phone: ag.phone, city, type, trx, price, photo_ids: photos, deleted: false, updated_at: ago(i * 7 + 2),
     data: { id, ref: 'N' + (2400 + i), transaction: trx, type, city, district, priceMin: price, priceMax: price, priceUnit: trx === 'rent' ? 'درهم / الشهر' : 'درهم',
       areaTotal: area, specs: bedrooms ? { bedrooms, salons: 1, bathrooms: 2 } : {}, features: ['قريب من الخدمات', 'وثائق سليمة'],
       title: `${TYPE_AR[type]} ${trx === 'rent' ? 'للكراء' : 'للبيع'} — ${district}، ${city}`, description: 'عقار مميز فموقع ممتاز، معروض عبر شبكة الوسيط 777.',

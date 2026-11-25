@@ -2256,3 +2256,6 @@ body.no-deco .page-head { padding-bottom: 0; }
 body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 38%); background-size: auto; }
 :root[data-theme="dark"] body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }
 .sidenav a[hidden] { display: none !important; }
+.net-liked { position: absolute; bottom: 8px; inset-inline-start: 8px; background: #fff; border-radius: 99px; width: 30px; height: 30px; display: grid; place-items: center; font-size: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+button.home-rw { width: 100%; border: 0; font: inherit; cursor: pointer; text-align: start; }
+.al-card { margin-bottom: 10px; }
