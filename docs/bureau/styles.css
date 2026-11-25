@@ -2233,3 +2233,25 @@ body.lite .prop-grid > .prop-card { content-visibility: auto; contain-intrinsic-
 @media (max-width: 640px) { .qr-grid { grid-template-columns: 1fr; } .qr-box { max-width: 270px; } }
 .demo-funnel .ss-row small { font-size: 13px; }
 
+
+/* ============ v229: لمسات التزيين الخفيفة (بموافقة المدير) ============ */
+/* 1) زخرفة مغربية هندسية (نجمة ثمانية) خفيفة بزاف فخلفية كل الصفحات — ثابتة، بلا حركة، ما كتشدش الضغطات */
+body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23a8741f' stroke-width='1.3'%3E%3Cpath d='M32 12 L52 32 L32 52 L12 32 Z'/%3E%3Cpath d='M18 18 H46 V46 H18 Z'/%3E%3Ccircle cx='32' cy='32' r='4'/%3E%3Cpath d='M0 8 L8 0 M56 0 L64 8 M64 56 L56 64 M8 64 L0 56'/%3E%3C/g%3E%3C/svg%3E"); background-size: 64px 64px; }
+:root[data-theme="dark"] body::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.3'%3E%3Cpath d='M32 12 L52 32 L32 52 L12 32 Z'/%3E%3Cpath d='M18 18 H46 V46 H18 Z'/%3E%3Ccircle cx='32' cy='32' r='4'/%3E%3Cpath d='M0 8 L8 0 M56 0 L64 8 M64 56 L56 64 M8 64 L0 56'/%3E%3C/g%3E%3C/svg%3E"); opacity: .035; }
+@media print { body::after { display: none; } }
+/* 2) خط أحمر ← ذهبي موحّد تحت عنوان كل صفحة */
+.page-head { position: relative; padding-bottom: 12px; }
+.page-head::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 2px; border-radius: 2px; pointer-events: none;
+  background: linear-gradient(to left, #d71920, #c9a24a 45%, rgba(201,162,74,0)); }
+[dir="ltr"] .page-head::after { background: linear-gradient(to right, #d71920, #c9a24a 45%, rgba(201,162,74,0)); }
+/* 3) حاشية ذهبية رقيقة فوق البطاقات الرئيسية (كتذوب فالجناب باش تبقى مع الزوايا المدوّرة) */
+.card.card-pad { background-image: linear-gradient(90deg, rgba(201,162,74,0), rgba(201,162,74,.85) 18%, rgba(201,162,74,.85) 82%, rgba(201,162,74,0)), linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 38%);
+  background-size: 100% 2px, 100% 100%; background-repeat: no-repeat; }
+:root[data-theme="dark"] .card.card-pad { background-image: linear-gradient(90deg, rgba(201,162,74,0), rgba(214,178,94,.7) 18%, rgba(214,178,94,.7) 82%, rgba(201,162,74,0)), linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }
+@media print { .card.card-pad { background-image: none; } }
+/* 🎨 v229: «بلا زينة» (الإعدادات ← 📲 التطبيق) */
+body.no-deco::after, body.no-deco .page-head::after { display: none; }
+body.no-deco .page-head { padding-bottom: 0; }
+body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 38%); background-size: auto; }
+:root[data-theme="dark"] body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }
