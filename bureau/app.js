@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v226'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v227'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -3225,7 +3225,7 @@
           <h3 class="section-title">🩺 فحص قبل العرض</h3>
           <p class="muted" style="margin-top:0">قبل ما تورّي التطبيق لشي حد: 10 ثواني وكتعرف واش الإنترنت، الحساب، المزامنة، منير والنسخة كلهم واجدين — وإلا كاين شي مشكل كتلقى الزر اللي كيصلحو.</p>
           <label class="switch-row lite-row"><input type="checkbox" id="lite-on" ${liteOn() ? 'checked' : ''}> <span><b>⚡ التطبيق الخفيف (مستحسن)</b><br><small class="muted">بلا الحركات والأضواء اللي كتدور ديما ← أسرع وكيصرف أقل فالبطارية، خصوصاً فالآيفون</small></span></label>
-          <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a><a class="btn" href="#/qr">📱 QR: جرّب / سجّل</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}<button class="btn" type="button" data-tour>▶️ عرض أوتوماتيكي</button><button class="btn" type="button" data-demo-share>📤 شارك رابط التجربة</button></div>
+          <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a><a class="btn" href="#/qr">📱 QR: جرّب / سجّل</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}<button class="btn" type="button" data-tour>▶️ عرض أوتوماتيكي</button><button class="btn" type="button" data-demo-share>📤 شارك رابط التجربة</button><a class="btn" href="install.html${S.agency && S.agency.code ? '?ref=' + encodeURIComponent(S.agency.code) : S.role === 'admin' ? '?ref=WASSET' : ''}" target="_blank" rel="noopener">📲 صفحة التثبيت (مجاناً)</a></div>
         </div>`}
 
         ${EMBED ? '' : `<div class="card card-pad upd-card">
@@ -7301,7 +7301,7 @@
     try { const r = await Sy.request('/rest/v1/rpc/w777_share_stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (!r.ok) return; rows = await r.json(); } catch (e) { return; }
     if (!Array.isArray(rows)) return;
     if (!$('#share-stats')) return;
-    const K = [['demo', '🎬 رابط التجربة (وضع العرض)'], ['malaf', '💼 الملف التقديمي'], ['malaf_fr', '🇫🇷 الملف بالفرنسية'], ['catalog', '📚 الكتالوج الشامل'], ['catalog_fr', '🇫🇷 الكتالوج بالفرنسية'], ['dalil', '📘 الدليل الشامل'], ['page', '🌐 صفحة «تعرّف على التطبيق»']];
+    const K = [['install', '📲 صفحة التثبيت'], ['demo', '🎬 رابط التجربة (وضع العرض)'], ['malaf', '💼 الملف التقديمي'], ['malaf_fr', '🇫🇷 الملف بالفرنسية'], ['catalog', '📚 الكتالوج الشامل'], ['catalog_fr', '🇫🇷 الكتالوج بالفرنسية'], ['dalil', '📘 الدليل الشامل'], ['page', '🌐 صفحة «تعرّف على التطبيق»']];
     const V = { file: 'ملف', link: 'رابط', wa: 'واتساب', view: 'زيارة', other: 'آخر' };
     const sum = (k, f) => rows.filter(r => r.kind === k).reduce((n, r) => n + (+r[f] || 0), 0);
     const tot = f => rows.reduce((n, r) => n + (+r[f] || 0), 0);
@@ -9243,7 +9243,7 @@
     main().innerHTML = `<div class="qr-page"><h1 class="page-title">📱 سكاني بالتيليفون ديالك</h1>
       <p class="muted">ورّي هاد الشاشة للشخص اللي قدامك: كيحل الكاميرا ديال التيليفون ديالو وكيوجّهها على الرمز.</p>
       <div class="qr-grid">${items.map(([k, t, d]) => `<div class="card qr-card"><h3>${t}</h3><div class="qr-box" id="qr-${k}"><span class="muted">⏳</span></div><small class="muted">${d}</small></div>`).join('')}</div>
-      <div class="btn-row" style="justify-content:center"><button type="button" class="btn" data-demo-share>📤 صيفط رابط التجربة</button><a class="btn" href="#/">🏠 الرئيسية</a></div></div>`;
+      <div class="btn-row" style="justify-content:center"><button type="button" class="btn" data-demo-share>📤 صيفط رابط التجربة</button><a class="btn" href="install.html${ref ? '?ref=' + encodeURIComponent(ref) : ''}" target="_blank" rel="noopener">📲 كيفاش نثبّت التطبيق؟</a><a class="btn" href="#/">🏠 الرئيسية</a></div></div>`;
     try {
       await loadScript('vendor/qrcode.js');
       items.forEach(([k, , , url]) => { const q = window.qrcode(0, 'M'); q.addData(url); q.make(); const b = $('#qr-' + k); if (b) { b.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); b.title = url; } });
