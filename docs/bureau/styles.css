@@ -2250,3 +2250,8 @@ body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-event
   background-size: 100% 2px, 100% 100%; background-repeat: no-repeat; }
 :root[data-theme="dark"] .card.card-pad { background-image: linear-gradient(90deg, rgba(201,162,74,0), rgba(214,178,94,.7) 18%, rgba(214,178,94,.7) 82%, rgba(201,162,74,0)), linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }
 @media print { .card.card-pad { background-image: none; } }
+/* 🎨 v229: «بلا زينة» (الإعدادات ← 📲 التطبيق) */
+body.no-deco::after, body.no-deco .page-head::after { display: none; }
+body.no-deco .page-head { padding-bottom: 0; }
+body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 38%); background-size: auto; }
+:root[data-theme="dark"] body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }

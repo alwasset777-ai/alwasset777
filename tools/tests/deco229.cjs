@@ -24,7 +24,15 @@ const OUT = process.env.SHOT || '/tmp/deco'; const PAGES = [['home', '#/'], ['pr
         click: (() => { const e = document.elementFromPoint(195, 420); return !!e && e !== document.body && e !== document.documentElement; })(),
       }));
       if (!r.pat || r.op > 0.08 || r.op <= 0) bad.push('pattern ' + JSON.stringify(r));
-      if (!r.line) bad.push('no header line'); if (r.gold < 2) bad.push('no gold top'); if (!r.click) bad.push('pattern blocks clicks');
+      if (!r.line) bad.push('no header line');
+      // زر «بلا زينة» ← كلشي كيتطفى ويبقى من بعد إعادة الفتح، ومن بعد كيرجع
+      await p.goto(BASE + '#/settings?s=app'); await p.waitForSelector('#deco-on', { timeout: 8000 }).catch(() => bad.push('no deco switch'));
+      await p.click('#deco-on'); await p.waitForTimeout(200); await p.reload(); await p.waitForTimeout(1500);
+      const off = await p.evaluate(() => ({ cls: document.body.classList.contains('no-deco'), pat: getComputedStyle(document.body, '::after').display, ls: localStorage.w777_deco }));
+      if (!off.cls || off.pat !== 'none' || off.ls !== '0') bad.push('deco off ' + JSON.stringify(off));
+      await p.goto(BASE + '#/settings?s=app'); await p.waitForSelector('#deco-on'); await p.click('#deco-on'); await p.waitForTimeout(200);
+      if (await p.evaluate(() => document.body.classList.contains('no-deco'))) bad.push('deco back on');
+      if (!(await p.evaluate(() => fetch('./').then(r => r.text()).then(t => t.includes('class="sp-pat"'))))) bad.push('no splash pattern'); if (r.gold < 2) bad.push('no gold top'); if (!r.click) bad.push('pattern blocks clicks');
     }
     await p.close();
   }
