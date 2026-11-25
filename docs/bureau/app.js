@@ -328,6 +328,8 @@
   function toast(msg, ms = 2400) {
     // 📴 خطأ الشبكة التقني ← جملة مفهومة
     msg = String(msg);
+    // 🔐 v222: الجلسة سالات ← جملة وحدة مفهومة (مرة فـ 8 ثواني، ماشي 10 رسائل)
+    if (/SESSION_EXPIRED|Refresh Token|refresh_token/i.test(msg)) { if (Date.now() - (toast.exp || 0) < 8000) return; toast.exp = Date.now(); msg = '🔐 لأسباب الأمان خاصك تدخل من جديد — المعلومات ديالك محفوظة'; ms = Math.max(ms, 4000); }
     if (netErrRe.test(msg)) { msg = '📴 ما كاينش الإنترنت — هاد العملية كتحتاج الإنترنت، عاود ملي ترجع'; ms = Math.max(ms, 3500); }
     // الوكيل كيتفاعل: فرحان مع النجاح، حزين شوية مع الخطأ
     try { if (/✓|✅/.test(msg)) agMood('happy', null, 2200); else if (/^تعذر|خطأ|⚠️|❌/.test(msg)) agMood('sad', null, 2400); } catch (e) { /* */ }
@@ -801,7 +803,8 @@
     if (!Sy || !Sy.isOn()) return null;
     const u = Sy.uid();
     if (!MY || MY.u !== u) { try { const c = JSON.parse(localStorage.getItem('w777_my') || 'null'); MY = c && c.u === u ? c : null; } catch (e) { MY = null; } }
-    if (!force && MY && Date.now() - MY.at < 600000) return MY;
+    // ⚡ v222: الحالة المحفوظة كتكفي باش يتحل التطبيق دغيا؛ إلا قدمات (10 دقايق) كتتجدد من الخلف بلا ما نتسناوها
+    if (!force && MY) { if (Date.now() - MY.at >= 600000 && !myStatus.bg) myStatus.bg = myStatus(true).catch(() => {}).finally(() => { myStatus.bg = null; }); return MY; }
     try {
       const r = await Sy.request('/rest/v1/rpc/w777_my_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       if (r.ok) { const d = await r.json(); if (d && typeof d === 'object') { MY = Object.assign(d, { u, at: Date.now() }); try { localStorage.setItem('w777_my', JSON.stringify(MY)); } catch (e) { /* */ } } }
@@ -862,7 +865,14 @@
     if (isOffErr(e)) return `<div class="card empty net-err"><div class="big">📴</div><h3>ما كاينش الإنترنت</h3>
       <p>هاد الخانة كتجيب المعلومات من السحابة، وما تحفظاتش قبل فهاد الجهاز.<br>العقارات والطلبات والمواعيد والكراء ديالك خدامين عادي بلا إنترنت، وكيتزامنو ملي ترجع.</p>
       ${rb('gold')}</div>`;
+    if (window.W777_SYNC && window.W777_SYNC.isExpired && window.W777_SYNC.isExpired(e)) return reloginCard();
     return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} ${rb('sm')}</div>`;
+  }
+  // 🔐 v222: الجلسة تقطعات (تفعيل التحقق بخطوتين، خروج من جهاز آخر…) ← دخول من جديد بضغطة، والمعلومات باقية فالجهاز
+  function reloginCard() {
+    return `<div class="card empty relogin"><div class="big">🔐</div><h3>خاصك تدخل من جديد</h3>
+      <p>لأسباب الأمان (بحال تفعيل التحقق بخطوتين ولا الخروج من الأجهزة الأخرى) تقطعات الجلسة فهاد الجهاز.<br>العقارات والطلبات والمواعيد ديالك محفوظة، وغادي يتزامنو ملي تدخل.</p>
+      <a class="btn gold" href="#/" data-relogin>🔑 دخول من جديد</a></div>`;
   }
   // 🕒 تاريخ قصير: «اليوم 10:30» / «البارح 18:05» / «12/11 09:00»
   function whenText(t) {
@@ -1187,6 +1197,7 @@
       return;
     }
     gatedShell(`<h1>تطبيق مجموعة الوسيط</h1>
+      ${Sy.relogin && Sy.relogin() ? '<p class="relogin-note">🔐 لأسباب الأمان خاصك تدخل من جديد فهاد الجهاز (مرة وحدة). العقارات والطلبات والمواعيد ديالك محفوظة.</p>' : ''}
       <p class="muted">دخل بالإيميل ديالك: كيوصلك كود من 6 أرقام. <b>ماكايناش كلمة السر.</b></p>
       <input id="au-mail" type="email" dir="ltr" autocomplete="email" autocapitalize="off" placeholder="exemple@gmail.com" value="${esc(authMail)}" aria-label="الإيميل">
       <div id="au-cap" class="au-cap"></div>
@@ -1207,6 +1218,16 @@
     b.onclick = send; i.onkeydown = e => { if (e.key === 'Enter') send(); };
     capMount($('#au-cap'));
     $('#au-pw').onclick = () => viewAuth('pw');
+  }
+  // 🔐 v222: الجلسة تقطعات من الخادم ← نفس الخروج بلا ما نمسحو المعلومات، والإيميل كيبقى معمّر فشاشة الدخول
+  function sessionGone() {
+    if (sessionGone.busy) return; sessionGone.busy = true;
+    S.role = null; S.kind = null; S.dir = null; S.agency = null; S.roleFor = null; S.net = null; myReset();
+    ['w777_role', 'w777_agent_my', 'w777_agc1'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* */ } });
+    try { const em = window.W777_SYNC.relogin(); if (em && em.includes('@') && !/@alwasset777\.ma$/.test(em)) { authMail = em; localStorage.setItem('w777_last_email', em); } } catch (e) { /* */ }
+    AG.my = null; try { agPaintButton(); } catch (e) { /* */ }
+    toast('SESSION_EXPIRED');
+    setTimeout(() => { sessionGone.busy = false; if (/\/(new|edit)/.test(location.hash)) return; route(); }, 50);
   }
   function gateLogout() {
     const Sy = window.W777_SYNC;
@@ -1333,12 +1354,12 @@
     $('#sec-reload', box).onclick = drawSecWatch;
     $('#sec-others', box).onclick = async () => {
       if (!(await confirmBox('غادي يتخرج حسابك من كل الأجهزة الأخرى (هاد الجهاز كيبقى). كمل؟', 'خروج', true))) return;
-      try { const r = await Sy.request('/auth/v1/logout?scope=others', { method: 'POST' }); toast(r.ok ? '✅ تخرجتي من كل الأجهزة الأخرى' : '⚠️ ما تقدرش — عاود'); } catch (e) { toast(netErr(e)); }
+      try { const r = await Sy.request('/auth/v1/logout?scope=others', { method: 'POST' }); toast(r.ok ? '✅ تخرجتي من كل الأجهزة الأخرى' : '⚠️ ما تقدرش — عاود'); } catch (e) { toast((e && e.message) || e); }
       drawSecWatch();
     };
     $$('.sec-kick', box).forEach(b => b.onclick = async () => {
       if (!(await confirmBox(`طرد «${b.dataset.n}» من كل الأجهزة؟ غادي يحتاج يعاود يدخل بالكود ديال الإيميل.`, 'طرد', true))) return;
-      try { const r = await Sy.request('/rest/v1/rpc/w777_kick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_uid: b.dataset.uid }) }); toast(r.ok ? '✅ تطرد من كل الأجهزة' : '⚠️ ما تقدرش'); } catch (e) { toast(netErr(e)); }
+      try { const r = await Sy.request('/rest/v1/rpc/w777_kick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_uid: b.dataset.uid }) }); toast(r.ok ? '✅ تطرد من كل الأجهزة' : '⚠️ ما تقدرش'); } catch (e) { toast((e && e.message) || e); }
       drawSecWatch();
     });
   }
@@ -3284,8 +3305,8 @@
   }
 
   /* ---------- بطاقة المزامنة السحابية ---------- */
-  const SYNC_LABEL = { off: 'غير مفعلة', idle: 'متصل', syncing: 'جاري المزامنة…', ok: 'متزامن ✓', warn: 'متزامن مع تنبيه', error: 'خطأ', offline: 'بدون إنترنت' };
-  const SYNC_COLOR = { off: 'gray', idle: 'blue', syncing: 'blue', ok: 'green', warn: 'amber', error: 'red', offline: 'amber' };
+  const SYNC_LABEL = { expired: 'خاصك تدخل من جديد', off: 'غير مفعلة', idle: 'متصل', syncing: 'جاري المزامنة…', ok: 'متزامن ✓', warn: 'متزامن مع تنبيه', error: 'خطأ', offline: 'بدون إنترنت' };
+  const SYNC_COLOR = { expired: 'amber', off: 'gray', idle: 'blue', syncing: 'blue', ok: 'green', warn: 'amber', error: 'red', offline: 'amber' };
   async function cloudCard() {
     const Sy = window.W777_SYNC;
     if (Sy.isOn()) {
@@ -3435,6 +3456,7 @@
     const on = fs.length > 0;
     box.innerHTML = `<h3 class="section-title">🔐 التحقق بخطوتين <span class="badge ${on ? 'green' : 'gray'}">${on ? 'مفعّل' : 'غير مفعّل'}</span></h3>
       <p class="muted" style="margin-top:0">${on ? 'ملي كتدخل لحساب المدير من أي جهاز، التطبيق كيطلب كلمة السر + رمز من تطبيق Google Authenticator. حتى إلا عرف شي حد كلمة السر ما يقدرش يدخل.' : 'حماية زايدة لحساب المدير: من بعد كلمة السر، التطبيق كيطلب رمز من تطبيق Google Authenticator (فابور) فالتيليفون ديالك.'}</p>
+      ${on ? '' : '<p class="muted" style="font-size:12.5px">📱 ملاحظة: من بعد التفعيل، الأجهزة الأخرى اللي داخل فيها (التيليفون، التابليت…) غادي تطلب منك الدخول من جديد مرة وحدة — هادي حماية عادية، والمعلومات ما كتضيعش.</p>'}
       <div class="btn-row">${on ? '<button class="btn danger" id="mfa-off">إيقاف التحقق بخطوتين</button>' : '<button class="btn gold" id="mfa-on">تفعيل التحقق بخطوتين</button>'}</div>`;
     if (on) $('#mfa-off').onclick = async () => {
       if (!(await confirmBox('إيقاف التحقق بخطوتين؟ الحساب غادي يولي محمي غير بكلمة السر.', 'إيقاف'))) return;
@@ -3524,6 +3546,7 @@
     };
     Sy.onStatus(st => {
       paint(st);
+      if (st.state === 'expired') { sessionGone(); return; }
       if (st.state === 'error') toast('المزامنة: ' + st.msg, 4000);
       if (location.hash.startsWith('#/settings') && st.state !== 'syncing' && !$('#cl-form')) {
         cloudCard().then(html => { const c = $('#cloud-card'); if (c) { c.outerHTML = html; bindCloudCard(); } });
@@ -4330,6 +4353,7 @@
           const m = String(e.message || e);
           // ما كاينش مفتاح: نجاوبو بالمساعد المجاني بلا ما نوقفو الخدمة
           if (/no_key/.test(m)) { AG.history.splice(base); AG.busy = false; agLocal(text); return; }
+          if (window.W777_SYNC.isExpired(e)) { AG.history.splice(base); AG.busy = false; AG.view.push({ who: 'bot', text: '🔐 خاصك تدخل من جديد للحساب باش يرجع الوكيل الذكي — دابا غادي نجاوبك بالمساعد المحلي ديال الجهاز.' }); agLocal(text); return; }
           // 📴 بلا إنترنت: المساعد المحلي كيجاوب (الحسابات، الشرح، معلومات الجهاز)
           if (isOffErr(e) && !(AG.live && AG.live.text)) { AG.history.splice(base); AG.busy = false; AG.view.push({ who: 'bot', text: '📴 ما كاينش الإنترنت — غادي نجاوبك بالمساعد المحلي ديال الجهاز.' }); agLocal(text); return; }
           if (!AG.live || !AG.live.text) AG.view.push({ who: 'bot', text: /quota/.test(m) ? t.quota : t.err });

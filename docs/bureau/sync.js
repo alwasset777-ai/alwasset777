@@ -34,11 +34,12 @@
   async function authCall(url, key, path, body) {
     const res = await fetch(url + path, { method: 'POST', headers: { apikey: key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error_description || data.msg || data.message || data.error || ('HTTP ' + res.status));
+    if (!res.ok) { const er = new Error(data.error_description || data.msg || data.message || data.error || ('HTTP ' + res.status)); er.status = res.status; er.code = data.error_code || data.error || ''; throw er; }
     return data;
   }
   function takeSession(url, key, d) {
     const prev = st;
+    try { localStorage.removeItem('w777_relogin'); } catch (e) { /* */ }
     st = {
       url, key, email: d.user && d.user.email, uid: d.user && d.user.id,
       access: d.access_token, refresh: d.refresh_token,
@@ -196,12 +197,39 @@
       throw e;
     }
   }
-  async function refreshToken() {
-    const d = await authCall(st.url, st.key, '/auth/v1/token?grant_type=refresh_token', { refresh_token: st.refresh });
-    takeSession(st.url, st.key, d);
+  // 🔐 v222: تجديد الجلسة مرة وحدة فالمرة (بزاف ديال الطلبات فنفس الوقت كيتسناو نفس التجديد)،
+  // وإلا الحماية قطعات الجلسة (تفعيل التحقق بخطوتين، «خروج من الأجهزة الأخرى»، طرد…) ← كنخرجو نقيين بلا تكرار:
+  // المعلومات ديال الجهاز كتبقى، والتطبيق كيطلب الدخول من جديد بكلام واضح.
+  const EXPIRED = 'SESSION_EXPIRED';
+  const isExpired = e => !!(e && (e.expired || String(e.message || e) === EXPIRED || /refresh token|refresh_token_(not_found|already_used)|session_not_found|session_expired/i.test(String((e && (e.message + ' ' + (e.code || ''))) || e))));
+  let refreshing = null;
+  function expireSession() {
+    if (!st) return;
+    try { localStorage.setItem('w777_relogin', st.email || '1'); } catch (e) { /* */ }
+    st = null; save(); signed = {}; try { localStorage.removeItem(SIGN_LS); } catch (e) { /* */ } clearApiCache();
+    setStatus('expired', 'خاصك تدخل من جديد');
+  }
+  function refreshToken() {
+    if (refreshing) return refreshing;
+    const cur = st;
+    refreshing = (async () => {
+      // صفحة أخرى (ولا نافذة) جددات قبلنا ← كناخدو الرمز الجديد بلا ما نستعملو القديم (القديم كيقطع الجلسة)
+      try {
+        const s2 = JSON.parse(localStorage.getItem(LS) || 'null');
+        if (s2 && cur && s2.uid === cur.uid && s2.refresh && s2.refresh !== cur.refresh && s2.exp * 1000 > Date.now() + 60000) { Object.assign(cur, { access: s2.access, refresh: s2.refresh, exp: s2.exp }); return; }
+      } catch (e) { /* */ }
+      try {
+        const d = await authCall(cur.url, cur.key, '/auth/v1/token?grant_type=refresh_token', { refresh_token: cur.refresh });
+        if (st === cur) takeSession(cur.url, cur.key, d);
+      } catch (e) {
+        if (!isNetErr(e) && e.status >= 400 && e.status < 500 && isExpired(e)) { if (st === cur) expireSession(); const x = new Error(EXPIRED); x.expired = true; throw x; }
+        throw e;
+      }
+    })().finally(() => { refreshing = null; });
+    return refreshing;
   }
   async function api(path, opts = {}, retry = true) {
-    if (!st) throw new Error('غير متصل بالحساب');
+    if (!st) { if (localStorage.getItem('w777_relogin')) { const x = new Error(EXPIRED); x.expired = true; throw x; } throw new Error('غير متصل بالحساب'); }
     if (st.exp * 1000 < Date.now() + 60000) await refreshToken();
     const headers = Object.assign({ apikey: st.key, Authorization: 'Bearer ' + st.access }, opts.headers || {});
     const res = await fetch(st.url + path, Object.assign({}, opts, { headers }));
@@ -555,7 +583,7 @@
     onChange: f => changeCbs.push(f),
     // يُنفَّذ بعد كل سحب (مثلا: جلب عقارات الوكالات الشريكة)
     onPulled: f => pullHooks.push(f),
-    request, offlineAt: () => offAt, staleAt: () => staleAt, staleReset: () => { staleAt = 0; }, okAt: () => okAt, clearApiCache, isNetErr,
+    request, isExpired, relogin: () => { try { return localStorage.getItem('w777_relogin') || ''; } catch (e) { return ''; } }, offlineAt: () => offAt, staleAt: () => staleAt, staleReset: () => { staleAt = 0; }, okAt: () => okAt, clearApiCache, isNetErr,
     uid: () => st && st.uid,
     // مول البيانات (المكتب) — الموظف كيخدم على بيانات مولاه
     dataOwner: dOwner,
