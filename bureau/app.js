@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v233'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v234'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1737,7 +1737,8 @@
         hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
         hubPic('#/learn', 'academy', 'أكاديمية مجموعة الوسيط', '7 وحدات + شهادة', '#b8860b'),
         hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري')]],
-      net: ['✦ مجموعة الوسيط', HUB_NET.map(r => hubImg(r))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
+      // 👤➕ v234: دائرة «مشترك جديد» مع الدوائر السبعة: المدير ← نافذة الإضافة (واتساب، QR)؛ المشترك ← شاشة QR بالكود ديالو باش يدعي شي واحد
+      net: ['✦ مجموعة الوسيط', [...HUB_NET.map(r => hubImg(r)), hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك')]], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
   }
   // 🎠 v232: سطر فالرئيسية: العنوان على اليمين، والدوائر كتتمرر باليد (اليسار ← اليمين)
