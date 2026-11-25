@@ -199,7 +199,7 @@
     props: [],
     reqs: [],
     appts: [],
-    ledger: [], leases: [],
+    ledger: [], leases: [], works: [],
     role: null, agency: null, net: null, netFilters: null,
     custom: {},       // أحياء مضافة يدويا { مدينة: [أحياء] }
     settings: {},
@@ -209,11 +209,11 @@
   const urlCache = new Map();
 
   async function loadAll() {
-    const [props, reqs, custom, settings, appts, ledger, leases] = await Promise.all([
+    const [props, reqs, custom, settings, appts, ledger, leases, works] = await Promise.all([
       DB.all('properties'), DB.all('requests'), DB.getMeta('customDistricts', {}), DB.getMeta('settings', {}), DB.all('appointments'),
-      DB.getMeta('ledger', []), DB.getMeta('leases', []),
+      DB.getMeta('ledger', []), DB.getMeta('leases', []), DB.getMeta('works', []),
     ]);
-    S.ledger = Array.isArray(ledger) ? ledger : []; S.leases = Array.isArray(leases) ? leases : [];
+    S.ledger = Array.isArray(ledger) ? ledger : []; S.leases = Array.isArray(leases) ? leases : []; S.works = Array.isArray(works) ? works : [];
     S.appts = appts;
     S.props = props.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     dropMatches();
@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v234'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v235'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1591,6 +1591,8 @@
     else if (a === 'notaries') { nav = a; await viewNetKind('notary', parts, query); }
     else if (a === 'associations') { nav = a; await viewNetKind('association', parts, query); }
     else if (a === 'members') { nav = a; await viewNetKind('member', parts, query); }
+    else if (a === 'works') { nav = 'works'; await viewWorks(query); }
+    else if (a === 'work') { nav = 'works'; await viewWorkForm(b, parts[2]); }
     else if (a === 'terms') { nav = b === 'groups' ? 'groups' : 'terms'; await viewTerms(b); }
     else if (a === 'projects') { nav = a; await viewProjects(parts, query); }
     else if (a === 'events') { nav = a; await viewEvents(parts); }
@@ -1601,6 +1603,7 @@
     else { await viewHome(); }
     $$('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
     $$('.sidenav [data-nav=members]').forEach(el => { el.hidden = !(S.role === 'admin' || S.kind === 'member'); });
+    $$('.sidenav [data-nav=works]').forEach(el => { el.hidden = !wkMine().length; }); paintFab();
     { const bm = $('#bn-more'); if (bm) bm.classList.toggle('active', !document.querySelector('.bottomnav a.active')); }
     if (a !== 'properties') $('#q').value = '';
     placeLang();
@@ -1748,7 +1751,7 @@
       <div class="hr-strip" role="list">${M[1].join('')}</div></div>`;
   }
   function homeMenu(kind, nAppts) {
-    const M = hubItems(kind);
+    const M = kind === 'add' && wkAddTiles() ? ['➕ إضافة', wkAddTiles()] : hubItems(kind);
     if (!M) return;
     modal(`<h3>${M[0]}</h3><div class="hub hub-menu hub-spin${kind === 'net' ? ' hub-big' : ''}">${M[1].join('')}</div>`, (box, close) => {
       $$('.hub-tile', box).forEach(a => a.addEventListener('click', () => close()));
@@ -6635,6 +6638,191 @@
       sv: ['شراء', 'كراء', 'كراء موسمي / عطلة', 'استثمار', 'بيع عقار ديالي', 'تقييم عقار', 'تمويل / قرض', 'أراضي'] },
   };
   const kindOf = a => (a && a.kind) || 'agency';
+
+  /* ============================================================
+     v235: 📋 ملفات المهنة — كل فئة عندها الخانات ديالها
+     (الوكالة والوسيط: عقار/طلب/موعد كيف ما كان؛ المقاولة، التشطيب، الموثق، المستثمر، الجمعية، «آخر»: نماذج خاصة)
+     كيتحفظو فاللائحة المتزامنة 'works' (بحال الحسابات وعقود الكراء)
+     ============================================================ */
+  const WF = (k, l, t = 'text', x = {}) => Object.assign({ k, l, t }, x);
+  const WK_CLIENT = [WF('client', 'الزبون', 'text', { req: 1 }), WF('phone', 'الهاتف / واتساب', 'tel')];
+  const WK_SITE_ST = ['دراسة', 'جاري', 'متوقف', 'تسلّم مؤقت', 'تسلّم نهائي'];
+  const WK_QUOTE_ST = ['مسودة', 'مرسل', 'مقبول', 'مرفوض'];
+  const WK_LEAD_ST = ['جديد', 'تواصلت', 'زيارة', 'عرض مرسل', 'ربحتو', 'ضاع'];
+  const WK_SRC = ['واتساب', 'هاتف', 'فيسبوك / إنستغرام', 'توصية', 'وكالة من الشبكة', 'زيارة للمكتب', 'أخرى'];
+  const wkN = v => num(v) || 0;
+  const wkM = v => fmtRaw(Math.round(v || 0)) + ' درهم';
+  const wkLeft = x => { const a = wkN(x.amount), p = wkN(x.paid); return a ? [['💰 الباقي', wkM(a - p)], ['📊 المقبوض', Math.round(p * 100 / a) + '%']] : []; };
+  const wkQuoteSum = x => { const ht = wkN(x.total) || wkN(x.qty) * wkN(x.unitPrice), t = wkN(x.tva); return ht ? [['المبلغ بلا ضريبة', wkM(ht)], ...(t ? [['الضريبة ' + t + '%', wkM(ht * t / 100)]] : []), ['🧾 المجموع', wkM(ht * (1 + t / 100))]] : []; };
+  const wkQuote = (works, kinds) => ({ ic: '🧾', t: 'عرض ثمن (Devis)', tp: 'عروض الثمن', kinds, st: WK_QUOTE_ST, head: x => x.project || x.client,
+    fields: [...WK_CLIENT, WF('project', 'المشروع / العنوان', 'text', { req: 1 }), WF('works', 'الأشغال', 'multi', { opts: works }),
+      WF('qty', 'الكمية / المساحة', 'num'), WF('unit', 'الوحدة', 'select', { opts: ['م²', 'م خطي', 'وحدة', 'جزافي'] }), WF('unitPrice', 'ثمن الوحدة (درهم)', 'money'),
+      WF('total', 'المبلغ بلا ضريبة (إلا كان جزافي)', 'money', { more: 1 }), WF('tva', 'الضريبة على القيمة المضافة', 'select', { opts: ['0', '10', '20'], more: 1 }),
+      WF('materials', 'المواد', 'select', { opts: ['مشمولة فالثمن', 'على حساب الزبون', 'جزئياً'], more: 1 }), WF('delay', 'مدة الإنجاز (يوم)', 'num', { more: 1 }),
+      WF('validity', 'صلاحية العرض (يوم)', 'num', { more: 1, def: 30 }), WF('payment', 'شروط الأداء', 'text', { more: 1, ph: 'مثلا: 30% تسبيق، 40% فالنص، 30% فالتسليم' }),
+      WF('warranty', 'الضمان (شهر)', 'num', { more: 1 }), WF('status', 'الحالة', 'status'), WF('notes', 'ملاحظات', 'area', { more: 1 })], calc: wkQuoteSum });
+  const wkLead = (works, kinds) => ({ ic: '📥', t: 'طلب أشغال', tp: 'طلبات الأشغال', kinds, st: WK_LEAD_ST, head: x => x.client,
+    fields: [...WK_CLIENT, WF('city', 'المدينة', 'city'), WF('address', 'العنوان / الحي'), WF('works', 'الأشغال المطلوبة', 'multi', { opts: works }),
+      WF('area', 'المساحة (م²)', 'num'), WF('budget', 'الميزانية ديال الزبون (درهم)', 'money'), WF('wanted', 'متى بغا يبدا', 'date', { more: 1 }),
+      WF('source', 'منين جا', 'select', { opts: WK_SRC, more: 1 }), WF('status', 'الحالة', 'status'), WF('notes', 'ملاحظات', 'area', { more: 1 })] });
+  const WORK_TYPES = {
+    // 🏗️ شركات المقاولات
+    c_site: { ic: '🏗️', t: 'ورش بناء', tp: 'الأوراش', kinds: ['contractor'], st: WK_SITE_ST, head: x => x.title, calc: wkLeft,
+      fields: [WF('title', 'اسم المشروع', 'text', { req: 1, ph: 'مثلا: فيلا السيد… — الرياض' }), ...WK_CLIENT, WF('city', 'المدينة', 'city'), WF('address', 'العنوان / الحي'),
+        WF('works', 'نوع الأشغال', 'select', { opts: ['بناء فيلا', 'بناء عمارة', 'دار سكنية', 'ترميم / إصلاح', 'زيادة طابق / توسعة', 'تجزئة وتهيئة', 'هندسة مدنية', 'طرق وقنوات', 'مستودع / هنكار', 'مفتاح فاليد'] }),
+        WF('amount', 'مبلغ الصفقة (درهم)', 'money'), WF('paid', 'المقبوض (درهم)', 'money'), WF('progress', 'نسبة التقدم %', 'pct'), WF('status', 'الحالة', 'status'),
+        WF('area', 'المساحة المبنية (م²)', 'num', { more: 1 }), WF('floors', 'عدد الطوابق', 'num', { more: 1 }), WF('permit', 'رقم رخصة البناء', 'text', { more: 1 }),
+        WF('architect', 'المهندس المعماري / مكتب الدراسات', 'text', { more: 1 }), WF('start', 'تاريخ البداية', 'date', { more: 1 }), WF('months', 'مدة الإنجاز (شهر)', 'num', { more: 1 }),
+        WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    c_quote: wkQuote(['أشغال كبرى (Gros œuvre)', 'الحفر والأساسات', 'الخرسانة المسلحة', 'البناء بالآجور', 'السقف والبلانشي', 'التلبيس (Enduit)', 'الترصيص', 'الكهرباء', 'التهيئة الخارجية', 'مفتاح فاليد'], ['contractor']),
+    c_lead: wkLead(['بناء فيلا', 'بناء عمارة', 'ترميم', 'زيادة طابق', 'تجزئة', 'مفتاح فاليد'], ['contractor']),
+    // 🎨 شركات التشطيب
+    f_site: { ic: '🎨', t: 'ورش تشطيب', tp: 'الأوراش', kinds: ['finishing'], st: WK_SITE_ST, head: x => x.title || x.client, calc: wkLeft,
+      fields: [WF('title', 'اسم الورش', 'text', { ph: 'مثلا: شقة السيدة… — حمرية' }), ...WK_CLIENT, WF('city', 'المدينة', 'city'), WF('address', 'العنوان / الحي'),
+        WF('ptype', 'نوع العقار', 'select', { opts: ['شقة', 'فيلا', 'دار', 'رياض', 'محل تجاري', 'مكتب'] }), WF('works', 'الأشغال', 'multi', { opts: KINDS.finishing.sv }),
+        WF('amount', 'مبلغ الصفقة (درهم)', 'money'), WF('paid', 'المقبوض (درهم)', 'money'), WF('progress', 'نسبة التقدم %', 'pct'), WF('status', 'الحالة', 'status'),
+        WF('area', 'المساحة (م²)', 'num', { more: 1 }), WF('team', 'رئيس الفريق / المعلم', 'text', { more: 1 }), WF('start', 'تاريخ البداية', 'date', { more: 1 }),
+        WF('days', 'مدة الإنجاز (يوم)', 'num', { more: 1 }), WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    f_quote: wkQuote(KINDS.finishing.sv, ['finishing']),
+    f_lead: wkLead(KINDS.finishing.sv, ['finishing']),
+    // 🖋️ الموثقون
+    n_deed: { ic: '📝', t: 'ملف توثيق', tp: 'ملفات التوثيق', kinds: ['notary'], head: x => (x.dtype || 'عقد') + (x.seller || x.buyer ? ' — ' + [x.seller, x.buyer].filter(Boolean).join(' / ') : ''),
+      st: ['فتح الملف', 'جمع الوثائق', 'تحرير العقد', 'التوقيع', 'التسجيل', 'المحافظة العقارية', 'مكتمل'],
+      calc: x => { const p = wkN(x.price), f = wkN(x.fees), r = wkN(x.taxes); return [...(p ? [['الثمن', wkM(p)]] : []), ...(f || r ? [['💰 الأتعاب + الرسوم', wkM(f + r)]] : []), ...(x.docs ? [['📎 الوثائق', (x.docs || []).length + ' / 8']] : [])]; },
+      fields: [WF('dtype', 'نوع العقد', 'select', { req: 1, opts: ['بيع', 'وعد بالبيع', 'بيع فطور الإنجاز (VEFA)', 'كراء', 'هبة', 'قسمة / إراثة', 'رهن', 'تأسيس شركة', 'وكالة', 'أخرى'] }),
+        WF('fileNo', 'رقم الملف'), WF('seller', 'الطرف الأول (البائع / المكري / الواهب)'), WF('buyer', 'الطرف الثاني (المشتري / المكتري)'), WF('phone', 'هاتف للتواصل', 'tel'),
+        WF('titre', 'الرسم العقاري (رقم)'), WF('city', 'المدينة', 'city'), WF('price', 'الثمن (درهم)', 'money'), WF('sign', 'تاريخ التوقيع', 'date'), WF('status', 'المرحلة', 'status'),
+        WF('docs', 'الوثائق اللي وصلات', 'multi', { opts: ['شهادة الملكية', 'بطائق التعريف', 'شهادة إبراء الضرائب', 'رخصة السكن / المطابقة', 'التصميم', 'عقد الشراء السابق', 'شهادة الحالة المدنية', 'الوكالة'] }),
+        WF('sellerId', 'بطاقة الطرف الأول', 'text', { more: 1 }), WF('buyerId', 'بطاقة الطرف الثاني', 'text', { more: 1 }), WF('area', 'المساحة (م²)', 'num', { more: 1 }),
+        WF('agency', 'الوكالة / الوسيط اللي صيفط الملف', 'text', { more: 1 }), WF('fees', 'الأتعاب (درهم)', 'money', { more: 1 }), WF('taxes', 'رسوم التسجيل والمحافظة (درهم)', 'money', { more: 1 }),
+        WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    n_consult: { ic: '💬', t: 'استشارة', tp: 'الاستشارات', kinds: ['notary'], st: ['جديدة', 'تجاوبات', 'تحولات لملف', 'مغلقة'], head: x => x.client + (x.subject ? ' — ' + x.subject : ''),
+      fields: [...WK_CLIENT, WF('subject', 'الموضوع', 'select', { opts: ['بيع', 'شراء', 'إرث', 'هبة', 'كراء', 'شركة', 'رهن / قرض', 'تحفيظ', 'أخرى'] }), WF('date', 'التاريخ', 'date', { def: 'today' }),
+        WF('question', 'السؤال', 'area'), WF('answer', 'الجواب / التوجيه', 'area'), WF('fee', 'الأتعاب (درهم)', 'money', { more: 1 }), WF('status', 'الحالة', 'status')] },
+    // 💼 المستثمرون
+    i_crit: { ic: '🎯', t: 'معايير الاستثمار', tp: 'معايير الاستثمار', kinds: ['investor'], st: ['نشيطة', 'موقوفة'], head: x => (x.mode || 'استثمار') + (x.cities ? ' — ' + x.cities : ''),
+      fields: [WF('sectors', 'القطاعات', 'multi', { opts: KINDS.investor.sv }), WF('mode', 'طريقة الاستثمار', 'select', { opts: ['شراء', 'شراكة', 'تمويل مشروع', 'كراء طويل', 'ترميم وإعادة البيع'] }),
+        WF('cities', 'المدن', 'text', { ph: 'مكناس، فاس، الدار البيضاء…' }), WF('budgetMin', 'الميزانية من (درهم)', 'money'), WF('budgetMax', 'إلى (درهم)', 'money'),
+        WF('yield', 'المردودية المطلوبة %', 'num'), WF('horizon', 'المدة (سنوات)', 'num', { more: 1 }), WF('status', 'الحالة', 'status'), WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    i_asset: { ic: '📊', t: 'عقار فالمحفظة', tp: 'المحفظة', kinds: ['investor'], st: ['مكري', 'خاوي', 'فطور الإنجاز', 'معروض للبيع', 'مبيوع'], head: x => x.title,
+      calc: x => { const b = wkN(x.buyPrice), r = wkN(x.rent) * 12, c = wkN(x.costs), v = wkN(x.value);
+        return b ? [...(r ? [['📈 المردودية الخامة', (r * 100 / b).toFixed(1) + '%'], ['📈 الصافية', ((r - c) * 100 / b).toFixed(1) + '%']] : []), ...(v ? [['💹 الربح فالقيمة', wkM(v - b)]] : [])] : []; },
+      fields: [WF('title', 'العقار', 'text', { req: 1, ph: 'مثلا: شقة 90م² — حمرية' }), WF('ptype', 'النوع', 'select', { opts: ['شقة', 'فيلا', 'دار', 'محل تجاري', 'مكتب', 'أرض', 'مستودع', 'فندق / رياض'] }),
+        WF('city', 'المدينة', 'city'), WF('buyPrice', 'ثمن الشراء (درهم)', 'money'), WF('rent', 'الكراء الشهري (درهم)', 'money'), WF('costs', 'المصاريف السنوية (درهم)', 'money'),
+        WF('value', 'القيمة الحالية (درهم)', 'money', { more: 1 }), WF('buyDate', 'تاريخ الشراء', 'date', { more: 1 }), WF('status', 'الحالة', 'status'), WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    // 🏘️ الجمعيات السكنية
+    a_proj: { ic: '🏘️', t: 'مشروع سكني', tp: 'المشاريع', kinds: ['association'], st: ['التأسيس', 'شراء الأرض', 'الدراسات والرخص', 'البناء', 'التسليم'], head: x => x.title,
+      calc: x => { const b = wkN(x.budget), u = wkN(x.units); return b && u ? [['👤 نصيب كل وحدة', wkM(b / u)]] : []; },
+      fields: [WF('title', 'اسم المشروع', 'text', { req: 1 }), WF('city', 'المدينة', 'city'), WF('units', 'عدد الوحدات / البقع', 'num'), WF('members', 'عدد الأعضاء', 'num'),
+        WF('land', 'الأرض', 'select', { opts: ['كنقلبو على أرض', 'فالمفاوضات', 'مشرية', 'محفظة'] }), WF('landArea', 'مساحة الأرض (م²)', 'num'), WF('budget', 'الميزانية الكلية (درهم)', 'money'),
+        WF('status', 'المرحلة', 'status'), WF('titre', 'الرسم العقاري', 'text', { more: 1 }), WF('contractor', 'المقاول', 'text', { more: 1 }), WF('notary', 'الموثق', 'text', { more: 1 }),
+        WF('architect', 'المهندس', 'text', { more: 1 }), WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    a_member: { ic: '👥', t: 'عضو', tp: 'الأعضاء', kinds: ['association'], st: ['نشيط', 'متأخر فالأداء', 'منسحب'], head: x => x.client, calc: x => { const d = wkN(x.due), p = wkN(x.paid); return d ? [['💰 الباقي', wkM(d - p)], ['📊 المدفوع', Math.round(p * 100 / d) + '%']] : []; },
+      fields: [WF('client', 'الاسم الكامل', 'text', { req: 1 }), WF('phone', 'الهاتف', 'tel'), WF('no', 'رقم العضوية'), WF('unit', 'البقعة / الشقة'),
+        WF('due', 'المبلغ المطلوب (درهم)', 'money'), WF('paid', 'المدفوع (درهم)', 'money'), WF('status', 'الحالة', 'status'), WF('cin', 'رقم البطاقة', 'text', { more: 1 }), WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    a_pay: { ic: '💰', t: 'مساهمة / أداء', tp: 'المساهمات', kinds: ['association'], head: x => x.client, sum: 'amount',
+      calc: x => wkN(x.amount) ? [['💰 المبلغ', wkM(x.amount)]] : [],
+      fields: [WF('client', 'العضو', 'member', { req: 1 }), WF('amount', 'المبلغ (درهم)', 'money', { req: 1 }), WF('date', 'التاريخ', 'date', { def: 'today' }),
+        WF('method', 'الطريقة', 'select', { opts: ['نقدا', 'تحويل بنكي', 'شيك', 'إيداع'] }), WF('receipt', 'رقم الوصل'), WF('notes', 'ملاحظات', 'area', { more: 1 })] },
+    a_need: { ic: '📢', t: 'حاجة للجمعية', tp: 'الحاجات', kinds: ['association'], st: ['كنقلبو', 'لقينا', 'تم'], head: x => (x.ntype || '') + (x.city ? ' — ' + x.city : ''),
+      fields: [WF('ntype', 'شنو خاصكم', 'select', { req: 1, opts: ['أرض', 'مقاول', 'شركة تشطيب', 'موثق', 'مهندس', 'تمويل / بنك'] }), WF('city', 'المدينة', 'city'),
+        WF('budget', 'الميزانية (درهم)', 'money'), WF('details', 'التفاصيل', 'area'), WF('status', 'الحالة', 'status')] },
+    // 👤 «آخر» (زبون ولا من خارج العقار)
+    m_prop: { ic: '🏠', t: 'عقار ديالي للبيع / الكراء', tp: 'عقاراتي', kinds: ['member'], st: ['مسودة', 'تصيفط للمكتب'], head: x => [x.trx, x.ptype, x.city].filter(Boolean).join(' — '), office: 1,
+      fields: [WF('trx', 'بغيت', 'select', { req: 1, opts: ['نبيع', 'نكري'] }), WF('ptype', 'النوع', 'select', { req: 1, opts: ['شقة', 'فيلا', 'دار', 'رياض', 'أرض', 'محل تجاري', 'مكتب'] }),
+        WF('city', 'المدينة', 'city', { req: 1 }), WF('district', 'الحي'), WF('area', 'المساحة (م²)', 'num'), WF('rooms', 'عدد البيوت', 'num'), WF('price', 'الثمن المطلوب (درهم)', 'money'),
+        WF('phone', 'رقمك', 'tel', { req: 1 }), WF('details', 'وصف قصير', 'area'), WF('status', 'الحالة', 'status')] },
+  };
+  const wkTypesFor = kind => Object.entries(WORK_TYPES).filter(([, t]) => t.kinds.includes(kind)).map(([id, t]) => Object.assign({ id }, t));
+  const wkMine = () => wkTypesFor(S.kind);
+  const wkItems = type => live('works').filter(x => x.type === type).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  // ➕ قائمة «إضافة» حسب الفئة (الوكالة، الوسيط والمدير: كيف ما كانت)
+  function wkAddTiles() {
+    const T = wkMine(); if (!T.length) return null;
+    const C = ['#ff5a5f', '#4aa3ff', '#20c997', '#ffb02e', '#b39ddb', '#e84393'];
+    const tiles = T.map((t, i) => hubTile('#/work/' + t.id + '/new', C[i % C.length], `<i class="emo">${t.ic}</i>`, t.t, ''));
+    if (S.kind === 'investor') tiles.push(hubTile('#/investors', '#f4a62a', '<i class="emo">💼</i>', 'عرض استثمار', 'فالشبكة'), hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'عقار للبيع', ''));
+    if (S.kind === 'member') tiles.push(hubTile('#/agencies', '#4aa3ff', '<i class="emo">🔍</i>', 'تصفح العقارات', 'ديال الوكالات'));
+    if (S.kind !== 'member') tiles.push(hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'موعد جديد', ''));
+    tiles.push(hubTile('#/works', '#6c757d', '<i class="emo">📋</i>', 'ملفاتي', 'كل اللي سجلتي'));
+    return tiles;
+  }
+  // قائمة «+» العائمة حسب الفئة
+  let fabOrig = null;
+  function paintFab() {
+    const m = $('#fab-menu'); if (!m) return;
+    if (fabOrig === null) fabOrig = m.innerHTML;
+    const T = wkMine(), key = T.length ? S.kind : '';
+    if (m.dataset.k === key) return; m.dataset.k = key;
+    if (!T.length) { m.innerHTML = fabOrig; return; }
+    m.innerHTML = '<a href="#/qr">📱 QR: جرّب / سجّل</a>' + T.map(t => `<a href="#/work/${t.id}/new">${t.ic} ${esc(t.t)}</a>`).join('')
+      + (S.kind !== 'member' ? '<a href="#/appointment/new">📅 موعد جديد</a>' : '<a href="#/agencies">🔍 تصفح العقارات</a>') + '<a href="#/works">📋 ملفاتي</a><a href="#" data-act="story">📸 ستوري جديد (نص ولا صورة)</a>';
+  }
+  const wkVal = (f, x) => { const v = x[f.k]; if (v == null || v === '' || (Array.isArray(v) && !v.length)) return ''; if (f.t === 'money') return wkM(v); if (f.t === 'pct') return v + '%'; if (f.t === 'date') return dAr(v); return Array.isArray(v) ? v.join('، ') : String(v); };
+  function wkField(T, f, x) {
+    const v = x[f.k] != null ? x[f.k] : (f.def === 'today' ? today() : f.def != null ? f.def : '');
+    const o = { req: f.req, ph: f.ph, cls: f.t === 'area' || f.t === 'multi' ? 'full' : '' };
+    if (f.t === 'money') return fInput(f.k, f.l, v, Object.assign(o, { money: true }));
+    if (f.t === 'num' || f.t === 'pct') return fInput(f.k, f.l, v, Object.assign(o, { type: 'number', attrs: f.t === 'pct' ? 'min="0" max="100"' : 'min="0"' }));
+    if (f.t === 'date') return fInput(f.k, f.l, v, Object.assign(o, { type: 'date' }));
+    if (f.t === 'tel') return fInput(f.k, f.l, v, Object.assign(o, { type: 'tel', attrs: 'dir="ltr"' }));
+    if (f.t === 'city') return fInput(f.k, f.l, v, Object.assign(o, { list: 'dl-cities' }));
+    if (f.t === 'area') return fText(f.k, f.l, v, { ph: f.ph });
+    if (f.t === 'select') return fSelect(f.k, f.l, f.opts, v, { req: f.req });
+    if (f.t === 'status') return fSelect(f.k, f.l, T.st || [], v || (T.st || [])[0], { noEmpty: true });
+    if (f.t === 'member') return fSelect(f.k, f.l, [...new Set(wkItems('a_member').map(m => m.client).filter(Boolean))], v, { req: f.req, empty: '— اختر العضو —' });
+    if (f.t === 'multi') return `<div class="field full"><label>${esc(f.l)}</label>${fChecks(f.k, f.opts, v || [])}</div>`;
+    return fInput(f.k, f.l, v, o);
+  }
+  const wkCalcHtml = (T, x) => { const c = T.calc ? T.calc(x) : []; return c.length ? `<div class="kv kv-sm wk-calc">${c.map(([l, v]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b></div>`).join('')}</div>` : ''; };
+  async function viewWorks(query) {
+    const T = wkMine();
+    if (!T.length) { main().innerHTML = `<div class="page-head"><h1>📋 ملفاتي</h1></div><div class="card empty">الفئة ديالك كتستعمل «العقارات» و«الطلبات» و«المواعيد».</div>`; return; }
+    const cur = T.find(t => t.id === query.t) || T[0], items = wkItems(cur.id);
+    const sumK = cur.sum || (cur.fields.some(f => f.k === 'amount') ? 'amount' : '');
+    main().innerHTML = `<div class="page-head"><h1>📋 ملفاتي</h1><a class="btn gold" href="#/work/${cur.id}/new">${ic('plus', 18)} ${esc(cur.t)}</a></div>
+      <div class="chips wk-tabs">${T.map(t => `<a class="chip${t.id === cur.id ? ' on' : ''}" href="#/works?t=${t.id}">${t.ic} ${esc(t.tp)} <b>${wkItems(t.id).length}</b></a>`).join('')}</div>
+      <div class="card card-pad" style="margin:12px 0"><div class="form-grid">${fInput('wq', 'بحث', query.q || '', { ph: 'اسم، هاتف، مدينة…', cls: 'full' })}</div>
+        <div class="btn-row" style="margin-top:8px"><span class="muted" id="wk-n"></span>${sumK ? `<span class="badge gold" id="wk-sum"></span>` : ''}</div></div>
+      <div class="wk-list" id="wk-list"></div>`;
+    const draw = () => {
+      const t = tokens($('[name=wq]').value || ''), res = items.filter(x => !t.length || hit(norm(cur.fields.map(f => wkVal(f, x)).join(' ')), t));
+      $('#wk-n').textContent = res.length + ' ' + cur.tp;
+      if (sumK) $('#wk-sum').textContent = 'المجموع: ' + wkM(res.reduce((s, x) => s + wkN(x[sumK]), 0));
+      $('#wk-list').innerHTML = res.map(x => {
+        return `<a class="card card-pad wk-item" href="#/work/${cur.id}/${encodeURIComponent(x.id)}"><div class="btn-row" style="justify-content:space-between"><b>${cur.ic} ${esc(cur.head(x) || cur.t)}</b>${x.status ? `<span class="badge">${esc(x.status)}</span>` : ''}</div>
+          <small class="muted">${esc([x.city, x.phone, x.date || x.start || x.sign ? dAr(x.date || x.start || x.sign) : '', x.progress != null && x.progress !== '' ? '⏳ ' + x.progress + '%' : ''].filter(Boolean).join(' · '))}</small>${wkCalcHtml(cur, x)}</a>`; }).join('')
+        || `<div class="card empty">ما كاين حتى ${esc(cur.t)} — <a href="#/work/${cur.id}/new">➕ زيد الأول</a></div>`;
+    };
+    $('[name=wq]').addEventListener('input', draw); draw();
+  }
+  async function viewWorkForm(type, id) {
+    const T = WORK_TYPES[type];
+    if (!T || !T.kinds.includes(S.kind) && S.role !== 'admin') { location.hash = '#/works'; return; }
+    const ex = id && id !== 'new' ? live('works').find(x => x.id === decodeURIComponent(id) && x.type === type) : null;
+    const x = ex || {}, main1 = T.fields.filter(f => !f.more), more = T.fields.filter(f => f.more);
+    main().innerHTML = `<div class="page-head"><h1>${T.ic} ${ex ? esc(T.head(ex) || T.t) : esc(T.t) + ' — جديد'}</h1><a class="btn" href="#/works?t=${type}">${ic('back', 18)} ${esc(T.tp)}</a></div>
+      <form class="card card-pad form" id="wkf" onsubmit="return false">${placeLists()}<div class="form-grid">${main1.map(f => wkField(T, f, x)).join('')}${more.length ? moreF('wk-' + type, more.map(f => wkField(T, f, x)).join('')) : ''}</div>
+        <div id="wk-calc">${wkCalcHtml(T, x)}</div>
+        <div class="btn-row" style="margin-top:14px"><button class="btn gold" id="wk-save" type="button">${ic('check', 18)} حفظ</button>
+          ${ex ? `<button class="btn" id="wk-print" type="button">🖨️ طباعة / PDF</button>${x.phone ? `<a class="btn wa" id="wk-wa" target="_blank" rel="noopener" href="#">${ic('wa', 16)} واتساب</a>` : ''}${T.office ? '<button class="btn" id="wk-office" type="button">📤 صيفطو لمكتب الوسيط</button>' : ''}<button class="btn danger" id="wk-del" type="button">${ic('trash', 16)} مسح</button>` : ''}</div></form>`;
+    const form = $('#wkf'); bindMoney(form); bindMore(form);
+    const val = () => { const v = collect(form); T.fields.forEach(f => { if (f.t === 'multi' && !Array.isArray(v[f.k])) v[f.k] = []; if (f.t === 'num' || f.t === 'pct') v[f.k] = v[f.k] === '' || v[f.k] == null ? '' : num(v[f.k]); }); return v; };
+    const recalc = () => { $('#wk-calc').innerHTML = wkCalcHtml(T, val()); };
+    form.addEventListener('input', recalc); form.addEventListener('change', recalc);
+    const txt = it => `${T.ic} ${T.t}\n` + T.fields.map(f => { const s = wkVal(f, it); return s && f.t !== 'area' ? `• ${f.l}: ${s}` : ''; }).filter(Boolean).join('\n') + (T.calc ? '\n' + T.calc(it).map(([l, v]) => `• ${l}: ${v}`).join('\n') : '');
+    $('#wk-save').onclick = async () => {
+      const v = val(), miss = T.fields.find(f => f.req && (v[f.k] === '' || v[f.k] == null));
+      if (miss) { toast('عمّر: ' + miss.l); const el = $(`[name="${miss.k}"]`, form); if (el) el.focus(); return; }
+      const it = Object.assign({}, x, v, { id: x.id || uid(), type, createdAt: x.createdAt || new Date().toISOString() });
+      await saveListItem('works', it); toast('✓ تحفظ'); location.hash = '#/works?t=' + type;
+    };
+    const del = $('#wk-del'); if (del) del.onclick = async () => { if (!(await confirmBox('نمسحو هاد ' + T.t + '؟', 'مسح'))) return; await delListItem('works', x.id); location.hash = '#/works?t=' + type; };
+    const pr = $('#wk-print'); if (pr) pr.onclick = () => printHtml(T.t + ' — ' + (T.head(x) || ''), `<table>${T.fields.map(f => { const s = wkVal(f, x); return s ? `<tr><th style="width:38%">${esc(f.l)}</th><td>${esc(s)}</td></tr>` : ''; }).join('')}</table>${T.calc && T.calc(x).length ? `<div class="kv">${T.calc(x).map(([l, v]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b></div>`).join('')}</div>` : ''}<p class="muted">التاريخ: ${esc(dAr(today()))}</p>`);
+    const wa = $('#wk-wa'); if (wa) wa.href = `https://wa.me/${waPhone(x.phone)}?text=${encodeURIComponent(txt(x))}`;
+    const of = $('#wk-office'); if (of) of.onclick = async () => { window.open(`https://wa.me/212${W777_OFFICE.slice(1)}?text=${encodeURIComponent('السلام عليكم، بغيت نعرض العقار ديالي عبر مجموعة الوسيط:\n' + txt(x))}`, '_blank');
+      await saveListItem('works', Object.assign(x, { status: 'تصيفط للمكتب' })); };
+  }
   const isNamed = a => !!a.name && !KINDS[kindOf(a)].def.test(a.name);
   const isAbroad = a => (a.country || 'المغرب') !== 'المغرب';
   const COUNTRIES = ['المغرب', 'فرنسا', 'إسبانيا', 'بلجيكا', 'هولندا', 'إيطاليا', 'ألمانيا', 'البرتغال', 'سويسرا', 'المملكة المتحدة', 'السويد', 'النرويج', 'الدنمارك',
@@ -9036,10 +9224,10 @@
     for (const r of data.requests) { const cur = await DB.get('requests', r.id); if (choice === 'replace' || newer(r, cur)) { await DB.put('requests', r); await DB.markDirty('requests', r.id); } }
     for (const a of data.appointments || []) { const cur = await DB.get('appointments', a.id); if (choice === 'replace' || newer(a, cur)) { await DB.put('appointments', a); await DB.markDirty('appointments', a.id); } }
     for (const m of data.meta || []) {
-      if (choice === 'replace') { if (!m.key.startsWith('sync_')) { await DB.put('meta', m); if (['settings', 'customDistricts', 'ledger', 'leases'].includes(m.key)) await DB.markDirty('meta', m.key); } continue; }
+      if (choice === 'replace') { if (!m.key.startsWith('sync_')) { await DB.put('meta', m); if (['settings', 'customDistricts', 'ledger', 'leases', 'works'].includes(m.key)) await DB.markDirty('meta', m.key); } continue; }
       const cur = await DB.get('meta', m.key);
       // المالية وعقود الكراء: دمج عنصر بعنصر (الأحدث كيبقى)
-      if (['ledger', 'leases'].includes(m.key) && Array.isArray(m.value)) {
+      if (['ledger', 'leases', 'works'].includes(m.key) && Array.isArray(m.value)) {
         const map = new Map(((cur && cur.value) || []).map(x => [x.id, x]));
         m.value.forEach(x => { const c = map.get(x.id); if (!c || (x.updatedAt || '') > (c.updatedAt || '')) map.set(x.id, x); });
         await DB.put('meta', { key: m.key, value: Array.from(map.values()) }); await DB.markDirty('meta', m.key);

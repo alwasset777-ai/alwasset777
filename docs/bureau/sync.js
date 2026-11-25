@@ -12,7 +12,7 @@
   const BUCKET = 'w777-media';
   const TABLE = 'w777_records';
   const STORES = ['properties', 'requests', 'appointments'];
-  const LISTS = ['ledger', 'leases'];
+  const LISTS = ['ledger', 'leases', 'works']; // v235: 📋 ملفات المهنة
 
   let st = null;
   const DEMO = !!(DB && DB.isDemo); // 🎬 v223: وضع العرض ← بلا سحابة، والحساب الحقيقي ما كيتمسّش

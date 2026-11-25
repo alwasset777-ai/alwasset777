@@ -2291,3 +2291,11 @@ button.home-rw { width: 100%; border: 0; font: inherit; cursor: pointer; text-al
 .hs-circ .hc b { font-size: 13px; font-weight: 800; line-height: 1.2; text-align: center; }
 @media (min-width: 720px) { .hs-circ .hc-c { width: 78px; height: 78px; } .hs-circ .hc b { font-size: 14.5px; } }
 body.lite .fin-rot img:first-child { opacity: 1; } /* v233: الوضع الخفيف كان كيخلي دائرة التمويل خاوية */
+
+/* 📋 v235: ملفات المهنة */
+.wk-list { display: grid; gap: 10px; }
+@media (min-width: 900px) { .wk-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.wk-item { display: block; text-decoration: none; color: var(--ink); }
+.wk-item b { font-size: 15px; }
+.wk-calc { margin-top: 10px; }
+.wk-tabs .chip b { margin-inline-start: 4px; opacity: .7; }
