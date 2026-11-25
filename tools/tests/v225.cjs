@@ -66,7 +66,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     await p.route(/rpc\/w777_log_error/, r => { logs.push(JSON.parse(r.request().postData() || '{}')); r.fulfill({ status: 204, body: '' }); });
     await p.evaluate(() => { setTimeout(() => { throw new Error('probe-v225 boom'); }, 0); }); await p.waitForTimeout(800);
     const L = logs.find(l => /probe-v225 boom/.test(l.p_msg || ''));
-    if (!L || L.p_ver !== 'v225' || /https?:/.test(L.p_msg)) bad.push('error log ' + JSON.stringify(logs).slice(0, 200));
+    if (!L || L.p_ver !== (fs.readFileSync('docs/bureau/sw.js', 'utf8').match(/w777-bureau-(v\d+)/) || [])[1] || /https?:/.test(L.p_msg)) bad.push('error log ' + JSON.stringify(logs).slice(0, 200));
     // 5) 📊 مسار رابط التجربة
     await p.route(/rpc\/w777_share_stats/, r => r.fulfill({ json: [{ kind: 'demo', via: 'view', d7: 12, d30: 40, total: 55 }, { kind: 'demo', via: 'join', d7: 4, d30: 9, total: 11 }, { kind: 'demo', via: 'signup', d7: 2, d30: 5, total: 6 }] }));
     await p.evaluate(() => { location.hash = '#/agencies/manage'; }); await p.waitForSelector('.demo-funnel', { timeout: 10000 }).catch(() => bad.push('no funnel'));
