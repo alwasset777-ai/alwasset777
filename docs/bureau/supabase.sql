@@ -2069,3 +2069,11 @@ end $$;
 revoke all on function public.w777_share_log(text, text, text, text) from public;
 grant execute on function public.w777_share_log(text, text, text, text) to anon, authenticated;
 
+
+-- ============ v225b: 🧹 تنظيف الطلبات الممسوحة القديمة (بموافقة المدير) ============
+-- نسخة احتياطية خاصة (بلا أي وصول من التطبيق) قبل أي مسح نهائي من w777_records
+create table if not exists public.w777_records_trash (like public.w777_records including defaults);
+alter table public.w777_records_trash add column if not exists trashed_at timestamptz not null default now();
+alter table public.w777_records_trash enable row level security;
+revoke all on public.w777_records_trash from anon, authenticated, public;
+-- 2026-11-25: 354 علامة «طلب ممسوح» ديال المدير (من 2–3 نونبر) تنقلات للنسخة الاحتياطية وتمسحات (الطلبات الحية ما تقاستش)
