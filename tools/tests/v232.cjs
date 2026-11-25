@@ -12,7 +12,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
       return { k: row.dataset.hr, tiles: s.querySelectorAll('.hub-tile').length, headRight: h.left > sr.left, scroll: s.scrollWidth > s.clientWidth + 10, page: document.documentElement.scrollWidth <= innerWidth + 1 }; }));
     const svc = r.find(x => x.k === 'svc'), net = r.find(x => x.k === 'net');
     if (!svc || svc.tiles < 10 || !svc.headRight || !svc.scroll || !svc.page) bad.push(vw.width + ' svc ' + JSON.stringify(svc));
-    if (!net || net.tiles !== 7 || !net.headRight || !net.page) bad.push(vw.width + ' net ' + JSON.stringify(net));
+    if (!net || net.tiles !== 8 || !net.headRight || !net.page) bad.push(vw.width + ' net ' + JSON.stringify(net));
     // ⭕ v233: 4 دوائر فسطر واحد (إضافة، بحث، إعلانات فورية، التمويل العقاري)
     const circ = await p.$$eval('.hs-circ .hc .hc-c', a => a.map(c => { const r = c.getBoundingClientRect(), st = getComputedStyle(c); return [Math.round(r.top), Math.round(r.width - r.height), parseFloat(st.borderTopLeftRadius) >= r.width / 2 - 1]; }));
     if (circ.length !== 4 || new Set(circ.map(c => c[0])).size !== 1 || circ.some(c => c[1] || !c[2])) bad.push(vw.width + ' circles ' + JSON.stringify(circ));
@@ -23,6 +23,9 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     const moved = await p.$eval('.hrow[data-hr=svc] .hr-strip', s => { const a = s.scrollLeft; s.scrollBy({ left: -200 }); return new Promise(r => setTimeout(() => r(Math.abs(s.scrollLeft - a) > 50), 400)); });
     if (!moved) bad.push(vw.width + ' strip does not scroll');
     await p.screenshot({ path: (process.env.SHOT || '/tmp/v232') + '-' + vw.width + '-scrolled.png' });
+    // v234: الدائرة الثامنة «مشترك جديد» ← نافذة الإضافة عند المدير
+    const nt = await p.$eval('.hrow[data-hr=net] .hr-strip .hub-tile:last-child', a => [a.getAttribute('href'), a.textContent]);
+    if (nt[0] !== '#/agencies/manage?add=1' || !/مشترك جديد/.test(nt[1])) bad.push('new member tile ' + JSON.stringify(nt));
     // الدائرة ← الصفحة
     await p.click('.hrow[data-hr=net] .hub-tile[href="#/brokers"]'); await p.waitForTimeout(800);
     if (!/brokers/.test(await p.evaluate(() => location.hash))) bad.push('tile link');
