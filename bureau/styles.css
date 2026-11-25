@@ -2255,3 +2255,4 @@ body.no-deco::after, body.no-deco .page-head::after { display: none; }
 body.no-deco .page-head { padding-bottom: 0; }
 body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 38%); background-size: auto; }
 :root[data-theme="dark"] body.no-deco .card.card-pad { background-image: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%); }
+.sidenav a[hidden] { display: none !important; }
