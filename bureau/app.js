@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v228'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v229'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -3224,6 +3224,7 @@
         ${EMBED ? '' : `<div class="card card-pad">
           <h3 class="section-title">🩺 فحص قبل العرض</h3>
           <p class="muted" style="margin-top:0">قبل ما تورّي التطبيق لشي حد: 10 ثواني وكتعرف واش الإنترنت، الحساب، المزامنة، منير والنسخة كلهم واجدين — وإلا كاين شي مشكل كتلقى الزر اللي كيصلحو.</p>
+          <label class="switch-row lite-row"><input type="checkbox" id="deco-on" ${decoOn() ? 'checked' : ''}> <span><b>🎨 لمسات التزيين</b><br><small class="muted">الزخرفة المغربية الخفيفة، الخط تحت العناوين والحاشية الذهبية — طفيها إلا بغيتي خلفية بيضاء خالصة</small></span></label>
           <label class="switch-row lite-row"><input type="checkbox" id="lite-on" ${liteOn() ? 'checked' : ''}> <span><b>⚡ التطبيق الخفيف (مستحسن)</b><br><small class="muted">بلا الحركات والأضواء اللي كتدور ديما ← أسرع وكيصرف أقل فالبطارية، خصوصاً فالآيفون</small></span></label>
           <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a><a class="btn" href="#/qr">📱 QR: جرّب / سجّل</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}<button class="btn" type="button" data-tour>▶️ عرض أوتوماتيكي</button><button class="btn" type="button" data-demo-share>📤 شارك رابط التجربة</button><a class="btn" href="install.html${S.agency && S.agency.code ? '?ref=' + encodeURIComponent(S.agency.code) : S.role === 'admin' ? '?ref=WASSET' : ''}" target="_blank" rel="noopener">📲 صفحة التثبيت (مجاناً)</a></div>
         </div>`}
@@ -9225,9 +9226,17 @@
   }
   // ⚡ v225: التطبيق الخفيف (مشعول من الأول): بلا الحركات اللي كتدور ديما، بلا تغبيش الخلفية، بلا ميلان الأزرار
   const liteOn = () => { try { return localStorage.getItem('w777_lite') !== '0'; } catch (e) { return true; } };
+  // 🎨 v229: لمسات التزيين (مشعولة من الأول، زر «بلا زينة» فالإعدادات ← body.no-deco)
+  const decoOn = () => { try { return localStorage.getItem('w777_deco') !== '0'; } catch (e) { return true; } };
   function setupLite() {
     document.body.classList.toggle('lite', liteOn());
+    document.body.classList.toggle('no-deco', !decoOn());
     document.addEventListener('change', ev => {
+      if (ev.target && ev.target.id === 'deco-on') {
+        try { localStorage.setItem('w777_deco', ev.target.checked ? '1' : '0'); } catch (e) { /* */ }
+        document.body.classList.toggle('no-deco', !ev.target.checked);
+        toast(ev.target.checked ? '🎨 لمسات التزيين تشعلات' : '⬜ بلا زينة: خلفية بيضاء خالصة');
+      }
       if (ev.target && ev.target.id === 'lite-on') {
         try { localStorage.setItem('w777_lite', ev.target.checked ? '1' : '0'); } catch (e) { /* */ }
         document.body.classList.toggle('lite', ev.target.checked);
