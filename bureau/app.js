@@ -794,8 +794,8 @@
   /* ---------- 🔑 الدخول بالإيميل (كود 6 أرقام، بلا كلمة سر) + التسجيل الذاتي + إيقاف الحساب ملي تسالي المدة ----------
      البوابة كتخدم فالموقع؛ فجهاز التطوير (localhost) غير بـ ?gate=1 (للاختبارات). الحماية الحقيقية فالخادم (w777_can_use / w777_not_stopped). */
   try { if (/[?&]gate=1/.test(location.search)) sessionStorage.setItem('w777_gate', '1'); } catch (e) { /* */ }
-  const gateOn = () => { if (EMBED) return false; if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return true; try { return sessionStorage.getItem('w777_gate') === '1'; } catch (e) { return false; } };
-  const PUBLIC_ROUTES = ['terms'];
+  const gateOn = () => { if (EMBED || DB.isDemo) return false; if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return true; try { return sessionStorage.getItem('w777_gate') === '1'; } catch (e) { return false; } };
+  const PUBLIC_ROUTES = ['terms', 'check'];
   let MY = null; // { admin, staff, member, ok, email }
   const myReset = () => { MY = null; try { localStorage.removeItem('w777_my'); } catch (e) { /* */ } };
   async function myStatus(force) {
@@ -867,6 +867,44 @@
       ${rb('gold')}</div>`;
     if (window.W777_SYNC && window.W777_SYNC.isExpired && window.W777_SYNC.isExpired(e)) return reloginCard();
     return `<div class="card card-pad">تعذر التحميل: ${esc((e && e.message) || e)} ${rb('sm')}</div>`;
+  }
+  // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
+  const ERR_SEEN = new Set();
+  let appVer = '';
+  const devTag = () => {
+    const u = navigator.userAgent || '';
+    const d = /iPhone|iPad/.test(u) ? 'ios' + ((u.match(/OS (\d+)_/) || [])[1] || '') : /Android/.test(u) ? 'android' : /Mac/.test(u) ? 'mac' : /Windows/.test(u) ? 'win' : 'other';
+    const b = /CriOS|Chrome/.test(u) ? 'chrome' : /FxiOS|Firefox/.test(u) ? 'firefox' : /Safari/.test(u) ? 'safari' : 'x';
+    let pwa = false; try { pwa = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { /* */ }
+    return d + '-' + b + (pwa ? '-pwa' : '');
+  };
+  function logErr(e, place, kind = 'error') {
+    try {
+      let m = String((e && (e.stack || e.message)) || e || '');
+      // بلا روابط، بلا إيميلات، بلا أرقام طويلة (هواتف…)
+      m = m.replace(/https?:\/\/[^\s)]*\//g, '').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '@').replace(/\+?\d[\d ]{7,}\d/g, '#').slice(0, 300);
+      if (!m || /SESSION_EXPIRED|Failed to fetch|NetworkError|Load failed|ResizeObserver|staff-perm|AbortError|Script error|غير متصل بالحساب/i.test(m)) return;
+      const k = kind + '|' + place + '|' + m.slice(0, 80); if (ERR_SEEN.has(k) || ERR_SEEN.size > 20) return; ERR_SEEN.add(k);
+      const Sy = window.W777_SYNC; if (!Sy || DB.isDemo) return;
+      const body = JSON.stringify({ p_kind: kind, p_msg: m, p_place: String(place || (location.hash.split('?')[0]) || '#/').slice(0, 80), p_ver: appVer, p_ua: devTag() });
+      if (Sy.isOn()) Sy.request('/rest/v1/rpc/w777_log_error', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }).catch(() => {});
+      else { const c = Sy.defaults(); if (c.url && c.key) fetch(c.url + '/rest/v1/rpc/w777_log_error', { method: 'POST', headers: { apikey: c.key, 'Content-Type': 'application/json' }, body }).catch(() => {}); }
+    } catch (x) { /* */ }
+  }
+  window.addEventListener('error', ev => { if (ev && ev.error) logErr(ev.error, 'window'); });
+  window.addEventListener('unhandledrejection', ev => logErr(ev && ev.reason, 'promise'));
+  // 🛟 v223: الفتح تعطّل (الآيفون ما جاوبش، خطأ…) ← بلاصة صفحة خاوية: خانة بزرين «عاود الفتح» و«إصلاح التطبيق»
+  let bootOk = false, bootStep = 'start';
+  function bootRescue(reason, err) {
+    if (bootOk) return;
+    logErr(err || new Error(reason + ' @' + bootStep), 'boot', 'boot');
+    const sp = document.getElementById('splash'); if (sp) sp.remove();
+    const m = main(); if (!m || (m.textContent || '').trim().length > 30) return;
+    m.innerHTML = `<div class="card empty boot-rescue"><div class="big">🛠️</div><h3>التطبيق ما تحلّش مزيان</h3>
+      <p>المعلومات ديالك محفوظة فالجهاز. ضغط «عاود الفتح»، وإلا بقى المشكل ضغط «إصلاح التطبيق» (كيجيب آخر نسخة بلا ما يمسح المعلومات).</p>
+      <div class="btn-row" style="justify-content:center"><button class="btn gold" id="br-re">↻ عاود الفتح</button><button class="btn" id="br-fix">🔧 إصلاح التطبيق</button></div></div>`;
+    $('#br-re').onclick = () => location.reload();
+    $('#br-fix').onclick = () => fullUpdate();
   }
   // 🔐 v222: الجلسة تقطعات (تفعيل التحقق بخطوتين، خروج من جهاز آخر…) ← دخول من جديد بضغطة، والمعلومات باقية فالجهاز
   function reloginCard() {
@@ -1203,7 +1241,7 @@
       <div id="au-cap" class="au-cap"></div>
       <button class="btn gold block" id="au-send">📩 صيفط ليا الكود</button>
       <p class="muted auth-small">أول مرة؟ نفس الطريقة: الإيميل ← الكود ← كتعمر البطاقة ديالك وكتدخل. 🎁 ${FREE_MONTHS} أشهر مجانية.</p>
-      <div class="btn-row auth-row"><button class="btn sm ghost" id="au-pw">🔐 عندي رمز العضوية وكلمة السر</button></div>`);
+      <div class="btn-row auth-row"><button class="btn sm ghost" id="au-pw">🔐 عندي رمز العضوية وكلمة السر</button><button class="btn sm ghost" type="button" data-demo-in>🎬 جرّب التطبيق بلا حساب</button></div>`);
     const i = $('#au-mail'), b = $('#au-send');
     setTimeout(() => i.focus(), 60);
     const send = async () => {
@@ -1466,6 +1504,15 @@
   }
 
   async function route() {
+    try { return await routeRun(); } catch (e) {
+      logErr(e, 'route ' + (location.hash.split('?')[0] || '#/'));
+      if (window.W777_SYNC.isExpired && window.W777_SYNC.isExpired(e)) return;
+      const m = main(); if (m) m.innerHTML = `<div class="card empty"><div class="big">⚠️</div><h3>هاد الصفحة ما تحلّاتش</h3>
+        <p>المعلومات ديالك محفوظة. عاود، وإلا رجع للرئيسية.</p>
+        <div class="btn-row" style="justify-content:center"><button class="btn gold" data-net-retry>↻ عاود</button><a class="btn" href="#/">🏠 الرئيسية</a></div></div>`;
+    }
+  }
+  async function routeRun() {
     if (leaveGuard) { const g = leaveGuard; leaveGuard = null; await g(); }
     if (/access_token=|error_description=/.test(location.hash)) await authFromLink();
     navTrack();
@@ -1478,6 +1525,7 @@
     let nav = 'home';
     window.scrollTo(0, 0);
     if (!a) { await viewHome(); }
+    else if (a === 'check') { nav = 'settings'; await viewCheck(); }
     else if (a === 'properties') { nav = 'properties'; viewProps(query); }
     else if (a === 'property' && b === 'new') { nav = 'properties'; await viewPropForm(null, query); }
     else if (a === 'property' && c === 'edit') { nav = 'properties'; await viewPropForm(b); }
@@ -3097,7 +3145,7 @@
     const t = ((card.querySelector('.section-title') || card).textContent || '');
     if (/المزامنة|النسخ الاحتياطي|استيراد|التخزين|بلا إنترنت/.test(t)) return 'data';
     if (/الأمان|التحقق بخطوتين|البصمة|الإشعارات|القفل/.test(t)) return 'security';
-    if (/تحديث التطبيق|تثبيت التطبيق|نسخة التجربة|صوت الفتح/.test(t)) return 'app';
+    if (/تحديث التطبيق|تثبيت التطبيق|نسخة التجربة|صوت الفتح|فحص قبل العرض/.test(t)) return 'app';
     return 'office';
   };
   function settingsTabs(want) {
@@ -3144,6 +3192,12 @@
           <h3 class="section-title">${ic('lock')} نسخة التجربة</h3>
           <p class="muted" style="margin:0">هذه النسخة تعمل داخل claude.ai: البيانات محفوظة في هذا المتصفح فقط، بدون مزامنة سحابية. احفظ نسخة احتياطية بانتظام (الزر أسفله) واستوردها في جهازك الآخر. للمزامنة التلقائية والتثبيت على الهاتف استعمل الرابط الدائم على GitHub Pages.</p>
         </div>` : await cloudCard()}
+
+        ${EMBED ? '' : `<div class="card card-pad">
+          <h3 class="section-title">🩺 فحص قبل العرض</h3>
+          <p class="muted" style="margin-top:0">قبل ما تورّي التطبيق لشي حد: 10 ثواني وكتعرف واش الإنترنت، الحساب، المزامنة، منير والنسخة كلهم واجدين — وإلا كاين شي مشكل كتلقى الزر اللي كيصلحو.</p>
+          <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}</div>
+        </div>`}
 
         ${EMBED ? '' : `<div class="card card-pad upd-card">
           <h3 class="section-title">🔄 تحديث التطبيق</h3>
@@ -8935,7 +8989,7 @@
   }
 
   /* ---------- بيانات تجريبية ---------- */
-  async function seedDemo() {
+  async function seedDemo(quiet) {
     const now = Date.now();
     const mk = (i, o) => Object.assign({ id: uid(), createdAt: new Date(now - i * 86400000).toISOString(), updatedAt: new Date(now - i * 86400000).toISOString(), status: 'available', media: [], features: [], specs: {}, broker: {}, negotiable: true, priceUnit: 'درهم' }, o);
     const props = [
@@ -8958,6 +9012,7 @@
       await DB.saveRec('requests', r);
     }
     await loadAll();
+    if (quiet === true) return;
     toast('تمت إضافة بيانات تجريبية ✓');
     route();
   }
@@ -9008,6 +9063,98 @@
     const dur = Math.max(60, names.length * 3);
     tr.style.animationDuration = dur + 's';
     requestAnimationFrame(() => { const setW = tr.firstChild.offsetWidth, vw = tr.parentElement.offsetWidth; if (setW && vw) tr.style.animationDelay = -(Math.min(1, vw * 0.9 / setW) * dur).toFixed(2) + 's'; });
+  }
+  // 🎬 v223: وضع العرض — قاعدة منفصلة بمعلومات خيالية، بلا حساب ولا سحابة (للتوريّة للزبناء والوكالات بلا مفاجآت)
+  function setupDemo() {
+    document.addEventListener('click', ev => {
+      const t = ev.target.closest('[data-demo-in],[data-demo-exit]'); if (!t) return;
+      ev.preventDefault();
+      try { if (t.hasAttribute('data-demo-in')) localStorage.setItem('w777_demo', '1'); else localStorage.removeItem('w777_demo'); } catch (e) { /* */ }
+      location.replace(location.pathname + '#/');
+      setTimeout(() => location.reload(), 50);
+    });
+    if (!DB.isDemo || $('#demo-bar')) return;
+    const bar = document.createElement('div'); bar.id = 'demo-bar'; bar.setAttribute('role', 'status');
+    bar.innerHTML = '🎬 <b>وضع العرض</b> — معلومات خيالية للتجربة <button type="button" class="btn sm" data-demo-exit>خروج</button>';
+    document.body.prepend(bar); document.body.classList.add('is-demo');
+  }
+  async function demoSeed() {
+    if (S.props.length || S.reqs.length) return;
+    await seedDemo(true);
+    // صور خيالية (من صور اللعبة المرخصة) + جوج مواعيد اليوم
+    const map = { apartment: ['building', 'salon', 'kitchen', 'bedroom'], villa: ['villa', 'pool', 'garden', 'salon'], plot_house: ['plot', 'site'], shop: ['shop', 'street'], farm: ['farm', 'olive', 'well'] };
+    for (const p of S.props) {
+      const names = (p.transaction === 'rent' ? ['salon', 'bedroom', 'balcony'] : map[p.type]) || ['building'];
+      p.media = [];
+      for (const n of names) {
+        try {
+          const r = await fetch('game/img/' + n + '.webp'); if (!r.ok) continue;
+          const blob = await r.blob(), id = 'demo-' + n + '-' + p.id.slice(0, 6);
+          await DB.put('files', { id, owner: p.id, kind: 'photo', name: n + '.webp', mime: 'image/webp', size: blob.size, blob, thumb: blob });
+          p.media.push({ id, kind: 'photo', name: n + '.webp', mime: 'image/webp', size: blob.size });
+        } catch (e) { /* */ }
+      }
+      if (p.media.length) { p.cover = p.media[0].id; await DB.saveRec('properties', p); }
+    }
+    const r0 = S.reqs[0] || {}, p0 = S.props[0] || {};
+    for (const [time, type, place] of [['11:00', 'visit', p0.district || 'مكناس'], ['17:30', 'meeting', 'المكتب']]) {
+      await DB.saveRec('appointments', { id: uid(), createdAt: new Date().toISOString(), client: { name: (r0.client || {}).name || 'زبون', phone: (r0.client || {}).phone || '' }, date: today(), time, type, remind: '30', place, status: 'planned', reqId: r0.id || '', propId: type === 'visit' ? p0.id || '' : '', notes: '' });
+    }
+    await loadAll(); if ((location.hash || '#/') === '#/') route();
+  }
+  // 🩺 v223: فحص قبل العرض — الذاكرة، الإنترنت، الحساب، المزامنة، منير، النسخة (مع زر الإصلاح لكل مشكل)
+  async function viewCheck() {
+    main().innerHTML = `<h1 class="page-title">🩺 فحص التطبيق</h1>
+      <p class="muted">قبل ما تورّي التطبيق لشي حد: كنتأكدو أن كلشي واجد، وكل مشكل حداه الزر اللي كيصلحو.</p>
+      <div class="card card-pad"><div id="ck-list" class="ck-list"></div><div id="ck-sum"></div>
+      <div class="btn-row"><button class="btn" type="button" id="ck-again">↻ عاود الفحص</button><a class="btn" href="#/">🏠 الرئيسية</a></div></div>`;
+    $('#ck-again').onclick = () => viewCheck();
+    const list = $('#ck-list'), Sy = window.W777_SYNC, res = [];
+    const timed = (p, ms) => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), ms))]);
+    const row = (icn, t) => {
+      const d = document.createElement('div'); d.className = 'ck-row';
+      d.innerHTML = `<span class="ck-s">⏳</span><span class="ck-t"><b>${icn} ${t}</b><small class="muted"></small></span>`;
+      list.appendChild(d);
+      return (ok, note, fix) => {
+        d.querySelector('.ck-s').textContent = ok === true ? '✅' : ok === null ? '➖' : '⚠️';
+        d.querySelector('small').innerHTML = note || ''; if (fix) d.insertAdjacentHTML('beforeend', fix);
+        d.classList.add(ok === true ? 'ok' : ok === null ? 'na' : 'bad'); res.push(ok);
+      };
+    };
+    const loginBtn = '<a class="btn sm gold" href="#/">🔑 دخول</a>';
+    let f = row('💾', 'المعلومات فالجهاز');
+    try { const t0 = performance.now(); await timed(DB.all('properties'), 6000); f(true, `${fmt(S.props.length)} عقار · ${fmt(S.reqs.length)} طلب · ${fmt(S.appts.length)} موعد (${Math.round(performance.now() - t0)} ms)`); }
+    catch (e) { f(false, 'الذاكرة ديال الجهاز ما جاوباتش — سدّ التطبيق كامل وعاود حلّو', '<button class="btn sm" type="button" onclick="location.reload()">↻ عاود الفتح</button>'); }
+    f = row('📶', 'الإنترنت'); let online = false;
+    try {
+      const c = Sy.defaults(), t0 = performance.now();
+      const r = await timed(fetch(c.url + '/auth/v1/health', { headers: { apikey: c.key }, cache: 'no-store' }), 8000), ms = Math.round(performance.now() - t0);
+      online = r.ok; f(r.ok && ms < 2500, !r.ok ? 'الخادم ما جاوبش — عاود من بعد شوية' : ms < 2500 ? `مزيان (${fmt(ms)} ms)` : `بطيء (${fmt(ms)} ms) — قرّب من الويفي ولا بدّل الشبكة`);
+    } catch (e) { f(false, 'ما كاينش الإنترنت — التطبيق كيخدم بالمعلومات المحفوظة'); }
+    f = row('🔐', 'الحساب');
+    if (DB.isDemo) f(null, 'وضع العرض (بلا حساب)', '<button class="btn sm" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>');
+    else if (!Sy.isOn()) f(false, 'ما داخلش للحساب', loginBtn);
+    else if (!online) f(null, 'كيتحقق ملي ترجع الإنترنت');
+    else { try { await timed(Sy.request('/auth/v1/user'), 8000); f(true, 'داخل ✓'); } catch (e) { f(false, Sy.isExpired(e) ? 'خاصك تدخل من جديد' : 'ما تقدّش نتحقق — عاود الفحص', loginBtn); } }
+    f = row('☁️', 'المزامنة');
+    if (!Sy.isOn()) f(null, '—');
+    else { const n = await Sy.pending().catch(() => 0), last = await Sy.lastSync().catch(() => null); f(n < 30, (n ? `${fmt(n)} تعديل كيتسنى الرفع` : 'كلشي مرفوع') + (last ? ' · آخر مزامنة: ' + whenText(last) : ''), n ? '<button class="btn sm" type="button" data-ck-sync>☁️ زامن دابا</button>' : ''); }
+    f = row('🤖', 'منير (الوكيل الذكي)');
+    if (!online || !Sy.isOn()) f(null, 'كيجاوب بالمساعد المحلي (بلا إنترنت ولا حساب)');
+    else {
+      try { const t0 = performance.now(); await timed(Sy.request('/functions/v1/w777-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ping: true }) }), 10000); f(true, `واجد (${fmt(Math.round(performance.now() - t0))} ms)`); }
+      catch (e) { f(false, 'ما جاوبش — منير كيجاوب بالمساعد المحلي حتى يرجع'); }
+    }
+    f = row('📲', 'نسخة التطبيق');
+    try {
+      const cur = await appVersion(), txt = await timed(fetch('sw.js', { cache: 'no-store' }).then(r => r.text()), 8000), nv = (txt.match(/w777-bureau-(v\d+)/) || [])[1] || '';
+      const old = nv && cur !== '—' && nv !== cur;
+      f(!old, old ? `كاينة نسخة جديدة (${nv}) — عندك ${cur}` : `آخر نسخة (${nv || cur})`, old ? '<button class="btn sm gold" type="button" data-ck-upd>⬇️ حدّث دابا</button>' : '');
+    } catch (e) { f(null, 'ما تقدّش نتحقق (بلا إنترنت)'); }
+    const bad = res.filter(x => x === false).length;
+    $('#ck-sum').innerHTML = bad ? `<p class="ck-bad">⚠️ ${fmt(bad)} حاجة خاصها تتصلح — استعمل الأزرار اللي حداها، ومن بعد «عاود الفحص».</p>` : '<p class="ck-good">✅ كلشي واجد — تقدر تورّي التطبيق بلا خوف.</p>';
+    list.querySelectorAll('[data-ck-sync]').forEach(b => b.onclick = () => { Sy.syncNow(); toast('☁️ جاري المزامنة…'); setTimeout(viewCheck, 4000); });
+    list.querySelectorAll('[data-ck-upd]').forEach(b => b.onclick = () => fullUpdate());
   }
   function setupFab() {
     const fab = $('#fab');
@@ -10993,8 +11140,13 @@
     else if (document.getElementById('splash')) openSound();
     // القفل بالرمز (PIN) خاصو يبان مباشرة
     try { if (localStorage.getItem('w777_pin')) hideSplash(); } catch (e) { /* */ }
-    await lockScreen();
-    await loadAll();
+    // 🛟 v223: إلا ما تحلّش التطبيق ف10 ثواني ← خانة الإنقاذ بلاصة الشاشة الخاوية
+    setTimeout(() => bootRescue('boot-timeout'), 10000);
+    appVersion().then(v => { appVer = v; });
+    setupDemo();
+    bootStep = 'lock'; await lockScreen();
+    bootStep = 'db'; await loadAll();
+    bootStep = 'setup';
     loadRoleCache();
     if (window.W777_SYNC.isOn()) localStorage.setItem('w777_last_email', window.W777_SYNC.account().email || '');
     cleanOrphans();
@@ -11010,9 +11162,11 @@
     if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }
     window.addEventListener('popstate', () => { if (AG.open && !(history.state && history.state.ag)) agHide(); });
     const bb = $('#btn-back'); if (bb) bb.onclick = goBack;
-    await route();
+    bootStep = 'route'; await route();
+    bootOk = true;
     hideSplash();
     DB.persist();
+    if (DB.isDemo) demoSeed();
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     checkAlarms(); setInterval(checkAlarms, 30000);
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
@@ -11049,5 +11203,5 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
   setInterval(checkUpdate, 30 * 60000);
   try { if (sessionStorage.getItem('w777_updated')) { sessionStorage.removeItem('w777_updated'); if (/[?&]u=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash); setTimeout(() => appVersion().then(v => toast('✓ التطبيق محدّث — النسخة ' + v)), 1500); } } catch (e) { /* */ }
-  document.addEventListener('DOMContentLoaded', start);
+  document.addEventListener('DOMContentLoaded', () => { start().catch(e => bootRescue('start-error', e)); });
 })();
