@@ -4,6 +4,11 @@
    ============================================================ */
 (function () {
   'use strict';
+  // 🔗 v224: رابط التجربة (?demo=1، و&tour=1 ← العرض الأوتوماتيكي) كيحل وضع العرض مباشرة — قبل ما تتحل القاعدة
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.get('demo') === '1') { localStorage.setItem('w777_demo', '1'); sessionStorage.setItem('w777_demo_link', q.get('ref') || '1'); if (q.get('tour') === '1') sessionStorage.setItem('w777_tour', '1'); }
+  } catch (e) { /* */ }
   // 🎬 v223: «وضع العرض» كيخدم على قاعدة منفصلة بمعلومات خيالية (المعلومات الحقيقية ما كتمسّش)
   const DEMO = (() => { try { return localStorage.getItem('w777_demo') === '1'; } catch (e) { return false; } })();
   const DB_NAME = DEMO ? 'wasset777_demo' : 'wasset777_bureau';
