@@ -795,7 +795,7 @@
      البوابة كتخدم فالموقع؛ فجهاز التطوير (localhost) غير بـ ?gate=1 (للاختبارات). الحماية الحقيقية فالخادم (w777_can_use / w777_not_stopped). */
   try { if (/[?&]gate=1/.test(location.search)) sessionStorage.setItem('w777_gate', '1'); } catch (e) { /* */ }
   const gateOn = () => { if (EMBED || DB.isDemo) return false; if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return true; try { return sessionStorage.getItem('w777_gate') === '1'; } catch (e) { return false; } };
-  const PUBLIC_ROUTES = ['terms', 'check'];
+  const PUBLIC_ROUTES = ['terms', 'check', 'qr'];
   let MY = null; // { admin, staff, member, ok, email }
   const myReset = () => { MY = null; try { localStorage.removeItem('w777_my'); } catch (e) { /* */ } };
   async function myStatus(force) {
@@ -870,7 +870,8 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  let appVer = '';
+  const APP_BUILD = 'v225'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
     const d = /iPhone|iPad/.test(u) ? 'ios' + ((u.match(/OS (\d+)_/) || [])[1] || '') : /Android/.test(u) ? 'android' : /Mac/.test(u) ? 'mac' : /Windows/.test(u) ? 'win' : 'other';
@@ -880,8 +881,8 @@
   };
   function logErr(e, place, kind = 'error') {
     try {
-      let m = String((e && (e.stack || e.message)) || e || '');
-      // بلا روابط، بلا إيميلات، بلا أرقام طويلة (هواتف…)
+      let m = e && typeof e === 'object' ? [e.message || '', e.stack || ''].filter(Boolean).join(' | ') : String(e || '');
+      // بلا روابط (كيبقى غير سمية الملف)، بلا إيميلات، بلا أرقام طويلة (هواتف…)
       m = m.replace(/https?:\/\/[^\s)]*\//g, '').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '@').replace(/\+?\d[\d ]{7,}\d/g, '#').slice(0, 300);
       if (!m || /SESSION_EXPIRED|Failed to fetch|NetworkError|Load failed|ResizeObserver|staff-perm|AbortError|Script error|غير متصل بالحساب/i.test(m)) return;
       const k = kind + '|' + place + '|' + m.slice(0, 80); if (ERR_SEEN.has(k) || ERR_SEEN.size > 20) return; ERR_SEEN.add(k);
@@ -894,10 +895,13 @@
   window.addEventListener('error', ev => { if (ev && ev.error) logErr(ev.error, 'window'); });
   window.addEventListener('unhandledrejection', ev => logErr(ev && ev.reason, 'promise'));
   // 🛟 v223: الفتح تعطّل (الآيفون ما جاوبش، خطأ…) ← بلاصة صفحة خاوية: خانة بزرين «عاود الفتح» و«إصلاح التطبيق»
-  let bootOk = false, bootStep = 'start';
+  let bootOk = false, bootStep = 'start', bootLate = false;
+  const bootMarks = [];
+  const bootMark = s => { bootStep = s; bootMarks.push(s + ':' + Math.round(performance.now())); };
   function bootRescue(reason, err) {
     if (bootOk) return;
-    logErr(err || new Error(reason + ' @' + bootStep), 'boot', 'boot');
+    bootLate = true;
+    logErr(err || new Error(reason + ' @' + bootStep + ' t=' + Math.round(performance.now()) + ' [' + bootMarks.join(' ') + ']'), 'boot', 'boot');
     const sp = document.getElementById('splash'); if (sp) sp.remove();
     const m = main(); if (!m || (m.textContent || '').trim().length > 30) return;
     m.innerHTML = `<div class="card empty boot-rescue"><div class="big">🛠️</div><h3>التطبيق ما تحلّش مزيان</h3>
@@ -1311,6 +1315,8 @@
           const e = String(d.message || d.error || r.status);
           throw new Error(/phone/.test(e) ? 'رقم الهاتف غير صحيح' : /name/.test(e) ? 'الاسم قصير بزاف' : /exists/.test(e) ? 'هاد الحساب ديجا مسجّل' : /email/.test(e) ? 'الإيميل مازال ما تأكدش' : e);
         }
+        // 🎬 v225: جا من وضع العرض (خلال 7 أيام) ← تسجيل حقيقي من رابط التجربة
+        try { const fd = +localStorage.getItem('w777_from_demo') || 0; if (fd && Date.now() - fd < 7 * 864e5) { let rf = null; try { rf = (JSON.parse(localStorage.getItem('w777_ref_in') || 'null') || {}).r || null; } catch (e) { /* */ } logShare('demo', 'signup', null, rf); } localStorage.removeItem('w777_from_demo'); } catch (e) { /* */ }
         myReset(); await refreshRole(true); await claimRef();
         toast(`مرحبا بيك فمجموعة الوسيط ✓ الرمز ديالك: ${d.code || ''}`, 5000);
         if (location.hash !== '#/') location.hash = '#/'; else route();
@@ -1547,6 +1553,7 @@
     window.scrollTo(0, 0);
     if (!a) { await viewHome(); }
     else if (a === 'check') { nav = 'settings'; await viewCheck(); }
+    else if (a === 'qr') { nav = 'home'; await viewQr(); }
     else if (a === 'properties') { nav = 'properties'; viewProps(query); }
     else if (a === 'property' && b === 'new') { nav = 'properties'; await viewPropForm(null, query); }
     else if (a === 'property' && c === 'edit') { nav = 'properties'; await viewPropForm(b); }
@@ -3217,7 +3224,8 @@
         ${EMBED ? '' : `<div class="card card-pad">
           <h3 class="section-title">🩺 فحص قبل العرض</h3>
           <p class="muted" style="margin-top:0">قبل ما تورّي التطبيق لشي حد: 10 ثواني وكتعرف واش الإنترنت، الحساب، المزامنة، منير والنسخة كلهم واجدين — وإلا كاين شي مشكل كتلقى الزر اللي كيصلحو.</p>
-          <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}<button class="btn" type="button" data-tour>▶️ عرض أوتوماتيكي</button><button class="btn" type="button" data-demo-share>📤 شارك رابط التجربة</button></div>
+          <label class="switch-row lite-row"><input type="checkbox" id="lite-on" ${liteOn() ? 'checked' : ''}> <span><b>⚡ التطبيق الخفيف (مستحسن)</b><br><small class="muted">بلا الحركات والأضواء اللي كتدور ديما ← أسرع وكيصرف أقل فالبطارية، خصوصاً فالآيفون</small></span></label>
+          <div class="btn-row"><a class="btn gold" href="#/check">🩺 فحص التطبيق دابا</a><a class="btn" href="#/qr">📱 QR: جرّب / سجّل</a>${DB.isDemo ? '<button class="btn" type="button" data-demo-exit>🚪 خروج من وضع العرض</button>' : '<button class="btn" type="button" data-demo-in>🎬 وضع العرض (معلومات خيالية)</button>'}<button class="btn" type="button" data-tour>▶️ عرض أوتوماتيكي</button><button class="btn" type="button" data-demo-share>📤 شارك رابط التجربة</button></div>
         </div>`}
 
         ${EMBED ? '' : `<div class="card card-pad upd-card">
@@ -7302,6 +7310,11 @@
       <div class="kv kv-sm"><div><small>7 أيام</small><b>${fmt(tot('d7'))}</b></div><div><small>30 يوم</small><b>${fmt(tot('d30'))}</b></div><div><small>المجموع</small><b>${fmt(tot('total'))}</b></div></div>
       <div class="ss-rows">${K.map(([k, l]) => `<div class="ss-row"><b>${l}</b><span>المجموع: ${fmt(sum(k, 'total'))}</span><small class="muted">7 أيام: ${fmt(sum(k, 'd7'))} · 30 يوم: ${fmt(sum(k, 'd30'))}</small><small class="muted">${rows.filter(r => r.kind === k && +r.total).map(r => `${esc(V[r.via] || r.via)}: ${fmt(+r.total)}`).join(' · ') || '—'}</small></div>`).join('')}</div>
       <p class="muted" style="margin:8px 0 0;font-size:12.5px">بلا أسماء: غير شحال من مرة تشارك الملف ولا تحلّات الصفحة.</p>
+      ${(() => { const v = (via, f) => rows.filter(r => r.kind === 'demo' && r.via === via).reduce((n, r) => n + (+r[f] || 0), 0);
+        const line = f => `<b>${fmt(v('view', f))}</b> جرّبو ← <b>${fmt(v('join', f))}</b> ضغطو «سجّل» ← <b>${fmt(v('signup', f))}</b> تسجلو`;
+        return `<div class="demo-funnel"><h4 style="margin:12px 0 6px">🎬 رابط التجربة: شكون جرّب وشكون تسجّل</h4>
+          <div class="ss-row"><b>7 أيام</b><small>${line('d7')}</small></div><div class="ss-row"><b>30 يوم</b><small>${line('d30')}</small></div><div class="ss-row"><b>المجموع</b><small>${line('total')}</small></div>
+          <p class="muted" style="font-size:12px;margin:4px 0 0">إلا بزاف جرّبو وقليل تسجلو ← صيفط ليهم «⏰ ذكّرو» من «📨 الدعوات».</p></div>`; })()}
       <div id="ref-rewards"></div><div id="share-refs"></div></div>`;
     drawRewards();
     // 🏅 الروابط الخاصة: شكون جاب أكثر تسجيلات (حقيقية) وزيارات — كاملين ولا شهر بشهر
@@ -9090,6 +9103,7 @@
     document.addEventListener('click', ev => {
       const t = ev.target.closest('[data-demo-in],[data-demo-exit]'); if (!t) return;
       ev.preventDefault();
+      if (DB.isDemo && t.hasAttribute('data-demo-exit')) { try { localStorage.setItem('w777_from_demo', String(Date.now())); } catch (e) { /* */ } let rf = null; try { rf = (JSON.parse(localStorage.getItem('w777_ref_in') || 'null') || {}).r || null; } catch (e) { /* */ } logShare('demo', 'join', null, rf); }
       try { if (t.hasAttribute('data-demo-in')) localStorage.setItem('w777_demo', '1'); else localStorage.removeItem('w777_demo'); } catch (e) { /* */ }
       location.replace(location.pathname + '#/');
       setTimeout(() => location.reload(), 50);
@@ -9130,19 +9144,30 @@
   ];
   const TOUR_MS = 6500;
   let tourT = null, tourI = 0, tourPaused = false, tourNav = false;
+  // 🔊 v225: صوت منير فالعرض (كيتسد بـ🔇، والاختيار كيتحفظ)
+  const tourSnd = () => { try { return localStorage.getItem('w777_tour_snd') !== '0'; } catch (e) { return true; } };
+  function tourSay() {
+    if (!tourSnd() || !agVoiceOn() || !TOUR[tourI]) return;
+    const [, t, d] = TOUR[tourI];
+    try { AGV.ext = true; agHush(); agSpeak(String(t).replace(/^[^\p{L}]+/u, '') + '. ' + d); } catch (e) { /* */ }
+  }
+  function tourHush() { try { agHush(); } catch (e) { /* */ } }
   function tourStop() {
+    tourHush(); try { AGV.ext = false; } catch (e) { /* */ }
     clearTimeout(tourT); tourT = null; document.body.classList.remove('in-tour');
     const b = $('#tour-bar'); if (b) b.remove();
   }
   function tourStart() {
     if (!DB.isDemo) { try { localStorage.setItem('w777_demo', '1'); sessionStorage.setItem('w777_tour', '1'); } catch (e) { /* */ } location.replace(location.pathname + '#/'); setTimeout(() => location.reload(), 50); return; }
     tourStop(); tourI = 0; tourPaused = false;
+    try { agUnlockTTS(); } catch (e) { /* */ }
     const bar = document.createElement('div'); bar.id = 'tour-bar'; bar.setAttribute('role', 'status');
     bar.innerHTML = `<div class="tb-txt"><small id="tb-n"></small><b id="tb-t"></b><span id="tb-d"></span></div>
       <div class="tb-prog"><i id="tb-p"></i></div>
-      <div class="tb-btns"><button type="button" class="btn sm" id="tb-pause" aria-label="وقف">⏸</button><button type="button" class="btn sm" id="tb-next" aria-label="الموالية">⏭</button><button type="button" class="btn sm" id="tb-x" aria-label="سدّ">✕</button></div>`;
+      <div class="tb-btns"><button type="button" class="btn sm" id="tb-snd" aria-label="الصوت">${tourSnd() ? '🔊' : '🔇'}</button><button type="button" class="btn sm" id="tb-pause" aria-label="وقف">⏸</button><button type="button" class="btn sm" id="tb-next" aria-label="الموالية">⏭</button><button type="button" class="btn sm" id="tb-x" aria-label="سدّ">✕</button></div>`;
     document.body.appendChild(bar); document.body.classList.add('in-tour');
     $('#tb-x').onclick = tourStop;
+    $('#tb-snd').onclick = () => { const on = !tourSnd(); try { localStorage.setItem('w777_tour_snd', on ? '1' : '0'); } catch (e) { /* */ } $('#tb-snd').textContent = on ? '🔊' : '🔇'; if (on) { try { agUnlockTTS(); } catch (e) { /* */ } tourSay(); } else tourHush(); };
     $('#tb-next').onclick = () => { clearTimeout(tourT); tourI++; tourStep(); };
     $('#tb-pause').onclick = () => { tourPaused = !tourPaused; $('#tb-pause').textContent = tourPaused ? '▶️' : '⏸'; bar.classList.toggle('paused', tourPaused); if (!tourPaused) { clearTimeout(tourT); tourI++; tourStep(); } else clearTimeout(tourT); };
     tourStep();
@@ -9152,6 +9177,7 @@
     if (tourI >= TOUR.length) { tourEnd(); return; }
     const [h, t, d] = TOUR[tourI], href = typeof h === 'function' ? h() : h;
     $('#tb-n').textContent = `${tourI + 1}/${TOUR.length}`; $('#tb-t').textContent = t; $('#tb-d').textContent = d;
+    tourSay();
     const p = $('#tb-p'); p.style.transition = 'none'; p.style.width = '0%'; void p.offsetWidth; p.style.transition = `width ${TOUR_MS}ms linear`; p.style.width = '100%';
     tourNav = true;
     if (location.hash !== href) location.hash = href; else await route();
@@ -9196,6 +9222,32 @@
       await DB.saveRec('appointments', { id: uid(), createdAt: new Date().toISOString(), client: { name: (r0.client || {}).name || 'زبون', phone: (r0.client || {}).phone || '' }, date: today(), time, type, remind: '30', place, status: 'planned', reqId: r0.id || '', propId: type === 'visit' ? p0.id || '' : '', notes: '' });
     }
     await loadAll(); if ((location.hash || '#/') === '#/') route();
+  }
+  // ⚡ v225: التطبيق الخفيف (مشعول من الأول): بلا الحركات اللي كتدور ديما، بلا تغبيش الخلفية، بلا ميلان الأزرار
+  const liteOn = () => { try { return localStorage.getItem('w777_lite') !== '0'; } catch (e) { return true; } };
+  function setupLite() {
+    document.body.classList.toggle('lite', liteOn());
+    document.addEventListener('change', ev => {
+      if (ev.target && ev.target.id === 'lite-on') {
+        try { localStorage.setItem('w777_lite', ev.target.checked ? '1' : '0'); } catch (e) { /* */ }
+        document.body.classList.toggle('lite', ev.target.checked);
+        toast(ev.target.checked ? '⚡ التطبيق الخفيف تشعل' : '✨ الشكل الكامل تشعل (عاود حل التطبيق باش يتطبق كامل)');
+      }
+    });
+  }
+  // 📱 v225: شاشة QR — الزائر كيسكاني من التيليفون ديالو: «🎬 جرّب» (وضع العرض) ولا «📝 سجّل» (التسجيل بالرابط الخاص)
+  async function viewQr() {
+    const ref = (S.agency && S.agency.code && /^[A-Za-z0-9_-]{1,24}$/.test(S.agency.code) ? S.agency.code : '') || (S.role === 'admin' ? 'WASSET' : '');
+    const reg = appBase() + '?gate=1' + (ref ? '&ref=' + encodeURIComponent(ref) : '');
+    const items = [['demo', '🎬 جرّب التطبيق', 'بلا تسجيل — معلومات خيالية وعرض أوتوماتيكي', demoLink(ref)], ['reg', '📝 سجّل مجاناً', 'التسجيل بالإيميل فدقيقة — 6 أشهر فابور', reg]];
+    main().innerHTML = `<div class="qr-page"><h1 class="page-title">📱 سكاني بالتيليفون ديالك</h1>
+      <p class="muted">ورّي هاد الشاشة للشخص اللي قدامك: كيحل الكاميرا ديال التيليفون ديالو وكيوجّهها على الرمز.</p>
+      <div class="qr-grid">${items.map(([k, t, d]) => `<div class="card qr-card"><h3>${t}</h3><div class="qr-box" id="qr-${k}"><span class="muted">⏳</span></div><small class="muted">${d}</small></div>`).join('')}</div>
+      <div class="btn-row" style="justify-content:center"><button type="button" class="btn" data-demo-share>📤 صيفط رابط التجربة</button><a class="btn" href="#/">🏠 الرئيسية</a></div></div>`;
+    try {
+      await loadScript('vendor/qrcode.js');
+      items.forEach(([k, , , url]) => { const q = window.qrcode(0, 'M'); q.addData(url); q.make(); const b = $('#qr-' + k); if (b) { b.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); b.title = url; } });
+    } catch (e) { items.forEach(([k, , , url]) => { const b = $('#qr-' + k); if (b) b.innerHTML = `<p class="muted" dir="ltr" style="font-size:12px">${esc(url)}</p>`; }); }
   }
   // 🩺 v223: فحص قبل العرض — الذاكرة، الإنترنت، الحساب، المزامنة، منير، النسخة (مع زر الإصلاح لكل مشكل)
   async function viewCheck() {
@@ -11188,6 +11240,7 @@
     + ' .prop-card, .dir-card, .gd-card, .st-card, .pr-item, .fl-item, .mm-tile, .ag-card, .doc-grid > *, .gallery > div, .net-gallery img, .match-thumb, .tr-more li, .sr-item, .search-results a';
   function setupPress3D() {
     if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (liteOn()) return;
     let cur = null;
     const release = () => {
       const el = cur; cur = null;
@@ -11237,11 +11290,10 @@
     try { if (localStorage.getItem('w777_pin')) hideSplash(); } catch (e) { /* */ }
     // 🛟 v223: إلا ما تحلّش التطبيق ف10 ثواني ← خانة الإنقاذ بلاصة الشاشة الخاوية
     setTimeout(() => bootRescue('boot-timeout'), 10000);
-    appVersion().then(v => { appVer = v; });
-    setupDemo();
-    bootStep = 'lock'; await lockScreen();
-    bootStep = 'db'; await loadAll();
-    bootStep = 'setup';
+    setupDemo(); setupLite();
+    bootMark('lock'); await lockScreen();
+    bootMark('db'); await loadAll();
+    bootMark('setup');
     loadRoleCache();
     if (window.W777_SYNC.isOn()) localStorage.setItem('w777_last_email', window.W777_SYNC.account().email || '');
     cleanOrphans();
@@ -11257,8 +11309,9 @@
     if (history.state && history.state.ag) { try { history.replaceState(null, ''); } catch (e) { /* */ } }
     window.addEventListener('popstate', () => { if (AG.open && !(history.state && history.state.ag)) agHide(); });
     const bb = $('#btn-back'); if (bb) bb.onclick = goBack;
-    bootStep = 'route'; await route();
+    bootMark('route'); await route();
     bootOk = true;
+    if (bootLate) logErr(new Error('boot-late t=' + Math.round(performance.now()) + ' [' + bootMarks.join(' ') + ']'), 'boot', 'slow');
     hideSplash();
     DB.persist();
     if (DB.isDemo) demoSeed().then(() => { let go = false; try { go = sessionStorage.getItem('w777_tour') === '1'; sessionStorage.removeItem('w777_tour'); } catch (e) { /* */ } if (go) setTimeout(tourStart, 700); });

@@ -247,6 +247,9 @@
 
   /* عند أول ربط: كل البيانات المحلية تُرفع */
   async function firstSyncPrep() {
+    // ⚡ v225: نفس الحساب فنفس الجهاز (تقطعات الجلسة ودخل من جديد) ← ما نعاودوش نرفعو آلاف الصور والمعلومات
+    const prevUid = await DB.getMeta('sync_uid', null);
+    if (st && prevUid && prevUid === st.uid) return;
     const dirty = await DB.getMeta('sync_dirty', {});
     const now = Date.now();
     for (const s of STORES) (await DB.all(s)).forEach(o => { dirty[s + ':' + o.id] = now; });
@@ -256,6 +259,20 @@
     await DB.setMeta('sync_dirty', dirty);
     await DB.setMeta('sync_cursor', null);
     await DB.setMeta('sync_uploaded', {});
+    if (st) await DB.setMeta('sync_uid', st.uid);
+  }
+  // ⚡ v225: قبل ما نرفعو بزاف ديال الصور، كنشوفو شنو كاين ديجا فالسحابة (لائحة وحدة) ← ما نعاودوش نرفعوهم
+  async function cloudNames() {
+    const names = new Set();
+    for (let off = 0; off < 20000; off += 1000) {
+      const r = await api(`/storage/v1/object/list/${BUCKET}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefix: dOwner(), limit: 1000, offset: off, sortBy: { column: 'name', order: 'asc' } }) });
+      if (!r.ok) break;
+      const rows = await r.json().catch(() => []);
+      if (!Array.isArray(rows)) break;
+      rows.forEach(x => { if (x && x.name) names.add(String(x.name)); });
+      if (rows.length < 1000) break;
+    }
+    return names;
   }
 
   /* ---------- السحب ---------- */
@@ -421,6 +438,16 @@
       todo.push({ id: m.id, rank, t: o.createdAt || '', size: m.size || 0 });
     }));
     todo.sort((a, b) => a.rank - b.rank || (a.rank === 2 ? a.size - b.size : b.t.localeCompare(a.t)));
+    if (todo.length > 20) {
+      try {
+        const have = await cloudNames();
+        if (have.size) {
+          let n = 0;
+          for (let k = todo.length - 1; k >= 0; k--) if (have.has(todo[k].id)) { up[todo[k].id] = 1; todo.splice(k, 1); n++; }
+          if (n) await DB.setMeta('sync_uploaded', up);
+        }
+      } catch (e) { /* كنكملو بالرفع العادي */ }
+    }
     if (!todo.length) return { failed: 0, more: 0, big: Object.keys(skip).length };
     let failed = 0, done = 0, i = 0;
     const t0 = Date.now();
@@ -544,6 +571,7 @@
         await push();
         const { failed, more, big } = await uploadFiles();
         await DB.setMeta('sync_last', new Date().toISOString());
+        if (st && !st.owner) await DB.setMeta('sync_uid', st.uid);
         if (more) { again = true; setStatus('syncing', `بقي ${more} ملف للرفع…`); }
         else if (failed) setStatus('warn', `تعذر رفع ${failed} ملف — غادي نعاودو المحاولة أوتوماتيكيا`);
         else setStatus('ok', big ? `تمت المزامنة · ${big} فيديو كبير بزاف (أكثر من 48 MB) بقى غير فهاد الجهاز` : 'تمت المزامنة');
