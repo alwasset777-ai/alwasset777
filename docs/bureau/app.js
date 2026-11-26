@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v242'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v243'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -11731,6 +11731,7 @@
     checkAlarms(); setInterval(checkAlarms, 30000);
     setTimeout(() => autoHeal(true), window.W777_HEAL_DELAY || 6000); // 🔄 v241
     setTimeout(appPing, 4000); // 📲 v242
+    setTimeout(cleanOldCaches, 3000); // 🧹 v243
     setTimeout(runAlerts, 9000); setInterval(() => { if (document.visibilityState === 'visible') runAlerts(); }, 30 * 60000); // 🔔 v231
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { /* */ });
@@ -11756,6 +11757,15 @@
   // كنحيدو الـ Service Worker والذاكرة القديمة ونعاودو نحلو (البيانات فـ IndexedDB ما كتمسّش). مرة وحدة لكل نسخة، وماشي وسط الكتابة.
   const busyEditing = () => /\/(new|edit)\b|^#\/work\//.test(location.hash) || !!document.querySelector('.modal-bg') || (typeof AG !== 'undefined' && AG.open);
   let healAt = 0, healing = false, healTold = '', healRetry = false;
+  // 🧹 v243: كنمسحو الذاكرات ديال النسخ القديمة (v218…) اللي بقات فالجهاز — كانت كتخلي «🩺 الفحص» يقول نسخة قديمة
+  // وكتاخد بلاصة؛ كنخليو غير ذاكرة الـ Service Worker اللي خدام دابا
+  async function cleanOldCaches() {
+    try {
+      const w = await swVersion(); if (!w || !/^v\d+$/.test(w)) return;
+      const keep = 'w777-bureau-' + w;
+      await Promise.all((await caches.keys()).filter(k => /^w777-bureau-v\d+$/.test(k) && k !== keep).map(k => caches.delete(k)));
+    } catch (e) { /* */ }
+  }
   // 📲 v242: كل جهاز كيقول للسحابة شمن نسخة عندو (مرة فالجلسة، بلا معلومات أخرى) ← المدير كيشوف شحال تحدّثو
   function appPing() {
     const Sy = window.W777_SYNC; if (!Sy || !Sy.isOn() || DB.isDemo || !Sy.request) return;

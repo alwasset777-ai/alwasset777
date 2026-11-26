@@ -15,7 +15,7 @@ async function open(b, kind, opts = {}) {
     await p.route(/\/rest\/v1\/rpc\/w777_is_admin/, r => r.fulfill({ json: false }));
     await p.route(/\/rest\/v1\/rpc\/w777_my_status/, r => r.fulfill({ json: { admin: false, staff: false, member: true, ok: !opts.stopped, kind } }));
     await p.route(/\/rest\/v1\/w777_agencies\?uid=eq/, r => r.fulfill({ json: opts.stopped ? [] : [{ code: 'U001', name: 'زبون', phone: '0612345678', kind, active: true, terms_at: today, seat_no: 1, seat_zone: 'ma' }] }));
-  } else { await p.route(/rpc\/w777_errors_recent/, r => r.fulfill({ json: [] })); await p.route(/rpc\/w777_app_versions/, r => r.fulfill({ json: [{ ver: 'v242', n: 3, last_at: new Date().toISOString() }, { ver: 'v240', n: 1, last_at: new Date().toISOString() }] })); }
+  } else { await p.route(/rpc\/w777_errors_recent/, r => r.fulfill({ json: [] })); await p.route(/rpc\/w777_app_versions/, r => r.fulfill({ json: [{ ver: SW.match(/w777-bureau-(v\d+)/)[1], n: 3, last_at: new Date().toISOString() }, { ver: 'v240', n: 1, last_at: new Date().toISOString() }] })); }
   await p.goto(BASE); await p.waitForTimeout(800); await F.login(p, BASE);
   return { ctx, p, errs, pings, navs };
 }
