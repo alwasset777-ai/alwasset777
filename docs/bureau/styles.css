@@ -2411,3 +2411,14 @@ body.lite .grp-word2 .gw-shine { display: none; }
 .ag-mouth { top: calc(var(--my) + var(--mw) * .005); height: calc(var(--open) * var(--mw) * .035);
   background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(70,25,25,.45), rgba(70,25,25,0) 100%);
   opacity: min(.8, calc(var(--open) * 1.5)); filter: blur(.6px); }
+
+/* ✨ v250: لمعة على السنان فآخر الجملة (نجمة صغيرة كتبرق وكتختفي) */
+.ag-spark { position: absolute; left: calc(var(--mx) + var(--mw) * .16); top: calc(var(--my) - var(--mw) * .1); width: calc(var(--mw) * .22); aspect-ratio: 1;
+  margin-left: calc(var(--mw) * -.11); pointer-events: none; opacity: 0; transform: scale(.2) rotate(0deg);
+  background: radial-gradient(circle, #fff 0 12%, rgba(255,255,255,.8) 18%, transparent 34%),
+    conic-gradient(from 0deg, transparent 0 20deg, rgba(255,255,255,.95) 45deg, transparent 70deg 110deg, rgba(255,255,255,.95) 135deg, transparent 160deg 200deg, rgba(255,255,255,.95) 225deg, transparent 250deg 290deg, rgba(255,255,255,.95) 315deg, transparent 340deg);
+  -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); mask: radial-gradient(circle, #000 30%, transparent 70%);
+  filter: drop-shadow(0 0 4px rgba(255,255,255,.9)); }
+.ag-spark.on { animation: ag-spark .85s ease-out; }
+@keyframes ag-spark { 0% { opacity: 0; transform: scale(.2) rotate(0deg); } 35% { opacity: 1; transform: scale(1.1) rotate(35deg); } 100% { opacity: 0; transform: scale(.4) rotate(80deg); } }
+@media (prefers-reduced-motion: reduce) { .ag-spark.on { animation: none; } }
