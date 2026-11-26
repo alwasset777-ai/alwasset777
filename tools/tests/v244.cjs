@@ -19,7 +19,8 @@ const CUR = fs.readFileSync(path.join(__dirname, '../../docs/bureau/sw.js'), 'ut
   await p.evaluate(() => { localStorage.w777_build = JSON.stringify({ v: 'v240', at: new Date(Date.now() - 864e5).toISOString() }); });
   await p.reload(); await p.waitForTimeout(3500);
   const wn = await p.$eval('.wn-card', e => e.textContent).catch(() => '');
-  if (!new RegExp(CUR).test(wn) || !/<li>|🆕|📲|🔄|🎓|📝/.test(wn)) bad.push('whats-new ' + wn.slice(0, 80));
+  const wnLi = await p.$$eval('.wn-card li', a => a.length).catch(() => 0);
+  if (!new RegExp(CUR).test(wn) || !wnLi) bad.push('whats-new ' + wn.slice(0, 80));
   await p.screenshot({ path: (process.env.SHOT || '/tmp/v244') + '-new.png' });
   await p.click('[data-wn-x]').catch(() => {}); await p.reload(); await p.waitForTimeout(3500);
   if (await p.$('.wn-card')) bad.push('whats-new shown twice');

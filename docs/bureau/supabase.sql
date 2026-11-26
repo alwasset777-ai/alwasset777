@@ -2152,3 +2152,10 @@ returns table(name text, code text, kind text, phone text, app_ver text, app_see
   order by a.app_seen desc limit 200 $$;
 revoke execute on function public.w777_app_stale(text, int) from public, anon;
 grant execute on function public.w777_app_stale(text, int) to authenticated;
+
+-- 😎 v247: صورة منير الجديدة (بالنظارات) للجميع: الصورة الافتراضية فالتطبيق + نسخة احتياطية من القديمة (بلا وصول من التطبيق)
+create table if not exists public.w777_agent_photo_bak (id bigserial primary key, photo text, face jsonb, saved_at timestamptz not null default now());
+alter table public.w777_agent_photo_bak enable row level security;
+revoke all on public.w777_agent_photo_bak from anon, authenticated, public;
+-- (طُبّق مرة وحدة) insert into w777_agent_photo_bak(photo, face) select photo, face from w777_agent_config where id = 1;
+-- update w777_agent_config set photo = 'icons/agent-mounir.webp?v=2', face = '{"mx":0.529,"my":0.775,"ex1":0.36,"ex2":0.713,"ey":0.537,"glasses":true}' where id = 1;

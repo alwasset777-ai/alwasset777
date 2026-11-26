@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v246'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v247'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -3791,11 +3791,11 @@
   }
   const agMine = () => !!(AG.my && (AG.my.photo || AG.my.name));
   const agName = () => (AG.my && AG.my.name) || (AG.cfg && AG.cfg.name) || 'مساعد مجموعة الوسيط';
-  const AG_MOUNIR = 'icons/agent-mounir.webp?v=1';
+  const AG_MOUNIR = 'icons/agent-mounir.webp?v=2';
   const agPhoto = () => (AG.my && AG.my.photo) || (AG.cfg && AG.cfg.photo) || AG_MOUNIR;
   function agPaintButton() {
     const b = $('#agent-fab'); if (!b) return;
-    b.innerHTML = `<img src="${agPhoto()}" alt=""><i></i>`;
+    b.innerHTML = `<img src="${agPhoto()}" alt=""><b class="ag-shine"></b><i></i>`; // 😎 v247: لمعة كتدوز على منير
     const h = $('#agent-head-img'); if (h) h.src = agPhoto();
     // الصورة الجديدة كتبان حتى فالأفاتار 3D والخلفية ديال المحادثة
     const p = $('#agent-panel');
@@ -4005,7 +4005,7 @@
 
   // ---------- الوجه الحي: الفم كيتحل مع الصوت، العينين كيرمشو، والراس كيتحرك ----------
   // مكان الفم والعينين (نسبة من الصورة) كيحددو المدير مرة وحدة من الإعدادات.
-  const AG_FACE_DEF = { mx: 0.5, my: 0.64, ex1: 0.4, ex2: 0.6, ey: 0.43 };
+  const AG_FACE_DEF = { mx: 0.529, my: 0.775, ex1: 0.36, ex2: 0.713, ey: 0.537 }; // v247: صورة منير الجديدة (600×600)
   function agFace() {
     const f = Object.assign({}, AG_FACE_DEF, (AG.my && AG.my.photo ? AG.my.face : AG.cfg && AG.cfg.face) || {});
     const d = Math.max(0.08, (f.ex2 - f.ex1));
@@ -4017,6 +4017,9 @@
     const f = agFace(), pc = v => (v * 100).toFixed(2) + '%';
     el.style.setProperty('--mx', pc(f.mx)); el.style.setProperty('--my', pc(f.my)); el.style.setProperty('--mw', pc(f.mw));
     el.style.setProperty('--ex1', pc(f.ex1)); el.style.setProperty('--ex2', pc(f.ex2)); el.style.setProperty('--ey', pc(f.ey)); el.style.setProperty('--ew', pc(f.ew));
+    // 😎 v247: العدسات (لمعة النظارات) على قد المسافة بين العينين
+    const dd = Math.max(0.08, f.ex2 - f.ex1); el.style.setProperty('--lw', pc(dd * 0.8)); el.style.setProperty('--lh', pc(dd * 0.5));
+    el.classList.toggle('glasses', !!f.glasses);
     // لون الجلد فوق العين (للرمشة)
     const img = $('img.ag-base', el);
     const skin = () => { try {
@@ -4024,6 +4027,9 @@
       const px = (u, v) => x.getImageData(Math.round(u * 63), Math.round(v * 63), 1, 1).data;
       const a = px(f.ex1, f.ey - f.ew * 0.55), b = px(f.ex2, f.ey - f.ew * 0.55);
       el.style.setProperty('--skin', `rgb(${(a[0] + b[0]) >> 1},${(a[1] + b[1]) >> 1},${(a[2] + b[2]) >> 1})`);
+      // 😎 العينين غامقين بزاف (نظارات شمسية) ← بلا رمشة بالجلد، وبلاصتها لمعة كتدوز على العدسات
+      const lum = p => 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2], e1 = px(f.ex1, f.ey), e2 = px(f.ex2, f.ey);
+      if (f.glasses || (lum(e1) + lum(e2)) / 2 < 55) el.classList.add('glasses');
     } catch (e) { /* */ } };
     if (img) { if (img.complete && img.naturalWidth) skin(); else img.onload = skin; }
   }
@@ -4226,7 +4232,7 @@
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
         ${agTTS() ? `<button class="ag-x" id="ag-voice" title="🔊">${agVoiceOn() ? '🔊' : '🔇'}</button>` : ''}<button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
       <div class="ag-stage" id="ag-stage">
-        <div class="ag-3d" id="ag-3d"><div class="ag-face" id="ag-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i></div><i class="ag-gloss"></i></div>
+        <div class="ag-3d" id="ag-3d"><i class="ag-halo"></i><div class="ag-face" id="ag-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i><i class="ag-lens l"></i><i class="ag-lens r"></i></div><i class="ag-gloss"></i></div>
         <div class="ag-wave"><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
@@ -4989,7 +4995,7 @@
     let pts = [], timer = 0;
     modal(`<h3>🎯 مكان الفم والعينين</h3><p class="muted" id="fc-step" style="min-height:24px"></p>
       <div id="fc-box" style="position:relative;width:min(300px,78vw);aspect-ratio:1;margin:8px auto;border-radius:50%;overflow:hidden;cursor:crosshair;background:#fff;box-shadow:0 0 0 3px var(--gold)">
-        <div class="ag-face" id="fc-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i></div></div>
+        <div class="ag-face" id="fc-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i><i class="ag-lens l"></i><i class="ag-lens r"></i></div></div>
       <div class="btn-row" style="justify-content:center"><button class="btn sm" id="fc-redo">↺ عاود</button><button class="btn sm" id="fc-try" disabled>👄 جرّب الحركة</button><button class="btn gold sm" id="fc-ok" disabled>${ic('check', 15)} حفظ</button></div>`, (box, close) => {
       const area = $('#fc-box', box), face = $('#fc-face', box), step = $('#fc-step', box);
       face.style.transform = 'none';
@@ -11768,6 +11774,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v247: ['😎 منير بصورة جديدة: نظارات كتلمع، هالة ذهبية كتدور، ولمعة فالأيقونة', '🗣️ ملي كيتكلم: الهالة والعدسات كيتحركو أكثر'],
     v246: ['🎓 أكاديمية الوسيط أغنى: نماذج الوثائق، لائحة مراجعة الملف، علامات الخطر، القانون 41.25 وحسابات الصفقة — موزعة داخل الوحدات السبعة', '📝 112 سؤال فالاختبارات (+14)', '🤖 منير كيشرح هاد المعلومات الجديدة حتى هو'],
     v244: ['📲 فالإعدادات ← «التطبيق»: النسخة ديالك وتاريخ آخر تحديث', '🆕 هاد الخانة كتقولك شنو الجديد من بعد كل تحديث', '🔄 التطبيق كيتحدّث بوحدو فكل الأجهزة'],
     v243: ['🧹 النسخ القديمة كتتمسح من الجهاز بوحدها', '🔄 التحديث ولا مباشر وأوتوماتيكي'],
