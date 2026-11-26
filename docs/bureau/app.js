@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v237'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v238'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1898,7 +1898,7 @@
           <p>ابدأ بإضافة أول عقار أو أول طلب، أو جرّب التطبيق ببيانات تجريبية.</p>
           <div class="btn-row" style="justify-content:center;margin-top:12px">
             <a class="btn primary" href="#/property/new">${ic('plus', 18)} أول عقار</a>
-            <button class="btn" id="seed">${ic('sparkle', 18)} بيانات تجريبية</button>
+            ${window.W777_SYNC && window.W777_SYNC.isOn() && !DB.isDemo ? `<button class="btn" type="button" data-demo-in>🎬 جرّب بمعلومات خيالية</button>` : `<button class="btn" id="seed">${ic('sparkle', 18)} بيانات تجريبية</button>`}
           </div>
         </div>` : `
       <div class="hboxes hstats">
@@ -1952,7 +1952,7 @@
     return `<a class="card prop-card${tools === true ? selOn(p.id) : ''}" href="#/property/${p.id}"${tools === true ? ` data-sid="${p.id}"` : ''}>
       <div class="prop-cover">${tools === true ? propMenu(p) : `<span class="sel-tools on-cover">${favBtn(p)}</span>`}
         ${cv ? `<img class="hidden" data-thumb="${cv.id}" alt="" loading="lazy">${cv.wm ? '' : logoMark()}` : `<div class="ph">${ic('image', 40)}</div>`}
-        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${mktBadge(p)}</div>
+        <div class="tl"><span class="badge deal">${esc(trxShort(p.transaction))}</span>${p.status !== 'available' ? `<span class="badge ${st.color}">${esc(st.ar)}</span>` : ''}${needsInfo(p) ? `<span class="badge amber">📥 للإكمال</span>` : ''}${p.partner ? `<span class="badge blue">🤝 ${esc(p.partner.name)}</span>` : ''}${isSeedDemo(p) ? '<span class="badge amber" title="عقار خيالي للتجربة — ما كيتنشرش فالشبكة">🧪 مثال</span>' : ''}${mktBadge(p)}</div>
         <span class="ref">${esc(p.ref)}</span>
         ${nPh || nV ? `<span class="cnt">${nPh ? ic('camera', 14) + nPh : ''} ${nV ? ic('video', 14) + nV : ''}</span>` : ''}
       </div>
@@ -5745,7 +5745,7 @@
     const agency = myAgencyName(), phone = myAgencyPhone();
     const rows = [], next = {};
     for (const p of props) {
-      if (p.status !== 'available' || p.partner || String(p.id).startsWith('pt-')) continue;
+      if (p.status !== 'available' || p.partner || String(p.id).startsWith('pt-') || isSeedDemo(p)) continue;
       const photos = (p.media || []).filter(m => m.kind === 'photo' && (up[m.id] || !local.has(m.id)));
       const cv = p.cover && photos.find(m => m.id === p.cover);
       const ordered = cv ? [cv, ...photos.filter(m => m !== cv)] : photos;
@@ -5791,8 +5791,8 @@
       out.push(...rows);
       if (rows.length < 1000) break;
     }
-    S.net = out; S.netAt = Date.now();
-    return out;
+    S.net = out.filter(x => !isSeedDemo(Object.assign({}, x.data || {}, { type: x.type || (x.data || {}).type }), (x.photo_ids || []).length)); S.netAt = Date.now();
+    return S.net;
   }
   async function netImg(owner, id, thumb) {
     const k = owner + '/' + id + (thumb ? '.t' : '');
@@ -6687,6 +6687,10 @@
       sv: ['شراء', 'كراء', 'كراء موسمي / عطلة', 'استثمار', 'بيع عقار ديالي', 'تقييم عقار', 'تمويل / قرض', 'أراضي'] },
   };
   const kindOf = a => (a && a.kind) || 'agency';
+  // 🧪 v238: العقارات الخيالية ديال «بيانات تجريبية» (seedDemo): العلامة demo، ولا البصمة للقدام (المرجع + النوع + الحي + الثمن، بلا صور)
+  const SEED_SIG = new Set(['apartment|مرجان 2|680000', 'villa|الرياض|2900000', 'apartment|حمرية (المدينة الجديدة)|3500', 'plot_house|ويسلان|420000', 'shop|البساتين|800000', 'farm|وسط المدينة|2000000']);
+  const isSeedDemo = (p, nPhotos) => !!p && (p.demo === true || (!(nPhotos != null ? nPhotos : (p.media || []).filter(m => m.kind === 'photo').length)
+    && /^W777-000[1-6]$/.test(String(p.ref || '')) && SEED_SIG.has([p.type, p.district, Number(p.priceMax) || 0].join('|'))));
 
   /* ============================================================
      v235: 📋 ملفات المهنة — كل فئة عندها الخانات ديالها
@@ -9410,7 +9414,7 @@
       mk(5, { transaction: 'sale', type: 'shop', city: 'مكناس', district: 'البساتين', priceMin: 750000, priceMax: 800000, areaTotal: 45, specs: { floor: 'سفلي (RDC)', frontage: 5, streetType: 'شارع رئيسي' }, mezzanine: 15, features: ['واجهة زجاجية', 'مرحاض'], owner: { name: 'سعيد الإدريسي', phone: '0665000005' } }),
       mk(6, { transaction: 'sale', type: 'farm', city: 'الحاجب', district: 'وسط المدينة', priceMin: 1800000, priceMax: 2000000, areaTotal: 50000, specs: { hectares: 5, water: 'ثقب مائي (سونداج)', irrigation: 'تنقيط (قطرة قطرة)', trees: 'زيتون وتفاح', treesCount: 900 }, features: ['ثقب مائي', 'كهرباء', 'منزل', 'زيتون', 'على الطريق'], titleStatus: 'محفظ (رسم عقاري)', owner: { name: 'إدريس الحاجبي', phone: '0666000006' } }),
     ];
-    for (const p of props) { p.ref = await DB.nextRef('W777'); p.title = autoTitle(p); p.description = buildDescription(p); await DB.saveRec('properties', p); }
+    for (const p of props) { p.demo = true; p.ref = await DB.nextRef('W777'); p.title = autoTitle(p); p.description = buildDescription(p); await DB.saveRec('properties', p); }
     const reqs = [
       { client: { name: 'يوسف المرابط', phone: '0677000011', source: 'فيسبوك', profession: 'أستاذ' }, transaction: 'sale', types: ['apartment', 'middle_standing'], city: 'مكناس', districts: ['مرجان 2', 'مرجان 1', 'الزيتون'], budgetMin: 500000, budgetMax: 650000, areaMin: 80, areaMax: 110, bedroomsMin: '2', features: ['مصعد'], financing: 'قرض بنكي', status: 'new', priority: 'high', followUp: today() },
       { client: { name: 'نادية الشرقاوي', phone: '0678000012', source: 'واتساب', nationality: 'مغربي مقيم بالخارج (MRE)' }, transaction: 'sale', types: ['villa', 'villa_luxury'], city: 'مكناس', districts: [], budgetMin: 2000000, budgetMax: 3000000, features: ['حديقة', 'مسبح'], financing: 'نقدا (كاش)', status: 'active', priority: 'normal' },
