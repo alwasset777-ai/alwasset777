@@ -2329,3 +2329,12 @@ body.lite .fab, .fab { animation: plus-live 2.6s ease-in-out infinite !important
 .prop-scope a.on { background: var(--ink); color: var(--bg); }
 .net-cta { display: flex; gap: 12px; align-items: center; text-decoration: none; color: inherit; margin-bottom: 12px; border: 1.5px solid #e6c77e; }
 .net-cta .big { font-size: 34px; } .net-cta small { display: block; color: var(--muted); margin-top: 2px; }
+
+/* ⬆️ v237: خانات الرئيسية طالعين لفوق وقراب لبعضياتهم (بطلب المدير) */
+.home-main .hs-card { margin-bottom: 10px; }
+.home-main .hero { padding: 10px 14px 16px; }
+.home-main .hero-marq { margin-top: 0; padding: 1px 0; }
+.home-main .hero-big3 { margin-top: 4px; gap: 6px; }
+/* 🔔 v237: تنبيه «دخول من جهاز جديد» */
+.home-rw .btn-row { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+.home-rw.sec-alert { border-color: #d71920; background: linear-gradient(135deg, rgba(215,25,32,.10), rgba(201,162,74,.10)); }
