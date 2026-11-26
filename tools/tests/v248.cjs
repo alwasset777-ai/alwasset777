@@ -12,9 +12,9 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
   const m = await p.evaluate(() => { const f = document.querySelector('#ag-face').cloneNode(true); f.style.transform = 'none'; f.style.setProperty('--open', '1');
     const w = document.createElement('div'); w.style.cssText = 'position:fixed;left:0;top:0;width:300px;height:300px'; w.appendChild(f); document.body.appendChild(w);
     const jaw = getComputedStyle(f.querySelector('.ag-jaw')).transform, mo = getComputedStyle(f.querySelector('.ag-mouth'));
-    const ty = jaw === 'none' ? 0 : parseFloat(jaw.split(',')[5]); const r = { ty, h: 300, shadow: mo.boxShadow, bg: mo.backgroundImage.slice(0, 40) }; w.remove();
+    const ty = jaw === 'none' ? 0 : parseFloat(jaw.split(',')[5]); const r = { ty, h: 300, shadow: mo.boxShadow, bg: mo.backgroundImage.slice(0, 90) }; w.remove();
     return r; });
   if (!(m.ty > 0 && m.ty / m.h <= 0.04)) bad.push('jaw ' + JSON.stringify(m));
-  if (m.shadow !== 'none' || /241, 236, 226/.test(m.bg)) bad.push('mouth style ' + JSON.stringify(m));
+  if (m.shadow !== 'none' || /241, 236, 226/.test(m.bg) || !/0\.45\)/.test(m.bg)) bad.push('mouth style ' + JSON.stringify(m)); // v249: خيط خفيف (السنان بيضين)
   const ok = !bad.length && !errs.length; console.log(ok ? 'OK' : 'BAD', bad.join(' | '), errs.join(' | ')); await b.close(); process.exit(ok ? 0 : 1);
 })();
