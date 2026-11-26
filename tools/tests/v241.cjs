@@ -20,16 +20,20 @@ async function run(b, stuck) {
   await p.route(/googleapis|gstatic|vercel\.app|tile\.openstreetmap|unpkg/, r => r.abort()); await F.install(p);
   await p.goto(BASE); await p.waitForTimeout(800); await F.login(p, BASE);
   await p.goto(BASE + '#/'); await p.waitForTimeout(1200);
+  // 🧹 v243: ذاكرة نسخة قديمة باقية فالجهاز (بحال v218) ← كتتمسح بوحدها
+  if (!stuck) await p.evaluate(async () => { const c = await caches.open('w777-bureau-v218'); await c.put('stale.txt', new Response('x')); });
   await p.reload(); await p.waitForTimeout(stuck ? 9000 : 6000);
+  const keys = await p.evaluate(async () => (await caches.keys()).filter(k => /^w777-bureau-/.test(k)));
   const st = await p.evaluate(async () => ({ heal: localStorage.getItem('w777_heal'), ctrl: !!(navigator.serviceWorker && navigator.serviceWorker.controller) }));
   const ver = await p.evaluate(() => new Promise(res => { const c = navigator.serviceWorker.controller; if (!c) return res(''); const ch = new MessageChannel(); ch.port1.onmessage = e => res(e.data); c.postMessage('ver', [ch.port2]); setTimeout(() => res('timeout'), 2000); }));
-  await ctx.close(); return { st, navs: navs.filter(u => /[?&]u=/.test(u)).length, errs, ver };
+  await ctx.close(); return { st, navs: navs.filter(u => /[?&]u=/.test(u)).length, errs, ver, keys };
 }
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }); const bad = [];
   const ok = await run(b, false);
   if (ok.st.heal || ok.navs) bad.push('up-to-date healed ' + JSON.stringify(ok));
   if (ok.ver !== REAL) bad.push('sw ver ' + ok.ver + ' != ' + REAL);
+  if (ok.keys.length !== 1 || ok.keys[0] !== 'w777-bureau-' + REAL) bad.push('stale caches ' + ok.keys.join());
   const s = await run(b, true);
   if (String(s.st.heal).split(':')[0] !== 'v999' || s.navs < 1) bad.push('stuck not healed ' + JSON.stringify(s));
   if (s.navs > 1) bad.push('heal loop ' + s.navs);
