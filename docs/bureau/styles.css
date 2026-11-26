@@ -2396,3 +2396,14 @@ body.lite .grp-word2 .gw-shine { display: none; }
   animation: ag-glint 7.5s cubic-bezier(.5,0,.3,1) 2s infinite; }
 @media (prefers-reduced-motion: reduce) { .ag-lens::after, .ag-halo, .agent-fab .ag-shine::before { animation: none; } }
 @media print { .ag-halo, .ag-lens, .ag-shine { display: none !important; } }
+
+/* 🗣️ v248: فم منير طبيعي (بلاصة «الروبو»): الفك كيهبط شوية صغيرة (≈3% من الوجه) بحواف ذايبة فاللحية، والتجويف ظل غامق ناعم
+   بين السنان (بلا سنان مرسومين ولا حاشية)، والعرض كيتبدل شوية مع الحروف */
+.ag-mouth { --mwd: calc(var(--mw) * (.6 + var(--wide) * .05 - var(--open) * .05));
+  left: calc(var(--mx) - var(--mwd) / 2); width: var(--mwd); top: calc(var(--my) - var(--mw) * .015);
+  height: calc(var(--mw) * .02 + var(--open) * var(--mw) * .12); border-radius: 50%;
+  background: radial-gradient(ellipse 50% 60% at 50% 40%, rgba(40,6,8,.92), rgba(70,14,16,.75) 55%, rgba(90,25,25,0) 100%);
+  box-shadow: none; opacity: min(1, calc(var(--open) * 2.2)); filter: blur(.4px); }
+.ag-jaw { transform: translateY(calc(var(--open) * var(--mw) * .1));
+  -webkit-mask-image: radial-gradient(ellipse calc(var(--mw) * 1.25) calc(var(--mw) * 1.05) at var(--mx) calc(var(--my) + var(--mw) * .55), #000 40%, transparent 78%), linear-gradient(to bottom, transparent calc(var(--my) + .2%), #000 calc(var(--my) + 2.8%));
+  mask-image: radial-gradient(ellipse calc(var(--mw) * 1.25) calc(var(--mw) * 1.05) at var(--mx) calc(var(--my) + var(--mw) * .55), #000 40%, transparent 78%), linear-gradient(to bottom, transparent calc(var(--my) + .2%), #000 calc(var(--my) + 2.8%)); }
