@@ -2107,3 +2107,37 @@ drop policy if exists w777_ag_sel on public.w777_agencies;
 create policy w777_ag_sel on public.w777_agencies for select to authenticated using (
   (select w777_can_use()) and (kind <> 'member' or uid = (select auth.uid())
     or exists (select 1 from w777_msgs m where (m.sender = w777_agencies.uid and m.recipient = (select auth.uid())) or (m.recipient = w777_agencies.uid and m.sender = (select auth.uid())))));
+
+-- 👤 v242: «آخر» (member): بلا امتيازات عرض 777 — غير الفترة المجانية ومن بعد الاشتراك (الألعاب والأكاديمية كيبقاو فالتطبيق)
+create or replace function public.w777_sub_ok(a public.w777_agencies) returns boolean language sql stable security definer set search_path = public as $$
+  select a.terms_at is null
+    or (a.seat_no is not null and a.seat_no <= 7 and a.kind <> 'member')
+    or (a.sub_until is not null and a.sub_until >= current_date)
+    or coalesce(a.trial_until, (a.terms_at + interval '6 months')::date) >= current_date $$;
+revoke execute on function public.w777_sub_ok(public.w777_agencies) from public, anon;
+grant execute on function public.w777_sub_ok(public.w777_agencies) to authenticated;
+-- الفئة ديال الحساب فالحالة (الحساب الموقوف ما كيقدرش يقرا الصف ديالو)
+create or replace function public.w777_my_status() returns json language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'admin', w777_is_admin(),
+    'staff', exists(select 1 from w777_staff s where s.uid = auth.uid()),
+    'member', exists(select 1 from w777_agencies a where a.uid = auth.uid()),
+    'kind', (select a.kind from w777_agencies a where a.uid = auth.uid() limit 1),
+    'ok', w777_not_stopped(),
+    'email', (select u.email from auth.users u where u.id = auth.uid())) $$;
+revoke execute on function public.w777_my_status() from public, anon;
+grant execute on function public.w777_my_status() to authenticated;
+-- 📲 v242: النسخة ديال التطبيق عند كل مشترك (بلا معلومات أخرى) ← المدير كيشوف شحال تحدّثو
+alter table public.w777_agencies add column if not exists app_ver text, add column if not exists app_seen timestamptz;
+create or replace function public.w777_app_ping(p_ver text) returns void language sql security definer set search_path = public as $$
+  update w777_agencies set app_ver = p_ver, app_seen = now()
+  where uid = auth.uid() and p_ver ~ '^v[0-9]{1,5}$'
+    and (app_ver is distinct from p_ver or app_seen is null or app_seen < now() - interval '6 hours') $$;
+revoke execute on function public.w777_app_ping(text) from public, anon;
+grant execute on function public.w777_app_ping(text) to authenticated;
+create or replace function public.w777_app_versions() returns table(ver text, n bigint, last_at timestamptz) language sql stable security definer set search_path = public as $$
+  select a.app_ver, count(*), max(a.app_seen) from w777_agencies a
+  where w777_is_admin() and a.app_ver is not null and a.app_seen > now() - interval '60 days'
+  group by a.app_ver order by max(a.app_seen) desc $$;
+revoke execute on function public.w777_app_versions() from public, anon;
+grant execute on function public.w777_app_versions() to authenticated;

@@ -2355,3 +2355,7 @@ body.lite .fab, .fab { animation: plus-live 2.6s ease-in-out infinite !important
 body.lite .grp-word2, body.lite .grp-word2 .gw-shine { animation: none; filter: none; }
 body.lite .grp-word2 .gw-shine { display: none; }
 @media (prefers-reduced-motion: reduce) { .grp-word2, .grp-word2 .gw-shine { animation: none; } }
+
+/* 👤 v242: «آخر» بلا اشتراك ← غير الألعاب والدليل والأكاديمية؛ 📲 نسخ التطبيق عند المشتركين */
+.st-free { margin: 10px 0; text-align: center; border: 1.5px solid #e6c77e; }
+.ah-vers { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: 13.5px; }
