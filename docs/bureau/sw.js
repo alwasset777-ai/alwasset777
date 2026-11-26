@@ -1,5 +1,5 @@
 /* Service Worker — تشغيل التطبيق بدون إنترنت */
-const CACHE = 'w777-bureau-v240';
+const CACHE = 'w777-bureau-v241';
 // صور عقارات الشبكة (روابط موقّعة من التخزين السحابي): ذاكرة خاصة كتبقى بين التحديثات
 const IMG = 'w777-img-v1', IMG_MAX = 1500;
 // الأصوات المحفوظة ديال المساعد (w777-tts) كتبقى حتى هي بين التحديثات
@@ -69,7 +69,8 @@ self.addEventListener('fetch', e => {
   const save = res => {
     if (big || !(res.ok && res.status === 200 && res.type === 'basic')) return;
     const copy = res.clone();
-    e.waitUntil(caches.open(inShell ? CACHE : RT).then(c => c.put(req, copy).then(() => { if (!inShell && ++rtN % 10 === 0) return trim(c, RT_MAX); })).catch(() => {}));
+    // v241: ذاكرة النسخة ما كتتخلقش من جديد إلا تمسحات (نسخة أحدث تثبتات ومسحاتها)
+    e.waitUntil((inShell ? caches.has(CACHE) : Promise.resolve(true)).then(ok => ok && caches.open(inShell ? CACHE : RT).then(c => c.put(req, copy).then(() => { if (!inShell && ++rtN % 10 === 0) return trim(c, RT_MAX); }))).catch(() => {}));
   };
   // بلا إنترنت: نفس الملف (حتى برقم ?v آخر) ← الصفحة الرئيسية ← صفحة «بلا إنترنت» ← 504
   const offline = async () => {
@@ -89,6 +90,13 @@ self.addEventListener('fetch', e => {
     if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
     return net.catch(offline);
   }));
+});
+
+// v241: الصفحة كتسول على النسخة ديال هاد الـ Service Worker، و«skip» كيشعل النسخة الجديدة دغيا
+self.addEventListener('message', e => {
+  const d = e.data;
+  if (d === 'ver' && e.ports && e.ports[0]) e.ports[0].postMessage(CACHE.replace('w777-bureau-', ''));
+  else if (d === 'skip') self.skipWaiting();
 });
 
 // الضغط على تنبيه موعد ⏰: فتح التطبيق على صفحة المواعيد
