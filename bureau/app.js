@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v247'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v248'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -4041,7 +4041,10 @@
     const face = $('#ag-face'), stage = $('#ag-stage');
     if (!face || !AG.open) return;
     let open = 0, wide = 0, env = 0, nextBlink = performance.now() + 1800, blinkT = 0;
-    const syl = { t0: 0, dur: 0, amp: 0, w: 0 };
+    // 🗣️ v248: الكلام بحال الإنسان: مقاطع مجموعين فكلمات (2–5)، وقفة صغيرة بين الكلمات وأطول بين الجمل،
+    // والمقطع الأول ديال الكلمة أقوى (النبرة). الفم كيتبع «نابض» ناعم (spring) ماشي قفزات.
+    const syl = { t0: 0, dur: 0, amp: 0, w: 0, left: 0, words: 0, pause: false };
+    let vel = 0;
     let fbuf = null;
     const tick = now => {
       if (!AG.open || !face.isConnected) return;
@@ -4059,22 +4062,37 @@
         wideT = lo + hi > 0 ? Math.max(-1, Math.min(1, (hi / (lo + hi) - 0.35) * 3)) : 0;
       } else if (AGV.synth) {
         // صوت المتصفح ما كيعطيش الموجة: مقاطع صوتية عشوائية بإيقاع الكلام (4–6 فالثانية) + سدّة صغيرة بين الكلمات
-        if (now >= syl.t0 + syl.dur) { syl.t0 = now; syl.dur = 140 + Math.random() * 120; syl.amp = 0.35 + Math.random() * 0.5; syl.w = Math.random() * 2 - 1; }
-        const ph = (now - syl.t0) / syl.dur;
-        target = syl.amp * Math.pow(Math.sin(Math.PI * Math.min(1, ph)), 0.8);
-        if (now - AGV.pulse < 70) target *= 0.15;
-        wideT = syl.w * 0.6;
+        if (now >= syl.t0 + syl.dur) {
+          syl.t0 = now;
+          if (syl.left <= 0 && !syl.pause) { // آخر الكلمة ← وقفة (أطول كل 6–10 كلمات = آخر الجملة)
+            syl.pause = true; syl.words++;
+            const longP = syl.words >= 6 + Math.random() * 4; if (longP) syl.words = 0;
+            syl.dur = longP ? 260 + Math.random() * 180 : 70 + Math.random() * 110; syl.amp = 0; syl.w = 0;
+          } else {
+            const first = syl.pause || syl.left <= 0;
+            if (first) syl.left = 2 + Math.floor(Math.random() * 4);
+            syl.pause = false; syl.left--;
+            syl.dur = 120 + Math.random() * 110;
+            syl.amp = (first ? 0.62 : 0.38) + Math.random() * 0.28; // النبرة على أول مقطع
+            syl.w = Math.random() * 2 - 1;
+          }
+        }
+        const ph = Math.min(1, (now - syl.t0) / syl.dur);
+        target = syl.amp * Math.sin(Math.PI * ph) ** 1.4; // كيتحل وكيتسد بنعومة
+        if (now - AGV.pulse < 70) target *= 0.3;
+        wideT = syl.w * 0.5;
       }
-      // فتح سريع، سدّان أبطأ شوية (بحال العضلات)
-      open += (target - open) * (target > open ? 0.42 : 0.2);
-      if (open < 0.015) open = 0;
+      // نابض ناعم (بحال عضلات الفك): كيلحق الهدف بلا قفزات وبلا اهتزاز آلي
+      target = Math.min(0.85, target);
+      vel += (target - open) * 0.26 - vel * 0.56; open += vel;
+      if (open < 0.01 && target === 0) { open = 0; vel = 0; } else if (open < 0) { open = 0; vel = 0; }
       wide += (wideT - wide) * 0.15;
       env += (open - env) * 0.06;
       face.style.setProperty('--open', open.toFixed(3));
       face.style.setProperty('--wide', wide.toFixed(3));
       if (stage) {
         // الراس: إيماءة خفيفة مع النبرة + ميلان بطيء طبيعي
-        stage.style.setProperty('--nod', (open * 1.6 + env * 1.2).toFixed(2) + 'deg');
+        stage.style.setProperty('--nod', (open * 1.1 + env * 1.4).toFixed(2) + 'deg');
         stage.style.setProperty('--sway', (Math.sin(now / 1900) * (0.5 + env * 2.2) + Math.sin(now / 730) * env * 0.8).toFixed(2) + 'deg');
       }
       // رمشة كل 2–6 ثواني
@@ -11774,6 +11792,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v248: ['🗣️ منير كيتكلم بحال الإنسان: الفم كيتحرك بنعومة مع الكلمات والوقفات، بلا «روبو»'],
     v247: ['😎 منير بصورة جديدة: نظارات كتلمع، هالة ذهبية كتدور، ولمعة فالأيقونة', '🗣️ ملي كيتكلم: الهالة والعدسات كيتحركو أكثر'],
     v246: ['🎓 أكاديمية الوسيط أغنى: نماذج الوثائق، لائحة مراجعة الملف، علامات الخطر، القانون 41.25 وحسابات الصفقة — موزعة داخل الوحدات السبعة', '📝 112 سؤال فالاختبارات (+14)', '🤖 منير كيشرح هاد المعلومات الجديدة حتى هو'],
     v244: ['📲 فالإعدادات ← «التطبيق»: النسخة ديالك وتاريخ آخر تحديث', '🆕 هاد الخانة كتقولك شنو الجديد من بعد كل تحديث', '🔄 التطبيق كيتحدّث بوحدو فكل الأجهزة'],
