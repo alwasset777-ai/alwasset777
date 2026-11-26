@@ -12,7 +12,7 @@ const SHOT = process.env.S || '';
   const ow = async t => { const sw = await p.evaluate(() => document.documentElement.scrollWidth); if (sw > 391) bad.push(t + ' overflow ' + sw); };
   const go = async h => { await p.goto(BASE + h); await p.waitForTimeout(1300); };
   await go('#/learn'); await ow('home');
-  if (await p.$$eval('.ac-mod', a => a.length) !== 8) bad.push('7 modules + M8');
+  if (await p.$$eval('.ac-mod', a => a.length) !== 7) bad.push('7 modules');
   if (await p.$$eval('.ac-mod.lk', a => a.length) !== 6) bad.push('6 locked');
   if (SHOT) await p.screenshot({ path: SHOT + '/ac-home.png', fullPage: true });
   // M2 مقفولة

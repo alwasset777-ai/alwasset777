@@ -1,11 +1,11 @@
-// كيولد ملفات PDF ديال الأكاديمية (M1 → M8، M8 = وحدة الميدان الإضافية) فـ docs/bureau/files/formation/
+// كيولد ملفات PDF ديال الأكاديمية (M1 → M7) فـ docs/bureau/files/formation/
 // الاستعمال: cd docs && python3 -m http.server 8777 &  ثم  NODE_PATH=$(npm root -g) node tools/academy_pdf.cjs
 const { chromium } = require('playwright'); const path = require('path');
 const OUT = path.join(__dirname, '..', 'docs', 'bureau', 'files', 'formation');
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: 794, height: 1123 } });
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= 7; i++) {
     const m = 'M' + i;
     await p.goto(`http://localhost:8777/bureau/academy-print.html?m=${m}`);
     await p.evaluate(() => document.querySelectorAll('img[loading]').forEach(x => x.removeAttribute('loading')));
