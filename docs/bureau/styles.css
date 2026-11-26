@@ -2407,3 +2407,7 @@ body.lite .grp-word2 .gw-shine { display: none; }
 .ag-jaw { transform: translateY(calc(var(--open) * var(--mw) * .1));
   -webkit-mask-image: radial-gradient(ellipse calc(var(--mw) * 1.25) calc(var(--mw) * 1.05) at var(--mx) calc(var(--my) + var(--mw) * .55), #000 40%, transparent 78%), linear-gradient(to bottom, transparent calc(var(--my) + .2%), #000 calc(var(--my) + 2.8%));
   mask-image: radial-gradient(ellipse calc(var(--mw) * 1.25) calc(var(--mw) * 1.05) at var(--mx) calc(var(--my) + var(--mw) * .55), #000 40%, transparent 78%), linear-gradient(to bottom, transparent calc(var(--my) + .2%), #000 calc(var(--my) + 2.8%)); }
+/* 🦷 v249: السنان بيضين بلونهم الطبيعي — بلا ظل غامق فوقهم: غير خيط رقيق خفيف فالفراغ اللي كيتحل ملي كيهبط الفك */
+.ag-mouth { top: calc(var(--my) + var(--mw) * .005); height: calc(var(--open) * var(--mw) * .035);
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(70,25,25,.45), rgba(70,25,25,0) 100%);
+  opacity: min(.8, calc(var(--open) * 1.5)); filter: blur(.6px); }
