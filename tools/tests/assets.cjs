@@ -17,7 +17,7 @@ const PUB = ['decouvrir.html', 'decouvrir.html?lang=fr', 'brand.html', 'brand-pr
   watch(p);
   await p.addInitScript(() => { try { localStorage.w777_agent_voice = '0'; } catch (e) { /* إطار معزول (الاستوديو) */ } });
   await p.route(/googleapis|gstatic|tile\.openstreetmap|unpkg|jsdelivr|vercel\.app/, r => r.abort()); await F.install(p);
-  await p.goto(BASE); const sd = await p.$('#seed'); if (sd) { await sd.click(); await p.waitForTimeout(800); }
+  await p.goto(BASE); const sd = await p.waitForSelector('#seed', { timeout: 8000 }).catch(() => null); if (sd) { await sd.click(); await p.waitForTimeout(800); }
   await F.login(p, BASE);
   const broken = new Set();
   const scan = async tag => {
