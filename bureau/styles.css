@@ -2359,3 +2359,13 @@ body.lite .grp-word2 .gw-shine { display: none; }
 /* 👤 v242: «آخر» بلا اشتراك ← غير الألعاب والدليل والأكاديمية؛ 📲 نسخ التطبيق عند المشتركين */
 .st-free { margin: 10px 0; text-align: center; border: 1.5px solid #e6c77e; }
 .ah-vers { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: 13.5px; }
+
+/* 🆕 v244: «✓ تحدّث التطبيق — الجديد» + النسخة فالإعدادات + المتأخرين */
+.wn-card { position: fixed; z-index: 9000; inset-inline: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); max-width: 460px; margin-inline: auto;
+  background: var(--surface); color: var(--ink); border: 1.5px solid #e6c77e; border-radius: 16px; padding: 12px 14px; box-shadow: 0 12px 30px rgba(0,0,0,.25); }
+.wn-card ul { margin: 6px 0 8px; padding-inline-start: 18px; font-size: 13.5px; }
+.wn-card li { margin: 2px 0; }
+.upd-line { margin: 0 0 6px; font-size: 14px; }
+.ah-stale { margin-top: 8px; } .ah-stale summary { cursor: pointer; font-weight: 800; color: #b45309; }
+.ah-stale .ss-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line); }
+.ah-stale .ss-row small { grid-column: 1; } .ah-stale .ss-row .btn { grid-column: 2; grid-row: 1 / span 2; }

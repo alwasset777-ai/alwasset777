@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v243'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v244'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1392,10 +1392,16 @@
     try { const r = await Sy.request('/rest/v1/rpc/w777_app_versions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) vers = await r.json(); } catch (e) { /* */ }
     if (!box.isConnected || !Array.isArray(rows)) return;
     if (!Array.isArray(vers)) vers = [];
+    let stale = [];
+    try { const r = await Sy.request('/rest/v1/rpc/w777_app_stale', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_latest: APP_BUILD, p_days: 3 }) }); if (r.ok) stale = await r.json(); } catch (e) { /* */ }
+    if (!Array.isArray(stale)) stale = [];
+    const staleMsg = n => `السلام عليكم${n ? ' ' + n : ''} 👋\nكاينة نسخة جديدة ديال تطبيق مجموعة الوسيط 🔄\nحلّ التطبيق جوج مرات (سدّو مزيان وعاود حلّو) باش يتحدّث بوحدو.\nالمعلومات ديالك ما كتمسّش ✅`;
+    const staleBox = stale.length ? `<details class="ah-stale"><summary>⏳ ${fmt(stale.length)} مشترك باقي فنسخة قديمة كثر من 3 أيام</summary>
+      ${stale.slice(0, 30).map(x => `<div class="ss-row"><b>${esc(x.name || x.code || '—')}</b><span dir="ltr">${esc(x.app_ver || '—')}</span><small class="muted">آخر فتح: ${esc(whenText(x.app_seen))}</small>${x.phone ? `<a class="btn sm wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(x.phone)}?text=${encodeURIComponent(staleMsg(x.name))}">${ic('wa', 14)} ذكّرو</a>` : ''}</div>`).join('')}</details>` : '';
     const vMax = vers.reduce((m, x) => Math.max(m, vNum(x.ver)), vNum(APP_BUILD)), vTot = vers.reduce((n, x) => n + (+x.n || 0), 0), vNew = vers.filter(x => vNum(x.ver) >= vMax).reduce((n, x) => n + (+x.n || 0), 0);
     const verLine = vTot ? `<div class="ah-vers"><b>📲 نسخ التطبيق عند المشتركين:</b> ✅ ${fmt(vNew)} من ${fmt(vTot)} فآخر نسخة (v${vMax})
       <div class="chips" style="margin-top:6px">${vers.map(x => `<span class="chip${vNum(x.ver) >= vMax ? ' on' : ''}">${esc(x.ver || '—')} · ${fmt(+x.n || 0)}</span>`).join('')}</div>
-      <small class="muted">كل جهاز كيتحدّث بوحدو ملي يتحل التطبيق.</small></div>` : '';
+      <small class="muted">كل جهاز كيتحدّث بوحدو ملي يتحل التطبيق.</small>${staleBox}</div>` : staleBox;
     rows = rows.filter(x => x.kind !== 'update'); // 🔄 v241: الإصلاح الأوتوماتيكي ديال النسخة ماشي خطأ
     const tot = rows.reduce((n, x) => n + (+x.n || 0), 0), boots = rows.filter(x => x.kind === 'boot').reduce((n, x) => n + (+x.n || 0), 0);
     const KIND = { boot: '🛟 الفتح تعطّل', error: '⚠️ خطأ' };
@@ -3310,7 +3316,8 @@
 
         ${EMBED ? '' : `<div class="card card-pad upd-card">
           <h3 class="section-title">🔄 تحديث التطبيق</h3>
-          <p class="muted" style="margin-top:0">النسخة ديالك: <b id="upd-ver" dir="ltr">…</b>. التطبيق كيتحدث بوحدو، وهاد الزر كيجيب آخر نسخة فالحين ويحيد الملفات القديمة — البيانات ديالك (العقارات، الزبناء، الصور) ما كتمسّش.</p>
+          <p class="upd-line">📲 النسخة ديالك: <b id="upd-ver" dir="ltr">…</b> · 🕒 آخر تحديث: <b id="upd-at">…</b></p>
+          <p class="muted" style="margin-top:0"> التطبيق كيتحدث بوحدو، وهاد الزر كيجيب آخر نسخة فالحين ويحيد الملفات القديمة — البيانات ديالك (العقارات، الزبناء، الصور) ما كتمسّش.</p>
           <div class="btn-row"><button class="btn gold" id="upd-full">🔄 تحديث كامل للتطبيق</button></div>
         </div>`}
 
@@ -3434,6 +3441,7 @@
     $('#imp-vcf').onchange = e => { if (e.target.files[0]) importContacts(e.target.files[0]); e.target.value = ''; };
     $('#imp-photos').onchange = e => { if (e.target.files.length) importFolder(e.target.files, true); e.target.value = ''; };
     appVersion().then(v => { const e = $('#upd-ver'); if (e) e.textContent = v; });
+    { const b = buildSeen(), e = $('#upd-at'); if (e) e.textContent = whenText(b.at) + (b.from ? ` (من ${b.from})` : ''); }
     const uf = $('#upd-full'); if (uf) uf.onclick = fullUpdate;
     const so = $('#snd-on'); if (so) so.onchange = () => { try { localStorage.setItem('w777_open_sound', so.checked ? '1' : '0'); } catch (e) { /* */ } toast(so.checked ? '🔊 صوت الفتح مشعول' : '🔇 صوت الفتح مطفي'); };
     const st0 = $('#snd-try'); if (st0) st0.onclick = () => openSound(true);
@@ -11732,6 +11740,7 @@
     setTimeout(() => autoHeal(true), window.W777_HEAL_DELAY || 6000); // 🔄 v241
     setTimeout(appPing, 4000); // 📲 v242
     setTimeout(cleanOldCaches, 3000); // 🧹 v243
+    setTimeout(whatsNew, 2500); // 🆕 v244
     setTimeout(runAlerts, 9000); setInterval(() => { if (document.visibilityState === 'visible') runAlerts(); }, 30 * 60000); // 🔔 v231
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { /* */ });
@@ -11757,6 +11766,28 @@
   // كنحيدو الـ Service Worker والذاكرة القديمة ونعاودو نحلو (البيانات فـ IndexedDB ما كتمسّش). مرة وحدة لكل نسخة، وماشي وسط الكتابة.
   const busyEditing = () => /\/(new|edit)\b|^#\/work\//.test(location.hash) || !!document.querySelector('.modal-bg') || (typeof AG !== 'undefined' && AG.open);
   let healAt = 0, healing = false, healTold = '', healRetry = false;
+  // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
+  const WHATS_NEW = {
+    v244: ['📲 فالإعدادات ← «التطبيق»: النسخة ديالك وتاريخ آخر تحديث', '🆕 هاد الخانة كتقولك شنو الجديد من بعد كل تحديث', '🔄 التطبيق كيتحدّث بوحدو فكل الأجهزة'],
+    v243: ['🧹 النسخ القديمة كتتمسح من الجهاز بوحدها', '🔄 التحديث ولا مباشر وأوتوماتيكي'],
+    v242: ['🩺 «فحص التطبيق» كيحدّث بوحدو إلا لقى نسخة جديدة', '👤 «آخر»: فترة مجانية، ومن بعد الألعاب والأكاديمية والدليل'],
+  };
+  function buildSeen() {
+    let prev = null; try { prev = JSON.parse(localStorage.getItem('w777_build') || 'null'); } catch (e) { /* */ }
+    if (prev && prev.v === APP_BUILD) return prev;
+    const now = { v: APP_BUILD, at: new Date().toISOString(), from: prev ? prev.v : '' };
+    try { localStorage.setItem('w777_build', JSON.stringify(now)); } catch (e) { /* */ }
+    return now;
+  }
+  function whatsNew() {
+    const b = buildSeen(); if (!b.from || b.shown) return;
+    const lines = WHATS_NEW[APP_BUILD]; if (!lines || DB.isDemo) return;
+    try { localStorage.setItem('w777_build', JSON.stringify(Object.assign({}, b, { shown: 1 }))); } catch (e) { /* */ }
+    const el = document.createElement('div'); el.className = 'wn-card'; el.setAttribute('role', 'status');
+    el.innerHTML = `<b>✓ تحدّث التطبيق — النسخة ${esc(APP_BUILD)}</b><ul>${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul><button type="button" class="btn sm" data-wn-x>👍 فهمت</button>`;
+    document.body.appendChild(el);
+    const close = () => el.remove(); el.querySelector('[data-wn-x]').onclick = close; setTimeout(close, 15000);
+  }
   // 🧹 v243: كنمسحو الذاكرات ديال النسخ القديمة (v218…) اللي بقات فالجهاز — كانت كتخلي «🩺 الفحص» يقول نسخة قديمة
   // وكتاخد بلاصة؛ كنخليو غير ذاكرة الـ Service Worker اللي خدام دابا
   async function cleanOldCaches() {
