@@ -16,7 +16,7 @@
   // ☁️ التزامن مع السحابة (host.sync): كل تبديل كيترفع من بعد 1.5 ثانية، وأول فتح كيجيب التقدم من الأجهزة الأخرى
   let HOST = null, PULLED = false, PUSH_T = null;
   const summary = () => {
-    const s = load(), M = (A() && A().modules) || [], ok = M.filter(x => s[x.m] && s[x.m].pass);
+    const s = load(), M = ((A() && A().modules) || []).filter(x => !x.bonus), ok = M.filter(x => s[x.m] && s[x.m].pass);
     return { progress: s, passed: ok.length, avg: M.length ? Math.round(M.reduce((a, x) => a + ((s[x.m] && s[x.m].best) || 0), 0) / M.length * 1000) / 1000 : 0, cert_no: (s.cert && s.cert.no) || null, cert_name: (s.cert && s.cert.name) || null };
   };
   const schedPush = () => { if (!HOST || !HOST.sync) return; clearTimeout(PUSH_T); PUSH_T = setTimeout(() => { HOST.sync.push(summary()).catch(() => { }); }, 1500); };
@@ -37,9 +37,12 @@
   const setAll = fn => { const s = load(); fn(s); save(s); schedPush(); };
   const setSt = (m, fn) => { const s = load(); s[m] = s[m] || { les: {}, best: 0, pass: 0, tries: 0 }; fn(s[m], s); save(s); schedPush(); };
   const mods = () => A().modules;
+  // 🗂️ v245: الوحدات الإضافية (bonus) مفتوحة للجميع وما كتدخلش فالشهادة (الوحدات السبعة كيبقاو بحال ما كانو)
+  const core = () => mods().filter(x => !x.bonus);
   const idx = m => mods().findIndex(x => x.m === m);
-  const isOpen = i => i === 0 || !!st(mods()[i - 1].m).pass;
-  const allPassed = () => mods().every(x => st(x.m).pass);
+  const isOpen = i => i === 0 || !!(mods()[i] && mods()[i].bonus) || !!st(mods()[i - 1].m).pass;
+  const allPassed = () => core().every(x => st(x.m).pass);
+  const nextCore = i => mods().slice(i + 1).find(x => !x.bonus) || null;
   const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
   const pct = x => Math.round(x * 100) + '%';
   let CRED = null; const credits = () => CRED || (CRED = fetch(IMG + 'credits.json').then(r => r.json()).catch(() => ({})));
@@ -50,6 +53,7 @@
     const s = document.createElement('style'); s.id = 'ac-css';
     s.textContent = `
 .ac{max-width:980px;margin:0 auto;--c:#c8102e}
+.ac-bh{margin:18px 2px 8px;font-size:16px}.ac-links{margin-top:8px}
 .ac *{box-sizing:border-box}
 .ac-hero{position:relative;overflow:hidden;border-radius:22px;padding:20px 18px;color:#fff;background:radial-gradient(120% 140% at 100% 0,#5b0a17 0,#1b0b10 45%,#0d0d10 100%);box-shadow:0 18px 40px -18px rgba(200,16,46,.55)}
 .ac-hero .kick{color:#ffcf6b;font-weight:800;font-size:13px;letter-spacing:.3px}
@@ -172,8 +176,9 @@
 
   // ---------- الرئيسية ----------
   function home(root, host) {
-    const M = mods(), passed = M.filter(x => st(x.m).pass).length;
+    const M = core(), passed = M.filter(x => st(x.m).pass).length;
     const cur = M.findIndex((x, i) => isOpen(i) && !st(x.m).pass);
+    const B = mods().filter(x => x.bonus);
     root.innerHTML = `<div class="ac">
       <div class="ac-hero"><div class="kick">🎓 ${esc(A().title)}</div>
         <h1>من مندوب عقاري إلى صاحب وكالة</h1><p>${esc(A().tagline)}. دروس قصيرة وسهلة بالصور والأمثلة من مكناس، وفي آخر كل وحدة اختبار — النجاح بـ ${pct(A().pass)} يفتح الوحدة الموالية، وفي النهاية شهادة باسمك.</p>
@@ -183,6 +188,7 @@
           <button class="ac-btn w" data-ask="1">🤖 تعلم مع منير</button>${host.certs ? '<a class="ac-btn w" href="#/learn/certs">🏆 لوحة الشهادات</a>' : ''}${host.team ? '<a class="ac-btn w" href="#/learn/team">📊 تقدم الفريق</a>' : ''}</div>
         <small style="display:block;margin-top:8px;opacity:.75">${passed} / ${M.length} وحدات ناجحة</small></div>
       <div class="ac-grid">${M.map((x, i) => card(x, i)).join('')}</div>
+      ${B.length ? `<h3 class="ac-bh">🎁 وحدة إضافية — مفتوحة للجميع، من وثائق وحسابات المكتب</h3><div class="ac-grid">${B.map(x => card(x, idx(x.m))).join('')}</div>` : ''}
       <a class="ac-card" href="#/learn/cert" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit">
         <span style="font-size:40px">🏆</span><span><b style="font-size:17px">شهادة الوكيل العقاري المحترف</b><br><small class="muted">${allPassed() ? 'مبروك! صاوب الشهادة باسمك واطبعها PDF.' : `كتتفتح ملي تنجح فالوحدات السبعة (${passed}/7).`}</small></span></a>
       <p class="ac-note">ℹ️ ${esc(A().note)}</p></div>`;
@@ -190,7 +196,7 @@
   }
   function card(x, i) {
     const s = st(x.m), n = Object.keys(s.les || {}).length, open = isOpen(i);
-    const tag = s.pass ? `<span class="ac-tag ok">✅ ناجح · ${pct(s.best)}</span>` : open ? `<span class="ac-tag go">🔓 مفتوحة${s.tries ? ` · أحسن نتيجة ${pct(s.best)}` : ''}</span>` : `<span class="ac-tag lk">🔒 نجح فـ ${mods()[i - 1].m} أولاً</span>`;
+    const tag = s.pass ? `<span class="ac-tag ok">✅ ناجح · ${pct(s.best)}</span>` : x.bonus ? `<span class="ac-tag go">🎁 مفتوحة للجميع${s.tries ? ` · أحسن نتيجة ${pct(s.best)}` : ''}</span>` : open ? `<span class="ac-tag go">🔓 مفتوحة${s.tries ? ` · أحسن نتيجة ${pct(s.best)}` : ''}</span>` : `<span class="ac-tag lk">🔒 نجح فـ ${mods()[i - 1].m} أولاً</span>`;
     return `<a class="ac-mod ${open ? '' : 'lk'}" href="#/learn/${x.m}" style="--c:${x.color}">
       <div class="top"><img src="${IMG}${x.img}.webp" alt="" loading="lazy"><div><span class="mm">${x.icon} ${x.m}</span><b>${esc(x.t)}</b></div></div>
       <div class="bd"><small>${esc(x.sub)}</small><div class="ac-mini"><i style="width:${n / x.lessons.length * 100}%"></i></div>
@@ -206,9 +212,10 @@
     root.innerHTML = `<div class="ac" style="--c:${x.color}">
       <div class="ac-crumb"><a href="#/learn">🎓 الأكاديمية</a> ‹ <span>${x.m}</span></div>
       <div class="ac-hero" style="margin-top:8px;background:linear-gradient(135deg,${x.color},#111)"><div class="kick">${x.icon} ${x.m} · ⏱️ ${esc(x.h)}</div><h1>${esc(x.t)}</h1><p>🎯 ${esc(x.goal)}</p>
-        <div class="ac-row"><a class="ac-btn w" href="#/learn/${x.m}/${firstTodo(x)}">▶ ${Object.keys(s.les || {}).length ? 'كمّل الدروس' : 'ابدأ الدرس 1'}</a><a class="ac-btn k" href="#/learn/${x.m}/exam">📝 الاختبار</a><a class="ac-btn w" href="files/formation/${x.m}.pdf" target="_blank" rel="noopener">📄 PDF</a></div></div>
+        <div class="ac-row"><a class="ac-btn w" href="#/learn/${x.m}/${firstTodo(x)}">▶ ${Object.keys(s.les || {}).length ? 'كمّل الدروس' : 'ابدأ الدرس 1'}</a><a class="ac-btn k" href="#/learn/${x.m}/exam">📝 الاختبار</a><a class="ac-btn w" href="files/formation/${x.m}.pdf" target="_blank" rel="noopener">📄 PDF</a></div>
+        ${x.links ? `<div class="ac-row ac-links">${x.links.map(k => `<a class="ac-btn w" href="${esc(k[1])}">${esc(k[0])}</a>`).join('')}</div>` : ''}</div>
       <div class="ac-lessons">${x.lessons.map((l, j) => `<a class="ac-l ${s.les && s.les[j] ? 'done' : ''}" href="#/learn/${x.m}/${j}"><span class="n">${s.les && s.les[j] ? '✓' : j + 1}</span><img src="${IMG}${l.img}.webp" alt="" loading="lazy"><span style="flex:1;min-width:0"><b>${esc(l.t)}</b><small>${esc(l.info ? l.info.title : '')}</small></span></a>`).join('')}</div>
-      <div class="ac-card"><h3>📝 اختبار الوحدة</h3><p style="margin:0;line-height:1.7">${A().examN} أسئلة عشوائية من ${x.exam.length}. النجاح بـ ${pct(A().pass)} (${Math.ceil(A().examN * A().pass)}/${A().examN}) ${i + 1 < mods().length ? `يفتح ${mods()[i + 1].m}` : 'يفتح الشهادة'}. تقدر تعاود بلا حدود.</p>
+      <div class="ac-card"><h3>📝 اختبار الوحدة</h3><p style="margin:0;line-height:1.7">${A().examN} أسئلة عشوائية من ${x.exam.length}. النجاح بـ ${pct(A().pass)} (${Math.ceil(A().examN * A().pass)}/${A().examN}) ${x.bonus ? 'كيعطيك شارة «🗂️ الميدان»' : nextCore(i) ? `يفتح ${nextCore(i).m}` : 'يفتح الشهادة'}. تقدر تعاود بلا حدود.</p>
         ${s.tries ? `<p style="margin:8px 0 0"><b>أحسن نتيجة: ${pct(s.best)}</b> ${s.pass ? '✅ ناجح' : '— مازال'} · ${s.tries} محاولة</p>` : ''}
         <div class="ac-row"><a class="ac-btn" href="#/learn/${x.m}/exam">${s.pass ? '🔁 عاود الاختبار' : '📝 دوز الاختبار'}</a></div></div></div>`;
   }
@@ -283,12 +290,12 @@
       const wasPass = !!st(m).pass;
       setSt(m, s => { s.tries = (s.tries || 0) + 1; s.best = Math.max(s.best || 0, r); if (pass && !s.pass) s.pass = Date.now(); });
       if (host.mood) host.mood(pass ? 'prize' : 'sad');
-      const nx = mods()[i + 1];
+      const nx = x.bonus ? null : nextCore(i);
       root.innerHTML = `<div class="ac" style="--c:${x.color}">
         <div class="ac-crumb"><a href="#/learn">🎓 الأكاديمية</a> ‹ <a href="#/learn/${m}">${x.icon} ${m}</a> ‹ <span>النتيجة</span></div>
         <div class="ac-card ac-score ${pass ? 'ok' : 'no'}"><div class="big">${ok}/${N}</div><h3 style="margin:8px 0">${pass ? (wasPass ? '✅ ناجح مرة أخرى، برافو!' : `🎉 مبروك! نجحتي فـ ${m}`) : '😅 ما وصلتيش للنسبة هاد المرة'}</h3>
-          <p style="margin:0;line-height:1.8">${pass ? (nx ? `تفتحات الوحدة <b>${nx.m} — ${esc(nx.t)}</b>.` : 'كملتي الوحدات السبعة! 🏆 صاوب الشهادة ديالك.') : `خاصك ${need}/${N} على الأقل. راجع الأسئلة لتحت والدروس، وعاود — بلا حدود.`}</p>
-          <div class="ac-row" style="justify-content:center">${pass ? (nx ? `<a class="ac-btn" style="--c:${nx.color}" href="#/learn/${nx.m}">▶ ${nx.m}</a>` : '<a class="ac-btn" href="#/learn/cert">🏆 الشهادة</a>') : `<a class="ac-btn" href="#/learn/${m}/exam" data-again="1">🔁 عاود</a>`}<a class="ac-btn w" href="#/learn/${m}">📚 الدروس</a></div></div>
+          <p style="margin:0;line-height:1.8">${pass ? (x.bonus ? '🗂️ شارة «الميدان» ديالك! راجع الدروس ملي تحتاجها فالخدمة.' : nx ? `تفتحات الوحدة <b>${nx.m} — ${esc(nx.t)}</b>.` : 'كملتي الوحدات السبعة! 🏆 صاوب الشهادة ديالك.') : `خاصك ${need}/${N} على الأقل. راجع الأسئلة لتحت والدروس، وعاود — بلا حدود.`}</p>
+          <div class="ac-row" style="justify-content:center">${pass ? (x.bonus ? '<a class="ac-btn" href="#/learn">🎓 الأكاديمية</a>' : nx ? `<a class="ac-btn" style="--c:${nx.color}" href="#/learn/${nx.m}">▶ ${nx.m}</a>` : '<a class="ac-btn" href="#/learn/cert">🏆 الشهادة</a>') : `<a class="ac-btn" href="#/learn/${m}/exam" data-again="1">🔁 عاود</a>`}<a class="ac-btn w" href="#/learn/${m}">📚 الدروس</a></div></div>
         <h3 style="margin:16px 2px 6px">🔍 المراجعة</h3>
         <div class="ac-rev">${qs.map((Q, n) => { const p = Q.opts[Q.pick], c = Q.opts.find(o => o.ok); return `<div class="${p && p.ok ? '' : 'no'}"><b>${n + 1}. ${esc(Q.q[0])}</b><br>${p && p.ok ? '✅' : '❌'} جوابك: ${esc(p ? p.t : '—')}${p && p.ok ? '' : `<br>✔️ الصحيح: <b>${esc(c.t)}</b>`}<br><small>💡 ${esc(Q.q[2])}</small></div>`; }).join('')}</div></div>`;
       const ag = root.querySelector('[data-again]'); if (ag) ag.onclick = e => { e.preventDefault(); exam(root, host, m); };
@@ -301,7 +308,7 @@
   const certNo = (name, d) => { let h = 2166136261; for (const ch of name + '|' + d) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return 'W777-AC-' + new Date(d).getFullYear() + '-' + (h >>> 0).toString(36).toUpperCase().slice(0, 6); };
   // الشهادة (نفس الشكل فصفحة صاحبها وفلوحة الشهادات). ro = للعرض فقط (علامة مائية، بلا طبع)
   function certHtml(c, ro) {
-    const M = mods(), dt = new Date(c.date || Date.now()).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' });
+    const M = core(), dt = new Date(c.date || Date.now()).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' });
     return `<div class="ac-cert${ro ? ' ro' : ''}" id="ac-cert"${ro ? ' oncontextmenu="return false"' : ''}><div class="fr"></div><div class="in">
           <img class="lg" src="icons/logo.png" alt="">
           <div class="k">${esc(A().title)} · مجموعة الوسيط</div>
@@ -329,7 +336,7 @@
   }
   function cert(root, host) {
     css();
-    const M = mods(), passed = M.filter(x => st(x.m).pass).length;
+    const M = core(), passed = M.filter(x => st(x.m).pass).length;
     if (!allPassed()) {
       root.innerHTML = `<div class="ac"><div class="ac-crumb"><a href="#/learn">🎓 الأكاديمية</a> ‹ 🏆 الشهادة</div>
         <div class="ac-card" style="text-align:center;padding:26px 16px"><div style="font-size:52px">🏆</div><h3>شهادة الوكيل العقاري المحترف</h3>
@@ -437,7 +444,7 @@
     root.innerHTML = '<div class="ac"><div class="ac-card muted">⏳ كيتحمل تقدم الفريق…</div></div>';
     let rows = [];
     try { rows = await host.team(); } catch (e) { root.innerHTML = `<div class="ac"><div class="ac-card">تعذر التحميل: ${esc(e.message || e)}</div></div>`; return; }
-    const M = mods();
+    const M = { length: core().length, map: f => mods().map(f) };
     root.innerHTML = `<div class="ac"><div class="ac-crumb"><a href="#/learn">🎓 الأكاديمية</a> ‹ 📊 تقدم الفريق</div>
       <div class="ac-card"><h3>📊 تقدم المتكونين (${rows.length})</h3><p class="muted" style="margin:0;line-height:1.7">${rows.filter(r => r.passed >= M.length).length} كملو الأكاديمية · ${rows.filter(r => r.passed && r.passed < M.length).length} فالطريق · التقدم كيتزامن من التطبيق ديال كل واحد.</p></div>
       ${rows.length ? `<div class="ac-lessons">${rows.map(r => { const p = r.progress || {}; return `<div class="ac-l" style="align-items:flex-start"><span class="n" style="${r.passed >= M.length ? 'background:#0a7a2f;color:#fff' : ''}">${r.passed >= M.length ? '🏆' : r.passed}</span>
