@@ -7,7 +7,7 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     await p.addInitScript(() => { localStorage.w777_agent_voice = '0'; localStorage.w777_open_sound = '0'; localStorage.w777_guide_seen = '1'; localStorage.w777_guide_hide = '1'; });
     await p.route(/googleapis|gstatic|vercel\.app|tile\.openstreetmap|unpkg/, r => r.abort()); await F.install(p);
     await p.goto(BASE); await p.waitForTimeout(800); await F.login(p, BASE);
-    await p.goto(BASE + '#/'); await p.waitForSelector('.hrow[data-hr=svc]', { timeout: 10000 }).catch(() => bad.push('no rows'));
+    await p.goto(BASE + '#/'); await p.waitForSelector('.hrow[data-hr=svc]', { timeout: 10000 }).catch(() => bad.push('no rows')); await p.waitForTimeout(1200); // نتسناو حركة دخول الصفحة (الميلان) تسالي قبل القياس
     const r = await p.evaluate(() => [...document.querySelectorAll('.hrow')].map(row => { const h = row.querySelector('.hr-head').getBoundingClientRect(), s = row.querySelector('.hr-strip'), sr = s.getBoundingClientRect();
       return { k: row.dataset.hr, tiles: s.querySelectorAll('.hub-tile').length, headRight: h.left > sr.left, scroll: s.scrollWidth > s.clientWidth + 10, page: document.documentElement.scrollWidth <= innerWidth + 1 }; }));
     const svc = r.find(x => x.k === 'svc'), net = r.find(x => x.k === 'net');
