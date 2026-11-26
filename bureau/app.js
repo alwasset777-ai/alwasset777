@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v249'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v250'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -3848,6 +3848,9 @@
   // 2) إلا ما خدمش (بلا إنترنت، الحصة…): صوت المتصفح (Speech Synthesis) والفم كيتحرك بالتقريب.
   // الجواب كيتقسم لجمل: أول جملة كتبدا تتقرا قبل ما يكمل الكتابة.
   const agTTS = () => 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  // 🎚️ v250: حركة الفم: هادئة / عادية / حيوية (فالجهاز)
+  const AG_MOUTH = { calm: 0.6, normal: 1, lively: 1.35 };
+  const agMouthK = () => { let v = 'normal'; try { v = localStorage.getItem('w777_mouth') || 'normal'; } catch (e) { /* */ } return AG_MOUTH[v] ? v : 'normal'; };
   const agVoiceOn = () => { try { return localStorage.getItem('w777_agent_voice') !== '0'; } catch (e) { return true; } };
   const AGV = { ctx: null, an: null, buf: null, src: null, q: [], playing: false, gen: 0, cloudOff: 0, synth: false, said: 0, pend: '', pulse: 0, t0: 0, first: true, synthGen: -1, ext: false };
   // الوعد للمستعمل: الصوت كيبدا فـ 2 ثواني على الأكثر من الضغطة. إلا الصوت الطبيعي ما وصلش فالوقت، كنقراو بصوت الجهاز (نفس الجواب كامل بنفس الصوت)
@@ -4044,7 +4047,7 @@
     // 🗣️ v248: الكلام بحال الإنسان: مقاطع مجموعين فكلمات (2–5)، وقفة صغيرة بين الكلمات وأطول بين الجمل،
     // والمقطع الأول ديال الكلمة أقوى (النبرة). الفم كيتبع «نابض» ناعم (spring) ماشي قفزات.
     const syl = { t0: 0, dur: 0, amp: 0, w: 0, left: 0, words: 0, pause: false };
-    let vel = 0;
+    let vel = 0, spokeAt = 0, sparkAt = 0;
     let fbuf = null;
     const tick = now => {
       if (!AG.open || !face.isConnected) return;
@@ -4083,17 +4086,27 @@
         wideT = syl.w * 0.5;
       }
       // نابض ناعم (بحال عضلات الفك): كيلحق الهدف بلا قفزات وبلا اهتزاز آلي
-      target = Math.min(0.85, target);
+      const mk = AG_MOUTH[agMouthK()];
+      target = Math.min(mk > 1 ? 1 : 0.85, target * mk);
       vel += (target - open) * 0.26 - vel * 0.56; open += vel;
       if (open < 0.01 && target === 0) { open = 0; vel = 0; } else if (open < 0) { open = 0; vel = 0; }
       wide += (wideT - wide) * 0.15;
       env += (open - env) * 0.06;
       face.style.setProperty('--open', open.toFixed(3));
       face.style.setProperty('--wide', wide.toFixed(3));
+      // ✨ v250: لمعة على السنان فآخر الجملة (وقفة من بعد الكلام)، مرة فـ2.5 ث على الأكثر
+      if (open > 0.2) spokeAt = now;
+      if (spokeAt && now - spokeAt > 420 && now - spokeAt < 900 && now - sparkAt > 2500) {
+        sparkAt = now; const sp = face.querySelector('.ag-spark');
+        if (sp) { sp.classList.toggle('on', false); void sp.offsetWidth; sp.classList.add('on'); }
+      }
       if (stage) {
-        // الراس: إيماءة خفيفة مع النبرة + ميلان بطيء طبيعي
-        stage.style.setProperty('--nod', (open * 1.1 + env * 1.4).toFixed(2) + 'deg');
-        stage.style.setProperty('--sway', (Math.sin(now / 1900) * (0.5 + env * 2.2) + Math.sin(now / 730) * env * 0.8).toFixed(2) + 'deg');
+        // الراس: إيماءة خفيفة مع النبرة + ميلان بطيء طبيعي؛ فالسكوت: تنفس بطيء، ومن بعد ما تكتب: إيماءة «كنسمعك»
+        const quiet = !AGV.synth && !AGV.src && open < 0.02, tp = AG.typedAt ? now - AG.typedAt : 1e9;
+        const listen = tp < 1600 ? Math.sin(Math.min(1, tp / 1600) * Math.PI * 2) * 1.6 * (1 - tp / 1600) : 0;
+        const idle = quiet ? Math.sin(now / 1800) * 0.7 + Math.sin(now / 4100) * 0.4 : 0;
+        stage.style.setProperty('--nod', (open * 1.1 + env * 1.4 + idle + listen).toFixed(2) + 'deg');
+        stage.style.setProperty('--sway', (Math.sin(now / 1900) * (0.5 + env * 2.2) + Math.sin(now / 730) * env * 0.8 + (quiet ? Math.sin(now / 3300) * 0.6 : 0)).toFixed(2) + 'deg');
       }
       // رمشة كل 2–6 ثواني
       if (now > nextBlink) { blinkT = now; nextBlink = now + 2000 + Math.random() * 4000; }
@@ -4250,7 +4263,7 @@
         <select id="ag-lang" title="Langue">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === L.id ? 'selected' : ''}>${x.l}</option>`).join('')}</select>
         ${agTTS() ? `<button class="ag-x" id="ag-voice" title="🔊">${agVoiceOn() ? '🔊' : '🔇'}</button>` : ''}<button class="ag-x" id="ag-new" title="${esc(t.fresh)}">↺</button><button class="ag-x" id="ag-close">✕</button></div>
       <div class="ag-stage" id="ag-stage">
-        <div class="ag-3d" id="ag-3d"><i class="ag-halo"></i><div class="ag-face" id="ag-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i><i class="ag-lens l"></i><i class="ag-lens r"></i></div><i class="ag-gloss"></i></div>
+        <div class="ag-3d" id="ag-3d"><i class="ag-halo"></i><div class="ag-face" id="ag-face"><img class="ag-base" src="${agPhoto()}" alt=""><i class="ag-mouth"></i><img class="ag-jaw" src="${agPhoto()}" alt=""><i class="ag-lid l"></i><i class="ag-lid r"></i><i class="ag-lens l"></i><i class="ag-lens r"></i><i class="ag-spark"></i></div><i class="ag-gloss"></i></div>
         <div class="ag-wave"><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="ag-body" id="ag-body"></div>
       <div class="ag-acts" id="ag-acts"></div>
@@ -4263,6 +4276,7 @@
     $('#ag-new').onclick = () => { if (AG.busy) return; AG.history = []; AG.view = []; agRender(); };
     $('#ag-lang').onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } agHide(); agOpen(); };
     const ta = $('#ag-text');
+    ta.addEventListener('input', () => { AG.typedAt = performance.now(); }); // 😊 v250: منير كيهز راسو بحال اللي كيسمع
     ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ag-form').requestSubmit(); } };
     $('#ag-form').onsubmit = e => {
       e.preventDefault(); agUnlockTTS(); const v = ta.value.trim(), att = AG.att;
@@ -5056,6 +5070,8 @@
           ${AG.my && AG.my.photo ? `<button class="btn sm" id="ag-my-face">🎯 مكان الفم والعينين${AG.my.face ? ' ✓' : ''}</button>` : ''}
           ${agMine() ? '<button class="btn sm" id="ag-my-reset">↺ رجّع الوكيل الأصلي</button>' : ''}</div>
         <p class="muted" style="font-size:12.5px;margin-bottom:0">الصورة والاسم اللي ختاريتي كيبانو غير عندك (فكل الأجهزة ديالك)، وما كيبدلو والو عند باقي المشتركين.</p></div>` : ''}
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px"><b>🎚️ حركة الفم ملي كيتكلم</b>
+        <span class="chips" id="ag-mouth-set">${[['calm', 'هادئة'], ['normal', 'عادية'], ['lively', 'حيوية']].map(([k, l]) => `<button type="button" class="chip${agMouthK() === k ? ' on' : ''}" data-mouth="${k}">${l}</button>`).join('')}</span></div>
       <label style="display:flex;gap:10px;align-items:center;margin-top:12px"><b>🌐 لغة المساعد</b>
         <select id="ag-lang-set" style="flex:1;max-width:220px">${AG_LANGS.map(x => `<option value="${x.id}" ${x.id === agLang() ? 'selected' : ''}>${x.l}</option>`).join('')}</select></label>
       ${isAdmin ? `<div class="btn-row" style="margin-top:12px">
@@ -5151,6 +5167,10 @@
       if (!agAI() && !(await confirmBox('الوكيل الذكي كيحتاج مفتاح محفوظ: Gemini (فابور) ولا Claude (مدفوع). نشعلو؟', 'شعل', false))) return;
       await save({ ai_enabled: !agAI() });
     };
+    $$('#ag-mouth-set [data-mouth]').forEach(b => b.onclick = () => {
+      try { localStorage.setItem('w777_mouth', b.dataset.mouth); } catch (er) { /* */ }
+      $$('#ag-mouth-set [data-mouth]').forEach(x => x.classList.toggle('on', x === b)); toast('تم ✓ — حركة الفم: ' + b.textContent);
+    });
     const ls = $('#ag-lang-set');
     if (ls) ls.onchange = e => { try { localStorage.setItem('w777_agent_lang', e.target.value); } catch (er) { /* */ } if (AG.open) { agHide(); agOpen(); } toast('تم ✓'); };
     const rpc = (fn, body) => Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -11792,6 +11812,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v250: ['✨ لمعة على سنان منير فآخر كل جملة', '🎚️ الإعدادات ← الوكيل: «حركة الفم» هادئة / عادية / حيوية', '😊 منير كيتحرك شوية ملي ساكت، وكيهز راسو ملي كتكتب بحال اللي كيسمعك'],
     v249: ['🦷 سنان منير بيضين بلونهم الطبيعي ملي كيتكلم'],
     v248: ['🗣️ منير كيتكلم بحال الإنسان: الفم كيتحرك بنعومة مع الكلمات والوقفات، بلا «روبو»'],
     v247: ['😎 منير بصورة جديدة: نظارات كتلمع، هالة ذهبية كتدور، ولمعة فالأيقونة', '🗣️ ملي كيتكلم: الهالة والعدسات كيتحركو أكثر'],
