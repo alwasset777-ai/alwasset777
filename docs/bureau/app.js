@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v240'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v241'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1384,6 +1384,7 @@
     let rows = null;
     try { const r = await Sy.request('/rest/v1/rpc/w777_errors_recent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_days: 7 }) }); if (r.ok) rows = await r.json(); } catch (e) { /* */ }
     if (!box.isConnected || !Array.isArray(rows)) return;
+    rows = rows.filter(x => x.kind !== 'update'); // 🔄 v241: الإصلاح الأوتوماتيكي ديال النسخة ماشي خطأ
     const tot = rows.reduce((n, x) => n + (+x.n || 0), 0), boots = rows.filter(x => x.kind === 'boot').reduce((n, x) => n + (+x.n || 0), 0);
     const KIND = { boot: '🛟 الفتح تعطّل', error: '⚠️ خطأ' };
     const list = rows.slice(0, 12).map(x => `<div class="ah-row"><div class="ah-h"><b>${KIND[x.kind] || esc(x.kind)}</b><span class="badge ${x.kind === 'boot' ? 'red' : 'gray'}">×${fmt(+x.n || 0)}</span></div>
@@ -11710,6 +11711,7 @@
     if (DB.isDemo) demoSeed().then(() => { let go = false; try { go = sessionStorage.getItem('w777_tour') === '1'; sessionStorage.removeItem('w777_tour'); } catch (e) { /* */ } if (go) setTimeout(tourStart, 700); });
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     checkAlarms(); setInterval(checkAlarms, 30000);
+    setTimeout(() => autoHeal(true), window.W777_HEAL_DELAY || 6000); // 🔄 v241
     setTimeout(runAlerts, 9000); setInterval(() => { if (document.visibilityState === 'visible') runAlerts(); }, 30 * 60000); // 🔔 v231
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { /* */ });
@@ -11722,8 +11724,55 @@
     }
   }
   // رقم النسخة (من سمية الذاكرة ديال Service Worker)
+  const vNum = v => +(String(v || '').match(/\d+/) || [0])[0];
+  async function swVersion() {
+    const c = navigator.serviceWorker && navigator.serviceWorker.controller; if (!c || !window.MessageChannel) return '';
+    return within(new Promise(res => { const ch = new MessageChannel(); ch.port1.onmessage = e => res(String(e.data || '')); c.postMessage('ver', [ch.port2]); }), 1200, '');
+  }
   async function appVersion() {
-    try { const k = (await caches.keys()).find(x => /^w777-bureau-v\d+$/.test(x)); return k ? k.replace('w777-bureau-', '') : '—'; } catch (e) { return '—'; }
+    const w = await swVersion().catch(() => ''); if (w) return w;
+    try { const ks = (await caches.keys()).filter(x => /^w777-bureau-v\d+$/.test(x)).map(x => x.replace('w777-bureau-', '')); return ks.sort((a, b) => vNum(b) - vNum(a))[0] || '—'; } catch (e) { return '—'; }
+  }
+  // 🔄 v241: الإصلاح الأوتوماتيكي — إلا كانت نسخة جديدة فالخادم وهاد الجهاز باقي فالقديمة (حتى من بعد ما طلبنا التحديث)،
+  // كنحيدو الـ Service Worker والذاكرة القديمة ونعاودو نحلو (البيانات فـ IndexedDB ما كتمسّش). مرة وحدة لكل نسخة، وماشي وسط الكتابة.
+  const busyEditing = () => /\/(new|edit)\b|^#\/work\//.test(location.hash) || !!document.querySelector('.modal-bg') || (typeof AG !== 'undefined' && AG.open);
+  let healAt = 0, healing = false, healTold = '', healRetry = false;
+  async function autoHeal(force) {
+    if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+    if (healing || (!force && Date.now() - healAt < 10 * 60000) || !navigator.onLine) return;
+    healAt = Date.now(); healing = true;
+    try {
+      const txt = await within(fetch('sw.js', { cache: 'no-store' }).then(r => r.ok ? r.text() : ''), 8000, '');
+      const nv = (txt.match(/w777-bureau-(v\d+)/) || [])[1]; if (!nv) return;
+      // النسخة اللي خدامة: الـ Service Worker (ولا أكبر ذاكرة ديالو)، وبلا Service Worker: الكود اللي خدام (APP_BUILD)
+      // controller ما جاوبش على «ver» = نسخة قبل v241 (ما كتعرفش تجاوب) ← متأخرة، حتى إلا كانت ذاكرة جديدة كتسنى
+      const behind = async () => { const c = navigator.serviceWorker.controller; if (c) { const w = await swVersion().catch(() => ''); return w ? vNum(w) < vNum(nv) : true; } return vNum(APP_BUILD) < vNum(nv); };
+      if (!(await behind())) return;
+      let done = ''; try { done = localStorage.getItem('w777_heal') || ''; } catch (e) { /* */ }
+      if (done.split(':')[0] === nv) return; // جرّبنا مرة لهاد النسخة (ولا تبويب آخر خدام عليها): ما نعاودوش (بلا دورة)
+      const tab = nv + ':' + Math.random().toString(36).slice(2, 8);
+      try { localStorage.setItem('w777_heal', tab); } catch (e) { /* */ }
+      const reg = await swReg();
+      if (reg) { try { await within(reg.update(), 8000, null); } catch (e) { /* */ } if (reg.waiting) reg.waiting.postMessage('skip'); }
+      // كنعطيو للنسخة الجديدة الوقت باش تتثبت (controllerchange كيعاود يحل الصفحة بوحدو)
+      await new Promise(r => setTimeout(r, window.W777_HEAL_WAIT || 15000));
+      if (!(await behind())) return;
+      const cur = navigator.serviceWorker.controller ? await appVersion() : APP_BUILD;
+      // 2) وسط الكتابة: تنبيه مرة وحدة، ونعاودو ملي يخرج من الاستمارة
+      if (busyEditing() || document.visibilityState !== 'visible') {
+        try { localStorage.removeItem('w777_heal'); } catch (e) { /* */ }
+        if (healTold !== nv) { healTold = nv; toast('⬇️ كاينة نسخة جديدة (' + nv + ') — غادي تتحدّث ملي تسالي'); }
+        healAt = 0; if (!healRetry) { healRetry = true; window.addEventListener('hashchange', function again() { if (busyEditing()) return; window.removeEventListener('hashchange', again); healRetry = false; setTimeout(() => autoHeal(true), 800); }); }
+        return;
+      }
+      let mine = ''; try { mine = localStorage.getItem('w777_heal') || ''; } catch (e) { /* */ }
+      if (mine !== tab) return; // تبويب آخر سبقنا
+      logErr(new Error('auto-heal ' + cur + ' → ' + nv), 'update', 'update');
+      try { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); } catch (e) { /* */ }
+      try { await Promise.all((await caches.keys()).filter(k => /^w777-bureau-v\d+$/.test(k)).map(k => caches.delete(k))); } catch (e) { /* */ }
+      try { sessionStorage.setItem('w777_updated', '1'); } catch (e) { /* */ }
+      location.replace(location.pathname + '?u=' + Date.now() + location.hash);
+    } catch (e) { /* */ } finally { healing = false; }
   }
   // تحديث كامل: كنحيدو ملفات التطبيق القديمة والـ Service Worker، ونعاودو نحلو من الخادم (IndexedDB = البيانات ما كتمسّش)
   async function fullUpdate() {
@@ -11742,8 +11791,8 @@
     if (!navigator.serviceWorker || Date.now() - updAt < 60000) return; updAt = Date.now();
     navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => { /* */ });
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
-  setInterval(checkUpdate, 30 * 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { checkUpdate(); autoHeal(); } });
+  setInterval(() => { checkUpdate(); if (document.visibilityState === 'visible') autoHeal(); }, 30 * 60000);
   try { if (sessionStorage.getItem('w777_updated')) { sessionStorage.removeItem('w777_updated'); if (/[?&]u=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash); setTimeout(() => appVersion().then(v => toast('✓ التطبيق محدّث — النسخة ' + v)), 1500); } } catch (e) { /* */ }
   document.addEventListener('DOMContentLoaded', () => { start().catch(e => bootRescue('start-error', e)); });
 })();
