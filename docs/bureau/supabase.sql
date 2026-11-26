@@ -2141,3 +2141,14 @@ create or replace function public.w777_app_versions() returns table(ver text, n 
   group by a.app_ver order by max(a.app_seen) desc $$;
 revoke execute on function public.w777_app_versions() from public, anon;
 grant execute on function public.w777_app_versions() to authenticated;
+
+-- ⏳ v244: المشتركين اللي باقيين فنسخة قديمة كثر من p_days يوم (للمدير فقط، باش يذكّرهم بواتساب)
+create or replace function public.w777_app_stale(p_latest text, p_days int default 3)
+returns table(name text, code text, kind text, phone text, app_ver text, app_seen timestamptz) language sql stable security definer set search_path = public as $$
+  select a.name, a.code, a.kind, a.phone, a.app_ver, a.app_seen from w777_agencies a
+  where w777_is_admin() and a.app_ver ~ '^v[0-9]+$' and p_latest ~ '^v[0-9]+$'
+    and substring(a.app_ver from 2)::int < substring(p_latest from 2)::int
+    and a.app_seen < now() - make_interval(days => greatest(coalesce(p_days, 3), 0))
+  order by a.app_seen desc limit 200 $$;
+revoke execute on function public.w777_app_stale(text, int) from public, anon;
+grant execute on function public.w777_app_stale(text, int) to authenticated;
