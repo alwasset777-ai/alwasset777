@@ -2369,3 +2369,30 @@ body.lite .grp-word2 .gw-shine { display: none; }
 .ah-stale { margin-top: 8px; } .ah-stale summary { cursor: pointer; font-weight: 800; color: #b45309; }
 .ah-stale .ss-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line); }
 .ah-stale .ss-row small { grid-column: 1; } .ah-stale .ss-row .btn { grid-column: 2; grid-row: 1 / span 2; }
+
+/* 😎 v247: منير حي أكثر — لمعة على النظارات (كتطلع أوتوماتيكيا ملي العينين غامقين)، هالة ذهبية كتدور، ولمعة كتدوز على الأيقونة.
+   الحركات كاملين بـ transform على عناصر زينة (pointer-events: none) ← خفاف وما كيبدلوش بلاصة الضغط */
+.ag-lens { display: none; position: absolute; top: calc(var(--ey) - var(--lh) / 2); width: var(--lw); height: var(--lh); margin-left: calc(var(--lw) / -2);
+  border-radius: 24% 24% 42% 42%; overflow: hidden; pointer-events: none; }
+.ag-face { --lw: 28%; --lh: 18%; }
+.ag-lens.l { left: var(--ex1); } .ag-lens.r { left: var(--ex2); }
+.ag-face.glasses .ag-lens { display: block; } .ag-face.glasses .ag-lid { display: none; }
+.ag-lens::after { content: ""; position: absolute; top: -50%; bottom: -50%; left: 0; width: 34%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55) 35%, rgba(255,255,255,.95) 50%, rgba(255,255,255,.55) 65%, transparent);
+  transform: translateX(-180%) skewX(-20deg); animation: ag-glint 6.5s cubic-bezier(.5,0,.3,1) infinite; }
+.ag-lens.r::after { animation-delay: .16s; }
+@keyframes ag-glint { 0%, 68% { transform: translateX(-180%) skewX(-20deg); } 82%, 100% { transform: translateX(380%) skewX(-20deg); } }
+.ag-stage.talk .ag-lens::after { animation-duration: 2.4s; }
+.ag-halo { position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 50%, rgba(255,215,106,.15) 62%, #ffd76a 78%, #fff6d0 82%, rgba(255,215,106,.25) 90%, transparent 97%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  filter: drop-shadow(0 0 6px rgba(255,200,80,.85)); animation: ag-halo 5.5s linear infinite; }
+@keyframes ag-halo { to { transform: rotate(360deg); } }
+.ag-stage.talk .ag-halo { animation-duration: 1.6s; filter: drop-shadow(0 0 10px rgba(255,200,80,1)); }
+.ag-stage.mini .ag-halo { inset: -5px; }
+.agent-fab .ag-shine { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; pointer-events: none; }
+.agent-fab .ag-shine::before { content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.7) 50%, transparent); transform: translateX(-160%) skewX(-20deg);
+  animation: ag-glint 7.5s cubic-bezier(.5,0,.3,1) 2s infinite; }
+@media (prefers-reduced-motion: reduce) { .ag-lens::after, .ag-halo, .agent-fab .ag-shine::before { animation: none; } }
+@media print { .ag-halo, .ag-lens, .ag-shine { display: none !important; } }
