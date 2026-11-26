@@ -796,6 +796,7 @@
   try { if (/[?&]gate=1/.test(location.search)) sessionStorage.setItem('w777_gate', '1'); } catch (e) { /* */ }
   const gateOn = () => { if (EMBED || DB.isDemo) return false; if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return true; try { return sessionStorage.getItem('w777_gate') === '1'; } catch (e) { return false; } };
   const PUBLIC_ROUTES = ['terms', 'check', 'qr'];
+  const MEMBER_FREE = ['game', 'guide', 'learn']; // 👤 v242: «آخر» من بعد الفترة المجانية بلا اشتراك
   let MY = null; // { admin, staff, member, ok, email }
   const myReset = () => { MY = null; try { localStorage.removeItem('w777_my'); } catch (e) { /* */ } };
   async function myStatus(force) {
@@ -817,7 +818,11 @@
     if (EMBED || PUBLIC_ROUTES.includes(parts[0])) return false;
     if (!on) { if (!gateOn()) return false; viewAuth(); return true; }
     const m = await myStatus();
-    if (m && m.ok === false) { await viewStopped(); return true; }
+    if (m && m.ok === false) {
+      if (m.kind === 'member' && MEMBER_FREE.includes(parts[0])) { document.body.classList.add('member-limited'); return false; }
+      await viewStopped(); return true;
+    }
+    document.body.classList.remove('member-limited');
     if (m && gateOn() && !m.admin && !m.staff && !m.member) { viewRegister(m); return true; }
     return false;
   }
@@ -870,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v241'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v242'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1383,7 +1388,14 @@
     const box = $('#app-health'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
     let rows = null;
     try { const r = await Sy.request('/rest/v1/rpc/w777_errors_recent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_days: 7 }) }); if (r.ok) rows = await r.json(); } catch (e) { /* */ }
+    let vers = [];
+    try { const r = await Sy.request('/rest/v1/rpc/w777_app_versions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) vers = await r.json(); } catch (e) { /* */ }
     if (!box.isConnected || !Array.isArray(rows)) return;
+    if (!Array.isArray(vers)) vers = [];
+    const vMax = vers.reduce((m, x) => Math.max(m, vNum(x.ver)), vNum(APP_BUILD)), vTot = vers.reduce((n, x) => n + (+x.n || 0), 0), vNew = vers.filter(x => vNum(x.ver) >= vMax).reduce((n, x) => n + (+x.n || 0), 0);
+    const verLine = vTot ? `<div class="ah-vers"><b>📲 نسخ التطبيق عند المشتركين:</b> ✅ ${fmt(vNew)} من ${fmt(vTot)} فآخر نسخة (v${vMax})
+      <div class="chips" style="margin-top:6px">${vers.map(x => `<span class="chip${vNum(x.ver) >= vMax ? ' on' : ''}">${esc(x.ver || '—')} · ${fmt(+x.n || 0)}</span>`).join('')}</div>
+      <small class="muted">كل جهاز كيتحدّث بوحدو ملي يتحل التطبيق.</small></div>` : '';
     rows = rows.filter(x => x.kind !== 'update'); // 🔄 v241: الإصلاح الأوتوماتيكي ديال النسخة ماشي خطأ
     const tot = rows.reduce((n, x) => n + (+x.n || 0), 0), boots = rows.filter(x => x.kind === 'boot').reduce((n, x) => n + (+x.n || 0), 0);
     const KIND = { boot: '🛟 الفتح تعطّل', error: '⚠️ خطأ' };
@@ -1392,6 +1404,7 @@
       <small class="muted">${devAr(x.ua)} · ${esc(x.ver || '—')} · آخر مرة: ${esc(whenText(x.last_at))}</small></div>`).join('');
     box.innerHTML = `<div class="card card-pad app-health" style="margin-bottom:14px"><h3 class="section-title">🩺 صحة التطبيق <span class="badge ${tot ? 'red' : 'green'}">${tot ? fmt(tot) + ' خطأ' : '✅ بلا أخطاء'}</span></h3>
       <p class="muted" style="margin-top:0;font-size:12.5px">آخر 7 أيام، من كل الأجهزة — بلا أسماء ولا معلومات شخصية. كنشوفها حتى أنا كل صباح وكنصلّح.</p>
+      ${verLine}
       ${tot ? `<div class="kv kv-sm"><div><small>⚠️ الأخطاء</small><b>${fmt(tot)}</b></div><div><small>🛟 الفتح تعطّل</small><b>${fmt(boots)}</b></div><div><small>📋 أنواع</small><b>${fmt(rows.length)}</b></div></div>
       <div class="ah-rows">${list}</div>` : '<p style="margin:4px 0">✅ حتى جهاز ما سجّل شي خطأ فهاد الأيام.</p>'}
       <div class="btn-row" style="margin-top:10px"><a class="btn sm gold" href="#/check">🩺 فحص هاد الجهاز</a><button type="button" class="btn sm ghost" id="ah-reload">↻ تحديث</button></div></div>`;
@@ -1489,7 +1502,8 @@
       <p>${staff ? 'الاشتراك ديال المكتب اللي خدام معاه سالا.' : ag && !ag.active ? 'الحساب ديالك موقوف من طرف الإدارة.' : `سالات ${ag && ag.sub_until ? 'مدة الاشتراك' : 'المدة المجانية'} ديال الحساب ديالك.`}</p>
       ${si ? `<p class="muted auth-small">${esc(si.txt)}</p>` : ''}
       <p class="muted">✅ البيانات ديالك محفوظة وما كتضيعش. باش تكمل، جدّد الاشتراك عند مكتب الوسيط 777:</p>
-      ${ag && !staff ? '<button class="btn gold block" id="st-pay">💳 خلّص الاشتراك (تحويل بنكي ولا وكالة) + رفع الوصل</button>' : ''}
+      ${(ag || (MY && MY.member)) && !staff ? '<button class="btn gold block" id="st-pay">💳 خلّص الاشتراك (تحويل بنكي ولا وكالة) + رفع الوصل</button>' : ''}
+      ${MY && MY.kind === 'member' ? `<div class="card card-pad st-free"><b>🎁 باقيين ليك مجاناً:</b><div class="btn-row" style="margin-top:8px"><a class="btn sm" href="#/game">🎮 الألعاب</a><a class="btn sm" href="#/learn">🎓 أكاديمية الوسيط</a><a class="btn sm" href="#/guide">📖 دليل التطبيق</a></div></div>` : ''}
       <a class="btn block wa" target="_blank" rel="noopener" href="https://wa.me/${waPhone(W777_OFFICE)}?text=${encodeURIComponent(msg)}">${ic('wa', 18)} واتساب: تجديد الاشتراك</a>
       <div class="btn-row auth-row"><a class="btn sm" href="${telLink(W777_OFFICE)}">${ic('phone', 16)} ${W777_OFFICE}</a><a class="btn sm" href="${telLink(W777_OFFICE2)}">${ic('phone', 16)} ${W777_OFFICE2}</a></div>
       <div class="btn-row auth-row"><button class="btn sm" id="st-re">🔄 جدّدت — دخلني</button><button class="btn sm ghost" id="st-out">↩️ خروج</button></div>`);
@@ -7635,7 +7649,8 @@
   const SUB_BASE = 199, FREE_MONTHS = 6;
   function seatTier(a) {
     const n = a && a.seat_no;
-    if (!n) return null;
+    if (!n || kindOf(a) === 'member') return null; // 👤 v242: «آخر» بلا امتيازات عرض 777 — غير الفترة المجانية ومن بعد الاشتراك
+
     // نفس الدرجات داخل وخارج المغرب، وكل منطقة عندها الترتيب ديالها
     const z = a.seat_zone === 'out' ? ' (خارج المغرب)' : '';
     if (n <= 7) return { pay: 0, ic: z ? '🌍' : '🥇', t: `مقعد رقم ${n}${z} من 7 الأوائل — التطبيق مجاني مدى الحياة`, s: 'مجاني مدى الحياة' };
@@ -7819,6 +7834,8 @@
   }
   // لوحة العرض فالدليل: شحال تسجل وشحال باقي فكل امتياز (فهاد الفئة)
   function offerBoard(all, kind) {
+    if (kind === 'member') return `<div class="offer-777"><div class="of-h"><b>👤 الزبناء والعموم</b><span>${FREE_MONTHS} أشهر مجانية للتجربة · من بعد الاشتراك السنوي (${SUB_BASE} درهم)</span></div>
+      <p class="muted" style="margin:6px 0 0;font-size:13px">ملي تسالي الفترة المجانية بلا اشتراك: كيبقاو غير الألعاب، دليل التطبيق وأكاديمية الوسيط.</p></div>`;
     const reg = z => all.filter(a => a.seat_no && (a.seat_zone || 'ma') === z).length;
     const ma = reg('ma'), out = kind === 'agency' ? reg('out') : 0;
     const row = (ic, t, from, to) => `<div class="of-t${ma >= to ? ' full' : ''}"><b>${ic} ${t}</b><small>${ma >= to ? 'تعمّرو' : `باقي ${to - Math.max(ma, from)} مقعد`}</small></div>`;
@@ -9684,7 +9701,8 @@
     f = row('📲', 'نسخة التطبيق');
     try {
       const cur = await appVersion(), txt = await timed(fetch('sw.js', { cache: 'no-store' }).then(r => r.text()), 8000), nv = (txt.match(/w777-bureau-(v\d+)/) || [])[1] || '';
-      const old = nv && cur !== '—' && nv !== cur;
+      const old = nv && cur !== '—' && vNum(nv) > vNum(cur);
+      if (old && !viewCheck.auto) { viewCheck.auto = true; toast('⏳ كاينة نسخة جديدة — كنحدّث التطبيق أوتوماتيكيا…', 3000); setTimeout(() => fullUpdate('#/check'), 2500); }
       f(!old, old ? `كاينة نسخة جديدة (${nv}) — عندك ${cur}` : `آخر نسخة (${nv || cur})`, old ? '<button class="btn sm gold" type="button" data-ck-upd>⬇️ حدّث دابا</button>' : '');
     } catch (e) { f(null, 'ما تقدّش نتحقق (بلا إنترنت)'); }
     const bad = res.filter(x => x === false).length;
@@ -11712,6 +11730,7 @@
     if (window.W777_SYNC.isOn()) window.W777_SYNC.syncNow();
     checkAlarms(); setInterval(checkAlarms, 30000);
     setTimeout(() => autoHeal(true), window.W777_HEAL_DELAY || 6000); // 🔄 v241
+    setTimeout(appPing, 4000); // 📲 v242
     setTimeout(runAlerts, 9000); setInterval(() => { if (document.visibilityState === 'visible') runAlerts(); }, 30 * 60000); // 🔔 v231
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { /* */ });
@@ -11737,6 +11756,12 @@
   // كنحيدو الـ Service Worker والذاكرة القديمة ونعاودو نحلو (البيانات فـ IndexedDB ما كتمسّش). مرة وحدة لكل نسخة، وماشي وسط الكتابة.
   const busyEditing = () => /\/(new|edit)\b|^#\/work\//.test(location.hash) || !!document.querySelector('.modal-bg') || (typeof AG !== 'undefined' && AG.open);
   let healAt = 0, healing = false, healTold = '', healRetry = false;
+  // 📲 v242: كل جهاز كيقول للسحابة شمن نسخة عندو (مرة فالجلسة، بلا معلومات أخرى) ← المدير كيشوف شحال تحدّثو
+  function appPing() {
+    const Sy = window.W777_SYNC; if (!Sy || !Sy.isOn() || DB.isDemo || !Sy.request) return;
+    try { if (sessionStorage.getItem('w777_ping') === APP_BUILD) return; sessionStorage.setItem('w777_ping', APP_BUILD); } catch (e) { /* */ }
+    Sy.request('/rest/v1/rpc/w777_app_ping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_ver: APP_BUILD }) }).catch(() => {});
+  }
   async function autoHeal(force) {
     if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
     if (healing || (!force && Date.now() - healAt < 10 * 60000) || !navigator.onLine) return;
@@ -11775,7 +11800,7 @@
     } catch (e) { /* */ } finally { healing = false; }
   }
   // تحديث كامل: كنحيدو ملفات التطبيق القديمة والـ Service Worker، ونعاودو نحلو من الخادم (IndexedDB = البيانات ما كتمسّش)
-  async function fullUpdate() {
+  async function fullUpdate(back) {
     const b = $('#upd-full'); if (b) { b.disabled = true; b.textContent = '⏳ كنجيب آخر نسخة…'; }
     try {
       if (navigator.serviceWorker) { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); }
@@ -11783,7 +11808,7 @@
       await Promise.all((await caches.keys()).filter(k => !keep.includes(k)).map(k => caches.delete(k)));
     } catch (e) { /* */ }
     try { sessionStorage.setItem('w777_updated', '1'); } catch (e) { /* */ }
-    location.replace(location.pathname + '?u=' + Date.now() + '#/settings?s=app');
+    location.replace(location.pathname + '?u=' + Date.now() + (typeof back === 'string' && back.startsWith('#/') ? back : '#/settings?s=app'));
   }
   // الفحص التلقائي: ملي كترجع للتطبيق (التيليفون كيخلي التطبيق محلول أيام)، ومرة كل 30 دقيقة
   let updAt = 0;
