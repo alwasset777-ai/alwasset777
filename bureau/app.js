@@ -870,7 +870,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v236'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v237'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1402,7 +1402,6 @@
     try { const r = await Sy.request('/rest/v1/rpc/w777_sec_watch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) d = await r.json(); } catch (e) { /* */ }
     if (!box.isConnected || !d || typeof d !== 'object') return;
     const warn = [];
-    if (!+d.admin_mfa) warn.push(`🔐 التحقق بخطوتين ما مفعّلش فحسابك — <a href="#/settings?s=security">فعّلو دابا</a> (أقوى حماية ضد الهكر)`);
     if (+d.admin_ips_30d > 8) warn.push(`📍 حسابك دخل من ${+d.admin_ips_30d} عناوين مختلفة ف30 يوم — إلا ماشي نتا، دير «خروج من الأجهزة الأخرى»`);
     if (+d.signups_24h > 30) warn.push(`🆕 ${+d.signups_24h} تسجيل جديد فـ24 ساعة — كثير من العادة`);
     if (+d.recovery_24h > 5) warn.push(`🔑 ${+d.recovery_24h} طلب استرجاع كلمة السر فـ24 ساعة`);
@@ -1412,16 +1411,13 @@
     const ses = (d.admin_sessions || []).slice(0, 6).map(x => `<div class="ss-row"><b>${secDev(x.ua)}</b><span dir="ltr">${esc(x.ip || '—')}</span><small class="muted">${esc(dAr(x.at))}${x.aal === 'aal2' ? ' · 🔐' : ''}</small></div>`).join('');
     box.innerHTML = `<div class="card card-pad" style="margin-bottom:14px"><h3 class="section-title">🛡️ مراقبة الأمان <span class="badge ${warn.length ? 'red' : 'green'}">${warn.length ? warn.length + ' تنبيه' : 'كلشي مزيان'}</span></h3>
       ${warn.length ? `<div class="sec-warn">${warn.map(w => `<p>⚠️ ${w}</p>`).join('')}</div>` : ''}
+      ${+d.admin_mfa ? '' : '<p class="muted" style="margin:0 0 8px;font-size:12.5px">🔐 التحقق بخطوتين مطفي باختيارك — حسابك محمي بكلمة السر + تنبيه «دخول من جهاز جديد» فالرئيسية.</p>'}
       <div class="kv kv-sm"><div><small>🆕 تسجيلات 24 ساعة</small><b>${+d.signups_24h}</b></div><div><small>🆕 تسجيلات 7 أيام</small><b>${+d.signups_7d}</b></div><div><small>🔓 دخول 24 ساعة</small><b>${+d.sessions_24h}</b></div><div><small>🔑 استرجاع كلمة السر</small><b>${+d.recovery_24h}</b></div></div>
       <h4 style="margin:12px 0 6px">💻 آخر دخول لحسابك</h4>${ses || '<p class="muted">—</p>'}
       ${multi ? `<h4 style="margin:12px 0 6px">📍 حسابات دخلات من 4 أماكن ولا كثر (7 أيام)</h4>${multi}` : ''}
       <div class="btn-row" style="margin-top:10px"><button type="button" class="btn sm" id="sec-others">🚪 خروج من الأجهزة الأخرى ديالي</button><button type="button" class="btn sm ghost" id="sec-reload">↻ تحديث</button></div></div>`;
     $('#sec-reload', box).onclick = drawSecWatch;
-    $('#sec-others', box).onclick = async () => {
-      if (!(await confirmBox('غادي يتخرج حسابك من كل الأجهزة الأخرى (هاد الجهاز كيبقى). كمل؟', 'خروج', true))) return;
-      try { const r = await Sy.request('/auth/v1/logout?scope=others', { method: 'POST' }); toast(r.ok ? '✅ تخرجتي من كل الأجهزة الأخرى' : '⚠️ ما تقدرش — عاود'); } catch (e) { toast((e && e.message) || e); }
-      drawSecWatch();
-    };
+    $('#sec-others', box).onclick = async () => { await secLogoutOthers(); drawSecWatch(); };
     $$('.sec-kick', box).forEach(b => b.onclick = async () => {
       if (!(await confirmBox(`طرد «${b.dataset.n}» من كل الأجهزة؟ غادي يحتاج يعاود يدخل بالكود ديال الإيميل.`, 'طرد', true))) return;
       try { const r = await Sy.request('/rest/v1/rpc/w777_kick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_uid: b.dataset.uid }) }); toast(r.ok ? '✅ تطرد من كل الأجهزة' : '⚠️ ما تقدرش'); } catch (e) { toast((e && e.message) || e); }
@@ -1779,6 +1775,53 @@
       <a class="btn gold sm" href="#/guide">ابدأ الدليل</a><button class="btn sm" data-act="hide-guide">✕</button></div>`;
   }
   // 🎁 v198: تنبيه فالرئيسية ملي كاينة مكافأة كتسنى موافقة المدير
+  // 🛡️ v237: المدير — «دخول جديد لحسابك من جهاز جديد» + تذكير الشهر «خروج من الأجهزة الأخرى»
+  // (فالجهاز، فابور، بلا إيميل): الأجهزة المعروفة فـlocalStorage w777_known_dev (المرة الأولى كلشي كيتحسب معروف)
+  const lsJ = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const lsS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* */ } };
+  const devKey = ua => String(ua || '').slice(0, 140);
+  const devName = ua => { const s = String(ua || ''), v = (s.match(/OS (\d+)[_.]\d/) || s.match(/Android (\d+)/) || [])[1];
+    return secDev(s) + (v ? (/Android/.test(s) ? ' ' + v : ' · iOS ' + v) : '') + (/CriOS|Chrome\//.test(s) && !/Edg/.test(s) ? ' · Chrome' : /Firefox|FxiOS/.test(s) ? ' · Firefox' : /Edg/.test(s) ? ' · Edge' : /Safari/.test(s) ? ' · Safari' : ''); };
+  const secWhen = at => { const x = new Date(at); return isNaN(x) ? '' : x.toLocaleString('ar-MA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); };
+  async function secLogoutOthers() {
+    const Sy = window.W777_SYNC;
+    if (!(await confirmBox('غادي يتخرج حسابك من كل الأجهزة الأخرى (هاد الجهاز كيبقى). كمل؟', 'خروج', true))) return false;
+    try { const r = await Sy.request('/auth/v1/logout?scope=others', { method: 'POST' }); toast(r.ok ? '✅ تخرجتي من كل الأجهزة الأخرى' : '⚠️ ما تقدرش — عاود'); return r.ok; } catch (e) { toast((e && e.message) || e); return false; }
+  }
+  async function homeSec() {
+    const box = $('#home-sec'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
+    let known = lsJ('w777_known_dev', null), pend = lsJ('w777_sec_new', []);
+    if (!Array.isArray(pend)) pend = [];
+    if (!Array.isArray(known) || Date.now() - (+lsJ('w777_sec_chk', 0) || 0) > 10 * 60e3) {
+      let ses = null;
+      try { const r = await Sy.request('/rest/v1/rpc/w777_sec_watch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) { const d = await r.json(); if (d && Array.isArray(d.admin_sessions)) ses = d.admin_sessions; } } catch (e) { /* */ }
+      if (ses) {
+        if (!Array.isArray(known)) known = [...new Set([devKey(navigator.userAgent), ...ses.map(x => devKey(x.ua))])];
+        else ses.forEach(x => { const k = devKey(x.ua); if (k && !known.includes(k) && !pend.some(p => p.k === k)) pend.push({ k, ua: x.ua, ip: x.ip, at: x.at }); });
+        if (!known.includes(devKey(navigator.userAgent))) known.push(devKey(navigator.userAgent));
+        pend = pend.filter(p => !known.includes(p.k)).slice(0, 5);
+        lsS('w777_known_dev', known.slice(-40)); lsS('w777_sec_new', pend); lsS('w777_sec_chk', Date.now());
+      }
+    }
+    if (!box.isConnected) return;
+    const month = new Date().toISOString().slice(0, 7);
+    if (pend.length) {
+      box.innerHTML = `<div class="home-rw sec-alert"><span class="hr-ic">🔔</span><span class="hr-tx"><b>دخول جديد لحسابك من ${pend.length === 1 ? 'جهاز جديد' : pend.length + ' أجهزة جداد'}</b>
+        ${pend.map(p => `<small><bdi dir="ltr">${esc(devName(p.ua))}</bdi><br><bdi dir="ltr">${esc(p.ip || '—')}</bdi> · <bdi>${esc(secWhen(p.at))}</bdi></small>`).join('')}
+        <small>إلا ماشي نتا: خرّج كل الأجهزة الأخرى وبدّل كلمة السر.</small>
+        <span class="btn-row"><button type="button" class="btn sm" id="sec-me">✓ هادا أنا</button><button type="button" class="btn sm gold" id="sec-out">🚪 ماشي أنا — خروج</button></span></span></div>`;
+      $('#sec-me', box).onclick = () => { lsS('w777_known_dev', [...new Set([...(lsJ('w777_known_dev', []) || []), ...pend.map(p => p.k)])].slice(-40)); lsS('w777_sec_new', []); box.innerHTML = ''; toast('✅ تزاد للأجهزة ديالك'); };
+      $('#sec-out', box).onclick = async () => { if (await secLogoutOthers()) { lsS('w777_sec_new', []); lsS('w777_sec_month', month); box.innerHTML = ''; location.hash = '#/settings?s=security'; } };
+      return;
+    }
+    if (lsJ('w777_sec_month', '') === month) return;
+    if (!lsJ('w777_sec_month', '')) { lsS('w777_sec_month', month); return; } // أول مرة: التذكير كيبدا من الشهر الجاي
+    box.innerHTML = `<div class="home-rw"><span class="hr-ic">🛡️</span><span class="hr-tx"><b>تذكير الشهر: خرّج حسابك من الأجهزة الأخرى</b>
+      <small>كيحمي حسابك إلا نسيتيه مفتوح فشي تيليفون ولا حاسوب. هاد الجهاز كيبقى داخل.</small>
+      <span class="btn-row"><button type="button" class="btn sm gold" id="sec-mo">🚪 دابا</button><button type="button" class="btn sm ghost" id="sec-later">من بعد</button></span></span></div>`;
+    $('#sec-later', box).onclick = () => { lsS('w777_sec_month', month); box.innerHTML = ''; };
+    $('#sec-mo', box).onclick = async () => { if (await secLogoutOthers()) { lsS('w777_sec_month', month); box.innerHTML = ''; } };
+  }
   async function homeRewards() {
     const box = $('#home-rw'), Sy = window.W777_SYNC; if (!box || S.role !== 'admin' || !Sy || !Sy.request) return;
     let n = 0;
@@ -1813,7 +1856,7 @@
     return `--p:${p.toFixed(3)};--gh:${h};--c:hsl(${h} 100% 55%)`;
   }
   async function viewHome() {
-    setTimeout(homeRewards, 0); setTimeout(homeWeekNet, 0);
+    setTimeout(homeRewards, 0); setTimeout(homeWeekNet, 0); setTimeout(homeSec, 0);
     const avail = S.props.filter(p => p.status === 'available');
     const open = S.reqs.filter(openReq);
     // أول فتح: الصفحة كتبان فورا، والفرص كتتحسب فالخلفية ومن بعد كتتعرض
@@ -1831,7 +1874,7 @@
     const saleValue = avail.filter(p => p.transaction === 'sale').reduce((s, p) => s + (num(p.priceMax) || num(p.priceMin) || 0), 0);
     const todayAppts = S.appts.filter(a => a.status === 'planned' && a.date === today()).sort((x, y) => (x.time || '').localeCompare(y.time || ''));
 
-    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main">` + gdBanner() + (S.role === 'admin' ? '<div id="home-rw"></div>' : '') + '<div id="home-al"></div>' + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
+    main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main">` + gdBanner() + (S.role === 'admin' ? '<div id="home-sec"></div><div id="home-rw"></div>' : '') + '<div id="home-al"></div>' + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
       <div class="hero">
         <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت — مع الوسيط حلّك بسيط ✨</span></div>
         <div class="hero-big3">
