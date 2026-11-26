@@ -2339,10 +2339,19 @@ body.lite .fab, .fab { animation: plus-live 2.6s ease-in-out infinite !important
 .home-rw .btn-row { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
 .home-rw.sec-alert { border-color: #d71920; background: linear-gradient(135deg, rgba(215,25,32,.10), rgba(201,162,74,.10)); }
 
-/* v239: «انضمّ الآن…» ولات كلمة «مجموعة» بنفس الشكل ديال الشعار (مقطوعة من logo-flat-white، بالسقف الأحمر) */
-.grp-glow.grp-glow-img { padding: 6px 18px; line-height: 0; }
-.grp-word { display: block; height: 30px; width: auto; animation: grp-word 2.4s ease-in-out infinite; }
-@keyframes grp-word { 0%, 100% { filter: brightness(.7) drop-shadow(0 0 0 rgba(255,255,255,0)); } 50% { filter: brightness(1.1) drop-shadow(0 0 5px rgba(255,255,255,.75)); } }
-@media (max-width: 700px) { .grp-word { height: 27px; } }
-body.lite .grp-word { animation: none; filter: none; }
-@media (prefers-reduced-motion: reduce) { .grp-word { animation: none; } }
+/* v240: «المجموعات» بأسلوب الشعار (الخط + السقف الأحمر)، بلا خلفية، وحية: لمعة ذهبية كدوز فوق الحروف + نبض ضوء أحمر (filter وbackground فقط، بلا تبديل الحجم) */
+.grp-word2 { position: relative; display: inline-block; align-self: center; line-height: 0; animation: gw-glow 2.8s ease-in-out infinite; }
+.grp-word2 .gw-img { display: block; height: 46px; width: auto; }
+.grp-word2 .gw-night { display: none; }
+:root[data-theme="dark"] .grp-word2 .gw-day { display: none; }
+:root[data-theme="dark"] .grp-word2 .gw-night { display: block; }
+.grp-word2 .gw-shine { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,215,120,.95) 47%, #fff 50%, rgba(255,215,120,.95) 53%, transparent 62%) no-repeat; background-size: 260% 100%; background-position: 130% 0;
+  -webkit-mask: url("icons/brand/majmouat-dark.webp?v=1") center / 100% 100% no-repeat; mask: url("icons/brand/majmouat-dark.webp?v=1") center / 100% 100% no-repeat;
+  animation: gw-shine 2.8s ease-in-out infinite; }
+@keyframes gw-shine { 0% { background-position: 130% 0; } 55%, 100% { background-position: -30% 0; } }
+@keyframes gw-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(215,25,32,0)); } 50% { filter: drop-shadow(0 0 7px rgba(215,25,32,.55)) drop-shadow(0 2px 2px rgba(0,0,0,.15)); } }
+@media (max-width: 700px) { .grp-word2 .gw-img { height: 40px; } }
+body.lite .grp-word2, body.lite .grp-word2 .gw-shine { animation: none; filter: none; }
+body.lite .grp-word2 .gw-shine { display: none; }
+@media (prefers-reduced-motion: reduce) { .grp-word2, .grp-word2 .gw-shine { animation: none; } }
