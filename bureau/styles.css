@@ -2426,3 +2426,23 @@ body.lite .grp-word2 .gw-shine { display: none; }
 /* v252: «المجموعات» أصغر بـ20% بطلب المدير (46 ← 37px، التيليفون 40 ← 32px) */
 .grp-word2 .gw-img { height: 37px; }
 @media (max-width: 700px) { .grp-word2 .gw-img { height: 32px; } }
+
+/* 📌 v253: الشريط التحتاني فالتيليفون ثابت لتحت ومعمّر (بلا شفافية ولا فراغ تحتو) — ما بقاش كيغطي أزرار «حفظ/إضافة» ولا الصور.
+   --nav-h = العلو ديالو بالضبط، وكل حاجة كتقيس عليه (.form-actions، الزر «+»، منير، الرسائل) كتبقى فوقو. الأيقونات 24 ← 29px (+20%). */
+@media (max-width: 959px) {
+  :root { --nav-h: 68px; }
+  .bottomnav { inset-inline: 0; bottom: 0; height: calc(var(--nav-h) + var(--safe-b)); box-sizing: border-box; align-items: stretch;
+    padding: 5px 4px var(--safe-b); border: 0; border-top: 1px solid var(--line); border-radius: 18px 18px 0 0;
+    background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 -6px 18px rgba(17,17,17,.10); }
+  :root[data-theme="dark"] .bottomnav { background: #161616; border-top-color: rgba(255,255,255,.08); }
+  .bottomnav a, .bottomnav .bn-more { justify-content: center; }
+  .bottomnav .bn3d, .bottomnav a svg, .bottomnav .bn-more svg { width: 29px; height: 29px; }
+  body.on-form .fab, body.on-form .fab-menu, body.on-form .agent-fab { display: none !important; }
+}
+/* 👤➕ v253: دائرة «مشترك جديد» كتنبض بالأحمر (الضوء فقط، بلا تبديل الحجم) */
+.hub-newmem .nm-ring { position: absolute; inset: 0; border-radius: 50%; z-index: -1; pointer-events: none; animation: newmem-pulse 2.2s ease-in-out infinite; }
+@keyframes newmem-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(200, 16, 46, .0), 0 0 0 0 rgba(200, 16, 46, 0); } 50% { box-shadow: 0 0 0 4px rgba(200, 16, 46, .35), 0 0 22px 6px rgba(200, 16, 46, .35); } }
+body.lite .hub-newmem .nm-ring { animation: none; box-shadow: 0 0 0 3px rgba(200, 16, 46, .35); }
+@media (prefers-reduced-motion: reduce) { .hub-newmem .nm-ring { animation: none; } }
+/* 👥 v253: عدد المشتركين حدا سمية الفئة */
+.hub-cnt { color: var(--brand); font-weight: 800; white-space: nowrap; }
