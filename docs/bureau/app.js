@@ -611,6 +611,7 @@
   // اختبار محلي فقط (localhost): مفروش ↔ غير مفروش
   if (location.hostname === 'localhost') window.W777_TEST = {
     loadAll: () => loadAll(),
+    isoOf: n => isoOf(n), ctyAr: c => ctyAr(c), // v257: التعرف على الدولة
     offer: () => {
       const ago = m => { const d = new Date(); d.setMonth(d.getMonth() - m); return d.toISOString(); };
       const A = (n, z, m, sub) => ({ seat_no: n, seat_zone: z || 'ma', terms_at: ago(m || 1), sub_until: sub || null });
@@ -875,7 +876,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v256'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v257'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1913,13 +1914,13 @@
     main().innerHTML = `<div class="home-wrap"><aside id="home-rail" class="p-rail hidden" aria-label="الشركاء"></aside><div class="home-main">` + gdBanner() + (S.role === 'admin' ? '<div id="home-sec"></div><div id="home-rw"></div>' : '') + '<div id="home-al"></div>' + homeSearch() + (S.role === 'agency' && S.agency && S.agency.seat_no ? perkCard(S.agency, true) : '') + `
       <div class="hero">
         <div class="hero-marq"><span>${S.role === 'agency' ? esc(myAgencyName()) : esc(String(S.settings.officeName || '').replace(/^مكتب الوسيط/, 'مجموعة الوسيط').replace(/\s*777/g, '')).replace(/الوسيط/, '<b class="r777">الوسيط</b>')} — قاعدة بيانات المكتب بين يديك، حتى بدون إنترنت — مع الوسيط حلّك بسيط ✨</span></div>
+        <div id="home-flags" class="flag-band hidden"></div>
         <div class="hero-big3">
           ${hubRow('svc', 'icons/hub/svc-logo.webp?v=1', 'خدمات المجموعة')}
           ${hubRow('net', 'icons/logo.png', 'مجموعة الوسيط')}
         </div>
         ${inNetwork() ? groupsCard(false) : ''}
       </div>
-      <div id="home-flags" class="flag-band hidden"></div>
       <div class="hstats">
         <div class="hst" style="${gauge(avail.length, 200)}"><i class="hneedle" aria-hidden="true"></i>${odo(avail.length)}<b>عقار متاح</b></div>
         <div class="hst" style="${gauge(open.length, 60)}"><i class="hneedle" aria-hidden="true"></i>${odo(open.length)}<b>طلب مفتوح</b></div>
@@ -8060,23 +8061,55 @@
     'موريتانيا': 'MR', 'ليبيا': 'LY', 'تركيا': 'TR', 'السويد': 'SE', 'النرويج': 'NO', 'الدنمارك': 'DK', 'البرتغال': 'PT', 'لوكسمبورغ': 'LU', 'النمسا': 'AT', 'إيرلندا': 'IE', 'ايرلندا': 'IE',
     'روسيا': 'RU', 'الصين': 'CN', 'اليابان': 'JP', 'كوريا': 'KR', 'الهند': 'IN', 'باكستان': 'PK', 'السنغال': 'SN', 'كوت ديفوار': 'CI', 'مالي': 'ML', 'الأردن': 'JO', 'لبنان': 'LB', 'أستراليا': 'AU',
     'france': 'FR', 'belgique': 'BE', 'espagne': 'ES', 'italie': 'IT', 'pays-bas': 'NL', 'allemagne': 'DE', 'suisse': 'CH', 'canada': 'CA', 'usa': 'US', 'maroc': 'MA', 'uk': 'GB' };
-  const flagOf = name => {
-    const iso = COUNTRY_ISO[String(name || '').trim()] || COUNTRY_ISO[String(name || '').trim().toLowerCase()];
-    return iso ? String.fromCodePoint(...[...iso].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '🏳️';
-  };
+  // 🌍 v257: «Deuschland» (بغلطة) كانت كتبان بعلم أبيض — دابا: السميات ديال كل الدول بالعربية/الفرنسية/الإنجليزية/الألمانية/الإسبانية… من المتصفح (Intl.DisplayNames)
+  // + تسامح مع غلطة ولا جوج فالكتابة (المسافة بين الكلمتين)
+  const ctyNorm = t => String(t || '').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f\u064b-\u065f\u0670]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/^(the|la|le|les|l')\s*/, '').replace(/[^\p{L}]+/gu, '');
+  let CTY_MAP = null;
+  // الرموز القديمة/الخاصة (DD = ألمانيا الشرقية… كيرجعو بسمية دولة أخرى) — ما كنستعملوهمش
+  const CTY_OLD = new Set(['DD', 'FX', 'BU', 'CS', 'DY', 'HV', 'NH', 'RH', 'SU', 'TP', 'YD', 'YU', 'ZR', 'UK', 'QO', 'EU', 'EZ', 'UN', 'ZZ', 'XA', 'XB', 'AN', 'NT', 'CT', 'JT', 'MI', 'NQ', 'PC', 'PU', 'PZ', 'VD', 'WK', 'AQ', 'AC', 'CP', 'DG', 'EA', 'IC', 'TA']);
+  function ctyMap() {
+    if (CTY_MAP) return CTY_MAP;
+    CTY_MAP = new Map();
+    const add = (name, iso) => { const k = ctyNorm(name); if (k && !CTY_MAP.has(k)) CTY_MAP.set(k, iso); };
+    Object.entries(COUNTRY_ISO).forEach(([n, iso]) => add(n, iso));
+    try {
+      const langs = ['ar', 'fr', 'en', 'de', 'es', 'it', 'nl', 'pt'].map(l => new Intl.DisplayNames([l], { type: 'region' }));
+      for (let a = 65; a <= 90; a++) for (let b = 65; b <= 90; b++) {
+        const iso = String.fromCharCode(a, b); if (CTY_OLD.has(iso)) continue;
+        langs.forEach(dn => { const n = dn.of(iso); if (n && n !== iso) add(n, iso); });
+      }
+    } catch (e) { /* متصفح قديم: اللائحة اليدوية كتكفي */ }
+    ['deutschland', 'germany', 'allemagne', 'alemania', 'usa', 'us', 'uk', 'ksa', 'uae', 'emirates', 'holland'].forEach((n, i) => add(n, ['DE', 'DE', 'DE', 'DE', 'US', 'US', 'GB', 'SA', 'AE', 'AE', 'NL'][i]));
+    return CTY_MAP;
+  }
+  const lev = (a, b) => { if (Math.abs(a.length - b.length) > 2) return 9; const d = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) { let pr = d[0]; d[0] = i; for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, pr + (a[i - 1] === b[j - 1] ? 0 : 1)); pr = t; } } return d[b.length]; };
+  function isoOf(name) {
+    const k = ctyNorm(name); if (!k) return '';
+    const m = ctyMap(); if (m.has(k)) return m.get(k);
+    if (k.length < 5) return '';
+    let best = '', bd = 3;
+    m.forEach((iso, n) => { if (n.length >= 5) { const d = lev(k, n); if (d < bd) { bd = d; best = iso; } } });
+    return bd <= (k.length >= 8 ? 2 : 1) ? best : '';
+  }
+  const ctyAr = iso => { try { return new Intl.DisplayNames(['ar'], { type: 'region' }).of(iso) || iso; } catch (e) { return iso; } };
+  const flagIso = iso => iso ? String.fromCodePoint(...[...iso].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '🏳️';
+  const flagOf = name => flagIso(isoOf(name));
   async function homeNetwork() {
     let dir;
     try { await refreshRole(); if (!inNetwork()) return; dir = await loadDir(); } catch (e) { return; }
     if ((location.hash || '#/') !== '#/' && location.hash !== '#') return;
     const live = dir.filter(a => a.active);
     // الأعلام: كل دولة فيها مشترك
+    // كنجمعو حسب الدولة (ISO): «ألمانيا» و«Deuschland» = نفس الدولة، والسمية كتبان بالعربية
     const cnt = {};
-    live.forEach(a => { const c = (a.country || 'المغرب').trim(); if (c && c !== 'خارج المغرب') cnt[c] = (cnt[c] || 0) + 1; });
+    live.forEach(a => { const c = (a.country || 'المغرب').trim(); if (!c || c === 'خارج المغرب') return; const iso = isoOf(c), k = iso || c;
+      if (!cnt[k]) cnt[k] = { iso, name: iso === 'MA' ? 'المغرب' : iso ? ctyAr(iso) : c, n: 0 }; cnt[k].n++; });
     const fl = $('#home-flags');
-    const items = Object.entries(cnt).sort((x, y) => y[1] - x[1]);
+    const items = Object.values(cnt).sort((x, y) => y.n - x.n).map(x => [x.name, x.n, x.iso]);
     if (fl && items.length) {
-      const one = items.map(([c, n]) => `<span class="fl-item" title="${esc(c)} — ${n}"><span class="fl-emoji">${flagOf(c)}</span>${esc(c)}<small>${n}</small></span>`).join('');
-      fl.innerHTML = `<span class="fl-globe" role="img" aria-label="دول المشتركين" title="دول المشتركين"></span><div class="fl-view"><div class="fl-track${items.length >= 5 ? ' moving' : ''}">${one}${items.length >= 5 ? one : ''}</div></div>`;
+      const one = items.map(([c, n, iso]) => `<span class="fl-item" title="${esc(c)} — ${n}"><span class="fl-emoji">${flagIso(iso)}</span>${esc(c)}<small>${n}</small></span>`).join('');
+      fl.innerHTML = `<span class="fl-globe" role="img" aria-label="دول المشتركين" title="دول المشتركين"></span><div class="fl-view"><div class="fl-track${items.length >= 2 ? ' moving' : ''}" style="--fn:${items.length}">${one}${items.length >= 2 ? one + one : ''}</div></div>`;
       fl.classList.remove('hidden');
       placeLang();
     }
@@ -9556,6 +9589,10 @@
   // شريط المدن المغربية المشاركة فالشريط العلوي (كيتحرك من اليسار لليمين)
   function setupCityTicker() {
     const tr = $('#ct-track'); if (!tr) return;
+    // 🏙️ v257: التيليفون ← المدن كيدوزو تحت الشريط التحتاني (تحت الرئيسية/العقارات/الطلبات/المواعيد)
+    const tk = tr.parentElement, topb = $('.topbar'), nav = $('.bottomnav');
+    const place = () => { const ph = matchMedia('(max-width: 959px)').matches; const to = ph && nav ? nav : topb; if (to && tk.parentElement !== to) to.appendChild(tk); };
+    place(); window.addEventListener('resize', place);
     // المدن الكبرى أولا (بالترتيب اللي طلب المدير)، من بعد باقي المدن بلا تكرار
     const top = ['الدار البيضاء', 'الرباط', 'مراكش', 'فاس', 'طنجة', 'أكادير', 'مكناس', 'وجدة', 'تطوان', 'القنيطرة', 'صفي', 'تمارة', 'إنزكان', 'آيت ملول', 'سلا', 'المحمدية', 'خريبكة', 'بني ملال', 'الجديدة', 'تازة', 'الناظور', 'سطات', 'القصر الكبير', 'العرائش', 'الخميسات', 'تيزنيت', 'برشيد', 'كلميم', 'بركان', 'الراشيدية', 'تارودانت', 'سيدي قاسم', 'خنيفرة', 'وزان', 'الحسيمة', 'شفشاون', 'الصويرة', 'إفران', 'ورزازات'];
     const same = { 'آسفي': 'صفي', 'الرشيدية': 'الراشيدية' };
@@ -11848,6 +11885,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v257: ['🏠 الرئيسية: الدول واللغة فوق «خدمات المجموعة»، والخانات طلعو', '🏙️ المدن كيدوزو تحت الشريط التحتاني', '🪙 الشعار كيدور دورة كل 3 ثواني', '😎 دائرة منير أكبر بـ25%', '🌍 الأعلام بألوانها والدول كيتحركو'],
     v256: ['⬛ فوق الشاشة كحل كامل حتى لسطر الساعة والبطارية', '💬 الدائرة الصفراء كتهتز ملي توصلك رسالة جديدة', '⬆️ زر «للفوق» ملي تنزل بزاف فالصفحة'],
     v255: ['✨ الستوري الجديد اللي ما شفتيش كيضوي', '💬 كلمة «الرسائل» تحت الدائرة الصفراء', '🔄 زر المزامنة كيدور ملي كيرفع المعلومات', '🌫️ تحيد الضباب اللي كان فوق الشاشة: الرأس ديما كحل واضح'],
     v254: ['🔝 الرأس جديد: الشعار كبير، الستوريات حداه، وزر المزامنة بسهم دائري على اليسار', '💬 الرسائل ولات دائرة صفراء مع دوائر «المجموعات»'],
