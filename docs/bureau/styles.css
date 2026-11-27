@@ -2546,3 +2546,12 @@ body.lite .fl-track.moving { animation-play-state: running; }
   .bottomnav > .city-ticker .ct-set span { color: #8a6a1f; font-size: 12.5px; line-height: 22px; text-shadow: none; font-weight: 800; }
   :root[data-theme="dark"] .bottomnav > .city-ticker .ct-set span { color: #f3d27a; }
 }
+
+/* 🌍 v258: الأعلام أزرار (نفس الشكل) + ملاحظة «واش قصدك…» + المدن كيتضغطو */
+button.fl-item { border: 0; font: inherit; font-size: 13px; font-weight: 700; color: inherit; cursor: pointer; }
+button.fl-item:active { transform: scale(.96); }
+.cty-hint { margin-top: 6px; padding: 7px 10px; border-radius: 10px; background: #fff7e0; border: 1px solid #f0d58a; font-size: 13.5px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+:root[data-theme="dark"] .cty-hint { background: #2a2414; border-color: #6b5a25; }
+.cty-list { max-height: 56vh; overflow-y: auto; }
+.city-ticker .ct-set span[data-city] { cursor: pointer; }
+.bottomnav > .city-ticker { pointer-events: auto; }
