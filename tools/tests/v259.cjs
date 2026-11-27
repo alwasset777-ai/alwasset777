@@ -21,6 +21,10 @@ const SHOT = process.env.SHOT;
   const dd = await p.evaluate(() => { const d = document.querySelector('.add-drop'); if (!d) return null; const r = d.getBoundingClientRect(), card = document.querySelector('.hs-circ').getBoundingClientRect(), plus = document.querySelector('.hc[data-hm=add] .hc-c').getBoundingClientRect();
     const cs = [...d.querySelectorAll('.ad-c')].map(e => Math.round(e.getBoundingClientRect().width)); return { n: cs.length, cs, plus: Math.round(plus.width), below: r.top >= card.bottom - 1, modal: !!document.querySelector('.modal'), labels: [...d.querySelectorAll('b')].map(x => x.textContent), hrefs: [...d.querySelectorAll('a')].map(a => a.getAttribute('href')) }; });
   if (!dd || dd.n !== 4 || dd.cs.some(w => Math.abs(w - dd.plus) > 1) || !dd.below || dd.modal) bad.push('add drop ' + JSON.stringify(dd));
+  // عمودي: الدوائر وحدة تحت وحدة، وفنفس الوسط ديال دائرة «+»
+  const col = await p.evaluate(() => { const plus = document.querySelector('.hc[data-hm=add] .hc-c').getBoundingClientRect(), pc = plus.left + plus.width / 2;
+    const cs = [...document.querySelectorAll('.add-drop .ad-c')].map(e => e.getBoundingClientRect()); return { x: cs.map(r => Math.round(r.left + r.width / 2 - pc)), down: cs.every((r, i) => !i || r.top > cs[i - 1].bottom) }; });
+  if (!col.down || col.x.some(x => Math.abs(x) > 3)) bad.push('drop not vertical under + ' + JSON.stringify(col));
   if (dd && !dd.hrefs.includes('#/property/new')) bad.push('add drop links ' + JSON.stringify(dd.hrefs));
   if (SHOT) await p.screenshot({ path: SHOT + '/add-drop.png' });
   // ضغطة برّا ← كتسد؛ ضغطة على الزر ← كتحل وكتسد

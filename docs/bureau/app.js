@@ -6661,6 +6661,8 @@
     d = document.createElement('div'); d.className = 'add-drop'; d.setAttribute('role', 'menu');
     d.innerHTML = items.map((x, i) => `<a class="hc ad-it" href="${esc(x.href)}" role="menuitem" style="--c:${esc(x.c)};--i:${i}"><span class="hc-c ad-c">${x.ic}</span><b>${esc(x.l)}</b></a>`).join('');
     card.appendChild(d); bt.classList.add('on');
+    // v259: شريط عمودي تحت دائرة «+» بالضبط (نفس الوسط)
+    const W = d.offsetWidth; d.style.left = Math.round(bt.offsetLeft + bt.offsetWidth / 2 - W / 2) + 'px';
     const close = ev => { if (ev && ev.type === 'click' && (d.contains(ev.target) && !ev.target.closest('a') || bt.contains(ev.target))) return; d.remove(); bt.classList.remove('on'); off(); };
     const off = () => { document.removeEventListener('click', close, true); window.removeEventListener('hashchange', close); };
     setTimeout(() => { document.addEventListener('click', close, true); window.addEventListener('hashchange', close); }, 0);

@@ -2584,3 +2584,13 @@ button.fl-item:active { transform: scale(.96); }
 .city-ticker .ct-set span.ct-hot { color: #c9930f !important; font-weight: 900; text-shadow: 0 0 6px rgba(243, 179, 61, .55); }
 .city-ticker .ct-set span.ct-hot::after { content: " " attr(data-n); font-size: .85em; }
 .topbar .city-ticker .ct-set span.ct-hot { color: #ffd76a !important; }
+
+/* ➕ v259 (بطلب المدير): الخانة ديال «إضافة» شريط عمودي كينزل من تحت الدائرة «+» (الدوائر وحدة تحت وحدة بنفس القياس) */
+.add-drop { inset-inline: auto; right: auto; width: 96px; grid-template-columns: 1fr; gap: 12px; padding: 14px 6px 14px; border-radius: 48px;
+  transform-origin: top center; animation: ad-down .32s cubic-bezier(.2, .9, .3, 1.1) both; }
+[dir="ltr"] .add-drop { transform-origin: top center; }
+.add-drop::before { inset-inline-start: auto; left: calc(50% - 8px); }
+@keyframes ad-down { from { opacity: 0; clip-path: inset(0 0 100% 0 round 48px); transform: translateY(-8px); } to { opacity: 1; clip-path: inset(0 0 0 0 round 48px); transform: none; } }
+.add-drop .ad-it { gap: 5px; animation: ad-fall .3s ease-out both; animation-delay: calc(60ms + var(--i) * 70ms); }
+@keyframes ad-fall { from { opacity: 0; translate: 0 -24px; } to { opacity: 1; translate: 0 0; } }
+.add-drop .ad-it b { font-size: 12px; line-height: 1.15; }

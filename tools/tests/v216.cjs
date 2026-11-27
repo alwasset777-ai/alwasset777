@@ -21,7 +21,7 @@ const OUT = process.env.SHOT || '/tmp/v216';
     if (!r.coin || r.h < 40) bad.push(tag + ' coin ' + JSON.stringify(r));
     if (r.old) bad.push(tag + ' old 3D faces still there');
     if (mode === 'ok' && !(r.img && r.img.nw > 0 && /logo\.png/.test(r.img.src) && r.img.disp !== 'none')) bad.push(tag + ' logo ' + JSON.stringify(r.img));
-    if (mode === 'ok' && r.anim !== 'logo-flip') bad.push(tag + ' anim ' + r.anim);
+    if (mode === 'ok' && !/^logo-(flip|turn3)$/.test(r.anim)) /* v259: logo-turn3 */ bad.push(tag + ' anim ' + r.anim);
     if (mode === 'alt' && !(r.img && r.img.nw > 0 && /icon-192/.test(r.img.src))) bad.push(tag + ' fallback ' + JSON.stringify(r.img));
     if (mode === 'none' && !(r.txt && !r.img)) bad.push(tag + ' text fallback ' + JSON.stringify(r));
     // صورة بلا حركة (باش نشوفو الشعار مقابل)
