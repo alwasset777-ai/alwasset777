@@ -2494,3 +2494,23 @@ body.lite .pr-item.has-st:not(.st-seen) { animation: none; box-shadow: 0 0 0 2px
 
 /* 🌫️ v255: بلا ضباب فوق — الرأس ديما كحل معمّر (حتى ملي كتمرر الصفحة: قبل كان كيولي شفاف 86% وكيبان المحتوى من وراه بحال الضباب)، وبلا الظل الرمادي اللي كان تحتو */
 .topbar, .topbar.lv-scrolled, body.lite .topbar.lv-scrolled { background: linear-gradient(135deg, #000000 0%, #141414 70%, #2a0a10 100%); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+
+/* ⬛ v256: سطر الساعة والبطارية (فوق الرأس فالآيفون) كحل صافي بلون واحد، والخلفية اللي كتبان ملي كتجبد الصفحة لتحت كحلة حتى هي
+   (html كحل فالفوق؛ ملي كتنزل أكثر من نص شاشة ← لون الصفحة العادي باش التحت ما يبانش كحل) */
+html { background-color: #000; }
+html.scr-low { background-color: var(--bg); }
+.topbar, .topbar.lv-scrolled, body.lite .topbar.lv-scrolled {
+  background: linear-gradient(#000, #000) top / 100% calc(var(--safe-t) + 10px) no-repeat, linear-gradient(135deg, #000000 0%, #141414 70%, #2a0a10 100%); }
+@media print { html { background-color: #fff; } }
+/* 💬 v256: الدائرة الصفراء كتهتز مرة وحدة ملي كتوصل رسالة جديدة (rotate/translate، بلا تبديل الحجم) */
+.grp-chat.chat-shake { animation: chat-shake 1.2s ease-in-out 1; }
+@keyframes chat-shake { 0%, 100% { rotate: 0deg; translate: 0 0; } 10% { rotate: -14deg; translate: 0 -2px; } 25% { rotate: 12deg; } 40% { rotate: -9deg; } 55% { rotate: 7deg; } 70% { rotate: -4deg; } 85% { rotate: 2deg; } }
+@media (prefers-reduced-motion: reduce) { .grp-chat.chat-shake { animation: none; } }
+/* ⬆️ v256: زر «للفوق» */
+.to-top { position: fixed; z-index: 34; left: 50%; bottom: calc(var(--nav-h) + var(--safe-b) + 14px); width: 44px; height: 44px; margin-left: -22px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.9); background: radial-gradient(circle at 35% 30%, #3a3a3a, #111 70%); color: #fff; display: grid; place-items: center; cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,.28); opacity: 0; pointer-events: none; translate: 0 12px; transition: opacity .25s, translate .25s; }
+.to-top.on { opacity: 1; pointer-events: auto; translate: 0 0; }
+body.on-form .to-top, body.gated .to-top, body.st-open .to-top, body:has(.modal-bg) .to-top, body:has(.wn-card) .to-top, body:has(#tour-bar) .to-top, body:has(.psel-bar) .to-top { display: none; }
+@media (min-width: 960px) { .to-top { bottom: 24px; } }
+@media print { .to-top { display: none !important; } }
