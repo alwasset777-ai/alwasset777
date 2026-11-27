@@ -876,7 +876,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v258'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v259'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1968,7 +1968,7 @@
           <div class="bar"><span>${esc(kk)}</span><div class="track"><div class="fill" style="width:${v / maxT * 100}%"></div></div><b>${v}</b></div>`).join('') || '<span class="muted">—</span>'}</div>
         <div class="btn-row" style="margin-top:14px"><a class="btn" href="#/properties" data-close>${ic('building', 16)} جميع العقارات</a></div>`);
     });
-    $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length)); alPaint(); hubCounts($('.hrow[data-hr=net]'));
+    $$('[data-hm]').forEach(bt => bt.onclick = () => (bt.dataset.hm === 'add' && bt.closest('.hs-circ') ? addDrop(bt) : homeMenu(bt.dataset.hm, todayAppts.length))); alPaint(); hubCounts($('.hrow[data-hr=net]')); cityHot();
     if (!EMBED && window.W777_SYNC && window.W777_SYNC.isOn()) homeNetwork();
     // الشريط ديما كاين (أيقونة اللعبة)؛ ملي توصل روابط المجموعات كنجددوه
     if (inNetwork()) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (!h || !g) return; const o = $('.grp-strip', h); if (!o) h.insertAdjacentHTML('beforeend', g); else if ($$('.grp-logo:not(.grp-chat)', o).length !== (g.match(/class="grp-logo"/g) || []).length || !$('.grp-chat', o) !== !/grp-chat/.test(g)) o.outerHTML = g; paintUnread(); }).catch(() => {});
@@ -6652,6 +6652,31 @@
     </div>`;
   }
   function bindHomeSearch() { /* الأزرار روابط عادية */ }
+  // ➕ v259: الضغط على «إضافة» ← خانة كتنزل من تحت الزر فيها الدوائر (نفس قياس دائرة «+»)؛ ضغطة أخرى ولا برّا ← كتسد
+  function addDrop(bt) {
+    const card = bt.closest('.hs-circ'); let d = $('.add-drop', card);
+    if (d) { d.remove(); bt.classList.remove('on'); return; }
+    const tpl = document.createElement('div'); tpl.innerHTML = (wkAddTiles() || hubItems('add')[1]).join('');
+    const items = $$('a.hub-tile', tpl).map(a => ({ href: a.getAttribute('href'), c: a.style.getPropertyValue('--c') || '#c8102e', ic: (a.querySelector('.hi') || {}).innerHTML || '', l: (a.querySelector('b') || {}).textContent || '' }));
+    d = document.createElement('div'); d.className = 'add-drop'; d.setAttribute('role', 'menu');
+    d.innerHTML = items.map((x, i) => `<a class="hc ad-it" href="${esc(x.href)}" role="menuitem" style="--c:${esc(x.c)};--i:${i}"><span class="hc-c ad-c">${x.ic}</span><b>${esc(x.l)}</b></a>`).join('');
+    card.appendChild(d); bt.classList.add('on');
+    // v259: شريط عمودي تحت دائرة «+» بالضبط (نفس الوسط)
+    const W = d.offsetWidth; d.style.left = Math.round(bt.offsetLeft + bt.offsetWidth / 2 - W / 2) + 'px';
+    const close = ev => { if (ev && ev.type === 'click' && (d.contains(ev.target) && !ev.target.closest('a') || bt.contains(ev.target))) return; d.remove(); bt.classList.remove('on'); off(); };
+    const off = () => { document.removeEventListener('click', close, true); window.removeEventListener('hashchange', close); };
+    setTimeout(() => { document.addEventListener('click', close, true); window.addEventListener('hashchange', close); }, 0);
+  }
+  // 🏙️ v259: المدن اللي فيها عقارات بزاف (عقاراتي + الشبكة) كيبانو بالذهبي فالشريط اللي تحت، مع العدد
+  async function cityHot() {
+    const tk = $('.city-ticker'); if (!tk) return;
+    const n = {}; const add = c => { c = String(c || '').trim(); if (c) n[c] = (n[c] || 0) + 1; };
+    (S.props || []).forEach(p0 => add(p0.city));
+    if (inNetwork() && window.W777_SYNC && window.W777_SYNC.isOn()) { try { (await loadNetwork()).forEach(x => add(x.city)); } catch (e) { /* بلا شبكة: غير عقاراتي */ } }
+    const top = Object.entries(n).sort((a, b) => b[1] - a[1]).slice(0, 8).filter(x => x[1] >= 2);
+    const hot = new Map(top);
+    $$('[data-city]', tk).forEach(sp => { const k = hot.get(sp.dataset.city); sp.classList.toggle('ct-hot', !!k); sp.dataset.n = k ? `(${k})` : ''; });
+  }
 
   /* ============================================================
      دليل استعمال التطبيق: دروس خطوة بخطوة بالصور + «جرّب دابا»
@@ -8108,10 +8133,32 @@
     const rows = L.slice(0, 200).map(a => { const K = KINDS[kindOf(a)];
       return `<a class="list-row" href="#/${K.route}/dir?q=${encodeURIComponent(a.name || a.code || '')}" data-close><div class="avatar">${a.logo || a.photo ? `<img src="${esc(brandUrl(a.logo || a.photo))}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">` : K.ic}</div>
         <div class="grow"><b>${esc(a.name || a.code || '')}</b><small class="muted">${esc(K.one)}${a.city ? ' · ' + esc(a.city) : ''}</small></div></a>`; }).join('');
+    const withTel = L.filter(a => a.phone);
     modal(`<h3>${flagIso(iso)} ${esc(name)} <small class="muted">· ${L.length} مشترك</small></h3>
       ${chips ? `<div class="chips" style="margin-bottom:10px">${chips}</div>` : ''}
+      ${S.role === 'admin' && withTel.length ? `<button type="button" class="btn gold" id="cty-wa" style="margin-bottom:10px">📲 راسلهم كاملين بواتساب (${withTel.length})</button>` : ''}
       <div class="cty-list">${rows || '<div class="empty" style="padding:20px">ما كاين حتى مشترك ظاهر فالدليل من هاد الدولة</div>'}</div>
-      ${L.length > 200 ? '<p class="muted" style="font-size:12.5px">كيبانو 200 الأوائل — استعمل البحث فالدليل للباقي.</p>' : ''}`);
+      ${L.length > 200 ? '<p class="muted" style="font-size:12.5px">كيبانو 200 الأوائل — استعمل البحث فالدليل للباقي.</p>' : ''}`, box => {
+      const b = $('#cty-wa', box); if (b) b.onclick = () => ctyWa(iso, name, withTel);
+    });
+  }
+  // 📲 v259 (المدير): رسالة وحدة لكل المشتركين ديال دولة — واتساب ما كيسمحش بالإرسال الجماعي فابور، فكل واحد بزر (✓ ملي تصيفط)
+  function ctyWa(iso, name, L) {
+    const sent = new Set();
+    modal(`<h3>📲 رسالة لمشتركي ${flagIso(iso)} ${esc(name)}</h3>
+      <p class="muted" style="margin-top:0">كتب الرسالة مرة وحدة، و«{الاسم}» كيتبدل بسمية كل مشترك. من بعد ضغط «صيفط» حدا كل واحد (واتساب كيتحل بالرسالة واجدة).</p>
+      <textarea id="cw-msg" rows="4" style="width:100%">السلام عليكم {الاسم} 👋
+معاك مجموعة الوسيط — </textarea>
+      <div class="muted" id="cw-count" style="margin:8px 0;font-size:13px"></div>
+      <div class="cty-list">${L.map((a, i) => `<div class="list-row"><div class="grow"><b>${esc(a.name || a.code || '')}</b><small class="muted" dir="ltr">${esc(a.phone)}</small></div><a class="btn sm gold" data-wa="${i}" target="_blank" rel="noopener" href="#">📲 صيفط</a></div>`).join('')}</div>`, box => {
+      const cnt = () => { $('#cw-count', box).textContent = `تصيفطات ل ${sent.size} من ${L.length}`; };
+      $$('[data-wa]', box).forEach(btn => btn.onclick = () => {
+        const a = L[+btn.dataset.wa], msg = ($('#cw-msg', box).value || '').replace(/\{الاسم\}/g, a.name || '');
+        btn.href = 'https://wa.me/' + waPhone(a.phone) + '?text=' + encodeURIComponent(msg);
+        sent.add(btn.dataset.wa); btn.textContent = '✓ تصيفطات'; btn.classList.remove('gold'); cnt();
+      });
+      cnt();
+    });
   }
   // 🌍 v258: خانة «الدولة»: إلا الكتابة ماشي بحال اللائحة ← «واش قصدك 🇩🇪 ألمانيا؟ [نعم]»، وإلا ما عرفناهاش ← ملاحظة
   function ctyHint(i) {
@@ -8380,7 +8427,7 @@
     const chat = syOn() ? `<a class="grp-logo grp-chat" id="btn-chat" href="#/inbox" title="الرسائل" aria-label="الرسائل">${CHAT_LOGO}<b id="chat-n" class="chat-n hidden"></b><small class="chat-lbl">الرسائل</small></a>` : '';
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><span class="grp-word2" role="img" aria-label="المجموعات" title="المجموعات"><img class="gw-img gw-day" src="icons/brand/majmouat-dark.webp?v=1" alt="" decoding="async"><img class="gw-img gw-night" src="icons/brand/majmouat-white.webp?v=1" alt="" decoding="async"><i class="gw-shine" aria-hidden="true"></i></span><div class="grp-logos">${keys.length || chat ? '<span class="grp-point" aria-hidden="true">' + GLOVE_SVG + '</span>' : ''}${chat}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><span class="grp-pad" aria-hidden="true"><svg viewBox="0 0 64 40" width="44" height="28"><defs><linearGradient id="gpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dde6"/></linearGradient></defs><path d="M14 6h36c7 0 11 5 12 12l2 12c1 6-4 9-8 6l-8-7H16l-8 7c-4 3-9 0-8-6l2-12C3 11 7 6 14 6z" fill="url(#gpd)" stroke="#1b1f2a" stroke-width="1.6"/><path d="M22 6h20l-2 9H24z" fill="#1b1f2a"/><rect x="11" y="15" width="3" height="10" rx="1" fill="#1b1f2a"/><rect x="7.5" y="18.5" width="10" height="3" rx="1" fill="#1b1f2a"/><circle cx="50" cy="15" r="2" fill="#2f6fd6"/><circle cx="54.5" cy="19.5" r="2" fill="#c8102e"/><circle cx="45.5" cy="19.5" r="2" fill="#e55aa8"/><circle cx="50" cy="24" r="2" fill="#1f9d68"/><circle cx="24" cy="27" r="3.4" fill="#1b1f2a"/><circle cx="40" cy="27" r="3.4" fill="#1b1f2a"/><rect x="29" y="25" width="6" height="2" rx="1" fill="#2f6fd6" opacity=".8"/></svg></span><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><span class="grp-word2" role="img" aria-label="المجموعات" title="المجموعات"><img class="gw-img gw-day" src="icons/brand/majmouat-dark.webp?v=1" alt="" decoding="async"><img class="gw-img gw-night" src="icons/brand/majmouat-white.webp?v=1" alt="" decoding="async"><i class="gw-shine" aria-hidden="true"></i></span><div class="grp-logos">${chat}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><span class="grp-pad" aria-hidden="true"><svg viewBox="0 0 64 40" width="44" height="28"><defs><linearGradient id="gpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dde6"/></linearGradient></defs><path d="M14 6h36c7 0 11 5 12 12l2 12c1 6-4 9-8 6l-8-7H16l-8 7c-4 3-9 0-8-6l2-12C3 11 7 6 14 6z" fill="url(#gpd)" stroke="#1b1f2a" stroke-width="1.6"/><path d="M22 6h20l-2 9H24z" fill="#1b1f2a"/><rect x="11" y="15" width="3" height="10" rx="1" fill="#1b1f2a"/><rect x="7.5" y="18.5" width="10" height="3" rx="1" fill="#1b1f2a"/><circle cx="50" cy="15" r="2" fill="#2f6fd6"/><circle cx="54.5" cy="19.5" r="2" fill="#c8102e"/><circle cx="45.5" cy="19.5" r="2" fill="#e55aa8"/><circle cx="50" cy="24" r="2" fill="#1f9d68"/><circle cx="24" cy="27" r="3.4" fill="#1b1f2a"/><circle cx="40" cy="27" r="3.4" fill="#1b1f2a"/><rect x="29" y="25" width="6" height="2" rx="1" fill="#2f6fd6" opacity=".8"/></svg></span><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -11920,6 +11967,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v259: ['➕ «إضافة» كتنزّل الدوائر تحت الزر مباشرة، والزر الأحمر العائم تحيد', '🪙 الشعار كيدور دورة كل 3 ثواني حتى إلا كان «تقليل الحركة» مشعول فالتيليفون', '📲 المدير: رسالة واتساب لمشتركي دولة', '🏙️ المدن اللي فيها عقارات بزاف بالذهبي', '✋ تحيدات اليد اللي كانت مور أيقونة GAMES'],
     v258: ['🌍 الضغط على علم ← المشتركين ديال هاد الدولة', '🏙️ الضغط على مدينة تحت ← العقارات ديالها', '✍️ خانة «الدولة» كتصحح الكتابة: «واش قصدك ألمانيا؟»'],
     v257: ['🏠 الرئيسية: الدول واللغة فوق «خدمات المجموعة»، والخانات طلعو', '🏙️ المدن كيدوزو تحت الشريط التحتاني', '🪙 الشعار كيدور دورة كل 3 ثواني', '😎 دائرة منير أكبر بـ25%', '🌍 الأعلام بألوانها والدول كيتحركو', '🌐 الترجمة أسرع (ما كتعاودش تترجم نفس النصوص)'],
     v256: ['⬛ فوق الشاشة كحل كامل حتى لسطر الساعة والبطارية', '💬 الدائرة الصفراء كتهتز ملي توصلك رسالة جديدة', '⬆️ زر «للفوق» ملي تنزل بزاف فالصفحة'],
