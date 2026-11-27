@@ -876,7 +876,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v257'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v258'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -7076,6 +7076,8 @@
     const f = Object.assign({ q: '', trx: '', cat: '', city: '', ag: '', zone: '' }, S.netFilters || {});
     const agencies = [...new Set(list.map(x => x.agency).filter(Boolean))].sort();
     const cities = [...new Set(list.map(x => x.city).filter(Boolean))].sort();
+    // 🏙️ v258: جاي من شريط المدن (?city=) ← فلتر المدينة (ولا البحث إلا المدينة ما فيهاش عقارات باسمها)
+    if (query.city) { Object.assign(f, { q: '', trx: '', cat: '', ag: '', zone: '', city: '' }); if (cities.includes(query.city)) f.city = query.city; else f.q = query.city; }
     main().innerHTML = head + `
       <div class="card card-pad" style="margin-bottom:14px">
         <form id="nf" class="form-grid">
@@ -7124,7 +7126,7 @@
       <div class="card card-pad" style="margin-bottom:14px">
         ${offerBoard(all, kind)}
         <form id="df" class="form-grid" style="margin-top:12px">
-          ${fInput('q', 'بحث', '', { ph: 'اسم، مدينة، خدمة، هاتف…' })}
+          ${fInput('q', 'بحث', query.q || '', { ph: 'اسم، مدينة، خدمة، هاتف…' })}
           ${kind === 'agency' ? fSelect('zone', 'المنطقة', [{ v: '', l: 'الكل' }, { v: 'ma', l: '🇲🇦 داخل المغرب' }, { v: 'out', l: '🌍 خارج المغرب' }], query.zone || '', { noEmpty: true }) : ''}
           ${fSelect('city', 'المدينة', [{ v: '', l: 'الكل' }, ...cities.map(c => ({ v: c, l: c }))], cities.includes(query.city) ? query.city : '', { noEmpty: true })}
           ${fSelect('sv', kind === 'investor' ? 'القطاع' : kind === 'notary' ? 'الاختصاص' : 'الخدمة', [{ v: '', l: 'الكل' }, ...K.sv.map(c => ({ v: c, l: c }))], '', { noEmpty: true })}
@@ -8096,6 +8098,34 @@
   const ctyAr = iso => { try { return new Intl.DisplayNames(['ar'], { type: 'region' }).of(iso) || iso; } catch (e) { return iso; } };
   const flagIso = iso => iso ? String.fromCodePoint(...[...iso].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '🏳️';
   const flagOf = name => flagIso(isoOf(name));
+  // 🌍 v258: الضغط على علم ← المشتركين ديال هاد الدولة (بلا «آخر»، غير اللي فالدليل: مفعّل + سمية ولا هاتف)
+  async function countryModal(iso, name) {
+    let dir = []; try { dir = await loadDir(); } catch (e) { toast('ما كاينش الإنترنت'); return; }
+    const of = a => (a.country || 'المغرب').trim();
+    const L = dir.filter(a => a.active && kindOf(a) !== 'member' && (isNamed(a) || a.phone) && of(a) !== 'خارج المغرب' && (iso ? isoOf(of(a)) === iso : of(a) === name));
+    const by = {}; L.forEach(a => { const k = kindOf(a); (by[k] = by[k] || []).push(a); });
+    const chips = Object.entries(by).map(([k, a]) => `<a class="chip" href="#/${KINDS[k].route}/dir" data-close>${KINDS[k].ic} ${esc(KINDS[k].ar)} <b>${a.length}</b></a>`).join('');
+    const rows = L.slice(0, 200).map(a => { const K = KINDS[kindOf(a)];
+      return `<a class="list-row" href="#/${K.route}/dir?q=${encodeURIComponent(a.name || a.code || '')}" data-close><div class="avatar">${a.logo || a.photo ? `<img src="${esc(brandUrl(a.logo || a.photo))}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">` : K.ic}</div>
+        <div class="grow"><b>${esc(a.name || a.code || '')}</b><small class="muted">${esc(K.one)}${a.city ? ' · ' + esc(a.city) : ''}</small></div></a>`; }).join('');
+    modal(`<h3>${flagIso(iso)} ${esc(name)} <small class="muted">· ${L.length} مشترك</small></h3>
+      ${chips ? `<div class="chips" style="margin-bottom:10px">${chips}</div>` : ''}
+      <div class="cty-list">${rows || '<div class="empty" style="padding:20px">ما كاين حتى مشترك ظاهر فالدليل من هاد الدولة</div>'}</div>
+      ${L.length > 200 ? '<p class="muted" style="font-size:12.5px">كيبانو 200 الأوائل — استعمل البحث فالدليل للباقي.</p>' : ''}`);
+  }
+  // 🌍 v258: خانة «الدولة»: إلا الكتابة ماشي بحال اللائحة ← «واش قصدك 🇩🇪 ألمانيا؟ [نعم]»، وإلا ما عرفناهاش ← ملاحظة
+  function ctyHint(i) {
+    let h = i.parentElement && i.parentElement.querySelector('.cty-hint'); const v = i.value.trim();
+    if (!v || v === 'خارج المغرب') { if (h) h.remove(); return; }
+    const iso = isoOf(v), ar = iso === 'MA' ? 'المغرب' : iso ? ctyAr(iso) : '';
+    if (iso && ar === v) { if (h) h.remove(); return; }
+    if (!h) { h = document.createElement('div'); h.className = 'cty-hint'; i.insertAdjacentElement('afterend', h); }
+    h.innerHTML = iso ? `واش قصدك <b>${flagIso(iso)} ${esc(ar)}</b>؟ <button type="button" class="btn sm gold" data-cty-yes>نعم</button> <button type="button" class="btn sm" data-cty-no>لا</button>`
+      : '⚠️ ما عرفناش هاد الدولة — كتبها بالعربية بحال: فرنسا، إسبانيا، ألمانيا، بلجيكا…';
+    const y = h.querySelector('[data-cty-yes]'); if (y) y.onclick = () => { i.value = ar; i.dispatchEvent(new Event('input', { bubbles: true })); h.remove(); };
+    const n = h.querySelector('[data-cty-no]'); if (n) n.onclick = () => h.remove();
+  }
+  document.addEventListener('change', e => { const i = e.target; if (i && i.matches && i.matches('input[name="country"]')) ctyHint(i); });
   async function homeNetwork() {
     let dir;
     try { await refreshRole(); if (!inNetwork()) return; dir = await loadDir(); } catch (e) { return; }
@@ -8109,9 +8139,10 @@
     const fl = $('#home-flags');
     const items = Object.values(cnt).sort((x, y) => y.n - x.n).map(x => [x.name, x.n, x.iso]);
     if (fl && items.length) {
-      const one = items.map(([c, n, iso]) => `<span class="fl-item" title="${esc(c)} — ${n}"><span class="fl-emoji">${flagIso(iso)}</span>${esc(c)}<small>${n}</small></span>`).join('');
+      const one = items.map(([c, n, iso]) => `<button type="button" class="fl-item" data-iso="${esc(iso || '')}" data-cty="${esc(c)}" title="${esc(c)} — ${n} · شوف المشتركين"><span class="fl-emoji">${flagIso(iso)}</span>${esc(c)}<small>${n}</small></button>`).join('');
       fl.innerHTML = `<span class="fl-globe" role="img" aria-label="دول المشتركين" title="دول المشتركين"></span><div class="fl-view"><div class="fl-track${items.length >= 2 ? ' moving' : ''}" style="--fn:${items.length}">${one}${items.length >= 2 ? one + one : ''}</div></div>`;
       fl.classList.remove('hidden');
+      fl.onclick = e => { const b = e.target.closest('.fl-item'); if (b) countryModal(b.dataset.iso, b.dataset.cty); };
       placeLang();
     }
     // شريط الشركاء: الشعارات (ولا الصور) ديال المشتركين
@@ -9600,7 +9631,10 @@
     const names = [...new Set([...top, ...D.REGIONS.flatMap(r => r.cities.map(c => same[c.n] || c.n))])];
     // الشريط كيمشي من اليسار لليمين: كنقلبو الترتيب باش المدن كيدخلو بالترتيب ديال اللائحة،
     // وكنبداو الحركة من النقطة اللي كتبين «الدار البيضاء» حدا الشعار (على اليمين) من أول لحظة
-    const one = names.slice().reverse().map(n => `<span>📍 ${esc(n)}</span>`).join('');
+    const one = names.slice().reverse().map(n => `<span data-city="${esc(n)}">📍 ${esc(n)}</span>`).join('');
+    // 🏙️ v258: الضغط على مدينة ← العقارات ديالها (عقارات الشبكة إلا كان فالمجموعة، ولا عقاراتي)
+    tk.onclick = e => { const c = e.target.closest('[data-city]'); if (!c) return; const v = encodeURIComponent(c.dataset.city);
+      location.hash = inNetwork() && window.W777_SYNC && window.W777_SYNC.isOn() ? '#/agencies?city=' + v : '#/properties?q=' + v; };
     tr.innerHTML = `<div class="ct-set">${one}</div><div class="ct-set">${one}</div>`;
     const dur = Math.max(60, names.length * 3);
     tr.style.animationDuration = dur + 's';
@@ -11886,6 +11920,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v258: ['🌍 الضغط على علم ← المشتركين ديال هاد الدولة', '🏙️ الضغط على مدينة تحت ← العقارات ديالها', '✍️ خانة «الدولة» كتصحح الكتابة: «واش قصدك ألمانيا؟»'],
     v257: ['🏠 الرئيسية: الدول واللغة فوق «خدمات المجموعة»، والخانات طلعو', '🏙️ المدن كيدوزو تحت الشريط التحتاني', '🪙 الشعار كيدور دورة كل 3 ثواني', '😎 دائرة منير أكبر بـ25%', '🌍 الأعلام بألوانها والدول كيتحركو', '🌐 الترجمة أسرع (ما كتعاودش تترجم نفس النصوص)'],
     v256: ['⬛ فوق الشاشة كحل كامل حتى لسطر الساعة والبطارية', '💬 الدائرة الصفراء كتهتز ملي توصلك رسالة جديدة', '⬆️ زر «للفوق» ملي تنزل بزاف فالصفحة'],
     v255: ['✨ الستوري الجديد اللي ما شفتيش كيضوي', '💬 كلمة «الرسائل» تحت الدائرة الصفراء', '🔄 زر المزامنة كيدور ملي كيرفع المعلومات', '🌫️ تحيد الضباب اللي كان فوق الشاشة: الرأس ديما كحل واضح'],
