@@ -2473,3 +2473,21 @@ body.lite .hub-newmem .nm-ring { animation: none; box-shadow: 0 0 0 3px rgba(200
 .grp-chat { position: relative; }
 .grp-chat .chat-n { position: absolute; top: -4px; inset-inline-end: -4px; z-index: 2; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
   background: #c8102e; color: #fff; font: 800 11px/19px inherit; text-align: center; box-shadow: 0 0 0 2px #fff; }
+
+/* ✨ v255: الستوري الجديد (ما تشافش) كيضوي بالذهبي — نبض فالعادي، وضوء ثابت فالوضع الخفيف */
+.pr-item.has-st:not(.st-seen) { animation: st-glow 2s ease-in-out infinite; }
+@keyframes st-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(243, 179, 61, .0), 0 0 4px 1px rgba(243, 179, 61, .45); } 50% { box-shadow: 0 0 0 2px rgba(243, 179, 61, .45), 0 0 8px 2px rgba(243, 179, 61, .8); } }
+body.lite .pr-item.has-st:not(.st-seen) { animation: none; box-shadow: 0 0 0 2px rgba(243, 179, 61, .45), 0 0 8px 2px rgba(243, 179, 61, .75); }
+/* الضوء ما يتقطعش فوق/تحت فشريط الستوريات (الرأس والخانة) */
+.hd-rail .pr-view, .p-rail .pr-view { padding-block: 7px; margin-block: -7px; padding-inline: 4px; }
+@media (prefers-reduced-motion: reduce) { .pr-item.has-st:not(.st-seen) { animation: none; box-shadow: 0 0 12px 3px rgba(243, 179, 61, .7); } }
+/* 💬 v255: كلمة «الرسائل» تحت الدائرة الصفراء */
+.grp-chat { overflow: visible; }
+.grp-chat .chat-lbl { position: absolute; top: calc(100% + 3px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11.5px; font-weight: 800; line-height: 1.2; color: var(--ink, #111); pointer-events: none; }
+:root[data-theme="dark"] .grp-chat .chat-lbl { color: #fff; }
+.grp-strip:has(.grp-chat) .grp-logos { padding-bottom: 14px; }
+/* 🔄 v255: زر المزامنة كيدور غير ملي كيرفع (syncing)، وكيوقف ملي يكمل */
+#btn-sync svg { transition: transform .3s; }
+#btn-sync[data-state="syncing"] svg { animation: sync-spin 1.1s linear infinite; }
+@keyframes sync-spin { to { transform: rotate(-360deg); } }
+@media (prefers-reduced-motion: reduce) { #btn-sync[data-state="syncing"] svg { animation-duration: 3s; } }

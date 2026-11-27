@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v254'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v255'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -8312,7 +8312,7 @@
   function groupsCard(full) {
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // 💬 v254: دائرة الرسائل (صفراء 3D) بنفس قياس دوائر المجموعات، مع عدد الرسائل الجديدة
-    const chat = syOn() ? `<a class="grp-logo grp-chat" id="btn-chat" href="#/inbox" title="الرسائل" aria-label="الرسائل">${CHAT_LOGO}<b id="chat-n" class="chat-n hidden"></b></a>` : '';
+    const chat = syOn() ? `<a class="grp-logo grp-chat" id="btn-chat" href="#/inbox" title="الرسائل" aria-label="الرسائل">${CHAT_LOGO}<b id="chat-n" class="chat-n hidden"></b><small class="chat-lbl">الرسائل</small></a>` : '';
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
     if (!full) return `<div class="grp-strip"><div class="grp-side"><span class="grp-word2" role="img" aria-label="المجموعات" title="المجموعات"><img class="gw-img gw-day" src="icons/brand/majmouat-dark.webp?v=1" alt="" decoding="async"><img class="gw-img gw-night" src="icons/brand/majmouat-white.webp?v=1" alt="" decoding="async"><i class="gw-shine" aria-hidden="true"></i></span><div class="grp-logos">${keys.length || chat ? '<span class="grp-point" aria-hidden="true">' + GLOVE_SVG + '</span>' : ''}${chat}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><span class="grp-pad" aria-hidden="true"><svg viewBox="0 0 64 40" width="44" height="28"><defs><linearGradient id="gpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dde6"/></linearGradient></defs><path d="M14 6h36c7 0 11 5 12 12l2 12c1 6-4 9-8 6l-8-7H16l-8 7c-4 3-9 0-8-6l2-12C3 11 7 6 14 6z" fill="url(#gpd)" stroke="#1b1f2a" stroke-width="1.6"/><path d="M22 6h20l-2 9H24z" fill="#1b1f2a"/><rect x="11" y="15" width="3" height="10" rx="1" fill="#1b1f2a"/><rect x="7.5" y="18.5" width="10" height="3" rx="1" fill="#1b1f2a"/><circle cx="50" cy="15" r="2" fill="#2f6fd6"/><circle cx="54.5" cy="19.5" r="2" fill="#c8102e"/><circle cx="45.5" cy="19.5" r="2" fill="#e55aa8"/><circle cx="50" cy="24" r="2" fill="#1f9d68"/><circle cx="24" cy="27" r="3.4" fill="#1b1f2a"/><circle cx="40" cy="27" r="3.4" fill="#1b1f2a"/><rect x="29" y="25" width="6" height="2" rx="1" fill="#2f6fd6" opacity=".8"/></svg></span><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
@@ -11830,6 +11830,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v255: ['✨ الستوري الجديد اللي ما شفتيش كيضوي', '💬 كلمة «الرسائل» تحت الدائرة الصفراء', '🔄 زر المزامنة كيدور ملي كيرفع المعلومات'],
     v254: ['🔝 الرأس جديد: الشعار كبير، الستوريات حداه، وزر المزامنة بسهم دائري على اليسار', '💬 الرسائل ولات دائرة صفراء مع دوائر «المجموعات»'],
     v253: ['🧰 «خدمات المجموعة» و✦ «مجموعة الوسيط»: الترتيب الصحيح بالورقة ديال المدير', '📌 الشريط التحتاني ثابت ومعمّر (ما بقاش كيغطي أزرار «حفظ» ولا «إضافة»)، والأيقونات أكبر', '👥 عدد المشتركين تحت كل فئة فـ«مجموعة الوسيط»'],
     v252: ['✦ «مجموعة الوسيط»: ترتيب جديد للدوائر بطلب المدير', '«المجموعات» فالرئيسية ولات أصغر شوية'],
