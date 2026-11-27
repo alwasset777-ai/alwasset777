@@ -2491,3 +2491,6 @@ body.lite .pr-item.has-st:not(.st-seen) { animation: none; box-shadow: 0 0 0 2px
 #btn-sync[data-state="syncing"] svg { animation: sync-spin 1.1s linear infinite; }
 @keyframes sync-spin { to { transform: rotate(-360deg); } }
 @media (prefers-reduced-motion: reduce) { #btn-sync[data-state="syncing"] svg { animation-duration: 3s; } }
+
+/* 🌫️ v255: بلا ضباب فوق — الرأس ديما كحل معمّر (حتى ملي كتمرر الصفحة: قبل كان كيولي شفاف 86% وكيبان المحتوى من وراه بحال الضباب)، وبلا الظل الرمادي اللي كان تحتو */
+.topbar, .topbar.lv-scrolled, body.lite .topbar.lv-scrolled { background: linear-gradient(135deg, #000000 0%, #141414 70%, #2a0a10 100%); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }

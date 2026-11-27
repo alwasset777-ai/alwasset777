@@ -1,4 +1,4 @@
-// v255: الستوري الجديد كيضوي (ما تشافش)، كلمة «الرسائل» تحت الدائرة الصفراء، زر المزامنة كيدور غير ملي كيرفع
+// v255: بلا ضباب فوق (الرأس معمّر)، الستوري الجديد كيضوي (ما تشافش)، كلمة «الرسائل» تحت الدائرة الصفراء، زر المزامنة كيدور غير ملي كيرفع
 const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'); const BASE = 'http://localhost:8777/bureau/';
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }); const bad = [], errs = [];
@@ -26,5 +26,9 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
   const spin = await p.evaluate(() => { const bt = document.querySelector('#btn-sync'), sv = bt.querySelector('svg'), o = {};
     for (const st of ['syncing', 'ok', 'idle']) { bt.dataset.state = st; o[st] = getComputedStyle(sv).animationName; } bt.dataset.state = 'ok'; return o; });
   if (spin.syncing !== 'sync-spin' || spin.ok !== 'none' || spin.idle !== 'none') bad.push('sync spin ' + JSON.stringify(spin));
+  // 4) بلا ضباب: الرأس معمّر حتى من بعد التمرير، بلا ظل وبلا blur
+  await p.evaluate(() => scrollTo(0, 420)); await p.waitForTimeout(600);
+  const tb = await p.evaluate(() => { const s = getComputedStyle(document.querySelector('.topbar')); return { bg: s.backgroundImage, sh: s.boxShadow, bf: s.backdropFilter, sc: document.querySelector('.topbar').classList.contains('lv-scrolled') }; });
+  if (!tb.sc || /rgba\(/.test(tb.bg) || tb.sh !== 'none' || (tb.bf && tb.bf !== 'none')) bad.push('topbar fog ' + JSON.stringify(tb));
   console.log(JSON.stringify({ bad, errs })); await b.close(); process.exit(bad.length || errs.length ? 1 : 0);
 })();
