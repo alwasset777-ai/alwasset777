@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v251'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v252'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1739,7 +1739,6 @@
   const HUB_C = { agencies: '#4aa3ff', brokers: '#ffb02e', contractors: '#ffcc4d', finishing: '#ff7aa8', projects: '#ff5a5f', events: '#e84393', stays: '#20c997',
     news: '#a0aec0', donations: '#ffc83d', disputes: '#b39ddb', investors: '#f4a62a', notaries: '#3d8bfd', associations: '#34d399', terms: '#e6c77e' };
   // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
-  const HUB_NET = ['agencies', 'brokers', 'associations', 'investors', 'contractors', 'finishing', 'notaries'];
   const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
   const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=8" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
   // أيقونة صورة (بلاصة الإيموجي) داخل الدائرة: icons/hub/<f>.webp
@@ -1762,7 +1761,9 @@
         hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('terms', 'قانون التطبيق'),
         hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري'), hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات')]],
       // 👤➕ v234: دائرة «مشترك جديد» مع الدوائر السبعة: المدير ← نافذة الإضافة (واتساب، QR)؛ المشترك ← شاشة QR بالكود ديالو باش يدعي شي واحد
-      net: ['✦ مجموعة الوسيط', [...HUB_NET.map(r => hubImg(r)), hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك')]], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
+      // v252: الترتيب بالورقة ديال المدير (2 فكل سطر، من اليمين لليسار): الوسطاء، الجمعيات / مشترك جديد، الموثقون / المقاولات، التشطيب / المستثمرون، الوكالات
+      net: ['✦ مجموعة الوسيط', ['brokers', 'associations', 'new', 'notaries', 'contractors', 'finishing', 'investors', 'agencies'].map(r => r !== 'new' ? hubImg(r)
+        : hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك'))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
   }
   // 🎠 v232: سطر فالرئيسية: العنوان على اليمين، والدوائر كتتمرر باليد (اليسار ← اليمين)
@@ -11813,6 +11814,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v252: ['✦ «مجموعة الوسيط»: ترتيب جديد للدوائر بطلب المدير', '«المجموعات» فالرئيسية ولات أصغر شوية'],
     v251: ['🧰 «خدمات المجموعة»: ترتيب جديد للدوائر بطلب المدير'],
     v250: ['✨ لمعة على سنان منير فآخر كل جملة', '🎚️ الإعدادات ← الوكيل: «حركة الفم» هادئة / عادية / حيوية', '😊 منير كيتحرك شوية ملي ساكت، وكيهز راسو ملي كتكتب بحال اللي كيسمعك'],
     v249: ['🦷 سنان منير بيضين بلونهم الطبيعي ملي كيتكلم'],
