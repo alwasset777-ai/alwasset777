@@ -6884,7 +6884,8 @@
     return tiles;
   }
   // قائمة «+» العائمة حسب الفئة
-  let fabOrig = null;
+  // v257: النسخة الأصلية (بالعربية) كتتحفظ من الأول — قبل كانت كتتحفظ من بعد الترجمة وكتتعاود تترجم النصوص المترجمة
+  let fabOrig = (() => { const m = document.getElementById('fab-menu'); return m ? m.innerHTML : null; })();
   function paintFab() {
     const m = $('#fab-menu'); if (!m) return;
     if (fabOrig === null) fabOrig = m.innerHTML;
@@ -9858,7 +9859,7 @@
   const TR = { lang: 'ar', cache: new Map(), orig: new WeakMap(), done: new WeakMap(), attr: new WeakMap(), queue: new Map(), timer: 0, mo: null, active: 0, gen: 0, saveT: 0 };
   const TR_ATTRS = ['placeholder', 'title', 'aria-label'];
   const TR_AR = /[؀-ۿ]/;
-  const TR_SKIP = 'script,style,noscript,textarea,code,pre,svg,.notranslate,[translate="no"],#agent-panel,#cw-root,.wl-mod,.wl-fly,[contenteditable="true"]'; // الوكيل واللعبة عندهم اللغة ديالهم
+  const TR_SKIP = 'script,style,noscript,textarea,code,pre,svg,.notranslate,#splash,[translate="no"],#agent-panel,#cw-root,.wl-mod,.wl-fly,[contenteditable="true"]'; // الوكيل واللعبة عندهم اللغة ديالهم
   function curLang() {
     let c = '';
     try { c = localStorage.getItem('w777_lang') || ''; } catch (e) { /* */ }
@@ -11885,7 +11886,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
-    v257: ['🏠 الرئيسية: الدول واللغة فوق «خدمات المجموعة»، والخانات طلعو', '🏙️ المدن كيدوزو تحت الشريط التحتاني', '🪙 الشعار كيدور دورة كل 3 ثواني', '😎 دائرة منير أكبر بـ25%', '🌍 الأعلام بألوانها والدول كيتحركو'],
+    v257: ['🏠 الرئيسية: الدول واللغة فوق «خدمات المجموعة»، والخانات طلعو', '🏙️ المدن كيدوزو تحت الشريط التحتاني', '🪙 الشعار كيدور دورة كل 3 ثواني', '😎 دائرة منير أكبر بـ25%', '🌍 الأعلام بألوانها والدول كيتحركو', '🌐 الترجمة أسرع (ما كتعاودش تترجم نفس النصوص)'],
     v256: ['⬛ فوق الشاشة كحل كامل حتى لسطر الساعة والبطارية', '💬 الدائرة الصفراء كتهتز ملي توصلك رسالة جديدة', '⬆️ زر «للفوق» ملي تنزل بزاف فالصفحة'],
     v255: ['✨ الستوري الجديد اللي ما شفتيش كيضوي', '💬 كلمة «الرسائل» تحت الدائرة الصفراء', '🔄 زر المزامنة كيدور ملي كيرفع المعلومات', '🌫️ تحيد الضباب اللي كان فوق الشاشة: الرأس ديما كحل واضح'],
     v254: ['🔝 الرأس جديد: الشعار كبير، الستوريات حداه، وزر المزامنة بسهم دائري على اليسار', '💬 الرسائل ولات دائرة صفراء مع دوائر «المجموعات»'],
