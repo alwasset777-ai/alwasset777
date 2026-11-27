@@ -2422,3 +2422,7 @@ body.lite .grp-word2 .gw-shine { display: none; }
 .ag-spark.on { animation: ag-spark .85s ease-out; }
 @keyframes ag-spark { 0% { opacity: 0; transform: scale(.2) rotate(0deg); } 35% { opacity: 1; transform: scale(1.1) rotate(35deg); } 100% { opacity: 0; transform: scale(.4) rotate(80deg); } }
 @media (prefers-reduced-motion: reduce) { .ag-spark.on { animation: none; } }
+
+/* v252: «المجموعات» أصغر بـ20% بطلب المدير (46 ← 37px، التيليفون 40 ← 32px) */
+.grp-word2 .gw-img { height: 37px; }
+@media (max-width: 700px) { .grp-word2 .gw-img { height: 32px; } }
