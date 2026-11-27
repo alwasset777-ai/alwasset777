@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v255'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v256'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -11404,11 +11404,28 @@
     b.classList.toggle('hidden', !syOn()); if (!syOn()) return;
     const n = await unreadCount().catch(() => 0);
     const s = $('#chat-n', b); s.textContent = n > 99 ? '99+' : n || ''; s.classList.toggle('hidden', !n);
+    // 💬 v256: رسالة جديدة (العدد طلع على آخر مرة شفناه) ← الدائرة الصفراء كتهتز مرة وحدة
+    let prev = 0; try { prev = +localStorage.getItem('w777_chat_n') || 0; localStorage.setItem('w777_chat_n', String(n)); } catch (e) { /* */ }
+    if (n > prev) { b.classList.remove('chat-shake'); void b.offsetWidth; b.classList.add('chat-shake'); setTimeout(() => b.classList.remove('chat-shake'), 1400); }
+  }
+  // ⬆️ v256: زر «للفوق» فالوسط فوق الشريط التحتاني، كيبان ملي تنزل أكثر من شاشة وحدة.
+  // + الخلفية ديال الصفحة (html): كحلة فالفوق (ملي كتجبد الصفحة لتحت فالآيفون كيبان الكحل بحال الرأس، ماشي البياض) وعادية ملي كتكون لتحت
+  function setupToTop() {
+    if ($('#to-top')) return;
+    const bt = document.createElement('button');
+    bt.id = 'to-top'; bt.type = 'button'; bt.className = 'to-top'; bt.title = 'للفوق'; bt.setAttribute('aria-label', 'رجوع للفوق');
+    bt.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+    bt.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.body.appendChild(bt);
+    const root = document.documentElement;
+    const on = () => { const y = window.scrollY; bt.classList.toggle('on', y > innerHeight); root.classList.toggle('scr-low', y > innerHeight * 0.5); };
+    window.addEventListener('scroll', on, { passive: true }); window.addEventListener('hashchange', () => setTimeout(on, 50)); on();
   }
   // 💬 v254: زر الرسائل ولا دائرة صفراء فخانة «المجموعات» (groupsCard) — هنا غير العدّاد كل دقيقة
   function setupChat() {
     if (S.chatTick) return; S.chatTick = 1;
     paintUnread(); setInterval(() => { if (document.visibilityState === 'visible') paintUnread(); }, 60000);
+    window.addEventListener('w777-chat-refresh', () => paintUnread()); // تحديث العدد دابا (من بعد القراءة، الاختبارات)
   }
 
   const chatNeed = () => `<div class="card empty"><div class="big">💬</div><h3>الرسائل كتحتاج حسابك فالشبكة</h3><p>دخل للمزامنة السحابية من الإعدادات باش تراسل المشتركين والمكتب.</p><a class="btn gold" href="#/settings">الإعدادات</a></div>`;
@@ -11714,6 +11731,7 @@
   function setupMotion() {
     const top = $('.topbar');
     if (top) { const on = () => top.classList.toggle('lv-scrolled', window.scrollY > 8); window.addEventListener('scroll', on, { passive: true }); on(); }
+    setupToTop();
     if (!LV_OK) return;
     // الصور كتبان بنعومة ملي كتكمل التحميل
     document.addEventListener('load', e => { const t = e.target; if (t.tagName === 'IMG' && t.closest('#main')) t.classList.add('lv-imgin'); }, true);
@@ -11830,6 +11848,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v256: ['⬛ فوق الشاشة كحل كامل حتى لسطر الساعة والبطارية', '💬 الدائرة الصفراء كتهتز ملي توصلك رسالة جديدة', '⬆️ زر «للفوق» ملي تنزل بزاف فالصفحة'],
     v255: ['✨ الستوري الجديد اللي ما شفتيش كيضوي', '💬 كلمة «الرسائل» تحت الدائرة الصفراء', '🔄 زر المزامنة كيدور ملي كيرفع المعلومات', '🌫️ تحيد الضباب اللي كان فوق الشاشة: الرأس ديما كحل واضح'],
     v254: ['🔝 الرأس جديد: الشعار كبير، الستوريات حداه، وزر المزامنة بسهم دائري على اليسار', '💬 الرسائل ولات دائرة صفراء مع دوائر «المجموعات»'],
     v253: ['🧰 «خدمات المجموعة» و✦ «مجموعة الوسيط»: الترتيب الصحيح بالورقة ديال المدير', '📌 الشريط التحتاني ثابت ومعمّر (ما بقاش كيغطي أزرار «حفظ» ولا «إضافة»)، والأيقونات أكبر', '👥 عدد المشتركين تحت كل فئة فـ«مجموعة الوسيط»'],
