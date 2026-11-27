@@ -23,8 +23,8 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     const moved = await p.$eval('.hrow[data-hr=svc] .hr-strip', s => { const a = s.scrollLeft; s.scrollBy({ left: -200 }); return new Promise(r => setTimeout(() => r(Math.abs(s.scrollLeft - a) > 50), 400)); });
     if (!moved) bad.push(vw.width + ' strip does not scroll');
     await p.screenshot({ path: (process.env.SHOT || '/tmp/v232') + '-' + vw.width + '-scrolled.png' });
-    // v234: الدائرة «مشترك جديد» (v252: الثالثة) ← نافذة الإضافة عند المدير
-    const nt = await p.$eval('.hrow[data-hr=net] .hr-strip .hub-tile:nth-child(3)', a => [a.getAttribute('href'), a.textContent]);
+    // v234: الدائرة «مشترك جديد» (v253: الأولى) ← نافذة الإضافة عند المدير
+    const nt = await p.$eval('.hrow[data-hr=net] .hr-strip .hub-tile:first-child', a => [a.getAttribute('href'), a.textContent]);
     if (nt[0] !== '#/agencies/manage?add=1' || !/مشترك جديد/.test(nt[1])) bad.push('new member tile ' + JSON.stringify(nt));
     // الدائرة ← الصفحة
     await p.click('.hrow[data-hr=net] .hub-tile[href="#/brokers"]'); await p.waitForTimeout(800);

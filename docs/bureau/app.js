@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v252'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v253'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1634,6 +1634,8 @@
     offStrip();
     titleIcon(); chipsFadeAll(); setTimeout(chipsFadeAll, 700);
     document.body.classList.toggle('on-home', !a);
+    // 📌 v253: فالاستمارات (إضافة/تعديل/ملف) الزر «+» ومنير كيتخباو فالتيليفون باش ما يغطيوش «حفظ»
+    document.body.classList.toggle('on-form', /\/(new|edit)\b|^#\/work\//.test(location.hash));
   }
   /* ✦ 3D: الصفحة كتطلع من العمق، والبطاقات كتميل مع الفأرة (غير الحاسوب، وماشي فالوضع الخفيف) */
   // بلا كود داخل HTML (onclick/onerror): كلشي هنا — باش سياسة الأمان (CSP) تمنع أي سكريبت مدسوس
@@ -1754,16 +1756,16 @@
       add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…'),
         ...(S.role === 'admin' ? [hubTile('#/agencies/manage?add=1', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/agencies.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', 'دعوة بواتساب ولا QR')] : [])]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
-        // v251: الترتيب بالورقة ديال المدير (3 فكل سطر، من اليمين لليسار)
-        hubImg('stays', 'الحجز الفوري'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'),
-        hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
-        hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubPic('#/learn', 'academy', 'أكاديمية مجموعة الوسيط', '7 وحدات + شهادة', '#b8860b'), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'),
-        hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('terms', 'قانون التطبيق'),
-        hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري'), hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات')]],
+        // v253: الترتيب بالورقة ديال المدير (الرقم = المرتبة الجديدة؛ 3 فكل سطر، من اليمين لليسار)
+        hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'), hubPic('#/learn', 'academy', 'أكاديمية مجموعة الوسيط', '7 وحدات + شهادة', '#b8860b'), hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news),
+        hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
+        hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري'), hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubImg('stays', 'الحجز الفوري'),
+        hubImg('events', 'المناسبات العقارية'), hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'),
+        hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubImg('terms', 'قانون التطبيق')]],
       // 👤➕ v234: دائرة «مشترك جديد» مع الدوائر السبعة: المدير ← نافذة الإضافة (واتساب، QR)؛ المشترك ← شاشة QR بالكود ديالو باش يدعي شي واحد
-      // v252: الترتيب بالورقة ديال المدير (2 فكل سطر، من اليمين لليسار): الوسطاء، الجمعيات / مشترك جديد، الموثقون / المقاولات، التشطيب / المستثمرون، الوكالات
-      net: ['✦ مجموعة الوسيط', ['brokers', 'associations', 'new', 'notaries', 'contractors', 'finishing', 'investors', 'agencies'].map(r => r !== 'new' ? hubImg(r)
-        : hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك'))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
+      // v253: الترتيب بالورقة ديال المدير (الرقم = المرتبة الجديدة؛ 2 فكل سطر، من اليمين لليسار): مشترك جديد، الوكالات / الوسطاء، الموثقون / المقاولات، التشطيب / المستثمرون، الجمعيات
+      net: ['✦ مجموعة الوسيط', ['new', 'agencies', 'brokers', 'notaries', 'contractors', 'finishing', 'investors', 'associations'].map(r => r !== 'new' ? hubImg(r)
+        : hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="nm-ring" aria-hidden="true"></i><i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك').replace('class="hub-tile"', 'class="hub-tile hub-newmem"'))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
   }
   // 🎠 v232: سطر فالرئيسية: العنوان على اليمين، والدوائر كتتمرر باليد (اليسار ← اليمين)
@@ -1772,11 +1774,22 @@
     return `<div class="hrow" data-hr="${kind}"><button class="hr-head" type="button" data-hm="${kind}" aria-label="${esc(title)} — كل الخدمات"><span class="hr-ic"><img src="${img}" alt="" decoding="async"></span><b>${esc(title)}</b></button>
       <div class="hr-strip" role="list">${M[1].join('')}</div></div>`;
   }
+  // 👥 v253: عدد المشتركين فكل فئة («الوسطاء · 12») — نفس الحساب ديال الدليل (مفعّل + سمية ولا هاتف)، من الذاكرة ديال loadDir
+  function hubCounts(root) {
+    if (!root || !window.W777_SYNC || !window.W777_SYNC.isOn() || !S.role) return;
+    loadDir().then(dir => {
+      const n = {};
+      dir.forEach(a => { const k = kindOf(a); if (k !== 'member' && a.active && (isNamed(a) || a.phone)) n[k] = (n[k] || 0) + 1; });
+      Object.entries(KINDS).forEach(([k, K]) => { if (k === 'member' || !n[k]) return;
+        $$(`.hub-tile[href="#/${K.route}"] > b`, root).forEach(b => { let c = $('.hub-cnt', b); if (!c) { c = document.createElement('span'); c.className = 'hub-cnt'; b.append(c); } c.textContent = ' · ' + n[k]; }); });
+    }).catch(() => { /* العدد اختياري */ });
+  }
   function homeMenu(kind, nAppts) {
     const M = kind === 'add' && wkAddTiles() ? ['➕ إضافة', wkAddTiles()] : hubItems(kind);
     if (!M) return;
     modal(`<h3>${M[0]}</h3><div class="hub hub-menu hub-spin${kind === 'net' ? ' hub-big' : ''}">${M[1].join('')}</div>`, (box, close) => {
       $$('.hub-tile', box).forEach(a => a.addEventListener('click', () => close()));
+      if (kind === 'net') hubCounts(box);
       // الدوائر كتدور بنفس السرعة ونفس اللحظة ديال الشعار الكبير اللي فوق (نصف دورة = 3.5 ثواني)
       const sp = $('.hub-spin', box), lg = $('.coin');
       const la = lg && lg.getAnimations ? lg.getAnimations()[0] : null;
@@ -1954,7 +1967,7 @@
           <div class="bar"><span>${esc(kk)}</span><div class="track"><div class="fill" style="width:${v / maxT * 100}%"></div></div><b>${v}</b></div>`).join('') || '<span class="muted">—</span>'}</div>
         <div class="btn-row" style="margin-top:14px"><a class="btn" href="#/properties" data-close>${ic('building', 16)} جميع العقارات</a></div>`);
     });
-    $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length)); alPaint();
+    $$('[data-hm]').forEach(bt => bt.onclick = () => homeMenu(bt.dataset.hm, todayAppts.length)); alPaint(); hubCounts($('.hrow[data-hr=net]'));
     if (!EMBED && window.W777_SYNC && window.W777_SYNC.isOn()) homeNetwork();
     // الشريط ديما كاين (أيقونة اللعبة)؛ ملي توصل روابط المجموعات كنجددوه
     if (inNetwork()) agLoadCfg().then(() => { const h = $('.hero'), g = groupsCard(false); if (!h || !g) return; const o = $('.grp-strip', h); if (!o) h.insertAdjacentHTML('beforeend', g); else if ($$('.grp-logo', o).length !== (g.match(/class="grp-logo"/g) || []).length) o.outerHTML = g; }).catch(() => {});
@@ -11814,6 +11827,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v253: ['🧰 «خدمات المجموعة» و✦ «مجموعة الوسيط»: الترتيب الصحيح بالورقة ديال المدير', '📌 الشريط التحتاني ثابت ومعمّر (ما بقاش كيغطي أزرار «حفظ» ولا «إضافة»)، والأيقونات أكبر', '👥 عدد المشتركين تحت كل فئة فـ«مجموعة الوسيط»'],
     v252: ['✦ «مجموعة الوسيط»: ترتيب جديد للدوائر بطلب المدير', '«المجموعات» فالرئيسية ولات أصغر شوية'],
     v251: ['🧰 «خدمات المجموعة»: ترتيب جديد للدوائر بطلب المدير'],
     v250: ['✨ لمعة على سنان منير فآخر كل جملة', '🎚️ الإعدادات ← الوكيل: «حركة الفم» هادئة / عادية / حيوية', '😊 منير كيتحرك شوية ملي ساكت، وكيهز راسو ملي كتكتب بحال اللي كيسمعك'],
