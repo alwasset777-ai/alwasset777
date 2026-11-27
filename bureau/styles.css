@@ -2514,3 +2514,35 @@ html.scr-low { background-color: var(--bg); }
 body.on-form .to-top, body.gated .to-top, body.st-open .to-top, body:has(.modal-bg) .to-top, body:has(.wn-card) .to-top, body:has(#tour-bar) .to-top, body:has(.psel-bar) .to-top { display: none; }
 @media (min-width: 960px) { .to-top { bottom: 24px; } }
 @media print { .to-top { display: none !important; } }
+
+/* 🏠 v257 (بطلب المدير، التيليفون) */
+/* «المجموعات» على أقصى اليمين */
+.grp-side > .grp-word2 { align-self: flex-start; }
+/* الدول واللغة فوق «خدمات المجموعة» (داخل الخانة الكبيرة)، والكتابة المتحركة الخاوية فوقهم تحيدات باش يطلعو الخانات */
+.hero .flag-band { position: relative; z-index: 1; margin: 0 0 8px; }
+@media (max-width: 959px) { .home-main .hero-marq { display: none; } }
+/* الدول كيتحركو من اليسار لليمين ديما (حتى فالخفيف) باش يبانو كاملين — ثلث الشريط = نسخة وحدة */
+.fl-track.moving { animation: flmove3 calc(var(--fn, 3) * 6s + 8s) linear infinite; }
+@keyframes flmove3 { from { transform: translateX(0); } to { transform: translateX(33.333%); } }
+body.lite .fl-track.moving { animation-play-state: running; }
+/* 🪙 الشعار: دورة كاملة كل 3 ثواني، ولمعة كتدوز من اليسار لليمين مع كل نص دورة */
+.topbar .coin { animation: logo-flip 3s linear infinite; }
+.topbar .coin::after { background: linear-gradient(100deg, transparent 38%, rgba(255,255,255,.6) 50%, transparent 62%) no-repeat, radial-gradient(circle at 32% 25%, rgba(255,255,255,.45), transparent 42%), radial-gradient(circle at 70% 85%, rgba(0,0,0,.14), transparent 55%);
+  background-size: 250% 100%, auto, auto; animation: logo-sheen 1.5s linear infinite; }
+@keyframes logo-sheen { from { background-position: 100% 0, 0 0, 0 0; } to { background-position: 0% 0, 0 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) { .topbar .coin, .topbar .coin::after { animation: none; } }
+/* 😎 دائرة منير أكبر بـ25% (60 ← 75px) */
+.agent-fab { width: 75px; height: 75px; }
+@media (max-width: 959px) {
+  /* الرأس بلا سطر المدن: الشعار الكبير كيعمّر اليمين، والستوريات والمزامنة فالوسط */
+  body.on-home .topbar-inner { min-height: 80px; }
+  body.on-home .hd-rail:not(:empty) { height: 56px; }
+  body.on-home .hd-rail .pr-item { width: 50px; height: 50px; flex-basis: 50px; }
+  body.on-home .hd-rail .pr-story-add { font-size: 19px; }
+  /* 🏙️ المدن تحت الشريط التحتاني: فالآيفون فالفراغ ديال الأسفل، وفالتيليفونات بلا فراغ كنزيدو 26px */
+  body.on-home { --tk: max(0px, calc(26px - var(--safe-b))); --nav-h: calc(68px + var(--tk)); }
+  body.on-home .bottomnav { padding-bottom: calc(var(--safe-b) + var(--tk)); }
+  .bottomnav > .city-ticker { position: absolute; inset-inline: 8px; bottom: max(2px, calc(var(--safe-b) - 27px)); height: 22px; margin: 0 !important; --lg: 0px; }
+  .bottomnav > .city-ticker .ct-set span { color: #8a6a1f; font-size: 12.5px; line-height: 22px; text-shadow: none; font-weight: 800; }
+  :root[data-theme="dark"] .bottomnav > .city-ticker .ct-set span { color: #f3d27a; }
+}
