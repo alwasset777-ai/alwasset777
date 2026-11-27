@@ -876,7 +876,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v259'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v260'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -11529,6 +11529,21 @@
   }
   // ⬆️ v256: زر «للفوق» فالوسط فوق الشريط التحتاني، كيبان ملي تنزل أكثر من شاشة وحدة.
   // + الخلفية ديال الصفحة (html): كحلة فالفوق (ملي كتجبد الصفحة لتحت فالآيفون كيبان الكحل بحال الرأس، ماشي البياض) وعادية ملي كتكون لتحت
+  // 🩺 v260: الضغطة الطويلة (0.7 ث) على الشعار فالرأس ← «فحص التطبيق» (#/check)؛ الضغطة العادية كتبقى ← الرئيسية
+  function setupLogoCheck() {
+    const lg = $('.topbar .logo'); if (!lg || lg.dataset.lp) return; lg.dataset.lp = '1';
+    let t = 0, long = false, x0 = 0, y0 = 0;
+    const stop = () => { clearTimeout(t); t = 0; lg.classList.remove('lp-on'); };
+    lg.addEventListener('pointerdown', e => {
+      long = false; x0 = e.clientX; y0 = e.clientY; lg.classList.add('lp-on');
+      t = setTimeout(() => { long = true; stop(); try { navigator.vibrate && navigator.vibrate(30); } catch (er) { /* */ } toast('🩺 فحص التطبيق…'); location.hash = '#/check'; }, 700);
+    });
+    lg.addEventListener('pointermove', e => { if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => lg.addEventListener(ev, stop));
+    lg.addEventListener('click', e => { if (long) { e.preventDefault(); e.stopPropagation(); long = false; } }, true);
+    lg.addEventListener('contextmenu', e => e.preventDefault()); // بلا قائمة «حفظ الصورة» ديال الهاتف
+    lg.title = 'الرئيسية — ضغطة طويلة: 🩺 فحص التطبيق';
+  }
   function setupToTop() {
     if ($('#to-top')) return;
     const bt = document.createElement('button');
@@ -11850,7 +11865,7 @@
   function setupMotion() {
     const top = $('.topbar');
     if (top) { const on = () => top.classList.toggle('lv-scrolled', window.scrollY > 8); window.addEventListener('scroll', on, { passive: true }); on(); }
-    setupToTop();
+    setupToTop(); setupLogoCheck();
     if (!LV_OK) return;
     // الصور كتبان بنعومة ملي كتكمل التحميل
     document.addEventListener('load', e => { const t = e.target; if (t.tagName === 'IMG' && t.closest('#main')) t.classList.add('lv-imgin'); }, true);
@@ -11967,6 +11982,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v260: ['🩺 ضغطة طويلة على الشعار فوق ← فحص التطبيق'],
     v259: ['➕ «إضافة» كتنزّل الدوائر تحت الزر مباشرة، والزر الأحمر العائم تحيد', '🪙 الشعار كيدور دورة كل 3 ثواني حتى إلا كان «تقليل الحركة» مشعول فالتيليفون', '📲 المدير: رسالة واتساب لمشتركي دولة', '🏙️ المدن اللي فيها عقارات بزاف بالذهبي', '✋ تحيدات اليد اللي كانت مور أيقونة GAMES'],
     v258: ['🌍 الضغط على علم ← المشتركين ديال هاد الدولة', '🏙️ الضغط على مدينة تحت ← العقارات ديالها', '✍️ خانة «الدولة» كتصحح الكتابة: «واش قصدك ألمانيا؟»'],
     v257: ['🏠 الرئيسية: الدول واللغة فوق «خدمات المجموعة»، والخانات طلعو', '🏙️ المدن كيدوزو تحت الشريط التحتاني', '🪙 الشعار كيدور دورة كل 3 ثواني', '😎 دائرة منير أكبر بـ25%', '🌍 الأعلام بألوانها والدول كيتحركو', '🌐 الترجمة أسرع (ما كتعاودش تترجم نفس النصوص)'],
