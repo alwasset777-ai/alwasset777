@@ -2594,3 +2594,13 @@ button.fl-item:active { transform: scale(.96); }
 .add-drop .ad-it { gap: 5px; animation: ad-fall .3s ease-out both; animation-delay: calc(60ms + var(--i) * 70ms); }
 @keyframes ad-fall { from { opacity: 0; translate: 0 -24px; } to { opacity: 1; translate: 0 0; } }
 .add-drop .ad-it b { font-size: 12px; line-height: 1.15; }
+
+/* 🩺 v260: الضغطة الطويلة على الشعار ← فحص التطبيق (بلا تحديد ولا قائمة الصورة، وحلقة ذهبية كتعمّر ملي كتضغط) */
+.topbar .logo { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.topbar .logo img { -webkit-user-drag: none; pointer-events: none; }
+.topbar .logo-pill.logo-coin { position: relative; }
+.topbar .logo.lp-on .logo-pill.logo-coin::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; pointer-events: none; z-index: 3;
+  background: conic-gradient(#f3d27a calc(var(--lp, 0) * 1%), transparent 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: lp-fill .7s linear forwards; }
+@property --lp { syntax: '<number>'; inherits: false; initial-value: 0; }
+@keyframes lp-fill { to { --lp: 100; } }
