@@ -12,8 +12,8 @@ async function page(b, kind, errs) {
   await p.goto(BASE); await p.waitForTimeout(800); await F.login(p, BASE);
   return p;
 }
-const addTiles = async p => { await p.goto(BASE + '#/'); await p.waitForSelector('[data-hm=add]', { timeout: 10000 }); await p.click('[data-hm=add]'); await p.waitForSelector('.modal .hub-tile');
-  const t = await p.$$eval('.modal .hub-tile b', a => a.map(x => x.textContent.trim())); await shut(p); return t; };
+const addTiles = async p => { await p.goto(BASE + '#/'); await p.waitForSelector('[data-hm=add]', { timeout: 10000 }); await p.click('[data-hm=add]'); await p.waitForSelector('.add-drop .ad-it'); /* v259: خانة كتنزل تحت «إضافة» */
+  const t = await p.$$eval('.add-drop .ad-it b', a => a.map(x => x.textContent.trim())); await p.click('[data-hm=add]'); await p.waitForTimeout(200); await shut(p); return t; };
 const shut = p => p.evaluate(() => document.querySelectorAll('.modal-bg').forEach(m => m.parentNode.removeChild(m)));
 async function fill(p, vals) { for (const [k, v] of Object.entries(vals)) { const el = await p.$(`#wkf [name="${k}"]`); if (!el) throw new Error('no field ' + k);
   const tag = await el.evaluate(e => e.tagName + (e.type ? ':' + e.type : ''));
@@ -27,7 +27,7 @@ async function fill(p, vals) { for (const [k, v] of Object.entries(vals)) { cons
   // 2) التشطيب: بلا «إضافة عقار» + عرض ثمن بالحساب
   { const p = await page(b, 'finishing', errs); const t = await addTiles(p);
     if (t.some(x => /إضافة عقار/.test(x)) || !t.some(x => /ورش تشطيب/.test(x)) || !t.some(x => /عرض ثمن/.test(x)) || !t.some(x => /طلب أشغال/.test(x))) bad.push('finishing tiles ' + t.join('|'));
-    await p.click('[data-hm=add]'); await p.waitForSelector('.modal .hub-tile'); await p.screenshot({ path: OUT + '-finishing-add.png' }); await shut(p);
+    await p.click('[data-hm=add]'); await p.waitForSelector('.add-drop .ad-it'); await p.screenshot({ path: OUT + '-finishing-add.png' }); await p.click('[data-hm=add]');
     const fab = await p.$$eval('#fab-menu a', a => a.map(x => x.textContent)); if (fab.some(x => /إضافة عقار/.test(x)) || !fab.some(x => /عرض ثمن/.test(x))) bad.push('fab ' + fab.join('|'));
     await p.goto(BASE + '#/work/f_quote/new'); await p.waitForSelector('#wkf');
     await fill(p, { client: 'السيد أحمد', phone: '0611111111', project: 'شقة — حمرية', qty: 50, unitPrice: 120, tva: 20 });

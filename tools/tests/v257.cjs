@@ -36,7 +36,7 @@ const R = (p, s) => p.evaluate(s => { const e = document.querySelector(s); if (!
   if (Math.abs(nav.h - nh) > 1) bad.push('nav height != --nav-h ' + nav.h + ' ' + nh);
   // الشعار: 3 ثواني، ومعمّر يمين الرأس
   const coin = await p.evaluate(() => [getComputedStyle(document.querySelector('.topbar .coin')).animationDuration, getComputedStyle(document.querySelector('.topbar .coin'), '::after').animationName]);
-  if (coin[0] !== '3s' || coin[1] !== 'logo-sheen') bad.push('logo spin ' + coin);
+  if (coin[0] !== '3s' || !/^logo-sheen3?$/.test(coin[1])) /* v259: logo-sheen3 */ bad.push('logo spin ' + coin);
   const lg = await R(p, '.topbar .logo-pill'), top = await R(p, '.topbar');
   if (!lg || lg.h < 80 || lg.b > top.b) bad.push('logo size ' + JSON.stringify({ lg, top }));
   // منير 75px (+25%)

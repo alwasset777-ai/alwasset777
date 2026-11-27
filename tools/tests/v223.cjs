@@ -40,9 +40,12 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
     const hrefs = items.map(x => x.split('|')[0]);
     if (JSON.stringify(hrefs) !== JSON.stringify(['#/qr', '#/property/new', '#/request/new', '#/appointment/new', '#', '#/search'])) bad.push('fab order ' + JSON.stringify(items));
     if (items.some(x => /الحجز|الوكالات/.test(x))) bad.push('fab still has stays/agencies');
-    await p.click('#fab'); await p.waitForTimeout(400);
+    // v259: الزر العائم «+» تحيد ← الإضافة من دائرة «إضافة» فالرئيسية (خانة كتنزل تحت الزر)
+    if (await p.evaluate(() => getComputedStyle(document.querySelector('#fab')).display !== 'none')) bad.push('floating + still visible');
+    await p.click('.hs-circ .hc[data-hm=add]'); await p.waitForTimeout(400);
     await p.screenshot({ path: (process.env.SHOT || '/tmp/v223') + '-fab.png' });
-    await p.click('#fab'); await p.waitForTimeout(200);
+    if (!(await p.$('.add-drop a[href="#/property/new"]'))) bad.push('add drop missing');
+    await p.click('.hs-circ .hc[data-hm=add]'); await p.waitForTimeout(200);
     await p.evaluate(() => { location.hash = '#/check'; }); await p.waitForSelector('#ck-sum p', { timeout: 20000 }).catch(() => bad.push('check did not finish'));
     const ck = await p.evaluate(() => ({ rows: [...document.querySelectorAll('.ck-row')].map(r => r.className + ' ' + r.innerText.replace(/\s+/g, ' ').slice(0, 70)), sum: document.getElementById('ck-sum').innerText }));
     if (ck.rows.length !== 6) bad.push('check rows ' + ck.rows.length);

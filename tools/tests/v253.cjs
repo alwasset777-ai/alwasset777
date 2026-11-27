@@ -42,9 +42,9 @@ const NET = ['مشترك جديد', 'الوكالات العقارية', 'الو
     const top = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     return { covered: a.bottom > nb.top + 1, fab: vis('#fab'), agent: vis('#agent-fab'), saveFree: !!(top && sv.contains(top)) }; });
   if (f.covered || f.fab || f.agent || !f.saveFree) bad.push('form ' + JSON.stringify(f));
-  // الرجوع للرئيسية ← «+» ومنير كيرجعو
+  // الرجوع للرئيسية ← منير كيرجع (v259: الزر العائم «+» تحيد نهائياً)
   await p.goto(BASE + '#/'); await p.waitForTimeout(800);
-  if (!(await p.evaluate(() => getComputedStyle(document.querySelector('#fab')).display !== 'none'))) bad.push('fab hidden on home');
+  if (!(await p.evaluate(() => getComputedStyle(document.querySelector('#agent-fab')).display !== 'none'))) bad.push('agent hidden on home');
   await p.close();
   // الحاسوب: الشريط ما كيبانش (القائمة الجانبية) — ما تبدّل والو
   const d = await b.newPage({ viewport: { width: 1200, height: 900 } }); d.on('pageerror', e => errs.push(e.message)); await F.install(d);
