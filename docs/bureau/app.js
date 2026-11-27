@@ -875,7 +875,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v250'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v251'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1755,11 +1755,12 @@
       add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…'),
         ...(S.role === 'admin' ? [hubTile('#/agencies/manage?add=1', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/agencies.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', 'دعوة بواتساب ولا QR')] : [])]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
-        hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('stays', 'الحجز الفوري'),
-        hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
-        hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات'), hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'),
-        hubPic('#/learn', 'academy', 'أكاديمية مجموعة الوسيط', '7 وحدات + شهادة', '#b8860b'),
-        hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubImg('terms', 'قانون التطبيق'), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري')]],
+        // v251: الترتيب بالورقة ديال المدير (3 فكل سطر، من اليمين لليسار)
+        hubImg('stays', 'الحجز الفوري'), hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'), hubPic('#/rentals', 'rentals', 'تدبير الكراء', 'الكاريين والتوصيلات'),
+        hubIco('#/finance', 'finance-ico', 'المداخيل والمصاريف', 'حسابات المكتب'), hubIco('#/projects', 'projects-ico', 'عرض المشاريع', 'البحث عن تمويل', HUB_C.projects), hubPic('#/estimate', 'estimate', 'مقارنة الأسعار', 'درهم/م²'),
+        hubPic('#/disputes', 'disputes-ico', 'نزاعات وحلول', 'الحل القانوني', HUB_C.disputes), hubPic('#/learn', 'academy', 'أكاديمية مجموعة الوسيط', '7 وحدات + شهادة', '#b8860b'), hubPic('#/matching', 'matching', 'المطابقة الذكية', 'طلب ↔ عقار'),
+        hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news), hubImg('events', 'المناسبات العقارية'), hubImg('terms', 'قانون التطبيق'),
+        hubIco('#/donations', 'donations-ico', 'الهبة', 'سقف لكل عائلة', HUB_C.donations), hubIco('#/loan', 'loan-ico', 'حساب القرض', 'القسط الشهري'), hubIco('#/map', 'map-ico', 'الخريطة العقارية', 'العقارات')]],
       // 👤➕ v234: دائرة «مشترك جديد» مع الدوائر السبعة: المدير ← نافذة الإضافة (واتساب، QR)؛ المشترك ← شاشة QR بالكود ديالو باش يدعي شي واحد
       net: ['✦ مجموعة الوسيط', [...HUB_NET.map(r => hubImg(r)), hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك')]], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
@@ -11812,6 +11813,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v251: ['🧰 «خدمات المجموعة»: ترتيب جديد للدوائر بطلب المدير'],
     v250: ['✨ لمعة على سنان منير فآخر كل جملة', '🎚️ الإعدادات ← الوكيل: «حركة الفم» هادئة / عادية / حيوية', '😊 منير كيتحرك شوية ملي ساكت، وكيهز راسو ملي كتكتب بحال اللي كيسمعك'],
     v249: ['🦷 سنان منير بيضين بلونهم الطبيعي ملي كيتكلم'],
     v248: ['🗣️ منير كيتكلم بحال الإنسان: الفم كيتحرك بنعومة مع الكلمات والوقفات، بلا «روبو»'],
