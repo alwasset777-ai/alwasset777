@@ -15,7 +15,8 @@ const rect = (p, s) => p.evaluate(s => { const e = document.querySelector(s); if
   // المزامنة على اليسار، والستوريات بين المزامنة والشعار
   if (!sync || sync.l > 20) bad.push('sync not left ' + JSON.stringify(sync));
   if (!rail || rail.l < sync.r - 1 || rail.r > logo.l + 1) bad.push('rail position ' + JSON.stringify({ rail, sync, logo }));
-  if (!tick || tick.r > logo.l + 1) bad.push('ticker under logo ' + JSON.stringify(tick));
+  // v257: المدن ولاو تحت الشريط التحتاني (ماشي فالرأس)
+  if (!tick || tick.t < top.b) bad.push('ticker not at bottom ' + JSON.stringify(tick));
   if (await rect(p, '#home-rail')) bad.push('old stories card still visible');
   if (!(await p.$('#btn-sync path[d^="M20 12a8 8"]'))) bad.push('sync icon not circular arrows');
   if (await p.$('.topbar #btn-chat')) bad.push('chat still in header');

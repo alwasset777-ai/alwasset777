@@ -13,7 +13,7 @@ const OUT = process.env.SHOT || '/tmp/v237';
   const home = async () => { await p.goto(BASE + '#/settings'); await p.waitForTimeout(300); await p.goto(BASE + '#/'); await p.waitForSelector('.hrow'); await p.waitForTimeout(900); };
   await home();
   // ⬆️ التخطيط: السطر الأول قريب من فوق والسطرين قراب
-  const L = await p.evaluate(() => { const h = document.querySelector('.hero').getBoundingClientRect(), r = [...document.querySelectorAll('.hrow')].map(e => e.getBoundingClientRect()); return { top: r[0].top - h.top, gap: r[1].top - r[0].bottom }; });
+  const L = await p.evaluate(() => { const h = document.querySelector('.hero').getBoundingClientRect(), r = [...document.querySelectorAll('.hrow')].map(e => e.getBoundingClientRect()); const f = document.querySelector('.hero > #home-flags:not(.hidden)'); /* v257: شريط الدول فوق «خدمات المجموعة» */ return { top: r[0].top - (f ? f.getBoundingClientRect().bottom : h.top), gap: r[1].top - r[0].bottom }; });
   if (L.top > 56 || L.gap > 8) bad.push('layout ' + JSON.stringify(L));
   // 1) أول مرة: كلشي معروف، بلا تنبيه
   if ((await p.$eval('#home-sec', e => e.textContent.trim()))) bad.push('first visit alert');

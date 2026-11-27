@@ -12,7 +12,7 @@ const NET = ['مشترك جديد', 'الوكالات العقارية', 'الو
   // الشريط: لاصق لتحت، العرض كامل، بلا شفافية، العلو = --nav-h، الأيقونات 29px
   const n = await p.evaluate(() => { const el = document.querySelector('.bottomnav'), r = el.getBoundingClientRect(), st = getComputedStyle(el);
     const ic = [...el.querySelectorAll('.bn3d')].map(s => Math.round(parseFloat(getComputedStyle(s).width)));
-    return { gap: Math.round(innerHeight - r.bottom), left: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), navH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')), bg: st.backgroundColor, ic }; });
+    return { gap: Math.round(innerHeight - r.bottom), left: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), navH: parseFloat(getComputedStyle(document.body).getPropertyValue('--nav-h')), bg: st.backgroundColor, ic }; });
   if (n.gap !== 0 || n.left !== 0 || n.w !== 390) bad.push('nav not stuck to bottom ' + JSON.stringify(n));
   if (!/^rgb\(/.test(n.bg)) bad.push('nav background not solid ' + n.bg);
   if (Math.abs(n.h - n.navH) > 1) bad.push('nav height != --nav-h ' + JSON.stringify(n));
