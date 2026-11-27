@@ -2446,3 +2446,30 @@ body.lite .hub-newmem .nm-ring { animation: none; box-shadow: 0 0 0 3px rgba(200
 @media (prefers-reduced-motion: reduce) { .hub-newmem .nm-ring { animation: none; } }
 /* 👥 v253: عدد المشتركين حدا سمية الفئة */
 .hub-cnt { color: var(--brand); font-weight: 800; white-space: nowrap; }
+
+/* 🔝 v254: رأس الرئيسية فالتيليفون — الشعار كيعمّر اليمين من الفوق للتحت (السطرين)، الستوريات بين الشعار والمزامنة، والمزامنة على اليسار.
+   الخانة القديمة ديال الستوريات (#home-rail) كتختفي والخانات اللي تحتها كيطلعو. */
+.hd-rail { display: none; }
+#btn-sync { color: #fff; }
+@media (max-width: 959px) {
+  #home-rail { display: none !important; }
+  .topbar-inner > #btn-sync { order: 99; margin-inline-start: auto; }
+  body.on-home .topbar .logo { position: absolute; inset-inline-start: 12px; top: calc(var(--safe-t) + 6px); z-index: 3; }
+  body.on-home .topbar .logo-pill.logo-coin { height: 86px; margin: 0; }
+  body.on-home .topbar-inner { padding-inline-start: 86px; }
+  body.on-home .city-ticker { --lg: 0px; margin-right: 96px; margin-left: 0; }
+  body.on-home .hd-rail:not(:empty) { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; gap: 7px; height: 44px; }
+  .hd-rail .pr-view { flex: 1; min-width: 0; max-height: none; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to left, #000 86%, transparent); mask-image: linear-gradient(to left, #000 86%, transparent); }
+  .hd-rail .pr-view::-webkit-scrollbar { display: none; }
+  .hd-rail .pr-track, .hd-rail .pr-track.moving { flex-direction: row; gap: 7px; padding: 0; animation: none; width: max-content; }
+  .hd-rail .pr-dup { display: none; }
+  .hd-rail .pr-item { width: 42px; height: 42px; flex: 0 0 42px; }
+  .hd-rail .pr-story-add { background: transparent; border-color: #e6c77e; color: #e6c77e; font-size: 17px; }
+  .hd-rail .pr-story-add small { font-size: 7.5px; }
+  .hd-rail .pr-add { background: transparent; }
+}
+/* 💬 v254: دائرة الرسائل الصفراء مع المجموعات + عدد الرسائل الجديدة */
+.grp-chat { position: relative; }
+.grp-chat .chat-n { position: absolute; top: -4px; inset-inline-end: -4px; z-index: 2; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
+  background: #c8102e; color: #fff; font: 800 11px/19px inherit; text-align: center; box-shadow: 0 0 0 2px #fff; }
