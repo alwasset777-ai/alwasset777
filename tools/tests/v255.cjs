@@ -19,9 +19,8 @@ const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'
   await p.keyboard.press('Escape'); await p.waitForTimeout(1500);
   const after = await p.$$eval('#hd-rail .pr-item.has-st.st-seen', a => a.map(e => getComputedStyle(e).boxShadow));
   if (!after.length || after.some(s => /243, 179, 61/.test(s))) bad.push('seen still glowing ' + JSON.stringify(after));
-  // 2) «الرسائل» تحت الدائرة
-  const lb = await p.evaluate(() => { const c = document.querySelector('.grp-chat'), l = c && c.querySelector('.chat-lbl'); if (!l) return null; const a = c.getBoundingClientRect(), r = l.getBoundingClientRect(); return { txt: l.textContent, below: r.top >= a.bottom - 1, center: Math.abs((r.left + r.right) / 2 - (a.left + a.right) / 2) < 3 }; });
-  if (!lb || lb.txt !== 'الرسائل' || !lb.below || !lb.center) bad.push('chat label ' + JSON.stringify(lb));
+  // 2) (v261) كلمة «الرسائل» تحيدات من تحت الدائرة بطلب المدير
+  if (await p.$('.grp-chat .chat-lbl')) bad.push('chat label still there');
   // 3) المزامنة: كتدور غير فـsyncing
   const spin = await p.evaluate(() => { const bt = document.querySelector('#btn-sync'), sv = bt.querySelector('svg'), o = {};
     for (const st of ['syncing', 'ok', 'idle']) { bt.dataset.state = st; o[st] = getComputedStyle(sv).animationName; } bt.dataset.state = 'ok'; return o; });
