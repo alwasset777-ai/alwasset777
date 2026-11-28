@@ -2604,3 +2604,17 @@ button.fl-item:active { transform: scale(.96); }
   animation: lp-fill .7s linear forwards; }
 @property --lp { syntax: '<number>'; inherits: false; initial-value: 0; }
 @keyframes lp-fill { to { --lp: 100; } }
+
+/* 🎉 v261: حفلة منير (قصاصات ملونة كتطيح + بطاقة فوق) — بلا ضغطات، كتمشي بوحدها */
+.cel-fx { position: fixed; inset: 0; z-index: 1300; pointer-events: none; overflow: hidden; }
+.cel-fx i { position: absolute; top: -14px; width: 9px; height: 14px; border-radius: 2px; opacity: 0; animation: cel-fall var(--d, 2s) cubic-bezier(.25, .6, .45, 1) var(--w, 0s) forwards; }
+.cel-fx i:nth-child(3n) { width: 7px; height: 7px; border-radius: 50%; }
+@keyframes cel-fall { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x, 0), 105vh) rotate(var(--r, 360deg)); } }
+.cel-card { position: fixed; z-index: 1301; top: calc(var(--safe-t, 0px) + 12px); left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 16px; background: #111; color: #fff; border: 2px solid #f3d27a; box-shadow: 0 12px 34px rgba(0, 0, 0, .35); animation: cel-in .5s cubic-bezier(.3, 1.5, .5, 1); }
+.cel-card img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid #f3d27a; flex: none; }
+.cel-card b { display: block; color: #f3d27a; font-size: 14px; }
+.cel-card span { display: block; font-size: 14.5px; line-height: 1.45; font-weight: 700; }
+.cel-card button { background: none; border: 0; color: #fff; opacity: .7; font-size: 16px; padding: 6px; cursor: pointer; }
+.cel-card.out { opacity: 0; transform: translate(-50%, -14px); transition: .3s; }
+@keyframes cel-in { from { opacity: 0; transform: translate(-50%, -24px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
