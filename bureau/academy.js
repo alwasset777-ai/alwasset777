@@ -102,6 +102,12 @@
 .ac-pts{background:var(--surface,#fff);box-shadow:0 0 0 1px var(--line,#e7e7e7)}
 .ac-pts ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
 .ac-pts li{display:flex;gap:8px}.ac-pts li::before{content:'✔';color:var(--c);font-weight:900;flex:none}
+.ac-road a small{font-size:9.5px;font-weight:700;opacity:.85;white-space:nowrap}
+.ac-goal{background:#fff7e0;color:#3d2c00;border:1px dashed #e0b84a}.ac-goal ul{margin:6px 0 0;padding-inline-start:20px}
+.ac-terms dl{margin:6px 0 0}.ac-terms dt{margin-top:8px}.ac-terms dt span{font-size:12px;opacity:.7;margin-inline-start:6px}.ac-terms dd{margin:2px 0 0;padding-inline-start:12px;border-inline-start:3px solid var(--c,#c8102e)}
+.ac-sum{background:#111;color:#fff;font-weight:700}.ac-sum h4{color:#f3d27a}
+.ac-task{background:#ecf9f0;color:#0b3a1d;border:1px solid #9bd8b0}
+:root[data-theme="dark"] .ac-goal{background:#2a230f;color:#ffe9b0}:root[data-theme="dark"] .ac-task{background:#10291a;color:#c6f3d6}
 .ac-ex{background:#eef6ff;color:#0b2a4a}.ac-err{background:#fff4e5;color:#4a2a00}
 :root[data-theme="dark"] .ac-ex{background:#132235;color:#d8e8ff}:root[data-theme="dark"] .ac-err{background:#2c2010;color:#ffe2b5}
 .ac-info{margin-top:14px;border-radius:18px;padding:14px;background:linear-gradient(160deg,#151518,#2a0c12);color:#fff}
@@ -181,8 +187,8 @@
     const B = mods().filter(x => x.bonus);
     root.innerHTML = `<div class="ac">
       <div class="ac-hero"><div class="kick">🎓 ${esc(A().title)}</div>
-        <h1>من مندوب عقاري إلى صاحب وكالة</h1><p>${esc(A().tagline)}. دروس قصيرة وسهلة بالصور والأمثلة من مكناس، وفي آخر كل وحدة اختبار — النجاح بـ ${pct(A().pass)} يفتح الوحدة الموالية، وفي النهاية شهادة باسمك.</p>
-        <div class="ac-road">${M.map((x, i) => `${i ? '<b></b>' : ''}<a href="#/learn/${x.m}" class="${st(x.m).pass ? 'ok' : i === cur ? 'cur' : isOpen(i) ? '' : 'lk'}"><i>${st(x.m).pass ? '✓' : isOpen(i) ? x.icon : '🔒'}</i>${x.m}</a>`).join('')}</div>
+        <h1>من مندوب عقاري إلى صاحب وكالة</h1><p>${esc(A().tagline)}. دروس قصيرة وسهلة بالصور والأمثلة من مدن المغرب، وفي آخر كل وحدة اختبار — النجاح بـ ${pct(A().pass)} يفتح الوحدة الموالية، وفي النهاية شهادة باسمك.</p>
+        <div class="ac-road">${M.map((x, i) => `${i ? '<b></b>' : ''}<a href="#/learn/${x.m}" class="${st(x.m).pass ? 'ok' : i === cur ? 'cur' : isOpen(i) ? '' : 'lk'}"><i>${st(x.m).pass ? '✓' : isOpen(i) ? x.icon : '🔒'}</i>${x.m}${x.stage ? `<small>${esc(x.stage)}</small>` : ''}</a>`).join('')}</div>
         <div class="ac-prog"><i style="width:${passed / M.length * 100}%"></i></div>
         <div class="ac-row" style="margin-top:12px">${cur >= 0 ? `<a class="ac-btn" href="#/learn/${M[cur].m}">▶ ${passed ? 'كمّل' : 'ابدأ'}: ${esc(M[cur].m)} — ${esc(M[cur].t)}</a>` : `<a class="ac-btn" href="#/learn/cert">🏆 الشهادة ديالك</a>`}
           <button class="ac-btn w" data-ask="1">🤖 تعلم مع منير</button>${host.certs ? '<a class="ac-btn w" href="#/learn/certs">🏆 لوحة الشهادات</a>' : ''}${host.team ? '<a class="ac-btn w" href="#/learn/team">📊 تقدم الفريق</a>' : ''}</div>
@@ -228,6 +234,11 @@
       <a class="ac-btn" style="--c:${p.color}" href="#/learn/${p.m}">↩ رجع لـ ${p.m}</a></div></div>`;
   }
 
+  // (v262) البنية التعليمية: الأهداف فوق، والمصطلحات + الخلاصة + التمرين تحت
+  const goals = l => l.goal && l.goal.length ? `<div class="ac-sec ac-goal"><h4>🎯 أهداف الدرس — بعد هاد الدرس غادي تعرف:</h4><ul>${l.goal.map(g => `<li>${esc(g)}</li>`).join('')}</ul></div>` : '';
+  const more = l => (l.terms && l.terms.length ? `<div class="ac-sec ac-terms"><h4>📖 المصطلحات المهنية</h4><dl>${l.terms.map(t => `<dt><b>${esc(t[0])}</b> <span dir="ltr">${esc(t[1])}</span></dt><dd>${esc(t[2])}</dd>`).join('')}</dl></div>` : '')
+    + (l.sum ? `<div class="ac-sec ac-sum"><h4>📝 الخلاصة</h4>${esc(l.sum)}</div>` : '')
+    + (l.task ? `<div class="ac-sec ac-task"><h4>🛠️ تمرين تطبيقي (فالخدمة ديالك)</h4>${esc(l.task)}</div>` : '');
   // ---------- الدرس ----------
   function lesson(root, host, m, j) {
     const i = idx(m), x = mods()[i], l = x && x.lessons[j];
@@ -238,11 +249,13 @@
       <div class="ac-crumb"><a href="#/learn">🎓 الأكاديمية</a> ‹ <a href="#/learn/${m}">${x.icon} ${m}</a> ‹ <span>الدرس ${j + 1}/${x.lessons.length}</span></div>
       <h1>${esc(l.t)}</h1>
       ${photo(l.img)}
-      <div class="ac-sec ac-idea"><h4>🎯 الفكرة ببساطة</h4>${esc(l.intro)}</div>
+      ${goals(l)}
+      <div class="ac-sec ac-idea"><h4>💡 الفكرة ببساطة</h4>${esc(l.intro)}</div>
       ${info(l.info)}
       <div class="ac-sec ac-pts"><h4>📌 النقاط المهمة</h4><ul>${l.pts.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>
-      <div class="ac-sec ac-ex"><h4>🏙️ مثال من الواقع (مكناس)</h4>${esc(l.ex)}</div>
+      <div class="ac-sec ac-ex"><h4>🏙️ مثال من الواقع</h4>${esc(l.ex)}</div>
       <div class="ac-sec ac-err"><h4>⚠️ خطأ شائع</h4>${esc(l.err)}</div>
+      ${more(l)}
       <div class="ac-card"><h3>✅ تحقق من فهمك</h3><div id="ac-qs"></div></div>
       <div class="ac-row"><button class="ac-btn w" data-ask="1">🤖 شرح ليا هاد الدرس بالدارجة</button></div>
       <div class="ac-nav">${j > 0 ? `<a class="ac-btn w" href="#/learn/${m}/${j - 1}">→ السابق</a>` : `<a class="ac-btn w" href="#/learn/${m}">→ الوحدة</a>`}
@@ -382,9 +395,9 @@
     css();
     const x = mods()[idx(m)];
     const lessons = x.lessons.map((l, j) => `<section class="pp-l"><div class="ac-crumb">${x.icon} ${x.m} · الدرس ${j + 1}/${x.lessons.length}</div><h2 style="margin:6px 0 4px">${esc(l.t)}</h2>${photo(l.img)}
-      <div class="ac-sec ac-idea"><h4>🎯 الفكرة ببساطة</h4>${esc(l.intro)}</div>${info(l.info)}
+      ${goals(l)}<div class="ac-sec ac-idea"><h4>💡 الفكرة ببساطة</h4>${esc(l.intro)}</div>${info(l.info)}
       <div class="ac-sec ac-pts"><h4>📌 النقاط المهمة</h4><ul>${l.pts.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>
-      <div class="ac-sec ac-ex"><h4>🏙️ مثال من الواقع (مكناس)</h4>${esc(l.ex)}</div><div class="ac-sec ac-err"><h4>⚠️ خطأ شائع</h4>${esc(l.err)}</div>
+      <div class="ac-sec ac-ex"><h4>🏙️ مثال من الواقع</h4>${esc(l.ex)}</div><div class="ac-sec ac-err"><h4>⚠️ خطأ شائع</h4>${esc(l.err)}</div>${more(l)}
       <div class="ac-sec ac-pts"><h4>✅ تحقق من فهمك</h4>${l.q.map((q, k) => `<p style="margin:4px 0"><b>${k + 1}. ${esc(q[0])}</b><br>${rot(q[1], j + k).map((o, n) => `${'ABCD'[n]}) ${esc(o)}`).join(' · ')}</p>`).join('')}<p style="margin:6px 0 0;font-size:12px;color:#666">الأجوبة: ${l.q.map((q, k) => `${k + 1}=${'ABCD'[rot(q[1], j + k).indexOf(q[1][0])]}`).join(' · ')}</p></div></section>`).join('');
     root.innerHTML = `<div class="ac" style="--c:${x.color}">
       <section class="pp-cover"><div class="ac-hero" style="background:linear-gradient(135deg,${x.color},#111);min-height:230mm;display:flex;flex-direction:column;justify-content:center;border-radius:0">
