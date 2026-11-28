@@ -1,5 +1,5 @@
 // v245/v246: ملفات المدير (نماذج الوثائق، لائحة المراجعة، الحاسبة) موزعة داخل M1–M7 — بلا وحدة M8،
-// 16 سؤال لكل وحدة، النقاط الجديدة كتبان فالدروس المناسبة، والاختبار والشهادة بحال ما كانو
+// 18 سؤال لكل وحدة (من v262)، النقاط الجديدة كتبان فالدروس المناسبة، والاختبار والشهادة بحال ما كانو
 const { chromium } = require('playwright'); const F = require('../tuto/fake.cjs'); const BASE = 'http://localhost:8777/bureau/';
 const SHOT = process.env.SHOT || '';
 (async () => {
@@ -14,7 +14,7 @@ const SHOT = process.env.SHOT || '';
   const ow = async t => { const sw = await p.evaluate(() => document.documentElement.scrollWidth); if (sw > 391) bad.push(t + ' overflow ' + sw); };
   await go('#/learn');
   const info = await p.evaluate(() => { const M = window.W777_ACAD.modules; return { n: M.length, ex: M.map(m => m.exam.length), les: M.reduce((a, m) => a + m.lessons.length, 0) }; });
-  if (info.n !== 7 || info.les !== 42 || info.ex.some(x => x !== 16)) bad.push('data ' + JSON.stringify(info));
+  if (info.n !== 7 || info.les !== 42 || info.ex.some(x => x !== 18)) bad.push('data ' + JSON.stringify(info));
   if (await p.$$eval('.ac-mod', a => a.length) !== 7 || await p.$('a[href="#/learn/M8"]')) bad.push('M8 still shown');
   // النقاط الجديدة فالبلايص ديالها (الدرس كيتحل والنص كاين)
   await p.evaluate(() => { const s = {}; ['M1', 'M2', 'M3', 'M4', 'M5', 'M6'].forEach(m => { s[m] = { les: {}, tries: 1, best: 0.9, pass: Date.now() }; }); localStorage.w777_acad = JSON.stringify(s); });
