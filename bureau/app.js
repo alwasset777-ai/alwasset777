@@ -876,7 +876,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v260'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v261'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -1549,7 +1549,7 @@
   }
 
   async function route() {
-    try { return await routeRun(); } catch (e) {
+    try { const r = await routeRun(); celebrateCheck(); return r; } catch (e) {
       logErr(e, 'route ' + (location.hash.split('?')[0] || '#/'));
       if (window.W777_SYNC.isExpired && window.W777_SYNC.isExpired(e)) return;
       const m = main(); if (m) m.innerHTML = `<div class="card empty"><div class="big">⚠️</div><h3>هاد الصفحة ما تحلّاتش</h3>
@@ -1665,7 +1665,7 @@
   const ICO_RE = new RegExp('^(\\s*)(' + Object.keys(EMO_ICO).join('|') + ')\\uFE0F?\\s*', 'u');
   const ICO_SEL = 'h1, h2, h3, .section-title, .nav-group, .em, .hst-ic, .opp-ic, .stat .ic, .chip, .seg > *, .btn, b, .big, .gd-k, .fl-title, .badge, .fab-menu a, .fab-menu button';
   const ICO_SOLO = '.em, .hst-ic, .opp-ic, .stat .ic';
-  const icoImg = f => `<img class="xi${ICO_PH.has(f) ? ' ph' : ''}" src="${f === '@logo' ? 'icons/logo.png' : `icons/hub/${f}.webp?v=8`}" alt="" decoding="async">`;
+  const icoImg = f => `<img class="xi${ICO_PH.has(f) ? ' ph' : ''}" src="${f === '@logo' ? 'icons/logo.png' : `icons/hub/${f}.webp?v=9`}" alt="" decoding="async">`;
   function iconize(root) {
     if (!root || root.nodeType !== 1) return;
     const over = ICO_OVER[(location.hash.split('/')[1] || '').split('?')[0]] || {};
@@ -1743,19 +1743,19 @@
     news: '#a0aec0', donations: '#ffc83d', disputes: '#b39ddb', investors: '#f4a62a', notaries: '#3d8bfd', associations: '#34d399', terms: '#e6c77e' };
   // الرئيسية: 3 أزرار كبار ← نافذة فيها الخانات الدائرية
   const hubTile = (href, c, icon, l, s) => `<a class="hub-tile" href="${href}" style="--c:${c}"><span class="hi">${icon}</span><b>${l}</b>${s ? `<small>${s}</small>` : ''}</a>`;
-  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=8" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
+  const hubImg = (r, l) => { const h = HUB.find(x => x[0] === r); return hubTile('#/' + r, HUB_C[r] || '#e6c77e', `<img src="icons/hub/${r}.webp?v=9" alt="" decoding="async" data-fb="${esc(h[1])}">`, l || h[2], h[3]); };
   // أيقونة صورة (بلاصة الإيموجي) داخل الدائرة: icons/hub/<f>.webp
   // صورة كاملة كتعمّر الدائرة: icons/hub/<f>.webp
-  const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=8" alt="" decoding="async">`, l, s);
-  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=8" alt="" decoding="async"></i>`, l, s);
+  const hubPic = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<img src="icons/hub/${f}.webp?v=9" alt="" decoding="async">`, l, s);
+  const hubIco = (href, f, l, s, c) => hubTile(href, c || '#e6c77e', `<i class="emo"><img class="ico" src="icons/hub/${f}.webp?v=9" alt="" decoding="async"></i>`, l, s);
   // زر «التمويل العقاري»: شعارات الجهات كتدوز داخل الدائرة (CSS فقط)
   const FIN_HUB = ['awb', 'bcp', 'boa', 'cih', 'bmci', 'cdm', 'saham', 'cam', 'abb', 'cfg', 'assafa', 'yousr'];
   const finHub = () => hubTile('#/tamwil', '#c8102e', `<i class="emo fin-rot" style="--n:${FIN_HUB.length}">${FIN_HUB.map((k, i) => `<img src="icons/fin/${k}.webp" alt="" decoding="async" loading="lazy" style="--i:${i}">`).join('')}<b class="fin-777">٪</b></i>`, 'التمويل العقاري', 'البنوك وجهات التمويل');
   // الخانات ديال كل قائمة (نفس اللائحة فالنافذة وفالسطر المتمرر ديال الرئيسية)
   function hubItems(kind) {
     return {
-      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…'),
-        ...(S.role === 'admin' ? [hubTile('#/agencies/manage?add=1', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/agencies.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', 'دعوة بواتساب ولا QR')] : [])]],
+      add: ['➕ إضافة', [hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=9" alt="" decoding="async"></i>', 'إضافة عقار', 'بيع، كراء…'), hubTile('#/request/new', '#4aa3ff', '<i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=9" alt="" decoding="async"></i>', 'إضافة طلب', 'زبون كيقلب'), hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=9" alt="" decoding="async"></i>', 'إضافة موعد', 'زيارة، لقاء…'),
+        ...(S.role === 'admin' ? [hubTile('#/agencies/manage?add=1', '#c8102e', '<i class="emo"><img class="ico" src="icons/hub/agencies.webp?v=9" alt="" decoding="async"></i>', 'مشترك جديد', 'دعوة بواتساب ولا QR')] : [])]],
       svc: ['🧰 خدمات المجموعة', [ // الترتيب والسميات اللي اختارهم المدير
         // v253: الترتيب بالورقة ديال المدير (الرقم = المرتبة الجديدة؛ 3 فكل سطر، من اليمين لليسار)
         hubIco('#/guide', 'guide', 'تعلم استعمال التطبيق', 'دروس بالصور'), hubPic('#/learn', 'academy', 'أكاديمية مجموعة الوسيط', '7 وحدات + شهادة', '#b8860b'), hubIco('#/news', 'news-ico', 'الأخبار العقارية', 'المغرب والعالم', HUB_C.news),
@@ -1766,7 +1766,7 @@
       // 👤➕ v234: دائرة «مشترك جديد» مع الدوائر السبعة: المدير ← نافذة الإضافة (واتساب، QR)؛ المشترك ← شاشة QR بالكود ديالو باش يدعي شي واحد
       // v253: الترتيب بالورقة ديال المدير (الرقم = المرتبة الجديدة؛ 2 فكل سطر، من اليمين لليسار): مشترك جديد، الوكالات / الوسطاء، الموثقون / المقاولات، التشطيب / المستثمرون، الجمعيات
       net: ['✦ مجموعة الوسيط', ['new', 'agencies', 'brokers', 'notaries', 'contractors', 'finishing', 'investors', 'associations'].map(r => r !== 'new' ? hubImg(r)
-        : hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="nm-ring" aria-hidden="true"></i><i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=8" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك').replace('class="hub-tile"', 'class="hub-tile hub-newmem"'))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
+        : hubTile(S.role === 'admin' ? '#/agencies/manage?add=1' : '#/qr', '#c8102e', '<i class="nm-ring" aria-hidden="true"></i><i class="emo"><img class="ico" src="icons/hub/add-request.webp?v=9" alt="" decoding="async"></i>', 'مشترك جديد', S.role === 'admin' ? 'دعوة بواتساب ولا QR' : 'ادعُ صاحبك').replace('class="hub-tile"', 'class="hub-tile hub-newmem"'))], // r => … باش الرقم ديال map ما يتحطّش بلاصة السمية
     }[kind];
   }
   // 🎠 v232: سطر فالرئيسية: العنوان على اليمين، والدوائر كتتمرر باليد (اليسار ← اليمين)
@@ -4260,7 +4260,7 @@
   function agSetBg(p) {
     p = p || $('#agent-panel'); if (!p) return;
     const h = location.hash || '#/', m = AG_BG.find(x => x[0].test(h)), st = $('#ag-stage', p);
-    p.style.setProperty('--ag-bg', `url("${m ? 'icons/hub/' + m[1] + '.webp?v=8' : 'icons/hero-bg2.webp'}")`);
+    p.style.setProperty('--ag-bg', `url("${m ? 'icons/hub/' + m[1] + '.webp?v=9' : 'icons/hero-bg2.webp'}")`);
     if (m && m[3]) p.style.setProperty('--ag-bgc', m[3]); else p.style.removeProperty('--ag-bgc');
     if (st) { st.classList.toggle('bg-ico', !!(m && m[2] === 'i')); st.dataset.bg = m ? m[1] : 'home'; }
   }
@@ -4418,10 +4418,69 @@
     if (/^text\//.test(f.type) || /\.txt$/i.test(f.name)) return { type: 'text', text: `📄 ${f.name}:\n${(await f.text()).slice(0, 60000)}` };
     throw new Error('type');
   }
+  // 👋 v261: ترحيب منير حسب الوقت + شنو عندك اليوم (بالدارجة/العربية؛ اللغات الأخرى كيبقاو بالجملة القديمة)
+  function agHello() {
+    const L = agLang(); if (L !== 'darija' && L !== 'ar') return null;
+    const dz = L === 'darija', h = new Date().getHours();
+    const sal = h >= 5 && h < 12 ? 'صباح الخير ☀️' : h < 18 && h >= 12 ? 'مساء الخير 🌤️' : 'مساء الخير 🌙';
+    if (!S.role) return sal + (dz ? '! أنا منير، المساعد ديال مجموعة الوسيط. شنو نقدر نعاونك؟' : '! أنا منير، مساعد مجموعة الوسيط. كيف يمكنني مساعدتك؟');
+    const td = today(), ap = (S.appts || []).filter(a => a.date === td && a.status === 'planned').length;
+    const fu = (S.reqs || []).filter(r => openReq(r) && r.followUp && r.followUp <= td).length;
+    const parts = [];
+    if (ap) parts.push(dz ? `${ap} ${ap === 1 ? 'موعد' : 'مواعيد'}` : `${ap} ${ap === 1 ? 'موعد' : 'مواعيد'}`);
+    if (fu) parts.push(dz ? `${fu} ${fu === 1 ? 'زبون خاصك تعيط ليه' : 'زبناء خاصك تعيط ليهم'}` : `${fu} ${fu === 1 ? 'متابعة' : 'متابعات'}`);
+    const day = parts.length ? (dz ? `عندك اليوم ${parts.join(' و')}.` : `لديك اليوم ${parts.join(' و')}.`)
+      : (dz ? 'ما عندك حتى موعد اليوم، نهار مزيان باش نجيبو عقارات وزبناء جداد ✨' : 'لا مواعيد اليوم، يوم مناسب لإضافة عقارات وزبناء جدد ✨');
+    return `${sal}! ${day} ${dz ? 'شنو نبداو بيه؟' : 'بماذا نبدأ؟'}`;
+  }
+  // 🎉 v261: منير كيحتافل بالإنجازات (أول عقار، 5، 10، 25…، أول صفقة، وحدات الأكاديمية) — مرة وحدة لكل عتبة، فالجهاز
+  const CEL_STEPS = [1, 5, 10, 25, 50, 100, 150, 200, 300, 500, 750, 1000];
+  function celCounts() {
+    let acad = 0; try { const a = JSON.parse(localStorage.getItem('w777_acad') || '{}') || {}; acad = Object.keys(a).filter(k => /^M\d+$/.test(k) && a[k] && a[k].pass).length; } catch (e) { /* */ }
+    const pr = S.props || [];
+    return { p: pr.length, r: (S.reqs || []).length, d: pr.filter(x => x.status === 'sold' || x.status === 'rented').length, a: acad };
+  }
+  function celMsg(k, n) {
+    if (k === 'p') return n === 1 ? ['🏠', 'مبروك أول عقار فالتطبيق! البداية هي الأصعب، والباقي ساهل.'] : ['🏠', `وصلتي ${n} عقار! برافو عليك، كمّل هكا.`];
+    if (k === 'r') return n === 1 ? ['👥', 'أول طلب ديال زبون! كل طلب = فرصة ديال صفقة.'] : ['👥', `${n} طلب ديال الزبناء! السوق كيعرفك.`];
+    if (k === 'd') return n === 1 ? ['🤝', 'مبروك أول صفقة! هادي هي الثمرة ديال الخدمة.'] : ['🤝', `${n} صفقات تمّت! نتا بطل 🏆`];
+    return n >= 7 ? ['🎓', 'كمّلتي أكاديمية مجموعة الوسيط كاملة! الشهادة ديالك واجدة.'] : ['🎓', `نجحتي فـ${n} ${n === 1 ? 'وحدة' : 'وحدات'} فالأكاديمية! زيد للوحدة الجاية.`];
+  }
+  let celT = 0;
+  function celebrateCheck() {
+    if (EMBED || !S.role) return;
+    clearTimeout(celT);
+    celT = setTimeout(() => {
+      const key = 'w777_cel' + (DB.isDemo ? '_demo' : ''), now = celCounts();
+      let old = null; try { old = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { /* */ }
+      try { localStorage.setItem(key, JSON.stringify(now)); } catch (e) { return; }
+      if (!old) return; // أول مرة: كنحفظو الأرقام بلا حفلة (ما نحتافلوش بالقديم)
+      for (const k of ['d', 'a', 'p', 'r']) {
+        const a = old[k] || 0, b = now[k] || 0;
+        if (b <= a || b - a > 3) continue; // تحميل البيانات (قفزة كبيرة) ماشي إنجاز
+        const step = (k === 'a' ? [1, 2, 3, 4, 5, 6, 7] : CEL_STEPS).filter(x => x > a && x <= b).pop();
+        if (step) { const [ic, msg] = celMsg(k, step); agCelebrate(ic, msg); return; }
+      }
+    }, 900);
+  }
+  function agCelebrate(ic, msg) {
+    $$('.cel-fx, .cel-card').forEach(e => e.remove());
+    const fx = document.createElement('div'); fx.className = 'cel-fx'; fx.setAttribute('aria-hidden', 'true');
+    const C = ['#d71920', '#f3d27a', '#e6b422', '#111', '#2e86de', '#27ae60', '#fff'];
+    fx.innerHTML = Array.from({ length: 46 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${C[i % C.length]};--d:${(1.6 + Math.random() * 1.4).toFixed(2)}s;--w:${(Math.random() * 0.6).toFixed(2)}s;--r:${Math.round(Math.random() * 720 - 360)}deg;--x:${Math.round(Math.random() * 120 - 60)}px"></i>`).join('');
+    document.body.appendChild(fx); setTimeout(() => fx.remove(), 3600);
+    const c = document.createElement('div'); c.className = 'cel-card'; c.setAttribute('role', 'status');
+    c.innerHTML = `<img src="${agPhoto()}" alt=""><div class="grow"><b>${ic} ${esc(agName())}</b><span>${esc(msg)}</span></div><button type="button" aria-label="سد">✕</button>`;
+    document.body.appendChild(c);
+    const off = () => { c.classList.add('out'); setTimeout(() => c.remove(), 350); };
+    $('button', c).onclick = off; setTimeout(off, 7000);
+    try { navigator.vibrate && navigator.vibrate([40, 60, 40]); } catch (e) { /* */ }
+    agMood('prize', '🏆', 4200);
+  }
   function agRender() {
     const body = $('#ag-body'); if (!body) return;
     const t = agT();
-    const items = AG.view.length ? AG.view : [{ who: 'bot', text: agAI() ? t.hi : lx().hi }];
+    const items = AG.view.length ? AG.view : [{ who: 'bot', text: agHello() || (agAI() ? t.hi : lx().hi) }];
     body.innerHTML = items.map(m => m.who === 'tool'
       ? `<div class="ag-tool">⚙️ ${esc(m.text)}</div>`
       : `<div class="ag-msg ${m.who}">${m.who === 'bot' ? `<img src="${agPhoto()}" alt="">` : ''}<div${m === AG.live ? ' id="ag-live"' : ''}>${m.html || agMsgHtml(m)}</div></div>`).join('')
@@ -6902,9 +6961,9 @@
     const T = wkMine(); if (!T.length) return null;
     const C = ['#ff5a5f', '#4aa3ff', '#20c997', '#ffb02e', '#b39ddb', '#e84393'];
     const tiles = T.map((t, i) => hubTile('#/work/' + t.id + '/new', C[i % C.length], `<i class="emo">${t.ic}</i>`, t.t, ''));
-    if (S.kind === 'investor') tiles.push(hubTile('#/investors', '#f4a62a', '<i class="emo">💼</i>', 'عرض استثمار', 'فالشبكة'), hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=8" alt="" decoding="async"></i>', 'عقار للبيع', ''));
+    if (S.kind === 'investor') tiles.push(hubTile('#/investors', '#f4a62a', '<i class="emo">💼</i>', 'عرض استثمار', 'فالشبكة'), hubTile('#/property/new', '#ff5a5f', '<i class="emo"><img class="ico" src="icons/hub/add-property.webp?v=9" alt="" decoding="async"></i>', 'عقار للبيع', ''));
     if (S.kind === 'member') tiles.push(hubTile('#/agencies', '#4aa3ff', '<i class="emo">🔍</i>', 'تصفح العقارات', 'ديال الوكالات'));
-    if (S.kind !== 'member') tiles.push(hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=8" alt="" decoding="async"></i>', 'موعد جديد', ''));
+    if (S.kind !== 'member') tiles.push(hubTile('#/appointment/new', '#20c997', '<i class="emo"><img class="ico" src="icons/hub/add-appointment.webp?v=9" alt="" decoding="async"></i>', 'موعد جديد', ''));
     tiles.push(hubTile('#/works', '#6c757d', '<i class="emo">📋</i>', 'ملفاتي', 'كل اللي سجلتي'));
     return tiles;
   }
@@ -8424,10 +8483,10 @@
   function groupsCard(full) {
     const g = groupLinks(), keys = ['wa', 'tg', 'fb'].filter(k => g[k]);
     // 💬 v254: دائرة الرسائل (صفراء 3D) بنفس قياس دوائر المجموعات، مع عدد الرسائل الجديدة
-    const chat = syOn() ? `<a class="grp-logo grp-chat" id="btn-chat" href="#/inbox" title="الرسائل" aria-label="الرسائل">${CHAT_LOGO}<b id="chat-n" class="chat-n hidden"></b><small class="chat-lbl">الرسائل</small></a>` : '';
+    const chat = syOn() ? `<a class="grp-logo grp-chat" id="btn-chat" href="#/inbox" title="الرسائل" aria-label="الرسائل">${CHAT_LOGO}<b id="chat-n" class="chat-n hidden"></b></a>` : '';
     // فالرئيسية: غير الشعارات (بلا مربعات)
     // + أيقونة «الوسيط GAMES» فالجهة الخاوية (اليسار) كتفتح اللعبة
-    if (!full) return `<div class="grp-strip"><div class="grp-side"><span class="grp-word2" role="img" aria-label="المجموعات" title="المجموعات"><img class="gw-img gw-day" src="icons/brand/majmouat-dark.webp?v=1" alt="" decoding="async"><img class="gw-img gw-night" src="icons/brand/majmouat-white.webp?v=1" alt="" decoding="async"><i class="gw-shine" aria-hidden="true"></i></span><div class="grp-logos">${chat}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><span class="grp-pad" aria-hidden="true"><svg viewBox="0 0 64 40" width="44" height="28"><defs><linearGradient id="gpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dde6"/></linearGradient></defs><path d="M14 6h36c7 0 11 5 12 12l2 12c1 6-4 9-8 6l-8-7H16l-8 7c-4 3-9 0-8-6l2-12C3 11 7 6 14 6z" fill="url(#gpd)" stroke="#1b1f2a" stroke-width="1.6"/><path d="M22 6h20l-2 9H24z" fill="#1b1f2a"/><rect x="11" y="15" width="3" height="10" rx="1" fill="#1b1f2a"/><rect x="7.5" y="18.5" width="10" height="3" rx="1" fill="#1b1f2a"/><circle cx="50" cy="15" r="2" fill="#2f6fd6"/><circle cx="54.5" cy="19.5" r="2" fill="#c8102e"/><circle cx="45.5" cy="19.5" r="2" fill="#e55aa8"/><circle cx="50" cy="24" r="2" fill="#1f9d68"/><circle cx="24" cy="27" r="3.4" fill="#1b1f2a"/><circle cx="40" cy="27" r="3.4" fill="#1b1f2a"/><rect x="29" y="25" width="6" height="2" rx="1" fill="#2f6fd6" opacity=".8"/></svg></span><img src="icons/hub/games.webp?v=8" alt="" decoding="async"></a></div>`;
+    if (!full) return `<div class="grp-strip"><div class="grp-side"><span class="grp-word2" role="img" aria-label="المجموعات" title="المجموعات"><img class="gw-img gw-day" src="icons/brand/majmouat-dark.webp?v=1" alt="" decoding="async"><img class="gw-img gw-night" src="icons/brand/majmouat-white.webp?v=1" alt="" decoding="async"><i class="gw-shine" aria-hidden="true"></i></span><div class="grp-logos">${chat}${keys.map(k => `<a class="grp-logo" target="_blank" rel="noopener" href="${safeUrl(g[k])}" title="${GRP_NAME[k]}" aria-label="${GRP_NAME[k]}">${GRP_LOGO[k]}</a>`).join('')}</div></div><a class="grp-game" href="#/game" title="الوسيط GAMES" aria-label="الوسيط GAMES — 7 ألعاب عقارية"><span class="grp-pad" aria-hidden="true"><svg viewBox="0 0 64 40" width="44" height="28"><defs><linearGradient id="gpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dde6"/></linearGradient></defs><path d="M14 6h36c7 0 11 5 12 12l2 12c1 6-4 9-8 6l-8-7H16l-8 7c-4 3-9 0-8-6l2-12C3 11 7 6 14 6z" fill="url(#gpd)" stroke="#1b1f2a" stroke-width="1.6"/><path d="M22 6h20l-2 9H24z" fill="#1b1f2a"/><rect x="11" y="15" width="3" height="10" rx="1" fill="#1b1f2a"/><rect x="7.5" y="18.5" width="10" height="3" rx="1" fill="#1b1f2a"/><circle cx="50" cy="15" r="2" fill="#2f6fd6"/><circle cx="54.5" cy="19.5" r="2" fill="#c8102e"/><circle cx="45.5" cy="19.5" r="2" fill="#e55aa8"/><circle cx="50" cy="24" r="2" fill="#1f9d68"/><circle cx="24" cy="27" r="3.4" fill="#1b1f2a"/><circle cx="40" cy="27" r="3.4" fill="#1b1f2a"/><rect x="29" y="25" width="6" height="2" rx="1" fill="#2f6fd6" opacity=".8"/></svg></span><img src="icons/hub/games.webp?v=9" alt="" decoding="async"></a></div>`;
     const btns = keys.map(k => `<a class="btn grp-btn" target="_blank" rel="noopener" href="${safeUrl(g[k])}"><i class="grp-ic">${GRP_LOGO[k]}</i> ${GRP_NAME[k]}</a>`).join('');
     return `<div class="card card-pad grp-card" id="grp">
       <h3 class="section-title">👥 مجموعات المشتركين</h3>
@@ -10626,7 +10685,7 @@
     const Sy = window.W777_SYNC, on = !!(Sy && Sy.isOn());
     const rpc = async (fn, body) => (await Sy.request('/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })).json();
     window.W777_CW.mount($('#cw-root'), {
-      logo: 'icons/hub/games.webp?v=8',
+      logo: 'icons/hub/games.webp?v=9',
       shareUrl: location.href.split('#')[0].replace(/index\.html$/, '') + 'game.html',
       onFinish: on ? r => rpc('w777_game_submit', { p: r.points, n: r.words }) : null,
       loadBoard: on ? () => rpc('w777_game_top') : null,
@@ -11982,6 +12041,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v261: ['👋 منير كيرحب بيك حسب الوقت وكيقول ليك شنو عندك اليوم', '🎉 منير كيحتافل معاك بالإنجازات: أول عقار، أول صفقة، وحدات الأكاديمية…', '💬 الدائرة الصفراء بلا كلمة «الرسائل»', '🎓 دائرة «تعلم استعمال التطبيق» بلا 777'],
     v260: ['🩺 ضغطة طويلة على الشعار فوق ← فحص التطبيق'],
     v259: ['➕ «إضافة» كتنزّل الدوائر تحت الزر مباشرة، والزر الأحمر العائم تحيد', '🪙 الشعار كيدور دورة كل 3 ثواني حتى إلا كان «تقليل الحركة» مشعول فالتيليفون', '📲 المدير: رسالة واتساب لمشتركي دولة', '🏙️ المدن اللي فيها عقارات بزاف بالذهبي', '✋ تحيدات اليد اللي كانت مور أيقونة GAMES'],
     v258: ['🌍 الضغط على علم ← المشتركين ديال هاد الدولة', '🏙️ الضغط على مدينة تحت ← العقارات ديالها', '✍️ خانة «الدولة» كتصحح الكتابة: «واش قصدك ألمانيا؟»'],
