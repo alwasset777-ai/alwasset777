@@ -94,6 +94,7 @@
 @keyframes gmFloat{0%,100%{translate:0 0}50%{translate:0 -5px}}
 @keyframes gmPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 @media(prefers-reduced-motion:reduce){.gm-lg,.gm-disc,.gm-new{animation:none}}
+.gm-acad{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:12px;padding:12px 14px;border-radius:16px;border:2px dashed #b8860b;background:linear-gradient(135deg,#fff8e1,#fff);color:#5a4100;font:inherit;font-size:16px;cursor:pointer}.gm-acad small{font-size:12.5px;opacity:.8}
 .gm-how{background:#fff;border:2px solid var(--k);border-radius:16px;padding:12px 14px;margin-top:12px;line-height:1.7;font-size:14px}
 .gm-stg{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
 @media(min-width:720px){.gm-stg{grid-template-columns:1fr 1fr}}
@@ -459,7 +460,32 @@
     ],
     make: si => shuffle(LAW.filter(x => x[0] === si)).map(x => ({ img: pick(LAW_IMG[si]).replace('house', 'cottage'), q: x[1], opts: ['✅ صح', '❌ غلط'], ans: x[2] ? 0 : 1, why: x[3] })),
     lesson: () => 'هادي معلومات عامة للتعلم. قبل أي قرار، تأكد من النص الحالي مع الموثق ولا المحامي.',
+    // 🎓 v263: «تحدي الأكاديمية» — 10 أسئلة عشوائية من اختبارات M1–M7 (خارج النجوم ديال اللعبة)
+    extra: () => '<button type="button" class="gm-acad" data-acad>🎓 <b>تحدي الأكاديمية</b><small>10 أسئلة من الوحدات السبعة — راجع وتحدى راسك</small></button>',
+    bindExtra: root => {
+      const b = root.querySelector('[data-acad]'); if (!b) return;
+      b.onclick = async () => {
+        if (!window.W777_ACAD) {
+          b.disabled = true;
+          await new Promise(res => { const sc = document.createElement('script'); sc.src = 'academy-data.js'; sc.onload = sc.onerror = res; document.head.appendChild(sc); });
+          b.disabled = false;
+        }
+        if (!window.W777_ACAD) return toast('ما قدرناش نحلّو الأسئلة، عاود');
+        quiz(root, ACAD_G, ACADQ, 0);
+      };
+    },
   };
+  const ACAD_G = { id: 'law_acad', name: 'تحدي الأكاديمية', style: 'أسئلة الوحدات', icon: '🎓', color: '#b8860b', how: '10 أسئلة عشوائية من اختبارات أكاديمية مجموعة الوسيط (من M1 حتى M7). كل جواب كيتشرح — مزيانة للمراجعة قبل الاختبار.' };
+  const ACADQ = {
+    stages: [{ name: 'تحدي الأكاديمية', sub: 'M1 → M7 · 10 أسئلة' }],
+    make: () => {
+      const all = []; ((window.W777_ACAD || {}).modules || []).filter(m => !m.bonus).forEach(m => (m.exam || []).forEach(q => all.push([m.m, q])));
+      return shuffle(all).slice(0, 10).map(([m, q]) => { const o = shuffle(q[1].map((t, i) => ({ t, ok: !i })));
+        return { img: pick(LAW_IMG[4]).replace('house', 'cottage'), q: `${m} · ${q[0]}`, opts: o.map(x => x.t.replace(/\|/g, '/')), ans: o.findIndex(x => x.ok), why: q[2] }; });
+    },
+    lesson: () => 'كمّل الدروس فـ«أكاديمية مجموعة الوسيط» باش تربح الشهادة 🎓',
+  };
+  ACADQ.play = (r, g, i) => quiz(r, ACAD_G, ACADQ, i);
 
   // ============ 4) كاشف النصب ============
   // [المرحلة، الحالة، نصب؟، الشرح]
