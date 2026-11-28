@@ -876,7 +876,7 @@
   }
   // 🩺 v223: أخطاء التطبيق كتتسجل فالسحابة بلا معلومات شخصية (نوع الخطأ، الصفحة، النسخة، نوع الجهاز) ← المراقبة كل صباح
   const ERR_SEEN = new Set();
-  const APP_BUILD = 'v262'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
+  const APP_BUILD = 'v263'; // ⚠️ نفس الرقم ديال sw.js (الاختبار v225 كيتأكد)
   let appVer = APP_BUILD;
   const devTag = () => {
     const u = navigator.userAgent || '';
@@ -5036,7 +5036,9 @@
         if (hint) AG.view.push({ who: 'bot', html: agPriceCard(o, hint) });
         const mt = matchesForProp(o), top = mt.slice(0, 5);
         if (top.length) AG.view.push({ who: 'bot', html: agMatchCard(o, mt) });
-        return { created: o.ref, photos_added: added, ...(added > 1 ? { photos_order: 'sorted by quality, the clearest photo is the cover' } : {}), ...(skipped ? { photos_skipped: skipped, why: `limit ${PHOTO_MAX} photos per property for members` } : {}),
+        const flags = propFlags(o), ckl = propChecklist(o);
+        if (flags.length) AG.view.push({ who: 'bot', html: `<div class="ag-card ag-flags"><b>🚩 انتبه (${flags.length})</b>${flags.map(f => `<small>• ${esc(f)}</small>`).join('')}<a class="ag-more" href="#/property/${o.id}">📋 مراجعة الملف ←</a></div>` });
+        return { created: o.ref, photos_added: added, red_flags: flags, file_checklist_missing: ckl.items.filter(x => !x.ok).map(x => x.l), ...(added > 1 ? { photos_order: 'sorted by quality, the clearest photo is the cover' } : {}), ...(skipped ? { photos_skipped: skipped, why: `limit ${PHOTO_MAX} photos per property for members` } : {}),
           ...(hint ? { price_hint: { suggested_price: hint.est, fair_range: [hint.low, hint.high], price_per_m2: hint.ppm, reference: hint.where, area_m2: hint.area, asked_vs_market_pct: hint.diff,
             note: (hint.diff == null ? 'no price given: suggest this market price and offer to set it' : 'tell the manager if the asked price is above/below the market') + ' (a card is already shown; approximate, condition and floor change the price)' } } : {}),
           matches: mt.length, matching_clients: top.map(x => ({ name: (x.r.client || {}).name || '', score: x.m.score, budget: num(x.r.budgetMax) || null, city: x.r.city || '' })),
@@ -11159,15 +11161,81 @@
   const INTEREST = { 3: ['🔥 مهتم بزاف', 'green'], 2: ['🙂 متردد', 'amber'], 1: ['👎 ما عجبوش', 'red'] };
   const MANDATE = { exclusive: '★ تفويض حصري', simple: 'تفويض عادي', verbal: 'اتفاق شفوي' };
   const daysTo = d => Math.round((new Date(d + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5);
+  // 📋 v263: لائحة مراجعة ملف العقار (حسب النوع) — المحفوظ فـ p.check = { id: تاريخ }؛ بعض الخانات كتتعمّر بوحدها
+  function propChecklist(p) {
+    const cat = catOf(p.type), land = cat === 'land' || cat === 'agri', flat = cat === 'apartment' || cat === 'building', rent = isRent(p.transaction);
+    const titled = /محفظ \(رسم|رسم عقاري/.test(p.titleStatus || '') || !!p.titleNumber;
+    const photos = (p.media || []).filter(m => m.kind === 'photo').length, md = p.mandate;
+    const L = [
+      ['cert', titled || !p.titleStatus ? 'شهادة ملكية حديثة (أقل من شهر)' : 'عقد الملكية (عدلي) + شهادة إدارية', null],
+      ['ids', 'نسخ بطائق جميع المالكين (ولا الورثة)', null],
+      ['mandate', 'تفويض مكتوب وموقّع (Mandat)', md && md.kind !== 'verbal' && (!md.end || md.end >= today()) ? 'auto' : null],
+      ['charges', rent ? 'المالك هو اللي عندو الحق يكري (ولا وكالة منو)' : 'بلا رهن ولا حجز (ولا متفق عليه مع الموثق)', null],
+    ];
+    if (!rent && !land) L.push(['hab', 'رخصة السكن / شهادة المطابقة', null]);
+    if (land) L.push(['urb', 'المعلومات التعميرية (Note de renseignements)', null]);
+    if (!land) L.push(['plan', 'التصميم (Plan) ولا القياسات', null]);
+    if (flat) L.push(['syndic', 'السانديك: الواجبات الشهرية وبلا ديون', null]);
+    if (!rent) L.push(['tax', 'رسم الخدمات الجماعية خالص (آخر سنة)', null]);
+    L.push(['proc', 'إلا كان البيع بوكالة: الوكالة رسمية ومسجلة (31.18)', null]);
+    L.push(['photos', 'صور واضحة (5 على الأقل)', photos >= 5 ? 'auto' : null]);
+    const ck = p.check || {};
+    const items = L.map(([id, l, a]) => ({ id, l, auto: a === 'auto', ok: a === 'auto' || !!ck[id] }));
+    return { items, done: items.filter(x => x.ok).length };
+  }
+  // 🚩 v263: علامات الخطر ديال العقار (منير كيقولها، وكتبان فصفحة العقار)
+  const RISK_WORDS = /(فالخارج|ف الخارج|برا المغرب|بالخارج|مهاجر|بوكالة|procuration|وكالة من|تسبيق|عربون قبل|حوّل|حول ليه|virement|مستعجل|بالزربة|ورثة|ورثا|شياع|نزاع|محجوز|حجز)/i;
+  function propFlags(p) {
+    const F = [], ts = p.titleStatus || '', h = agPriceHint(p);
+    if (h && h.diff != null && h.diff <= -25) F.push(`الثمن تحت السوق بـ ${Math.abs(h.diff)}% — سوّل علاش (استعجال؟ مشكل فالوثائق؟) قبل ما تنشر.`);
+    if (/عرفي|غير محفظ/.test(ts)) F.push('العقار ماشي محفظ: الخطر أكبر — تحقق من العقد العدلي وسلسلة الملكية مع الموثق ولا العدل.');
+    if (/شياع/.test(ts)) F.push('ملكية على الشياع: خاص موافقة وتوقيع جميع المالكين (ولا الورثة).');
+    if (/طور التحفيظ/.test(ts)) F.push('فطور التحفيظ: تأكد من رقم المطلب وما كاينش تعرّض.');
+    if (!p.mandate) F.push('ما كاينش تفويض مكتوب: العمولة ديالك ماشي محمية — سجّل التفويض.');
+    else if (p.mandate.end && p.mandate.end < today()) F.push('التفويض سالا: جدّدو قبل أي زيارة ولا إعلان.');
+    const txt = [p.notes, p.legalNotes, p.description].filter(Boolean).join(' ');
+    const w = txt.match(RISK_WORDS);
+    if (w) F.push(`فالملاحظات كاينة كلمة «${w[0]}»: المالك فالخارج / بيع بوكالة / تسبيق؟ تحقق من الوكالة المسجلة، وما يتخلّص حتى درهم غير عند الموثق ولا العدل.`);
+    return F;
+  }
+  function propCheckCard(p) {
+    const c = propChecklist(p), F = propFlags(p), pc = Math.round(c.done / c.items.length * 100);
+    return `<div class="card card-pad no-print pck" id="pck">
+        <div class="pair-head" style="padding:0 0 8px;border:0"><b>📋 مراجعة ملف العقار</b><span class="badge ${pc === 100 ? 'green' : pc >= 60 ? 'gold' : 'red'}">${c.done}/${c.items.length}</span></div>
+        <div class="pck-bar"><i style="width:${pc}%"></i></div>
+        ${c.items.map(x => `<label class="pck-i${x.ok ? ' ok' : ''}"><input type="checkbox" data-ck="${x.id}" ${x.ok ? 'checked' : ''} ${x.auto ? 'disabled' : ''}><span>${esc(x.l)}${x.auto ? ' <small class="muted">(أوتوماتيكي)</small>' : ''}</span></label>`).join('')}
+        ${F.length ? `<div class="pck-flags"><b>🚩 علامات خاصها الانتباه (${F.length})</b><ul>${F.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>` : '<p class="muted" style="margin:8px 0 0">✅ ما بانت حتى علامة خطر فالمعلومات اللي عندنا.</p>'}
+      </div>`;
+  }
+  // ✍️ v263: لوحة التوقيع بالصبع (canvas) ← صورة PNG صغيرة
+  function sigPad(cv) {
+    const ctx = cv.getContext('2d'); let draw = false, any = false, last = null;
+    const fit = () => { const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); ctx.scale(d, d); ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b2a6b'; };
+    fit();
+    const pt = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    cv.addEventListener('pointerdown', e => { if (!any) { const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); if (Math.abs(cv.width - r.width * d) > 2) { ctx.setTransform(1, 0, 0, 1, 0, 0); fit(); } } draw = true; last = pt(e); try { cv.setPointerCapture(e.pointerId); } catch (er) { /* */ } e.preventDefault(); });
+    cv.addEventListener('pointermove', e => { if (!draw) return; const q = pt(e); ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); last = q; any = true; e.preventDefault(); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => cv.addEventListener(ev, () => { draw = false; }));
+    return { empty: () => !any, clear: () => { ctx.clearRect(0, 0, cv.width, cv.height); any = false; },
+      data: () => { const o = document.createElement('canvas'), W = 360, H = Math.round(W * cv.height / cv.width); o.width = W; o.height = H; o.getContext('2d').drawImage(cv, 0, 0, W, H); return o.toDataURL('image/png'); } };
+  }
+  const sigBox = () => `<div class="sig-wrap"><div class="sig-h"><b>✍️ توقيع الزائر بالصبع</b><button type="button" class="btn sm" data-sig-clear>مسح</button></div><canvas class="sig-pad"></canvas><small class="muted">الزائر يوقّع هنا على التيليفون ← كيتطبع فورقة الزيارة.</small></div>`;
+  function signVisit(p, v, redraw) {
+    modal(`<h3>✍️ توقيع ورقة الزيارة — ${esc(v.name || 'زائر')}</h3>${sigBox()}
+      <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="sg-ok">${ic('check', 16)} حفظ + طباعة</button></div>`, (box, close) => {
+      const pad = sigPad($('.sig-pad', box)); $('[data-sig-clear]', box).onclick = () => pad.clear();
+      $('#sg-ok', box).onclick = async () => { if (pad.empty()) { toast('خاص الزائر يوقّع أولاً'); return; } v.sig = pad.data(); v.sigAt = new Date().toISOString(); await DB.saveRec('properties', p); close(); toast('تسجّل التوقيع ✓'); printVisit(p, v); redraw(); };
+    });
+  }
   function propOfficeCards(p) {
     const vs = (p.visits || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const md = p.mandate;
     const left = md && md.end ? daysTo(md.end) : null;
-    return `<div class="card no-print">
+    return `${propCheckCard(p)}<div class="card no-print">
         <div class="pair-head"><b>👣 الزيارات</b><div class="btn-row"><span class="badge ${vs.length ? 'blue' : ''}">${vs.length}</span><button class="btn sm gold" id="v-add">${ic('plus', 14)} زيارة</button></div></div>
         ${vs.length ? vs.map(v => `<div class="list-row"><div class="grow"><b>${esc(v.name || 'زائر')} ${v.interest ? `<span class="badge ${INTEREST[v.interest][1]}">${INTEREST[v.interest][0]}</span>` : ''}</b>
           <small class="muted">${esc(v.date || '')}${v.phone ? ' · ' + esc(v.phone) : ''}${v.notes ? ' · ' + esc(v.notes) : ''}</small></div>
-          <button class="btn sm" data-vbon="${v.id}" title="ورقة الزيارة">🧾</button><button class="btn sm" data-vdel="${v.id}">${ic('trash', 14)}</button></div>`).join('')
+          ${v.sig ? '<span class="badge green" title="موقّعة">✍️</span>' : `<button class="btn sm" data-vsig="${v.id}" title="توقيع الزائر">✍️</button>`}<button class="btn sm" data-vbon="${v.id}" title="ورقة الزيارة">🧾</button><button class="btn sm" data-vdel="${v.id}">${ic('trash', 14)}</button></div>`).join('')
           : '<div class="empty" style="padding:18px">ما تسجلات حتى زيارة — سجل كل زيارة باش تحمي العمولة ديالك 🧾</div>'}
       </div>
       <div class="card card-pad no-print${left !== null && left <= 15 ? ' md-warn' : ''}">
@@ -11184,14 +11252,16 @@
         ${fSelect('req', 'زبون من الطلبات (اختياري)', S.reqs.filter(openReq).slice(0, 300).map(r => ({ v: r.id, l: ((r.client && r.client.name) || r.ref) + ' — ' + r.ref })), '', { empty: '— زائر جديد —' })}
         ${fInput('name', 'اسم الزائر', '')}${fInput('phone', 'الهاتف', '', { type: 'tel' })}${fInput('cin', 'رقم البطاقة (للورقة)', '')}
         ${fSelect('interest', 'رأيه', Object.entries(INTEREST).reverse().map(([v, x]) => ({ v, l: x[0] })), '3', { noEmpty: true })}
-        ${fText('notes', 'ملاحظات', '')}</form>
+        ${fText('notes', 'ملاحظات', '')}</form>${sigBox()}
         <div class="btn-row" style="margin-top:12px"><button class="btn gold" id="vf-ok">${ic('check', 16)} حفظ</button><button class="btn" id="vf-bon">🧾 حفظ + طباعة الورقة</button></div>`, (box, close) => {
+      const pad = sigPad($('.sig-pad', box)); $('[data-sig-clear]', box).onclick = () => pad.clear();
       const sel = $('[name=req]', box);
       sel.onchange = () => { const r = S.reqs.find(x => x.id === sel.value); if (r && r.client) { $('[name=name]', box).value = r.client.name || ''; $('[name=phone]', box).value = r.client.phone || ''; } };
       const save = async printIt => {
         const v = collect($('#vf', box));
         if (!v.name && !v.req) { toast('دخل اسم الزائر'); return; }
         const vis = { id: uid(), date: v.date || today(), name: v.name, phone: v.phone, cin: v.cin, reqId: v.req || null, interest: Number(v.interest) || null, notes: v.notes };
+        if (!pad.empty()) { vis.sig = pad.data(); vis.sigAt = new Date().toISOString(); }
         p.visits = [...(p.visits || []), vis];
         await DB.saveRec('properties', p);
         if (vis.reqId) markProposal(vis.reqId, p.id, 'visit');
@@ -11200,6 +11270,8 @@
       $('#vf-ok', box).onclick = () => save(false); $('#vf-bon', box).onclick = () => save(true);
     });
     $$('[data-vbon]').forEach(b => b.onclick = () => { const v = (p.visits || []).find(x => x.id === b.dataset.vbon); if (v) printVisit(p, v); });
+    $$('[data-vsig]').forEach(b => b.onclick = () => { const v = (p.visits || []).find(x => x.id === b.dataset.vsig); if (v) signVisit(p, v, redraw); });
+    $$('#pck [data-ck]').forEach(c => c.onchange = async () => { p.check = Object.assign({}, p.check); if (c.checked) p.check[c.dataset.ck] = today(); else delete p.check[c.dataset.ck]; await DB.saveRec('properties', p); redraw(); });
     $$('[data-vdel]').forEach(b => b.onclick = async () => {
       if (!(await confirmBox('نمسحو هاد الزيارة؟', 'مسح'))) return;
       p.visits = (p.visits || []).filter(x => x.id !== b.dataset.vdel); await DB.saveRec('properties', p); redraw();
@@ -11222,7 +11294,7 @@
       <tr><th>الثمن المعروض</th><td colspan="3">${esc(priceText(p))}</td></tr></table>
       <p>وألتزم بعدم التعامل مباشرة مع المالك أو عن طريق وسيط آخر بخصوص هذا العقار دون إشعار المكتب، وفي حالة إتمام البيع أو الكراء أؤدي العمولة المتفق عليها${p.commission ? ' (' + esc(p.commission) + ')' : ''}.</p>
       ${v.notes ? `<p class="muted">ملاحظات: ${esc(v.notes)}</p>` : ''}
-      <div class="sig"><div>توقيع الزائر</div><div>توقيع وختم المكتب</div></div>`);
+      <div class="sig"><div>توقيع الزائر${v.sig && /^data:image\/png;base64,/.test(v.sig) ? `<br><img src="${v.sig}" alt="" style="max-width:220px;max-height:90px;margin-top:6px">` : ''}</div><div>توقيع وختم المكتب</div></div>`);
   }
 
   /* ---------- 🔑 تدبير الكراء ---------- */
@@ -12041,6 +12113,7 @@
   let healAt = 0, healing = false, healTold = '', healRetry = false;
   // 🆕 v244: «✓ تحدّث التطبيق — شوف الجديد» مرة وحدة لكل نسخة (غير ملي كانت نسخة قبلها فهاد الجهاز) + تاريخ آخر تحديث
   const WHATS_NEW = {
+    v263: ['📋 مراجعة ملف العقار فصفحة كل عقار (الوثائق حسب النوع)', '🚩 منير كينبّهك لعلامات الخطر (ثمن رخيص بزاف، غير محفظ، بلا تفويض، مالك فالخارج…)', '✍️ الزائر كيوقّع بالصبع على التيليفون ← كتطبع فورقة الزيارة', '🎓 «تحدي الأكاديمية» فلعبة «صح ولا غلط»'],
     v262: ['🎓 الأكاديمية بشكل احترافي: أهداف كل درس، المصطلحات بالعربية والفرنسية، الخلاصة وتمرين تطبيقي', '🗺️ المسار: الأساس ← القانون ← التقني ← الأرقام ← التجارة ← التسويق ← المقاولة'],
     v261: ['👋 منير كيرحب بيك حسب الوقت وكيقول ليك شنو عندك اليوم', '🎉 منير كيحتافل معاك بالإنجازات: أول عقار، أول صفقة، وحدات الأكاديمية…', '💬 الدائرة الصفراء بلا كلمة «الرسائل»', '🎓 دائرة «تعلم استعمال التطبيق» بلا 777'],
     v260: ['🩺 ضغطة طويلة على الشعار فوق ← فحص التطبيق'],

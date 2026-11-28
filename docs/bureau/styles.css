@@ -2618,3 +2618,18 @@ button.fl-item:active { transform: scale(.96); }
 .cel-card button { background: none; border: 0; color: #fff; opacity: .7; font-size: 16px; padding: 6px; cursor: pointer; }
 .cel-card.out { opacity: 0; transform: translate(-50%, -14px); transition: .3s; }
 @keyframes cel-in { from { opacity: 0; transform: translate(-50%, -24px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+
+/* 📋 v263: مراجعة ملف العقار + علامات الخطر + لوحة التوقيع */
+.pck-bar { height: 6px; border-radius: 6px; background: var(--line, #e5e5e5); overflow: hidden; margin-bottom: 8px; }
+.pck-bar i { display: block; height: 100%; background: linear-gradient(90deg, #d71920, #e6b422, #1f9d55); }
+.pck-i { display: flex; gap: 10px; align-items: flex-start; padding: 7px 2px; border-bottom: 1px dashed var(--line, #e5e5e5); font-size: 14px; cursor: pointer; }
+.pck-i input { width: 20px; height: 20px; flex: none; margin-top: 1px; accent-color: #1f9d55; }
+.pck-i.ok span { color: var(--muted, #666); text-decoration: line-through; text-decoration-color: rgba(31, 157, 85, .5); }
+.pck-flags { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #fff1f1; color: #6b0d10; border: 1px solid #f3b4b6; }
+.pck-flags ul { margin: 6px 0 0; padding-inline-start: 18px; font-size: 13.5px; line-height: 1.6; }
+:root[data-theme="dark"] .pck-flags { background: #2b1214; color: #ffd6d8; border-color: #5b2226; }
+.ag-card.ag-flags { border-color: #f3b4b6; background: #fff6f6; }
+:root[data-theme="dark"] .ag-card.ag-flags { background: #2b1214; }
+.sig-wrap { margin-top: 12px; }
+.sig-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.sig-pad { display: block; width: 100%; height: 130px; border: 2px dashed #9aa7c7; border-radius: 12px; background: #fff; touch-action: none; cursor: crosshair; }
